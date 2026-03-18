@@ -16,6 +16,7 @@ const popupOverlay = document.getElementById('popupOverlay');
 const popupTitle = document.getElementById('popupTitle');
 const popupMessage = document.getElementById('popupMessage');
 const closePopupBtn = document.getElementById('closePopupBtn');
+const popupIcon = document.querySelector('.popup-icon');
 
 const configInput = document.getElementById('configInput');
 const shuffleBtn = document.getElementById('shuffleBtn');
@@ -30,6 +31,7 @@ const gameCanvasWrap = document.getElementById('gameCanvasWrap');
 const gameSidebar = document.getElementById('gameSidebar');
 const drawerToggleBtn = document.getElementById('drawerToggleBtn');
 const drawerBackdrop = document.getElementById('drawerBackdrop');
+const orientationLockOverlay = document.getElementById('orientationLockOverlay');
 
 const {
   Engine,
@@ -94,12 +96,17 @@ let resizeTimer = null;
 let countRefreshQueued = false;
 
 let settleWatcherTimer = null;
+let finalWatcherTimer = null;
 let countdownTimers = [];
+
 let roundSpawnComplete = false;
-let countdownStarted = false;
-let explosionTriggered = false;
+let bombSequenceStarted = false;
+let bombSequenceFinished = false;
+let resultCountdownStarted = false;
+let finalResultsShown = false;
+
 let settleStableTicks = 0;
-let movingBodiesEnabled = true;
+let finalStableTicks = 0;
 
 let boardWidth = 0;
 let boardHeight = 720;
@@ -109,10 +116,48 @@ let currentSlots = [];
 let lastValidConfigText = configInput.value;
 let lastAppliedRawText = configInput.value;
 
-function showPopup(title, message) {
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function showPopup(title, message, options = {}) {
+  const {
+    icon = '🛠️',
+    allowHtml = false
+  } = options;
+
+  if (popupIcon) {
+    popupIcon.textContent = icon;
+  }
+
   popupTitle.textContent = title;
-  popupMessage.textContent = message;
+
+  if (allowHtml) {
+    popupMessage.innerHTML = message;
+  } else {
+    popupMessage.textContent = message;
+  }
+
   popupOverlay.classList.remove('hidden');
+}
+
+function showResultsPopup(resultItems) {
+  const html = resultItems
+    .map((item, index) => {
+      return `<span style="display:block;margin:8px 0;"><strong>${index + 1}위. ${escapeHtml(item.name)}</strong> - ${item.count}개</span>`;
+    })
+    .join('');
+
+  showPopup(
+    '최종 결과',
+    html || '<span>결과가 없습니다.</span>',
+    { icon: '🏆', allowHtml: true }
+  );
 }
 
 function closePopup() {
@@ -125,6 +170,43 @@ function setDrawerState(isOpen) {
   drawerBackdrop.classList.toggle('show', isOpen);
 }
 
+function isTouchDevice() {
+  return window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+}
+
+function isMobileOrTabletLike() {
+  return window.innerWidth <= 1024 && isTouchDevice();
+}
+
+function isPortraitMode() {
+  return window.matchMedia('(orientation: portrait)').matches;
+}
+
+function updateOrientationGate() {
+  const shouldBlock =
+    screens.game1.classList.contains('active') &&
+    isMobileOrTabletLike() &&
+    isPortraitMode();
+
+  document.body.classList.toggle('orientation-blocked', shouldBlock);
+
+  if (orientationLockOverlay) {
+    orientationLockOverlay.setAttribute('aria-hidden', shouldBlock ? 'false' : 'true');
+  }
+}
+
+async function requestLandscapeIfPossible() {
+  if (!isMobileOrTabletLike()) return;
+
+  try {
+    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+      await screen.orientation.lock('landscape');
+    }
+  } catch (error) {
+    // 일부 환경에서는 잠금 불가. 오버레이로 처리.
+  }
+}
+
 function showScreen(target) {
   Object.values(screens).forEach((screen) => screen.classList.remove('active'));
   screens[target].classList.add('active');
@@ -135,11 +217,14 @@ function showScreen(target) {
     setDrawerState(false);
   } else {
     document.body.classList.add('game1-mode');
+    requestLandscapeIfPossible();
   }
 
   if (target === 'game1') {
     ensureGameReady();
   }
+
+  updateOrientationGate();
 }
 
 function shuffleArray(arr) {
@@ -177,6 +262,7 @@ function parseConfigToSlots(text) {
       if (!match) {
         return { status: 'INVALID' };
       }
+
       name = match[1].trim();
       count = Number(match[2]);
     } else {
@@ -324,11 +410,22 @@ function clearSettleWatcher() {
   settleStableTicks = 0;
 }
 
+function clearFinalWatcher() {
+  if (finalWatcherTimer) {
+    clearInterval(finalWatcherTimer);
+    finalWatcherTimer = null;
+  }
+  finalStableTicks = 0;
+}
+
 function resetRoundState() {
   roundSpawnComplete = false;
-  countdownStarted = false;
-  explosionTriggered = false;
+  bombSequenceStarted = false;
+  bombSequenceFinished = false;
+  resultCountdownStarted = false;
+  finalResultsShown = false;
   clearSettleWatcher();
+  clearFinalWatcher();
   clearCountdownTimers();
 }
 
@@ -373,18 +470,30 @@ function addMovingBody(body, options) {
     phase: options.phase || 0,
     angleAmplitude: options.angleAmplitude || 0,
     angleSpeed: options.angleSpeed || options.speed || 0.02,
-    anglePhase: options.anglePhase || 0
+    anglePhase: options.anglePhase || 0,
+    spinContinuous: Boolean(options.spinContinuous),
+    spinSpeed: options.spinSpeed || 0,
+    hidden: false,
+    group: options.group || 'main'
   });
 }
 
 function animateMovingBodies() {
-  if (!movingBodies.length || !movingBodiesEnabled) return;
+  if (!movingBodies.length) return;
   const t = engine.timing.timestamp;
 
   movingBodies.forEach((item) => {
+    if (item.hidden) return;
+
     const x = item.baseX + Math.sin(t * item.speed + item.phase) * item.amplitudeX;
     const y = item.baseY + Math.cos(t * item.speed + item.phase) * item.amplitudeY;
-    const angle = Math.sin(t * item.angleSpeed + item.anglePhase) * item.angleAmplitude;
+
+    let angle = 0;
+    if (item.spinContinuous) {
+      angle = t * item.spinSpeed + item.anglePhase;
+    } else {
+      angle = Math.sin(t * item.angleSpeed + item.anglePhase) * item.angleAmplitude;
+    }
 
     Body.setPosition(item.body, { x, y });
     Body.setAngle(item.body, angle);
@@ -393,131 +502,231 @@ function animateMovingBodies() {
   });
 }
 
-function hideMovingObstacles() {
-  if (!movingBodiesEnabled) return;
-  movingBodiesEnabled = false;
+function areAllBallsCalm() {
+  if (!ballBodies.length) return false;
 
-  movingBodies.forEach((item) => {
-    Composite.remove(world, item.body);
+  let movingCount = 0;
+  ballBodies.forEach((ball) => {
+    if (ball.speed > 0.24) movingCount += 1;
   });
+
+  return movingCount <= Math.max(10, Math.floor(ballBodies.length * 0.04));
+}
+
+function areNormalBallsCalm() {
+  const normals = ballBodies.filter((ball) => !ball.isBombBall);
+  if (!normals.length) return false;
+
+  let movingCount = 0;
+  normals.forEach((ball) => {
+    if (ball.speed > 0.18) movingCount += 1;
+  });
+
+  return movingCount <= Math.max(4, Math.floor(normals.length * 0.02));
+}
+
+function getSlotCountsPerIndex() {
+  const playableWidth = boardWidth - BOARD_SIDE_PADDING * 2;
+  const slotTopY = boardHeight - slotAreaHeight;
+  const slotCount = currentSlots.length;
+  const slotWidth = playableWidth / slotCount;
+  const counts = new Array(slotCount).fill(0);
+
+  ballBodies.forEach((ball) => {
+    if (ball.isBombBall) return;
+
+    const { x, y } = ball.position;
+    const radius = ball.circleRadius || 4.5;
+
+    if (y < slotTopY - radius * 1.2) return;
+
+    const relativeX = x - BOARD_SIDE_PADDING;
+    let slotIndex = Math.floor(relativeX / slotWidth);
+
+    if (slotIndex < 0) slotIndex = 0;
+    if (slotIndex >= slotCount) slotIndex = slotCount - 1;
+
+    counts[slotIndex] += 1;
+  });
+
+  return counts;
+}
+
+function getAggregatedCounts() {
+  const slotCounts = getSlotCountsPerIndex();
+  const aggregatedMap = new Map();
+
+  currentSlots.forEach((slot, index) => {
+    if (!aggregatedMap.has(slot.name)) {
+      aggregatedMap.set(slot.name, 0);
+    }
+    aggregatedMap.set(slot.name, aggregatedMap.get(slot.name) + (slotCounts[index] || 0));
+  });
+
+  return [...aggregatedMap.entries()].map(([name, count]) => ({ name, count }));
+}
+
+function finalizeResults() {
+  if (finalResultsShown) return;
+  finalResultsShown = true;
+  clearFinalWatcher();
+
+  const results = getAggregatedCounts().sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    return a.name.localeCompare(b.name, 'ko');
+  });
+
+  refreshCounts();
+  statusText.textContent = '최종 결과가 반영됐어!';
+  showResultsPopup(results);
 }
 
 function startSettleWatcher() {
   clearSettleWatcher();
 
   settleWatcherTimer = setInterval(() => {
-    if (!roundSpawnComplete || countdownStarted || explosionTriggered) {
-      return;
-    }
+    if (!roundSpawnComplete || bombSequenceStarted || finalResultsShown) return;
 
-    if (!ballBodies.length) {
-      return;
-    }
-
-    const thresholdY = boardHeight - slotAreaHeight - 46;
-    let belowCount = 0;
-    let movingCount = 0;
-
-    ballBodies.forEach((ball) => {
-      if (ball.position.y > thresholdY) {
-        belowCount += 1;
-      }
-      if (ball.speed > 0.35) {
-        movingCount += 1;
-      }
-    });
-
-    const enoughBelow = belowCount >= ballBodies.length * 0.95;
-    const calmEnough = movingCount <= Math.max(12, Math.floor(ballBodies.length * 0.06));
-
-    if (enoughBelow && calmEnough) {
+    if (areAllBallsCalm()) {
       settleStableTicks += 1;
     } else {
       settleStableTicks = 0;
     }
 
     if (settleStableTicks >= 4) {
-      startBombCountdown();
+      triggerBombExplosionChain();
     }
-  }, 450);
+  }, 400);
 }
 
-function startBombCountdown() {
-  if (countdownStarted || explosionTriggered) return;
+function explodeSingleBomb(bomb, index, total) {
+  if (!bomb || bomb.hasExploded) return;
 
-  countdownStarted = true;
+  const bombX = bomb.position.x;
+  const bombY = bomb.position.y;
+  const blastRadius = bomb.bombBlastRadius || 90;
+  const baseForce = bomb.bombForce || 0.0075;
+
+  statusText.textContent = `연쇄 폭발 ${index}/${total}...`;
+
+  ballBodies.forEach((ball) => {
+    if (ball === bomb) return;
+
+    const dx = ball.position.x - bombX;
+    const dy = ball.position.y - bombY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= 0 || distance > blastRadius) return;
+
+    const normalizedX = dx / distance;
+    const normalizedY = dy / distance;
+    const falloff = 1 - distance / blastRadius;
+    const forcePower = baseForce * falloff;
+
+    Body.applyForce(ball, ball.position, {
+      x: normalizedX * forcePower,
+      y: normalizedY * forcePower - forcePower * 0.18
+    });
+  });
+
+  bomb.hasExploded = true;
+  Composite.remove(world, bomb);
+}
+
+function triggerBombExplosionChain() {
+  if (bombSequenceStarted) return;
+
+  bombSequenceStarted = true;
   clearSettleWatcher();
-  hideMovingObstacles();
+
+  const bombs = shuffleArray(
+    ballBodies.filter((ball) => ball.isBombBall && !ball.hasExploded)
+  );
+
+  if (!bombs.length) {
+    bombSequenceFinished = true;
+    statusText.textContent = '폭탄이 없어서 결과 대기 상태로 넘어갈게.';
+    startFinalResultsWatcher();
+    return;
+  }
+
+  statusText.textContent = '폭탄 연쇄 폭발 시작...';
+
+  bombs.forEach((bomb, index) => {
+    const timer = setTimeout(() => {
+      explodeSingleBomb(bomb, index + 1, bombs.length);
+
+      if (index === bombs.length - 1) {
+        ballBodies = ballBodies.filter((ball) => !ball.isBombBall);
+        bombSequenceFinished = true;
+
+        const doneTimer = setTimeout(() => {
+          statusText.textContent = '폭발 종료. 결과 정리 중...';
+          startFinalResultsWatcher();
+        }, 700);
+
+        countdownTimers.push(doneTimer);
+      }
+    }, index * 160);
+
+    countdownTimers.push(timer);
+  });
+}
+
+function startResultCountdown() {
+  if (resultCountdownStarted || finalResultsShown) return;
+
+  resultCountdownStarted = true;
+  clearFinalWatcher();
 
   const countdownValues = [3, 2, 1];
 
   countdownValues.forEach((value, index) => {
     const timer = setTimeout(() => {
-      statusText.textContent = `폭탄 폭발까지 ${value}...`;
+      if (!areNormalBallsCalm()) {
+        resultCountdownStarted = false;
+        statusText.textContent = '아직 움직이는 구슬이 있어. 다시 기다리는 중...';
+        startFinalResultsWatcher();
+        return;
+      }
+
+      statusText.textContent = `결과 공개까지 ${value}...`;
     }, index * 1000);
+
     countdownTimers.push(timer);
   });
 
-  const explodeTimer = setTimeout(() => {
-    triggerBombExplosion();
+  const revealTimer = setTimeout(() => {
+    if (!areNormalBallsCalm()) {
+      resultCountdownStarted = false;
+      statusText.textContent = '아직 움직이는 구슬이 있어. 다시 기다리는 중...';
+      startFinalResultsWatcher();
+      return;
+    }
+
+    finalizeResults();
   }, 3000);
-  countdownTimers.push(explodeTimer);
+
+  countdownTimers.push(revealTimer);
 }
 
-function triggerBombExplosion() {
-  if (explosionTriggered) return;
-  explosionTriggered = true;
+function startFinalResultsWatcher() {
+  clearFinalWatcher();
 
-  const bombBalls = ballBodies.filter((ball) => ball.isBombBall && !ball.hasExploded);
+  finalWatcherTimer = setInterval(() => {
+    if (finalResultsShown || !bombSequenceFinished) return;
 
-  if (!bombBalls.length) {
-    statusText.textContent = '폭탄이 없어서 그대로 결과를 확정할게.';
-    countTimer = setTimeout(() => {
-      refreshCounts();
-      statusText.textContent = '최종 결과가 반영됐어!';
-    }, 1200);
-    return;
-  }
+    if (areNormalBallsCalm()) {
+      finalStableTicks += 1;
+    } else {
+      finalStableTicks = 0;
+      statusText.textContent = '구슬이 멈추는 중...';
+    }
 
-  statusText.textContent = '폭탄 폭발! 마지막 랜덤 변수가 반영되고 있어...';
-
-  const blastRadius = 92;
-  const baseForce = 0.0075;
-
-  bombBalls.forEach((bomb) => {
-    const bombX = bomb.position.x;
-    const bombY = bomb.position.y;
-
-    ballBodies.forEach((ball) => {
-      if (ball === bomb) return;
-
-      const dx = ball.position.x - bombX;
-      const dy = ball.position.y - bombY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance <= 0 || distance > blastRadius) return;
-
-      const normalizedX = dx / distance;
-      const normalizedY = dy / distance;
-      const falloff = 1 - distance / blastRadius;
-      const forcePower = baseForce * falloff;
-
-      Body.applyForce(ball, ball.position, {
-        x: normalizedX * forcePower,
-        y: normalizedY * forcePower - forcePower * 0.22
-      });
-    });
-
-    bomb.hasExploded = true;
-    Composite.remove(world, bomb);
-  });
-
-  ballBodies = ballBodies.filter((ball) => !ball.isBombBall);
-
-  countTimer = setTimeout(() => {
-    refreshCounts();
-    statusText.textContent = '최종 결과가 반영됐어!';
-  }, 2200);
+    if (finalStableTicks >= 4) {
+      startResultCountdown();
+    }
+  }, 400);
 }
 
 function buildBoard() {
@@ -527,7 +736,6 @@ function buildBoard() {
 
   clearSpawnTimers();
   clearWorldBodies();
-  movingBodiesEnabled = true;
 
   boardWidth = gameCanvasWrap.clientWidth;
   boardHeight = gameCanvasWrap.clientHeight;
@@ -552,8 +760,10 @@ function buildBoard() {
   const mainPegRadius = 13;
   const guidePegRadius = 8;
 
+  const wallInnerFaceX = BOARD_SIDE_PADDING;
+
   const leftWall = Bodies.rectangle(
-    -wallThickness / 2 + 8,
+    -wallThickness / 2 + wallInnerFaceX,
     boardHeight / 2,
     wallThickness,
     boardHeight,
@@ -565,7 +775,7 @@ function buildBoard() {
   );
 
   const rightWall = Bodies.rectangle(
-    boardWidth + wallThickness / 2 - 8,
+    boardWidth + wallThickness / 2 - wallInnerFaceX,
     boardHeight / 2,
     wallThickness,
     boardHeight,
@@ -584,20 +794,25 @@ function buildBoard() {
 
   worldBodies.push(leftWall, rightWall, floor);
 
-  // 양쪽 벽 범퍼
-  const wallBumperYs = [
+  // 벽 밀착 회전 막대 범퍼
+  const wallSpinnerYs = [
     boardHeight * 0.20,
     boardHeight * 0.34,
     boardHeight * 0.48,
     slotTopY - 70
   ];
 
-  wallBumperYs.forEach((y, index) => {
-    const radius = index === wallBumperYs.length - 1 ? 18 : 15;
+  wallSpinnerYs.forEach((y, index) => {
+    const barLength = index === wallSpinnerYs.length - 1 ? 90 : 82;
+    const barThickness = 12;
+    const leftX = wallInnerFaceX + 32;
+    const rightX = boardWidth - wallInnerFaceX - 32;
 
-    const leftBumper = Bodies.circle(BOARD_SIDE_PADDING + radius - 2, y, radius, {
+    const leftSpinner = Bodies.rectangle(leftX, y, barThickness, barLength, {
       isStatic: true,
-      restitution: 1.08,
+      restitution: 1.22,
+      friction: 0,
+      frictionStatic: 0,
       render: {
         fillStyle: '#ead8c9',
         strokeStyle: '#fff9f3',
@@ -605,9 +820,11 @@ function buildBoard() {
       }
     });
 
-    const rightBumper = Bodies.circle(boardWidth - BOARD_SIDE_PADDING - radius + 2, y, radius, {
+    const rightSpinner = Bodies.rectangle(rightX, y, barThickness, barLength, {
       isStatic: true,
-      restitution: 1.08,
+      restitution: 1.22,
+      friction: 0,
+      frictionStatic: 0,
       render: {
         fillStyle: '#ead8c9',
         strokeStyle: '#fff9f3',
@@ -615,7 +832,33 @@ function buildBoard() {
       }
     });
 
-    worldBodies.push(leftBumper, rightBumper);
+    worldBodies.push(leftSpinner, rightSpinner);
+
+    addMovingBody(leftSpinner, {
+      baseX: leftX,
+      baseY: y,
+      amplitudeX: 0,
+      amplitudeY: 0,
+      speed: 0,
+      phase: 0,
+      spinContinuous: true,
+      spinSpeed: 0.0042 + index * 0.00025,
+      anglePhase: index * 0.45,
+      group: 'wall'
+    });
+
+    addMovingBody(rightSpinner, {
+      baseX: rightX,
+      baseY: y,
+      amplitudeX: 0,
+      amplitudeY: 0,
+      speed: 0,
+      phase: 0,
+      spinContinuous: true,
+      spinSpeed: -(0.0044 + index * 0.00022),
+      anglePhase: index * 0.55,
+      group: 'wall'
+    });
   });
 
   // 슬롯 칸막이
@@ -729,7 +972,8 @@ function buildBoard() {
       phase: cfg.phase,
       angleAmplitude: 0.18 + (index % 3) * 0.04,
       angleSpeed: cfg.speed + 0.00025,
-      anglePhase: cfg.phase * 0.8
+      anglePhase: cfg.phase * 0.8,
+      group: 'main'
     });
   });
 
@@ -789,7 +1033,8 @@ function buildBoard() {
     phase: 0.5,
     angleAmplitude: 0.9,
     angleSpeed: 0.0031,
-    anglePhase: 1.0
+    anglePhase: 1.0,
+    group: 'main'
   });
 
   addMovingBody(spinnerRightOuter, {
@@ -801,7 +1046,8 @@ function buildBoard() {
     phase: 2.2,
     angleAmplitude: 0.9,
     angleSpeed: 0.00315,
-    anglePhase: 0.3
+    anglePhase: 0.3,
+    group: 'main'
   });
 
   addMovingBody(spinnerLeftInner, {
@@ -813,7 +1059,8 @@ function buildBoard() {
     phase: 1.4,
     angleAmplitude: 0.78,
     angleSpeed: 0.0029,
-    anglePhase: 0.8
+    anglePhase: 0.8,
+    group: 'main'
   });
 
   addMovingBody(spinnerRightInner, {
@@ -825,7 +1072,8 @@ function buildBoard() {
     phase: 2.9,
     angleAmplitude: 0.78,
     angleSpeed: 0.00295,
-    anglePhase: 1.9
+    anglePhase: 1.9,
+    group: 'main'
   });
 
   // 움직이는 원형 bumper
@@ -858,7 +1106,8 @@ function buildBoard() {
       amplitudeX: cfg.ax,
       amplitudeY: cfg.ay,
       speed: 0.002 + index * 0.00018,
-      phase: cfg.phase
+      phase: cfg.phase,
+      group: 'main'
     });
   });
 
@@ -894,12 +1143,25 @@ function renderSlotsOverlay() {
     slotBox.appendChild(nameEl);
     slotBox.appendChild(metaEl);
     slotOverlay.appendChild(slotBox);
+  });
+}
+
+function updateLegendWithAggregatedCounts() {
+  slotLegend.innerHTML = '';
+
+  const aggregatedCounts = getAggregatedCounts().sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    return a.name.localeCompare(b.name, 'ko');
+  });
+
+  aggregatedCounts.forEach((item) => {
+    const color = getColorForName(item.name);
 
     const chip = document.createElement('div');
     chip.className = 'legend-chip';
     chip.innerHTML = `
       <span class="legend-dot" style="background:${color}"></span>
-      <span>${index + 1}. ${slot.name}</span>
+      <span>${escapeHtml(item.name)} (${item.count}개)</span>
     `;
     slotLegend.appendChild(chip);
   });
@@ -907,26 +1169,55 @@ function renderSlotsOverlay() {
 
 function createBall(x, y, options = {}) {
   const isBomb = Boolean(options.isBomb);
-  const radius = isBomb ? 5.2 : 4.5;
-  const color = isBomb ? '#1f1f1f' : ballPalette[Math.floor(Math.random() * ballPalette.length)];
 
-  const ball = Bodies.circle(x, y, radius, {
-    restitution: isBomb ? 0.5 : rand(0.42, 0.6),
+  if (!isBomb) {
+    const color = ballPalette[Math.floor(Math.random() * ballPalette.length)];
+    const ball = Bodies.circle(x, y, 4.5, {
+      restitution: rand(0.42, 0.6),
+      friction: 0.002,
+      frictionAir: 0.0008,
+      density: 0.0018,
+      render: {
+        fillStyle: color,
+        strokeStyle: '#fffafc',
+        lineWidth: 1.1
+      }
+    });
+
+    ball.isBombBall = false;
+    ball.hasExploded = false;
+
+    ballBodies.push(ball);
+    World.add(world, ball);
+    return;
+  }
+
+  const gray = Math.floor(rand(45, 170));
+  const darknessRatio = 1 - (gray - 45) / 125;
+  const bombForce = 0.0055 + darknessRatio * 0.0045;
+  const bombBlastRadius = 74 + darknessRatio * 42;
+  const bombColor = `rgb(${gray}, ${gray}, ${gray})`;
+
+  const bomb = Bodies.circle(x, y, 5.2, {
+    restitution: 0.5,
     friction: 0.002,
     frictionAir: 0.0008,
-    density: isBomb ? 0.0022 : 0.0018,
+    density: 0.0022,
     render: {
-      fillStyle: color,
-      strokeStyle: isBomb ? '#5c5c5c' : '#fffafc',
-      lineWidth: isBomb ? 1.4 : 1.1
+      fillStyle: bombColor,
+      strokeStyle: '#5c5c5c',
+      lineWidth: 1.4
     }
   });
 
-  ball.isBombBall = isBomb;
-  ball.hasExploded = false;
+  bomb.isBombBall = true;
+  bomb.hasExploded = false;
+  bomb.bombForce = bombForce;
+  bomb.bombBlastRadius = bombBlastRadius;
+  bomb.bombGray = gray;
 
-  ballBodies.push(ball);
-  World.add(world, ball);
+  ballBodies.push(bomb);
+  World.add(world, bomb);
 }
 
 function spawnBalls() {
@@ -953,7 +1244,7 @@ function spawnBalls() {
 
       if (spawned === TOTAL_DROP_COUNT) {
         roundSpawnComplete = true;
-        statusText.textContent = `구슬 ${BALL_COUNT}개 + 폭탄 ${BOMB_COUNT}개 투하 완료. 모이는 중...`;
+        statusText.textContent = `구슬 ${BALL_COUNT}개 + 폭탄 ${BOMB_COUNT}개 투하 완료. 멈추는 중...`;
         startSettleWatcher();
       }
     }, index * SPAWN_INTERVAL_MS);
@@ -965,31 +1256,14 @@ function spawnBalls() {
 function refreshCounts() {
   if (!currentSlots.length) return;
 
-  const playableWidth = boardWidth - BOARD_SIDE_PADDING * 2;
-  const slotTopY = boardHeight - slotAreaHeight;
-  const slotCount = currentSlots.length;
-  const slotWidth = playableWidth / slotCount;
-  const counts = new Array(slotCount).fill(0);
-
-  ballBodies.forEach((ball) => {
-    const { x, y } = ball.position;
-
-    if (y < slotTopY + 6) return;
-
-    const relativeX = x - BOARD_SIDE_PADDING;
-    if (relativeX < 0 || relativeX > playableWidth) return;
-
-    let slotIndex = Math.floor(relativeX / slotWidth);
-    if (slotIndex < 0) slotIndex = 0;
-    if (slotIndex >= slotCount) slotIndex = slotCount - 1;
-
-    counts[slotIndex] += 1;
-  });
+  const slotCounts = getSlotCountsPerIndex();
 
   [...slotOverlay.children].forEach((slotNode, index) => {
     const meta = slotNode.querySelector('.slot-meta');
-    meta.textContent = `그릇 ${index + 1} · ${counts[index]}개`;
+    meta.textContent = `그릇 ${index + 1} · ${slotCounts[index]}개`;
   });
+
+  updateLegendWithAggregatedCounts();
 }
 
 function clearBallsOnly() {
@@ -1124,14 +1398,37 @@ configInput.addEventListener('keydown', (event) => {
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
+    updateOrientationGate();
+
     if (window.innerWidth > 980) {
       setDrawerState(false);
     }
 
-    if (screens.game1.classList.contains('active') && engine && currentSlots.length) {
+    if (
+      screens.game1.classList.contains('active') &&
+      engine &&
+      currentSlots.length &&
+      !document.body.classList.contains('orientation-blocked')
+    ) {
       buildBoard();
     }
   }, 180);
 });
 
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    updateOrientationGate();
+
+    if (
+      screens.game1.classList.contains('active') &&
+      engine &&
+      currentSlots.length &&
+      !document.body.classList.contains('orientation-blocked')
+    ) {
+      buildBoard();
+    }
+  }, 200);
+});
+
 updateSlotsFromInput({ build: false });
+updateOrientationGate();

@@ -881,3 +881,106 @@ body.game1-mode .game-canvas-wrap {
     font-size: 0.54rem;
   }
 }
+
+.orientation-lock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(246, 234, 220, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+.orientation-lock-card {
+  width: min(92vw, 420px);
+  background: rgba(255, 249, 244, 0.96);
+  border: 3px solid rgba(255, 255, 255, 0.86);
+  border-radius: 28px;
+  box-shadow: 0 16px 30px rgba(116, 86, 68, 0.14);
+  padding: 28px 22px;
+  text-align: center;
+}
+
+.orientation-lock-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.orientation-lock-card h3 {
+  font-family: 'Gaegu', cursive;
+  font-size: 2rem;
+  color: var(--soft-brown);
+  margin-bottom: 8px;
+}
+
+.orientation-lock-card p {
+  color: #8b7366;
+  line-height: 1.6;
+}
+
+body.orientation-blocked {
+  overflow: hidden;
+}
+
+body.orientation-blocked .app {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.orientation-blocked .orientation-lock-overlay {
+  display: flex;
+}
+
+@media (max-width: 1024px) and (orientation: landscape) {
+  body.game1-mode .game-screen {
+    height: calc(100vh - 20px);
+  }
+
+  body.game1-mode .app {
+    padding: 10px;
+  }
+
+  body.game1-mode .game-card-full {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  body.game1-mode .game-canvas-wrap {
+    border-radius: 22px;
+  }
+
+  body.game1-mode .slot-overlay {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    height: clamp(76px, 16%, 96px);
+  }
+
+  body.game1-mode .slot-name {
+    font-size: 0.68rem;
+  }
+
+  body.game1-mode .slot-meta {
+    font-size: 0.56rem;
+  }
+}
+
+@media (max-width: 820px) and (orientation: landscape) {
+  body.game1-mode .game-main-header h2 {
+    font-size: 2rem;
+  }
+
+  body.game1-mode .small-badge {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+
+  body.game1-mode .drawer-toggle-btn,
+  body.game1-mode .back-btn {
+    padding: 10px 14px;
+    font-size: 0.92rem;
+  }
+}

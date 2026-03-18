@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>파스텔 게임 메뉴</title>
+  <title>랜덤 룰렛 사이트</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -21,9 +21,9 @@
   <main class="app">
     <section id="homeScreen" class="screen active">
       <div class="card main-card">
-        <p class="small-badge">🎀 pastel playground 🎀</p>
-        <h1>오늘은 어떤 게임을 해볼까?</h1>
-        <p class="sub-text">귀염뽀짝한 선택의 세계에 온 걸 환영해!</p>
+        <p class="small-badge">🎀 결정하기 힘들 때 사용하는 사이트! 🎀</p>
+        <h1>랜덤 룰렛 사이트</h1>
+        <p class="sub-text">인생은 탄생(Birth)과 죽음(Death) 사이의 선택(Choice)이다</p>
         <button id="startBtn" class="main-btn">시작</button>
       </div>
     </section>
@@ -31,7 +31,7 @@
     <section id="menuScreen" class="screen">
       <div class="card menu-card">
         <p class="small-badge">✨ menu ✨</p>
-        <h2>원하는 메뉴를 골라줘</h2>
+        <h2>메뉴 선택</h2>
 
         <div class="menu-buttons">
           <button id="physicalBtn" class="menu-btn physical" type="button">
@@ -55,7 +55,7 @@
           <div>
             <p class="small-badge">🎲 luck games 🎲</p>
             <h2>운 게임 목록</h2>
-            <p class="sub-text">1번 게임은 플레이 가능하고, 나머지는 추후 개발 예정이야.</p>
+            <p class="sub-text">1번 게임은 플레이 가능하고, 나머지는 추후 개발 예정이다.</p>
           </div>
           <button class="back-btn" data-target="menu" type="button">← 뒤로가기</button>
         </div>
@@ -123,7 +123,7 @@
             <div class="sidebar-head">
               <h3 class="sidebar-title">게임 설정</h3>
               <p class="sub-text">
-                이름 또는 이름*n 형식으로 적으면 개별 그릇이 실시간 생성돼.
+                이름*n 형식으로 작성하여 그릇 생성.
                 예: 홍길동*2, 김아무개*2
               </p>
             </div>
@@ -138,7 +138,7 @@
                   autocomplete="off"
                 />
                 <p class="helper-text">
-                  쉼표(,)로 구분해 입력해줘. 최대 20개 그릇까지 가능해.
+                  쉼표(,)로 구분해 입력. 최대 20개 그릇까지 가능.
                 </p>
               </div>
 
@@ -200,5 +200,12 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
   <script src="script.js"></script>
+<div id="orientationLockOverlay" class="orientation-lock-overlay" aria-hidden="true">
+  <div class="orientation-lock-card">
+    <div class="orientation-lock-icon">📱↔️</div>
+    <h3>가로 모드로 회전해줘</h3>
+    <p>담아라!는 휴대전화와 태블릿에서 가로 모드로만 플레이할 수 있어.</p>
+  </div>
+</div>
 </body>
 </html>
