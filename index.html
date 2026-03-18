@@ -1,0 +1,204 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>파스텔 게임 메뉴</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Pretendard:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="background-deco deco1"></div>
+  <div class="background-deco deco2"></div>
+  <div class="background-deco deco3"></div>
+  <div class="background-deco deco4"></div>
+
+  <main class="app">
+    <section id="homeScreen" class="screen active">
+      <div class="card main-card">
+        <p class="small-badge">🎀 pastel playground 🎀</p>
+        <h1>오늘은 어떤 게임을 해볼까?</h1>
+        <p class="sub-text">귀염뽀짝한 선택의 세계에 온 걸 환영해!</p>
+        <button id="startBtn" class="main-btn">시작</button>
+      </div>
+    </section>
+
+    <section id="menuScreen" class="screen">
+      <div class="card menu-card">
+        <p class="small-badge">✨ menu ✨</p>
+        <h2>원하는 메뉴를 골라줘</h2>
+
+        <div class="menu-buttons">
+          <button id="physicalBtn" class="menu-btn physical" type="button">
+            <span class="emoji">💪</span>
+            <span>피지컬</span>
+          </button>
+
+          <button id="luckBtn" class="menu-btn luck" type="button">
+            <span class="emoji">🍀</span>
+            <span>운</span>
+          </button>
+        </div>
+
+        <button class="back-btn" data-target="home" type="button">← 처음으로</button>
+      </div>
+    </section>
+
+    <section id="luckScreen" class="screen">
+      <div class="card luck-card">
+        <div class="luck-header">
+          <div>
+            <p class="small-badge">🎲 luck games 🎲</p>
+            <h2>운 게임 목록</h2>
+            <p class="sub-text">1번 게임은 플레이 가능하고, 나머지는 추후 개발 예정이야.</p>
+          </div>
+          <button class="back-btn" data-target="menu" type="button">← 뒤로가기</button>
+        </div>
+
+        <div class="game-grid">
+          <button class="game-item game-launch" data-game="1" type="button">
+            <div class="game-num">1</div>
+            <h3>담아라!</h3>
+            <p>구슬이 아래 그릇에 담기는 랜덤 분배 게임</p>
+          </button>
+
+          <button class="game-item game-coming-soon" type="button">
+            <div class="game-num">2</div>
+            <h3>게임 2</h3>
+            <p>추후 개발 예정</p>
+          </button>
+          <button class="game-item game-coming-soon" type="button">
+            <div class="game-num">3</div>
+            <h3>게임 3</h3>
+            <p>추후 개발 예정</p>
+          </button>
+          <button class="game-item game-coming-soon" type="button">
+            <div class="game-num">4</div>
+            <h3>게임 4</h3>
+            <p>추후 개발 예정</p>
+          </button>
+          <button class="game-item game-coming-soon" type="button">
+            <div class="game-num">5</div>
+            <h3>게임 5</h3>
+            <p>추후 개발 예정</p>
+          </button>
+          <button class="game-item game-coming-soon" type="button">
+            <div class="game-num">6</div>
+            <h3>게임 6</h3>
+            <p>추후 개발 예정</p>
+          </button>
+          <button class="game-item game-coming-soon" type="button">
+            <div class="game-num">7</div>
+            <h3>게임 7</h3>
+            <p>추후 개발 예정</p>
+          </button>
+          <button class="game-item game-coming-soon" type="button">
+            <div class="game-num">8</div>
+            <h3>게임 8</h3>
+            <p>추후 개발 예정</p>
+          </button>
+          <button class="game-item game-coming-soon" type="button">
+            <div class="game-num">9</div>
+            <h3>게임 9</h3>
+            <p>추후 개발 예정</p>
+          </button>
+          <button class="game-item game-coming-soon" type="button">
+            <div class="game-num">10</div>
+            <h3>게임 10</h3>
+            <p>추후 개발 예정</p>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="game1Screen" class="screen game-screen">
+      <div class="card game-card game-card-full">
+        <aside id="gameSidebar" class="game-sidebar">
+          <div class="game-sidebar-inner">
+            <div class="sidebar-head">
+              <h3 class="sidebar-title">게임 설정</h3>
+              <p class="sub-text">
+                이름 또는 이름*n 형식으로 적으면 개별 그릇이 실시간 생성돼.
+                예: 홍길동*2, 김아무개*2
+              </p>
+            </div>
+
+            <div class="controls-wrap">
+              <div class="input-card">
+                <label for="configInput">설정</label>
+                <input
+                  id="configInput"
+                  type="text"
+                  value="홍길동*2, 김아무개*2"
+                  autocomplete="off"
+                />
+                <p class="helper-text">
+                  쉼표(,)로 구분해 입력해줘. 최대 20개 그릇까지 가능해.
+                </p>
+              </div>
+
+              <div class="button-row">
+                <button id="shuffleBtn" class="action-btn secondary" type="button">셔플</button>
+                <button id="startGameBtn" class="action-btn primary" type="button">시작</button>
+                <button id="resetGameBtn" class="action-btn soft" type="button">리셋</button>
+              </div>
+
+              <div id="statusText" class="status-text">
+                설정을 반영하면 아래 그릇 구성이 실시간으로 바뀐다.
+              </div>
+            </div>
+
+            <div class="scoreboard-card">
+              <div class="scoreboard-head">
+                <h3>현재 그릇 배치</h3>
+                <span id="totalInfo">총 0그릇</span>
+              </div>
+              <div id="slotLegend" class="slot-legend"></div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="game-main">
+          <div class="game-main-header">
+            <div>
+              <p class="small-badge game-mini-badge">🫧 game 1 🫧</p>
+              <h2>담아라!</h2>
+              <p class="sub-text">구슬 500개가 떨어져 아래 개별 그릇에 담긴다.</p>
+            </div>
+
+            <div class="game-header-actions">
+              <button id="drawerToggleBtn" class="drawer-toggle-btn" type="button">⚙ 설정</button>
+              <button class="back-btn" data-target="luck" type="button">← 목록으로</button>
+            </div>
+          </div>
+
+          <div class="play-area game-play-area">
+            <div id="gameCanvasWrap" class="game-canvas-wrap">
+              <div id="slotOverlay" class="slot-overlay"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="drawerBackdrop" class="drawer-backdrop"></div>
+    </section>
+  </main>
+
+  <div id="popupOverlay" class="popup-overlay hidden">
+    <div class="popup">
+      <div class="popup-icon">🛠️</div>
+      <h3 id="popupTitle">개발중</h3>
+      <p id="popupMessage">아직 준비중이야!</p>
+      <button id="closePopupBtn" class="popup-btn" type="button">확인</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
