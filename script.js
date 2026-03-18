@@ -188,6 +188,13 @@ function closePopup() {
 
 function setDrawerState(isOpen) {
   if (!gameSidebar || !drawerBackdrop) return;
+
+  if (isMobileOrTabletLike()) {
+    gameSidebar.classList.remove('open');
+    drawerBackdrop.classList.remove('show');
+    return;
+  }
+
   gameSidebar.classList.toggle('open', isOpen);
   drawerBackdrop.classList.toggle('show', isOpen);
 }
@@ -208,24 +215,12 @@ function updateOrientationGate() {
   const shouldBlock =
     screens.game1.classList.contains('active') &&
     isMobileOrTabletLike() &&
-    isPortraitMode();
+    !isPortraitMode();
 
   document.body.classList.toggle('orientation-blocked', shouldBlock);
 
   if (orientationLockOverlay) {
     orientationLockOverlay.setAttribute('aria-hidden', shouldBlock ? 'false' : 'true');
-  }
-}
-
-async function requestLandscapeIfPossible() {
-  if (!isMobileOrTabletLike()) return;
-
-  try {
-    if (screen.orientation && typeof screen.orientation.lock === 'function') {
-      await screen.orientation.lock('landscape');
-    }
-  } catch (error) {
-    // 일부 환경에서는 잠금 불가. 오버레이로 처리.
   }
 }
 
@@ -239,7 +234,6 @@ function showScreen(target) {
     setDrawerState(false);
   } else {
     document.body.classList.add('game1-mode');
-    requestLandscapeIfPossible();
   }
 
   if (target === 'game1') {
@@ -369,9 +363,19 @@ function updateSlotsFromInput({ build = true } = {}) {
 
 function fitGameCanvasViewport() {
   const main = document.querySelector('#game1Screen .game-main');
+  const playArea = document.querySelector('#game1Screen .game-play-area');
   const header = main?.querySelector('.game-main-header');
 
-  if (!main || !header) return;
+  if (!main || !playArea || !header) return;
+
+  if (isMobileOrTabletLike()) {
+    const width = Math.max(280, playArea.clientWidth);
+    const height = clampValue(width * 1.12, 360, window.innerHeight * 0.72);
+
+    gameCanvasWrap.style.width = `${width}px`;
+    gameCanvasWrap.style.height = `${height}px`;
+    return;
+  }
 
   const styles = getComputedStyle(main);
   const gap = parseFloat(styles.gap) || 0;
@@ -1501,7 +1505,7 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(() => {
     updateOrientationGate();
 
-    if (window.innerWidth > 980) {
+    if (!isMobileOrTabletLike() && window.innerWidth > 980) {
       setDrawerState(false);
     }
 

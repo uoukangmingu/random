@@ -129,7 +129,6 @@ input {
 
 .main-btn {
   margin-top: 28px;
-  border: none;
   background: linear-gradient(135deg, var(--pink), #ffdce7);
   color: var(--brown);
   font-family: 'Gaegu', cursive;
@@ -188,7 +187,6 @@ input {
 }
 
 .back-btn {
-  border: none;
   background: #fff;
   color: var(--soft-brown);
   padding: 12px 18px;
@@ -572,6 +570,7 @@ input {
   animation-delay: 1.5s;
 }
 
+/* 데스크톱 */
 body.game1-mode {
   overflow: hidden;
 }
@@ -719,8 +718,7 @@ body.game1-mode .game-play-area {
 }
 
 @keyframes floatY {
-  0%,
-  100% {
+  0%, 100% {
     transform: translateY(0px);
   }
   50% {
@@ -731,60 +729,6 @@ body.game1-mode .game-play-area {
 @media (max-width: 980px) {
   .game-grid {
     grid-template-columns: repeat(3, 1fr);
-  }
-
-  body.game1-mode .app {
-    padding: 10px;
-  }
-
-  body.game1-mode .game-screen {
-    height: calc(100dvh - 20px);
-  }
-
-  body.game1-mode .game-card-full {
-    grid-template-columns: 1fr;
-    position: relative;
-    padding: 10px;
-  }
-
-  body.game1-mode .game-sidebar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: min(360px, 88vw);
-    z-index: 30;
-    transform: translateX(-108%);
-    transition: transform 0.26s ease;
-    overflow: hidden;
-    box-shadow: 0 18px 36px rgba(90, 70, 60, 0.18);
-  }
-
-  body.game1-mode .game-sidebar.open {
-    transform: translateX(0);
-  }
-
-  .drawer-toggle-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .drawer-backdrop {
-    display: block;
-    position: absolute;
-    inset: 0;
-    z-index: 25;
-    background: rgba(90, 70, 60, 0.24);
-    border-radius: 24px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.26s ease;
-  }
-
-  .drawer-backdrop.show {
-    opacity: 1;
-    pointer-events: auto;
   }
 }
 
@@ -807,34 +751,6 @@ body.game1-mode .game-play-area {
   }
 }
 
-@media (max-width: 640px) {
-  body.game1-mode .app {
-    padding: 10px;
-  }
-
-  body.game1-mode .game-screen {
-    height: calc(100dvh - 20px);
-  }
-
-  body.game1-mode .game-card-full {
-    padding: 10px;
-    gap: 10px;
-  }
-
-  body.game1-mode .game-main-header h2 {
-    font-size: 2.1rem;
-  }
-
-  body.game1-mode .game-header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  body.game1-mode .game-canvas-wrap {
-    border-radius: 24px;
-  }
-}
-
 @media (max-width: 480px) {
   .button-row {
     flex-direction: column;
@@ -848,6 +764,99 @@ body.game1-mode .game-play-area {
 
   .game-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* 모바일/태블릿: 세로 전용 + 스크롤 가능 + 세로 레이아웃 */
+@media (max-width: 1024px) and (pointer: coarse) {
+  body.game1-mode {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  body.game1-mode .app {
+    min-height: 100vh;
+    align-items: flex-start;
+    padding: 10px;
+  }
+
+  body.game1-mode .game-screen {
+    height: auto;
+    min-height: auto;
+  }
+
+  body.game1-mode .game-card-full {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  body.game1-mode .game-sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    display: block;
+    order: 1;
+  }
+
+  body.game1-mode .game-sidebar-inner {
+    height: auto;
+    overflow: visible;
+    padding: 16px;
+  }
+
+  body.game1-mode .game-main {
+    height: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    order: 2;
+  }
+
+  body.game1-mode .game-main-header {
+    padding: 0;
+  }
+
+  body.game1-mode .game-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  body.game1-mode .game-play-area {
+    display: block;
+    flex: none;
+    min-height: 0;
+  }
+
+  body.game1-mode .game-canvas-wrap {
+    width: 100% !important;
+    max-width: 100%;
+    border-radius: 24px;
+  }
+
+  body.game1-mode .slot-overlay {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    height: clamp(74px, 18%, 96px);
+  }
+
+  body.game1-mode .slot-name {
+    font-size: 0.68rem;
+  }
+
+  body.game1-mode .slot-meta {
+    font-size: 0.56rem;
+  }
+
+  .drawer-toggle-btn,
+  .drawer-backdrop {
+    display: none !important;
   }
 }
 
@@ -891,7 +900,7 @@ body.game1-mode .game-play-area {
 }
 
 body.orientation-blocked {
-  overflow: hidden;
+  overflow: hidden !important;
 }
 
 body.orientation-blocked .app {
@@ -901,55 +910,4 @@ body.orientation-blocked .app {
 
 body.orientation-blocked .orientation-lock-overlay {
   display: flex;
-}
-
-@media (max-width: 1024px) and (orientation: landscape) {
-  body.game1-mode .game-screen {
-    height: calc(100dvh - 20px);
-  }
-
-  body.game1-mode .app {
-    padding: 10px;
-  }
-
-  body.game1-mode .game-card-full {
-    padding: 10px;
-    gap: 10px;
-  }
-
-  body.game1-mode .game-canvas-wrap {
-    border-radius: 22px;
-  }
-
-  body.game1-mode .slot-overlay {
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    height: clamp(76px, 16%, 96px);
-  }
-
-  body.game1-mode .slot-name {
-    font-size: 0.68rem;
-  }
-
-  body.game1-mode .slot-meta {
-    font-size: 0.56rem;
-  }
-}
-
-@media (max-width: 820px) and (orientation: landscape) {
-  body.game1-mode .game-main-header h2 {
-    font-size: 2rem;
-  }
-
-  body.game1-mode .small-badge {
-    font-size: 0.8rem;
-    padding: 8px 12px;
-  }
-
-  body.game1-mode .drawer-toggle-btn,
-  body.game1-mode .back-btn {
-    padding: 10px 14px;
-    font-size: 0.92rem;
-  }
 }
