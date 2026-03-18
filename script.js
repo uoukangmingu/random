@@ -27,6 +27,7 @@ const totalInfo = document.getElementById('totalInfo');
 const slotLegend = document.getElementById('slotLegend');
 const slotOverlay = document.getElementById('slotOverlay');
 const gameCanvasWrap = document.getElementById('gameCanvasWrap');
+const game1Desc = document.querySelector('#game1Screen .game-main-header .sub-text');
 
 const gameSidebar = document.getElementById('gameSidebar');
 const drawerToggleBtn = document.getElementById('drawerToggleBtn');
@@ -42,8 +43,6 @@ const scoreboardCard = document.querySelector('#game1Screen .scoreboard-card');
 const game1BackBtn = document.querySelector('#game1Screen .game-header-actions .back-btn[data-target="luck"]');
 const gameHeaderActions = document.querySelector('#game1Screen .game-header-actions');
 
-let mobileLayoutApplied = false;
-
 const {
   Engine,
   Render,
@@ -56,9 +55,7 @@ const {
 } = Matter;
 
 const MAX_SLOT_COUNT = 20;
-const BALL_COUNT = 500;
 const BOMB_COUNT = 20;
-const TOTAL_DROP_COUNT = BALL_COUNT + BOMB_COUNT;
 const SPAWN_INTERVAL_MS = 27;
 const BOARD_SIDE_PADDING = 18;
 
@@ -99,6 +96,13 @@ function getColorForName(name) {
 
 function clampValue(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function getBallCountBySlotCount(slotCount) {
+  if (slotCount <= 5) return 500;
+  if (slotCount <= 10) return 400;
+  if (slotCount <= 15) return 300;
+  return 200;
 }
 
 let currentScale = 1;
@@ -151,6 +155,22 @@ let lastAppliedRawText = configInput.value;
 
 let lastViewportWidth = window.innerWidth;
 let lastViewportHeight = window.innerHeight;
+let mobileLayoutApplied = false;
+
+function getCurrentNormalBallCount() {
+  const slotCount = currentSlots.length || 1;
+  return getBallCountBySlotCount(slotCount);
+}
+
+function getCurrentTotalDropCount() {
+  return getCurrentNormalBallCount() + BOMB_COUNT;
+}
+
+function updateGame1BallCountText() {
+  if (!game1Desc) return;
+  const ballCount = getCurrentNormalBallCount();
+  game1Desc.textContent = `구슬 ${ballCount}개가 떨어져 아래 개별 그릇에 담긴다.`;
+}
 
 function escapeHtml(text) {
   return String(text)
@@ -162,10 +182,7 @@ function escapeHtml(text) {
 }
 
 function showPopup(title, message, options = {}) {
-  const {
-    icon = '🛠️',
-    allowHtml = false
-  } = options;
+  const { icon = '🛠️', allowHtml = false } = options;
 
   if (popupIcon) {
     popupIcon.textContent = icon;
@@ -235,6 +252,61 @@ function updateOrientationGate() {
 
   if (orientationLockOverlay) {
     orientationLockOverlay.setAttribute('aria-hidden', shouldBlock ? 'false' : 'true');
+  }
+}
+
+function syncGame1MobileLayout() {
+  if (
+    !gameCardFull ||
+    !gameMain ||
+    !gameMainHeader ||
+    !gamePlayArea ||
+    !gameSidebar ||
+    !gameSidebarInner ||
+    !scoreboardCard ||
+    !game1BackBtn ||
+    !gameHeaderActions
+  ) {
+    return;
+  }
+
+  const shouldUseMobileLayout = isMobileOrTabletLike();
+
+  document.body.classList.toggle('game1-mobile-layout', shouldUseMobileLayout);
+
+  if (shouldUseMobileLayout && !mobileLayoutApplied) {
+    if (gameMainHeader.parentElement !== gameCardFull) {
+      gameCardFull.insertBefore(gameMainHeader, gameCardFull.firstChild);
+    }
+
+    if (scoreboardCard.parentElement !== gameCardFull) {
+      gameCardFull.appendChild(scoreboardCard);
+    }
+
+    if (game1BackBtn.parentElement !== gameCardFull) {
+      game1BackBtn.classList.add('mobile-back-btn');
+      gameCardFull.appendChild(game1BackBtn);
+    }
+
+    mobileLayoutApplied = true;
+    return;
+  }
+
+  if (!shouldUseMobileLayout && mobileLayoutApplied) {
+    if (gameMainHeader.parentElement !== gameMain) {
+      gameMain.insertBefore(gameMainHeader, gameMain.firstChild);
+    }
+
+    if (scoreboardCard.parentElement !== gameSidebarInner) {
+      gameSidebarInner.appendChild(scoreboardCard);
+    }
+
+    if (game1BackBtn.parentElement !== gameHeaderActions) {
+      game1BackBtn.classList.remove('mobile-back-btn');
+      gameHeaderActions.appendChild(game1BackBtn);
+    }
+
+    mobileLayoutApplied = false;
   }
 }
 
@@ -365,11 +437,13 @@ function updateSlotsFromInput({ build = true } = {}) {
   }
 
   setCurrentSlots(parsed.slots);
+  updateGame1BallCountText();
 
   if (engine && screens.game1.classList.contains('active') && build) {
     buildBoard();
   } else {
-    statusText.textContent = `실시간 반영 준비 완료: 총 ${currentSlots.length}개의 개별 그릇`;
+    const ballCount = getCurrentNormalBallCount();
+    statusText.textContent = `실시간 반영 준비 완료: 총 ${currentSlots.length}개의 개별 그릇 / 구슬 ${ballCount}개`;
   }
 
   return true;
@@ -378,7 +452,7 @@ function updateSlotsFromInput({ build = true } = {}) {
 function fitGameCanvasViewport() {
   const main = document.querySelector('#game1Screen .game-main');
   const playArea = document.querySelector('#game1Screen .game-play-area');
-  const header = document.querySelector('#game1Screen .game-main-header');
+  const header = main?.querySelector('.game-main-header');
 
   if (!main || !playArea) return;
 
@@ -430,6 +504,7 @@ function ensureGameReady() {
     }
   }
 
+  updateGame1BallCountText();
   syncGame1MobileLayout();
   fitGameCanvasViewport();
   buildBoard();
@@ -851,6 +926,7 @@ function buildBoard() {
     return;
   }
 
+  updateGame1BallCountText();
   fitGameCanvasViewport();
 
   clearSpawnTimers();
@@ -1346,8 +1422,11 @@ function spawnBalls() {
   clearSpawnTimers();
   resetRoundState();
 
+  const normalBallCount = getCurrentNormalBallCount();
+  const totalDropCount = getCurrentTotalDropCount();
+
   const ballTypePool = [
-    ...new Array(BALL_COUNT).fill(false),
+    ...new Array(normalBallCount).fill(false),
     ...new Array(BOMB_COUNT).fill(true)
   ];
 
@@ -1362,11 +1441,11 @@ function spawnBalls() {
 
       createBall(x, y, { isBomb });
       spawned += 1;
-      statusText.textContent = `구슬이 떨어지는 중... ${spawned}/${TOTAL_DROP_COUNT}`;
+      statusText.textContent = `구슬이 떨어지는 중... ${spawned}/${totalDropCount}`;
 
-      if (spawned === TOTAL_DROP_COUNT) {
+      if (spawned === totalDropCount) {
         roundSpawnComplete = true;
-        statusText.textContent = `구슬 ${BALL_COUNT}개 + 폭탄 ${BOMB_COUNT}개 투하 완료. 멈추는 중...`;
+        statusText.textContent = `구슬 ${normalBallCount}개 + 폭탄 ${BOMB_COUNT}개 투하 완료. 멈추는 중...`;
         startSettleWatcher();
       }
     }, index * SPAWN_INTERVAL_MS);
@@ -1548,16 +1627,16 @@ window.addEventListener('resize', () => {
       setDrawerState(false);
     }
 
-if (
-  screens.game1.classList.contains('active') &&
-  engine &&
-  currentSlots.length &&
-  !document.body.classList.contains('orientation-blocked')
-) {
-  syncGame1MobileLayout();
-  fitGameCanvasViewport();
-  buildBoard();
-}
+    if (
+      screens.game1.classList.contains('active') &&
+      engine &&
+      currentSlots.length &&
+      !document.body.classList.contains('orientation-blocked')
+    ) {
+      syncGame1MobileLayout();
+      fitGameCanvasViewport();
+      buildBoard();
+    }
 
     lastViewportWidth = nextWidth;
     lastViewportHeight = nextHeight;
@@ -1590,58 +1669,3 @@ window.addEventListener('orientationchange', () => {
 updateSlotsFromInput({ build: false });
 syncGame1MobileLayout();
 updateOrientationGate();
-
-function syncGame1MobileLayout() {
-  if (
-    !gameCardFull ||
-    !gameMain ||
-    !gameMainHeader ||
-    !gamePlayArea ||
-    !gameSidebar ||
-    !gameSidebarInner ||
-    !scoreboardCard ||
-    !game1BackBtn ||
-    !gameHeaderActions
-  ) {
-    return;
-  }
-
-  const shouldUseMobileLayout = isMobileOrTabletLike();
-
-  document.body.classList.toggle('game1-mobile-layout', shouldUseMobileLayout);
-
-  if (shouldUseMobileLayout && !mobileLayoutApplied) {
-    if (gameMainHeader.parentElement !== gameCardFull) {
-      gameCardFull.insertBefore(gameMainHeader, gameCardFull.firstChild);
-    }
-
-    if (scoreboardCard.parentElement !== gameCardFull) {
-      gameCardFull.appendChild(scoreboardCard);
-    }
-
-    if (game1BackBtn.parentElement !== gameCardFull) {
-      game1BackBtn.classList.add('mobile-back-btn');
-      gameCardFull.appendChild(game1BackBtn);
-    }
-
-    mobileLayoutApplied = true;
-    return;
-  }
-
-  if (!shouldUseMobileLayout && mobileLayoutApplied) {
-    if (gameMainHeader.parentElement !== gameMain) {
-      gameMain.insertBefore(gameMainHeader, gameMain.firstChild);
-    }
-
-    if (scoreboardCard.parentElement !== gameSidebarInner) {
-      gameSidebarInner.appendChild(scoreboardCard);
-    }
-
-    if (game1BackBtn.parentElement !== gameHeaderActions) {
-      game1BackBtn.classList.remove('mobile-back-btn');
-      gameHeaderActions.appendChild(game1BackBtn);
-    }
-
-    mobileLayoutApplied = false;
-  }
-}
