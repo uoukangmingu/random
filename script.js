@@ -51,6 +51,9 @@ const TOTAL_DROP_COUNT = BALL_COUNT + BOMB_COUNT;
 const SPAWN_INTERVAL_MS = 27;
 const BOARD_SIDE_PADDING = 18;
 
+const BASE_BOARD_WIDTH = 1366;
+const BASE_BOARD_HEIGHT = 768;
+
 const slotPalette = [
   '#f9d3df',
   '#d7f3e9',
@@ -81,6 +84,25 @@ function getColorForName(name) {
     nameColorMap.set(name, slotPalette[colorIndex]);
   }
   return nameColorMap.get(name);
+}
+
+function clampValue(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+let currentScale = 1;
+let currentBoardPadding = BOARD_SIDE_PADDING;
+
+function getBoardScale(width = 1366, height = 768) {
+  return clampValue(
+    Math.min(width / BASE_BOARD_WIDTH, height / BASE_BOARD_HEIGHT),
+    0.58,
+    1.18
+  );
+}
+
+function S(value) {
+  return value * currentScale;
 }
 
 let engine;
@@ -345,6 +367,32 @@ function updateSlotsFromInput({ build = true } = {}) {
   return true;
 }
 
+function fitGameCanvasViewport() {
+  const main = document.querySelector('#game1Screen .game-main');
+  const header = main?.querySelector('.game-main-header');
+
+  if (!main || !header) return;
+
+  const styles = getComputedStyle(main);
+  const gap = parseFloat(styles.gap) || 0;
+
+  const availableW = Math.max(320, main.clientWidth);
+  const availableH = Math.max(220, main.clientHeight - header.offsetHeight - gap);
+
+  const ratio = 16 / 9;
+
+  let width = availableW;
+  let height = width / ratio;
+
+  if (height > availableH) {
+    height = availableH;
+    width = height * ratio;
+  }
+
+  gameCanvasWrap.style.width = `${width}px`;
+  gameCanvasWrap.style.height = `${height}px`;
+}
+
 function ensureGameReady() {
   if (!engine) {
     initMatterWorld();
@@ -362,6 +410,7 @@ function ensureGameReady() {
     }
   }
 
+  fitGameCanvasViewport();
   buildBoard();
 }
 
@@ -502,6 +551,15 @@ function animateMovingBodies() {
   });
 }
 
+function hideMainMovingObstacles() {
+  movingBodies.forEach((item) => {
+    if (item.group === 'main' && !item.hidden) {
+      Composite.remove(world, item.body);
+      item.hidden = true;
+    }
+  });
+}
+
 function areAllBallsCalm() {
   if (!ballBodies.length) return false;
 
@@ -513,20 +571,33 @@ function areAllBallsCalm() {
   return movingCount <= Math.max(10, Math.floor(ballBodies.length * 0.04));
 }
 
-function areNormalBallsCalm() {
-  const normals = ballBodies.filter((ball) => !ball.isBombBall);
-  if (!normals.length) return false;
+function getUndroppedNormalBalls() {
+  const slotTopY = boardHeight - slotAreaHeight;
+
+  return ballBodies.filter((ball) => {
+    if (ball.isBombBall) return false;
+
+    const radius = ball.circleRadius || S(4.5);
+    return ball.position.y < slotTopY - radius * 1.2;
+  });
+}
+
+function areUndroppedNormalBallsCalm() {
+  const undroppedBalls = getUndroppedNormalBalls();
+
+  if (!undroppedBalls.length) return true;
 
   let movingCount = 0;
-  normals.forEach((ball) => {
-    if (ball.speed > 0.18) movingCount += 1;
+
+  undroppedBalls.forEach((ball) => {
+    if (ball.speed > 0.12) movingCount += 1;
   });
 
-  return movingCount <= Math.max(4, Math.floor(normals.length * 0.02));
+  return movingCount === 0;
 }
 
 function getSlotCountsPerIndex() {
-  const playableWidth = boardWidth - BOARD_SIDE_PADDING * 2;
+  const playableWidth = boardWidth - currentBoardPadding * 2;
   const slotTopY = boardHeight - slotAreaHeight;
   const slotCount = currentSlots.length;
   const slotWidth = playableWidth / slotCount;
@@ -536,11 +607,11 @@ function getSlotCountsPerIndex() {
     if (ball.isBombBall) return;
 
     const { x, y } = ball.position;
-    const radius = ball.circleRadius || 4.5;
+    const radius = ball.circleRadius || S(4.5);
 
     if (y < slotTopY - radius * 1.2) return;
 
-    const relativeX = x - BOARD_SIDE_PADDING;
+    const relativeX = x - currentBoardPadding;
     let slotIndex = Math.floor(relativeX / slotWidth);
 
     if (slotIndex < 0) slotIndex = 0;
@@ -594,9 +665,31 @@ function startSettleWatcher() {
     }
 
     if (settleStableTicks >= 4) {
-      triggerBombExplosionChain();
+      startBombCountdown();
     }
   }, 400);
+}
+
+function startBombCountdown() {
+  if (bombSequenceStarted) return;
+
+  bombSequenceStarted = true;
+  clearSettleWatcher();
+  hideMainMovingObstacles();
+
+  const countdownValues = [3, 2, 1];
+
+  countdownValues.forEach((value, index) => {
+    const timer = setTimeout(() => {
+      statusText.textContent = `폭탄 폭발까지 ${value}...`;
+    }, index * 1000);
+    countdownTimers.push(timer);
+  });
+
+  const explodeTimer = setTimeout(() => {
+    triggerBombExplosionChain();
+  }, 3000);
+  countdownTimers.push(explodeTimer);
 }
 
 function explodeSingleBomb(bomb, index, total) {
@@ -604,7 +697,7 @@ function explodeSingleBomb(bomb, index, total) {
 
   const bombX = bomb.position.x;
   const bombY = bomb.position.y;
-  const blastRadius = bomb.bombBlastRadius || 90;
+  const blastRadius = bomb.bombBlastRadius || S(90);
   const baseForce = bomb.bombForce || 0.0075;
 
   statusText.textContent = `연쇄 폭발 ${index}/${total}...`;
@@ -634,11 +727,6 @@ function explodeSingleBomb(bomb, index, total) {
 }
 
 function triggerBombExplosionChain() {
-  if (bombSequenceStarted) return;
-
-  bombSequenceStarted = true;
-  clearSettleWatcher();
-
   const bombs = shuffleArray(
     ballBodies.filter((ball) => ball.isBombBall && !ball.hasExploded)
   );
@@ -661,7 +749,7 @@ function triggerBombExplosionChain() {
         bombSequenceFinished = true;
 
         const doneTimer = setTimeout(() => {
-          statusText.textContent = '폭발 종료. 결과 정리 중...';
+          statusText.textContent = '폭발 종료. 남은 구슬 정리 중...';
           startFinalResultsWatcher();
         }, 700);
 
@@ -683,9 +771,9 @@ function startResultCountdown() {
 
   countdownValues.forEach((value, index) => {
     const timer = setTimeout(() => {
-      if (!areNormalBallsCalm()) {
+      if (!areUndroppedNormalBallsCalm()) {
         resultCountdownStarted = false;
-        statusText.textContent = '아직 움직이는 구슬이 있어. 다시 기다리는 중...';
+        statusText.textContent = '남은 구슬이 다시 움직였어. 다시 기다리는 중...';
         startFinalResultsWatcher();
         return;
       }
@@ -697,9 +785,9 @@ function startResultCountdown() {
   });
 
   const revealTimer = setTimeout(() => {
-    if (!areNormalBallsCalm()) {
+    if (!areUndroppedNormalBallsCalm()) {
       resultCountdownStarted = false;
-      statusText.textContent = '아직 움직이는 구슬이 있어. 다시 기다리는 중...';
+      statusText.textContent = '남은 구슬이 다시 움직였어. 다시 기다리는 중...';
       startFinalResultsWatcher();
       return;
     }
@@ -716,11 +804,19 @@ function startFinalResultsWatcher() {
   finalWatcherTimer = setInterval(() => {
     if (finalResultsShown || !bombSequenceFinished) return;
 
-    if (areNormalBallsCalm()) {
+    const undroppedBalls = getUndroppedNormalBalls();
+    const undroppedCount = undroppedBalls.length;
+
+    if (areUndroppedNormalBallsCalm()) {
       finalStableTicks += 1;
     } else {
       finalStableTicks = 0;
-      statusText.textContent = '구슬이 멈추는 중...';
+    }
+
+    if (undroppedCount > 0) {
+      statusText.textContent = `남은 구슬 ${undroppedCount}개 정지 대기 중...`;
+    } else {
+      statusText.textContent = '모든 구슬 정리 완료. 결과를 준비 중...';
     }
 
     if (finalStableTicks >= 4) {
@@ -734,12 +830,17 @@ function buildBoard() {
     return;
   }
 
+  fitGameCanvasViewport();
+
   clearSpawnTimers();
   clearWorldBodies();
 
   boardWidth = gameCanvasWrap.clientWidth;
   boardHeight = gameCanvasWrap.clientHeight;
-  slotAreaHeight = Math.max(86, Math.min(118, boardHeight * 0.18));
+
+  currentScale = getBoardScale(boardWidth, boardHeight);
+  currentBoardPadding = Math.round(S(18));
+  slotAreaHeight = clampValue(boardHeight * 0.18, S(86), S(118));
 
   render.canvas.width = boardWidth * (window.devicePixelRatio || 1);
   render.canvas.height = boardHeight * (window.devicePixelRatio || 1);
@@ -750,17 +851,22 @@ function buildBoard() {
   render.context.setTransform(1, 0, 0, 1, 0, 0);
   render.context.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
 
-  const wallThickness = 60;
+  slotOverlay.style.left = `${currentBoardPadding}px`;
+  slotOverlay.style.right = `${currentBoardPadding}px`;
+  slotOverlay.style.bottom = `${S(16)}px`;
+  slotOverlay.style.height = `${clampValue(boardHeight * 0.16, S(74), S(112))}px`;
+
+  const wallThickness = S(60);
   const slotTopY = boardHeight - slotAreaHeight;
-  const floorY = boardHeight + 20;
-  const playableWidth = boardWidth - BOARD_SIDE_PADDING * 2;
+  const floorY = boardHeight + S(20);
+  const playableWidth = boardWidth - currentBoardPadding * 2;
   const slotCount = currentSlots.length;
   const slotWidth = playableWidth / slotCount;
 
-  const mainPegRadius = 13;
-  const guidePegRadius = 8;
+  const mainPegRadius = S(13);
+  const guidePegRadius = S(8);
 
-  const wallInnerFaceX = BOARD_SIDE_PADDING;
+  const wallInnerFaceX = currentBoardPadding;
 
   const leftWall = Bodies.rectangle(
     -wallThickness / 2 + wallInnerFaceX,
@@ -794,19 +900,18 @@ function buildBoard() {
 
   worldBodies.push(leftWall, rightWall, floor);
 
-  // 벽 밀착 회전 막대 범퍼
   const wallSpinnerYs = [
     boardHeight * 0.20,
     boardHeight * 0.34,
     boardHeight * 0.48,
-    slotTopY - 70
+    slotTopY - S(70)
   ];
 
   wallSpinnerYs.forEach((y, index) => {
-    const barLength = index === wallSpinnerYs.length - 1 ? 90 : 82;
-    const barThickness = 12;
-    const leftX = wallInnerFaceX + 32;
-    const rightX = boardWidth - wallInnerFaceX - 32;
+    const barLength = index === wallSpinnerYs.length - 1 ? S(90) : S(82);
+    const barThickness = S(12);
+    const leftX = wallInnerFaceX + S(32);
+    const rightX = boardWidth - wallInnerFaceX - S(32);
 
     const leftSpinner = Bodies.rectangle(leftX, y, barThickness, barLength, {
       isStatic: true,
@@ -816,7 +921,7 @@ function buildBoard() {
       render: {
         fillStyle: '#ead8c9',
         strokeStyle: '#fff9f3',
-        lineWidth: 2
+        lineWidth: Math.max(1, S(2))
       }
     });
 
@@ -828,7 +933,7 @@ function buildBoard() {
       render: {
         fillStyle: '#ead8c9',
         strokeStyle: '#fff9f3',
-        lineWidth: 2
+        lineWidth: Math.max(1, S(2))
       }
     });
 
@@ -861,15 +966,14 @@ function buildBoard() {
     });
   });
 
-  // 슬롯 칸막이
   for (let i = 1; i < slotCount; i += 1) {
-    const x = BOARD_SIDE_PADDING + slotWidth * i;
+    const x = currentBoardPadding + slotWidth * i;
 
     const divider = Bodies.rectangle(
       x,
-      boardHeight - (slotAreaHeight + 22) / 2 + 14,
-      8,
-      slotAreaHeight + 22,
+      boardHeight - (slotAreaHeight + S(22)) / 2 + S(14),
+      S(8),
+      slotAreaHeight + S(22),
       {
         isStatic: true,
         restitution: 0.5,
@@ -880,44 +984,42 @@ function buildBoard() {
     worldBodies.push(divider);
   }
 
-  // 슬롯 진입 직전 유도용 peg
   for (let i = 1; i < slotCount; i += 1) {
-    const x = BOARD_SIDE_PADDING + slotWidth * i;
+    const x = currentBoardPadding + slotWidth * i;
 
-    const guidePeg = Bodies.circle(x, slotTopY - 24, guidePegRadius, {
+    const guidePeg = Bodies.circle(x, slotTopY - S(24), guidePegRadius, {
       isStatic: true,
       restitution: 0.82,
       render: {
         fillStyle: '#e8d7f7',
         strokeStyle: '#fff7ff',
-        lineWidth: 2
+        lineWidth: Math.max(1, S(2))
       }
     });
 
     worldBodies.push(guidePeg);
   }
 
-  // 메인 peg 필드
-  const rows = Math.max(6, Math.floor((boardHeight - slotAreaHeight - 130) / 58));
-  const pegGapX = Math.max(42, Math.min(72, playableWidth / 10));
-  const pegGapY = 58;
-  const pegStartY = 86;
+  const rows = Math.max(6, Math.floor((boardHeight - slotAreaHeight - S(130)) / S(58)));
+  const pegGapX = Math.max(S(42), Math.min(S(72), playableWidth / 10));
+  const pegGapY = S(58);
+  const pegStartY = S(86);
 
   for (let row = 0; row < rows; row += 1) {
     const cols = Math.floor(playableWidth / pegGapX);
     const offset = row % 2 === 0 ? 0 : pegGapX / 2;
 
     for (let col = 0; col <= cols; col += 1) {
-      const jitterX = rand(-6, 6);
-      const jitterY = rand(-3, 3);
+      const jitterX = rand(-S(6), S(6));
+      const jitterY = rand(-S(3), S(3));
 
-      const x = BOARD_SIDE_PADDING + 16 + col * pegGapX + offset + jitterX;
+      const x = currentBoardPadding + S(16) + col * pegGapX + offset + jitterX;
       const y = pegStartY + row * pegGapY + jitterY;
 
       if (
-        x < BOARD_SIDE_PADDING + mainPegRadius ||
-        x > boardWidth - BOARD_SIDE_PADDING - mainPegRadius ||
-        y > slotTopY - mainPegRadius * 2 - 16
+        x < currentBoardPadding + mainPegRadius ||
+        x > boardWidth - currentBoardPadding - mainPegRadius ||
+        y > slotTopY - mainPegRadius * 2 - S(16)
       ) {
         continue;
       }
@@ -930,7 +1032,7 @@ function buildBoard() {
         render: {
           fillStyle: isChaosRow ? '#d7eef8' : row % 2 === 0 ? '#efd5e4' : '#d8eafc',
           strokeStyle: '#fff7ff',
-          lineWidth: 2
+          lineWidth: Math.max(1, S(2))
         }
       });
 
@@ -938,26 +1040,25 @@ function buildBoard() {
     }
   }
 
-  // 움직이는 가로 장애물
   const horizontalMoverConfigs = [
-    { x: boardWidth * 0.16, y: boardHeight * 0.22, w: 78, h: 12, ax: playableWidth * 0.06, ay: 4, speed: 0.0017, phase: 0.2, color: '#f5d7a7' },
-    { x: boardWidth * 0.34, y: boardHeight * 0.31, w: 82, h: 12, ax: playableWidth * 0.07, ay: 5, speed: 0.00155, phase: 1.0, color: '#d8ebff' },
-    { x: boardWidth * 0.50, y: boardHeight * 0.42, w: 88, h: 12, ax: playableWidth * 0.09, ay: 6, speed: 0.0014, phase: 1.8, color: '#f5d7a7' },
-    { x: boardWidth * 0.66, y: boardHeight * 0.31, w: 82, h: 12, ax: playableWidth * 0.07, ay: 5, speed: 0.0016, phase: 2.5, color: '#d8ebff' },
-    { x: boardWidth * 0.84, y: boardHeight * 0.22, w: 78, h: 12, ax: playableWidth * 0.06, ay: 4, speed: 0.00175, phase: 3.0, color: '#f5d7a7' },
-    { x: boardWidth * 0.14, y: boardHeight * 0.56, w: 72, h: 12, ax: playableWidth * 0.05, ay: 5, speed: 0.0019, phase: 0.7, color: '#d8ebff' },
-    { x: boardWidth * 0.86, y: boardHeight * 0.56, w: 72, h: 12, ax: playableWidth * 0.05, ay: 5, speed: 0.00195, phase: 2.1, color: '#f6dfb5' }
+    { x: boardWidth * 0.16, y: boardHeight * 0.22, w: S(78), h: S(12), ax: playableWidth * 0.06, ay: S(4), speed: 0.0017, phase: 0.2, color: '#f5d7a7' },
+    { x: boardWidth * 0.34, y: boardHeight * 0.31, w: S(82), h: S(12), ax: playableWidth * 0.07, ay: S(5), speed: 0.00155, phase: 1.0, color: '#d8ebff' },
+    { x: boardWidth * 0.50, y: boardHeight * 0.42, w: S(88), h: S(12), ax: playableWidth * 0.09, ay: S(6), speed: 0.0014, phase: 1.8, color: '#f5d7a7' },
+    { x: boardWidth * 0.66, y: boardHeight * 0.31, w: S(82), h: S(12), ax: playableWidth * 0.07, ay: S(5), speed: 0.0016, phase: 2.5, color: '#d8ebff' },
+    { x: boardWidth * 0.84, y: boardHeight * 0.22, w: S(78), h: S(12), ax: playableWidth * 0.06, ay: S(4), speed: 0.00175, phase: 3.0, color: '#f5d7a7' },
+    { x: boardWidth * 0.14, y: boardHeight * 0.56, w: S(72), h: S(12), ax: playableWidth * 0.05, ay: S(5), speed: 0.0019, phase: 0.7, color: '#d8ebff' },
+    { x: boardWidth * 0.86, y: boardHeight * 0.56, w: S(72), h: S(12), ax: playableWidth * 0.05, ay: S(5), speed: 0.00195, phase: 2.1, color: '#f6dfb5' }
   ];
 
   horizontalMoverConfigs.forEach((cfg, index) => {
     const mover = Bodies.rectangle(cfg.x, cfg.y, cfg.w, cfg.h, {
       isStatic: true,
-      chamfer: { radius: 6 },
+      chamfer: { radius: S(6) },
       restitution: 1.08,
       render: {
         fillStyle: cfg.color,
         strokeStyle: '#fffdf8',
-        lineWidth: 2
+        lineWidth: Math.max(1, S(2))
       }
     });
 
@@ -977,48 +1078,47 @@ function buildBoard() {
     });
   });
 
-  // 세로 회전 장애물
-  const spinnerLeftOuter = Bodies.rectangle(boardWidth * 0.20, boardHeight * 0.46, 14, 92, {
+  const spinnerLeftOuter = Bodies.rectangle(boardWidth * 0.20, boardHeight * 0.46, S(14), S(92), {
     isStatic: true,
-    chamfer: { radius: 7 },
+    chamfer: { radius: S(7) },
     restitution: 1.1,
     render: {
       fillStyle: '#d9f0e7',
       strokeStyle: '#fffdf8',
-      lineWidth: 2
+      lineWidth: Math.max(1, S(2))
     }
   });
 
-  const spinnerRightOuter = Bodies.rectangle(boardWidth * 0.80, boardHeight * 0.46, 14, 92, {
+  const spinnerRightOuter = Bodies.rectangle(boardWidth * 0.80, boardHeight * 0.46, S(14), S(92), {
     isStatic: true,
-    chamfer: { radius: 7 },
+    chamfer: { radius: S(7) },
     restitution: 1.1,
     render: {
       fillStyle: '#f1dced',
       strokeStyle: '#fffdf8',
-      lineWidth: 2
+      lineWidth: Math.max(1, S(2))
     }
   });
 
-  const spinnerLeftInner = Bodies.rectangle(boardWidth * 0.30, boardHeight * 0.60, 14, 82, {
+  const spinnerLeftInner = Bodies.rectangle(boardWidth * 0.30, boardHeight * 0.60, S(14), S(82), {
     isStatic: true,
-    chamfer: { radius: 7 },
+    chamfer: { radius: S(7) },
     restitution: 1.08,
     render: {
       fillStyle: '#d8ebff',
       strokeStyle: '#fffdf8',
-      lineWidth: 2
+      lineWidth: Math.max(1, S(2))
     }
   });
 
-  const spinnerRightInner = Bodies.rectangle(boardWidth * 0.70, boardHeight * 0.60, 14, 82, {
+  const spinnerRightInner = Bodies.rectangle(boardWidth * 0.70, boardHeight * 0.60, S(14), S(82), {
     isStatic: true,
-    chamfer: { radius: 7 },
+    chamfer: { radius: S(7) },
     restitution: 1.08,
     render: {
       fillStyle: '#f6dfb5',
       strokeStyle: '#fffdf8',
-      lineWidth: 2
+      lineWidth: Math.max(1, S(2))
     }
   });
 
@@ -1027,8 +1127,8 @@ function buildBoard() {
   addMovingBody(spinnerLeftOuter, {
     baseX: boardWidth * 0.20,
     baseY: boardHeight * 0.46,
-    amplitudeX: 22,
-    amplitudeY: 12,
+    amplitudeX: S(22),
+    amplitudeY: S(12),
     speed: 0.0021,
     phase: 0.5,
     angleAmplitude: 0.9,
@@ -1040,8 +1140,8 @@ function buildBoard() {
   addMovingBody(spinnerRightOuter, {
     baseX: boardWidth * 0.80,
     baseY: boardHeight * 0.46,
-    amplitudeX: 22,
-    amplitudeY: 12,
+    amplitudeX: S(22),
+    amplitudeY: S(12),
     speed: 0.00225,
     phase: 2.2,
     angleAmplitude: 0.9,
@@ -1053,8 +1153,8 @@ function buildBoard() {
   addMovingBody(spinnerLeftInner, {
     baseX: boardWidth * 0.30,
     baseY: boardHeight * 0.60,
-    amplitudeX: 16,
-    amplitudeY: 10,
+    amplitudeX: S(16),
+    amplitudeY: S(10),
     speed: 0.002,
     phase: 1.4,
     angleAmplitude: 0.78,
@@ -1066,8 +1166,8 @@ function buildBoard() {
   addMovingBody(spinnerRightInner, {
     baseX: boardWidth * 0.70,
     baseY: boardHeight * 0.60,
-    amplitudeX: 16,
-    amplitudeY: 10,
+    amplitudeX: S(16),
+    amplitudeY: S(10),
     speed: 0.00205,
     phase: 2.9,
     angleAmplitude: 0.78,
@@ -1076,25 +1176,24 @@ function buildBoard() {
     group: 'main'
   });
 
-  // 움직이는 원형 bumper
   const bumperConfigs = [
-    { x: boardWidth * 0.10, y: boardHeight * 0.17, color: '#d9f0e7', phase: 0.3, ax: 20, ay: 7 },
-    { x: boardWidth * 0.24, y: boardHeight * 0.27, color: '#f1dced', phase: 1.1, ax: 18, ay: 8 },
-    { x: boardWidth * 0.50, y: boardHeight * 0.20, color: '#d8ebff', phase: 2.0, ax: 14, ay: 6 },
-    { x: boardWidth * 0.76, y: boardHeight * 0.27, color: '#f6dfb5', phase: 2.8, ax: 18, ay: 8 },
-    { x: boardWidth * 0.90, y: boardHeight * 0.17, color: '#d9f0e7', phase: 3.4, ax: 20, ay: 7 },
-    { x: boardWidth * 0.12, y: boardHeight * 0.48, color: '#f1dced', phase: 0.9, ax: 16, ay: 9 },
-    { x: boardWidth * 0.88, y: boardHeight * 0.48, color: '#d8ebff', phase: 2.6, ax: 16, ay: 9 }
+    { x: boardWidth * 0.10, y: boardHeight * 0.17, color: '#d9f0e7', phase: 0.3, ax: S(20), ay: S(7) },
+    { x: boardWidth * 0.24, y: boardHeight * 0.27, color: '#f1dced', phase: 1.1, ax: S(18), ay: S(8) },
+    { x: boardWidth * 0.50, y: boardHeight * 0.20, color: '#d8ebff', phase: 2.0, ax: S(14), ay: S(6) },
+    { x: boardWidth * 0.76, y: boardHeight * 0.27, color: '#f6dfb5', phase: 2.8, ax: S(18), ay: S(8) },
+    { x: boardWidth * 0.90, y: boardHeight * 0.17, color: '#d9f0e7', phase: 3.4, ax: S(20), ay: S(7) },
+    { x: boardWidth * 0.12, y: boardHeight * 0.48, color: '#f1dced', phase: 0.9, ax: S(16), ay: S(9) },
+    { x: boardWidth * 0.88, y: boardHeight * 0.48, color: '#d8ebff', phase: 2.6, ax: S(16), ay: S(9) }
   ];
 
   bumperConfigs.forEach((cfg, index) => {
-    const bumper = Bodies.circle(cfg.x, cfg.y, 16, {
+    const bumper = Bodies.circle(cfg.x, cfg.y, S(16), {
       isStatic: true,
       restitution: 1.15,
       render: {
         fillStyle: cfg.color,
         strokeStyle: '#fffdf8',
-        lineWidth: 2
+        lineWidth: Math.max(1, S(2))
       }
     });
 
@@ -1116,7 +1215,9 @@ function buildBoard() {
   refreshCounts();
 
   totalInfo.textContent = `총 ${slotCount}그릇`;
-  statusText.textContent = `현재 배치: ${currentSlots.map((slot) => slot.name).join(' / ')}`;
+
+  const uniqueNames = [...new Set(currentSlots.map((slot) => slot.name))];
+  statusText.textContent = `현재 배치: ${uniqueNames.join(' / ')}`;
 }
 
 function renderSlotsOverlay() {
@@ -1172,7 +1273,7 @@ function createBall(x, y, options = {}) {
 
   if (!isBomb) {
     const color = ballPalette[Math.floor(Math.random() * ballPalette.length)];
-    const ball = Bodies.circle(x, y, 4.5, {
+    const ball = Bodies.circle(x, y, S(4.5), {
       restitution: rand(0.42, 0.6),
       friction: 0.002,
       frictionAir: 0.0008,
@@ -1180,7 +1281,7 @@ function createBall(x, y, options = {}) {
       render: {
         fillStyle: color,
         strokeStyle: '#fffafc',
-        lineWidth: 1.1
+        lineWidth: Math.max(0.8, S(1.1))
       }
     });
 
@@ -1195,10 +1296,10 @@ function createBall(x, y, options = {}) {
   const gray = Math.floor(rand(45, 170));
   const darknessRatio = 1 - (gray - 45) / 125;
   const bombForce = 0.0055 + darknessRatio * 0.0045;
-  const bombBlastRadius = 74 + darknessRatio * 42;
+  const bombBlastRadius = S(74 + darknessRatio * 42);
   const bombColor = `rgb(${gray}, ${gray}, ${gray})`;
 
-  const bomb = Bodies.circle(x, y, 5.2, {
+  const bomb = Bodies.circle(x, y, S(5.2), {
     restitution: 0.5,
     friction: 0.002,
     frictionAir: 0.0008,
@@ -1206,7 +1307,7 @@ function createBall(x, y, options = {}) {
     render: {
       fillStyle: bombColor,
       strokeStyle: '#5c5c5c',
-      lineWidth: 1.4
+      lineWidth: Math.max(1, S(1.4))
     }
   });
 
@@ -1235,8 +1336,8 @@ function spawnBalls() {
 
   mixedOrder.forEach((isBomb, index) => {
     const timer = setTimeout(() => {
-      const x = 30 + Math.random() * (boardWidth - 60);
-      const y = 22 + Math.random() * 12;
+      const x = S(30) + Math.random() * (boardWidth - S(60));
+      const y = S(22) + Math.random() * S(12);
 
       createBall(x, y, { isBomb });
       spawned += 1;
@@ -1410,6 +1511,7 @@ window.addEventListener('resize', () => {
       currentSlots.length &&
       !document.body.classList.contains('orientation-blocked')
     ) {
+      fitGameCanvasViewport();
       buildBoard();
     }
   }, 180);
@@ -1425,9 +1527,10 @@ window.addEventListener('orientationchange', () => {
       currentSlots.length &&
       !document.body.classList.contains('orientation-blocked')
     ) {
+      fitGameCanvasViewport();
       buildBoard();
     }
-  }, 200);
+  }, 220);
 });
 
 updateSlotsFromInput({ build: false });

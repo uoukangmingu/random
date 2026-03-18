@@ -411,7 +411,11 @@ input {
 .game-canvas-wrap {
   position: relative;
   width: 100%;
-  height: 720px;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
   border-radius: 28px;
   overflow: hidden;
   background:
@@ -432,7 +436,7 @@ input {
   left: 18px;
   right: 18px;
   bottom: 16px;
-  height: clamp(88px, 18%, 112px);
+  height: clamp(74px, 16%, 112px);
   display: flex;
   gap: 0;
   pointer-events: none;
@@ -458,7 +462,7 @@ input {
 .slot-name {
   width: 100%;
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: clamp(0.62rem, 0.8vw, 0.82rem);
   color: #6f5647;
   line-height: 1.25;
   white-space: nowrap;
@@ -468,7 +472,7 @@ input {
 
 .slot-meta {
   margin-top: 4px;
-  font-size: 0.72rem;
+  font-size: clamp(0.52rem, 0.68vw, 0.72rem);
   color: #7d6455;
   line-height: 1.2;
 }
@@ -573,20 +577,21 @@ body.game1-mode {
 }
 
 body.game1-mode .app {
+  min-height: 100dvh;
   align-items: stretch;
-  padding: 16px;
+  padding: clamp(8px, 1.2vw, 16px);
 }
 
 body.game1-mode .game-screen {
-  height: calc(100vh - 32px);
+  height: calc(100dvh - clamp(16px, 2vw, 32px));
 }
 
 body.game1-mode .game-card-full {
   height: 100%;
   display: grid;
-  grid-template-columns: minmax(290px, 330px) minmax(0, 1fr);
-  gap: 16px;
-  padding: 16px;
+  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+  gap: clamp(10px, 1.2vw, 16px);
+  padding: clamp(10px, 1.2vw, 16px);
   overflow: hidden;
 }
 
@@ -636,10 +641,11 @@ body.game1-mode .slot-legend {
 
 body.game1-mode .game-main {
   min-width: 0;
+  min-height: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: clamp(8px, 1vw, 14px);
 }
 
 body.game1-mode .game-main-header {
@@ -681,11 +687,9 @@ body.game1-mode .game-play-area {
   margin-top: 0;
   flex: 1 1 auto;
   min-height: 0;
-}
-
-body.game1-mode .game-canvas-wrap {
-  height: 100%;
-  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .drawer-backdrop {
@@ -730,17 +734,17 @@ body.game1-mode .game-canvas-wrap {
   }
 
   body.game1-mode .app {
-    padding: 12px;
+    padding: 10px;
   }
 
   body.game1-mode .game-screen {
-    height: calc(100vh - 24px);
+    height: calc(100dvh - 20px);
   }
 
   body.game1-mode .game-card-full {
     grid-template-columns: 1fr;
     position: relative;
-    padding: 12px;
+    padding: 10px;
   }
 
   body.game1-mode .game-sidebar {
@@ -782,10 +786,6 @@ body.game1-mode .game-canvas-wrap {
     opacity: 1;
     pointer-events: auto;
   }
-
-  body.game1-mode .game-main-header {
-    padding: 0;
-  }
 }
 
 @media (max-width: 720px) {
@@ -805,14 +805,6 @@ body.game1-mode .game-canvas-wrap {
     max-width: 280px;
     min-height: 140px;
   }
-
-  body.game1-mode .slot-name {
-    font-size: 0.74rem;
-  }
-
-  body.game1-mode .slot-meta {
-    font-size: 0.62rem;
-  }
 }
 
 @media (max-width: 640px) {
@@ -821,7 +813,7 @@ body.game1-mode .game-canvas-wrap {
   }
 
   body.game1-mode .game-screen {
-    height: calc(100vh - 20px);
+    height: calc(100dvh - 20px);
   }
 
   body.game1-mode .game-card-full {
@@ -841,21 +833,6 @@ body.game1-mode .game-canvas-wrap {
   body.game1-mode .game-canvas-wrap {
     border-radius: 24px;
   }
-
-  .slot-overlay {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    height: 86px;
-  }
-
-  .slot-name {
-    font-size: 0.68rem;
-  }
-
-  .slot-meta {
-    font-size: 0.58rem;
-  }
 }
 
 @media (max-width: 480px) {
@@ -871,14 +848,6 @@ body.game1-mode .game-canvas-wrap {
 
   .game-grid {
     grid-template-columns: 1fr;
-  }
-
-  .slot-name {
-    font-size: 0.64rem;
-  }
-
-  .slot-meta {
-    font-size: 0.54rem;
   }
 }
 
@@ -936,7 +905,7 @@ body.orientation-blocked .orientation-lock-overlay {
 
 @media (max-width: 1024px) and (orientation: landscape) {
   body.game1-mode .game-screen {
-    height: calc(100vh - 20px);
+    height: calc(100dvh - 20px);
   }
 
   body.game1-mode .app {
