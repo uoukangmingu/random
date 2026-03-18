@@ -138,6 +138,9 @@ let currentSlots = [];
 let lastValidConfigText = configInput.value;
 let lastAppliedRawText = configInput.value;
 
+let lastViewportWidth = window.innerWidth;
+let lastViewportHeight = window.innerHeight;
+
 function escapeHtml(text) {
   return String(text)
     .replaceAll('&', '&amp;')
@@ -370,7 +373,7 @@ function fitGameCanvasViewport() {
 
   if (isMobileOrTabletLike()) {
     const width = Math.max(280, playArea.clientWidth);
-    const height = clampValue(width * 1.12, 360, window.innerHeight * 0.72);
+    const height = clampValue(width * 1.12, 340, 760);
 
     gameCanvasWrap.style.width = `${width}px`;
     gameCanvasWrap.style.height = `${height}px`;
@@ -1433,6 +1436,19 @@ function resetRound() {
   statusText.textContent = '리셋 완료! 입력값 기준으로 개별 그릇을 다시 만들었어.';
 }
 
+function hasLiveRound() {
+  return ballBodies.length > 0 && !finalResultsShown;
+}
+
+function shouldIgnoreMobileChromeResize(nextWidth, nextHeight) {
+  if (!isMobileOrTabletLike()) return false;
+
+  const widthDelta = Math.abs(nextWidth - lastViewportWidth);
+  const heightDelta = Math.abs(nextHeight - lastViewportHeight);
+
+  return widthDelta < 6 && heightDelta > 0 && hasLiveRound();
+}
+
 startBtn.addEventListener('click', () => showScreen('menu'));
 physicalBtn.addEventListener('click', () => showPopup('개발중', '피지컬 메뉴는 아직 개발중이야!'));
 luckBtn.addEventListener('click', () => showScreen('luck'));
@@ -1503,7 +1519,16 @@ configInput.addEventListener('keydown', (event) => {
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
+    const nextWidth = window.innerWidth;
+    const nextHeight = window.innerHeight;
+
     updateOrientationGate();
+
+    if (shouldIgnoreMobileChromeResize(nextWidth, nextHeight)) {
+      lastViewportWidth = nextWidth;
+      lastViewportHeight = nextHeight;
+      return;
+    }
 
     if (!isMobileOrTabletLike() && window.innerWidth > 980) {
       setDrawerState(false);
@@ -1518,11 +1543,17 @@ window.addEventListener('resize', () => {
       fitGameCanvasViewport();
       buildBoard();
     }
+
+    lastViewportWidth = nextWidth;
+    lastViewportHeight = nextHeight;
   }, 180);
 });
 
 window.addEventListener('orientationchange', () => {
   setTimeout(() => {
+    const nextWidth = window.innerWidth;
+    const nextHeight = window.innerHeight;
+
     updateOrientationGate();
 
     if (
@@ -1534,6 +1565,9 @@ window.addEventListener('orientationchange', () => {
       fitGameCanvasViewport();
       buildBoard();
     }
+
+    lastViewportWidth = nextWidth;
+    lastViewportHeight = nextHeight;
   }, 220);
 });
 
