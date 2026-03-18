@@ -1,4 +1,4 @@
-* {
+﻿* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -718,7 +718,8 @@ body.game1-mode .game-play-area {
 }
 
 @keyframes floatY {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -767,7 +768,7 @@ body.game1-mode .game-play-area {
   }
 }
 
-/* 모바일/태블릿: 세로 전용 + 스크롤 가능 + 세로 레이아웃 */
+/* 모바일/태블릿: 이미지 같은 세로 스택 레이아웃 */
 @media (max-width: 1024px) and (pointer: coarse) {
   body.game1-mode {
     overflow-y: auto;
@@ -795,12 +796,10 @@ body.game1-mode .game-play-area {
   }
 
   body.game1-mode .game-sidebar {
-    position: static;
     width: 100%;
     height: auto;
     min-height: 0;
-    display: block;
-    order: 1;
+    order: 2;
     border-radius: 22px;
   }
 
@@ -820,44 +819,40 @@ body.game1-mode .game-play-area {
   }
 
   body.game1-mode .game-main {
+    width: 100%;
     height: auto;
     min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    order: 2;
+    display: block;
+    order: 3;
   }
 
-  body.game1-mode .game-main-header {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    padding: 10px 10px 6px;
-    margin: -2px -2px 0;
-    border-radius: 18px;
-    background: rgba(255, 248, 241, 0.82);
-    backdrop-filter: blur(8px);
+  body.game1-mode.game1-mobile-layout .game-main-header {
+    width: 100%;
+    order: 1;
+    padding: 16px 16px 12px;
+    border-radius: 22px;
+    border: 2px solid rgba(255, 255, 255, 0.75);
+    background: var(--card-strong);
+    box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
   }
 
-  body.game1-mode .game-main-header h2 {
+  body.game1-mode.game1-mobile-layout .game-main-header h2 {
     font-size: clamp(2rem, 6vw, 2.5rem);
+    margin-bottom: 8px;
   }
 
-  body.game1-mode .game-main-header .sub-text {
+  body.game1-mode.game1-mobile-layout .game-main-header .sub-text {
     font-size: 0.92rem;
     line-height: 1.5;
   }
 
-  body.game1-mode .game-header-actions {
-    width: 100%;
-    justify-content: space-between;
-    flex-wrap: nowrap;
-    gap: 8px;
+  body.game1-mode.game1-mobile-layout .game-header-actions {
+    display: none;
   }
 
   body.game1-mode .game-play-area {
     display: block;
-    flex: none;
+    margin-top: 0;
     min-height: 0;
   }
 
@@ -902,6 +897,25 @@ body.game1-mode .game-play-area {
     padding-right: 0;
   }
 
+  body.game1-mode.game1-mobile-layout .scoreboard-card {
+    width: 100%;
+    margin-top: 0;
+    order: 4;
+  }
+
+  body.game1-mode.game1-mobile-layout .mobile-back-btn {
+    width: 100%;
+    order: 5;
+    display: block;
+    text-align: center;
+    padding: 18px 22px;
+    font-size: 1.2rem;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--soft-brown);
+    box-shadow: 0 6px 16px rgba(130, 100, 80, 0.08);
+  }
+
   .drawer-toggle-btn,
   .drawer-backdrop {
     display: none !important;
@@ -914,11 +928,11 @@ body.game1-mode .game-play-area {
     gap: 12px;
   }
 
-  body.game1-mode .game-main-header {
-    padding: 8px 8px 4px;
+  body.game1-mode.game1-mobile-layout .game-main-header {
+    padding: 14px 14px 10px;
   }
 
-  body.game1-mode .game-main-header h2 {
+  body.game1-mode.game1-mobile-layout .game-main-header h2 {
     font-size: 2rem;
   }
 
@@ -936,13 +950,13 @@ body.game1-mode .game-play-area {
     width: 100%;
   }
 
-  body.game1-mode .game-header-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   body.game1-mode .game-canvas-wrap {
     min-height: 340px;
+  }
+
+  body.game1-mode.game1-mobile-layout .mobile-back-btn {
+    font-size: 1.1rem;
+    padding: 16px 18px;
   }
 }
 
