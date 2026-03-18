@@ -33,6 +33,17 @@ const drawerToggleBtn = document.getElementById('drawerToggleBtn');
 const drawerBackdrop = document.getElementById('drawerBackdrop');
 const orientationLockOverlay = document.getElementById('orientationLockOverlay');
 
+const gameCardFull = document.querySelector('#game1Screen .game-card-full');
+const gameMain = document.querySelector('#game1Screen .game-main');
+const gameMainHeader = document.querySelector('#game1Screen .game-main-header');
+const gamePlayArea = document.querySelector('#game1Screen .game-play-area');
+const gameSidebarInner = document.querySelector('#game1Screen .game-sidebar-inner');
+const scoreboardCard = document.querySelector('#game1Screen .scoreboard-card');
+const game1BackBtn = document.querySelector('#game1Screen .game-header-actions .back-btn[data-target="luck"]');
+const gameHeaderActions = document.querySelector('#game1Screen .game-header-actions');
+
+let mobileLayoutApplied = false;
+
 const {
   Engine,
   Render,
@@ -367,18 +378,20 @@ function updateSlotsFromInput({ build = true } = {}) {
 function fitGameCanvasViewport() {
   const main = document.querySelector('#game1Screen .game-main');
   const playArea = document.querySelector('#game1Screen .game-play-area');
-  const header = main?.querySelector('.game-main-header');
+  const header = document.querySelector('#game1Screen .game-main-header');
 
-  if (!main || !playArea || !header) return;
+  if (!main || !playArea) return;
 
   if (isMobileOrTabletLike()) {
-    const width = Math.max(280, playArea.clientWidth);
+    const width = Math.max(280, playArea.clientWidth || gameCardFull.clientWidth - 24);
     const height = clampValue(width * 1.12, 340, 760);
 
     gameCanvasWrap.style.width = `${width}px`;
     gameCanvasWrap.style.height = `${height}px`;
     return;
   }
+
+  if (!header) return;
 
   const styles = getComputedStyle(main);
   const gap = parseFloat(styles.gap) || 0;
@@ -417,6 +430,7 @@ function ensureGameReady() {
     }
   }
 
+  syncGame1MobileLayout();
   fitGameCanvasViewport();
   buildBoard();
 }
@@ -1534,15 +1548,16 @@ window.addEventListener('resize', () => {
       setDrawerState(false);
     }
 
-    if (
-      screens.game1.classList.contains('active') &&
-      engine &&
-      currentSlots.length &&
-      !document.body.classList.contains('orientation-blocked')
-    ) {
-      fitGameCanvasViewport();
-      buildBoard();
-    }
+if (
+  screens.game1.classList.contains('active') &&
+  engine &&
+  currentSlots.length &&
+  !document.body.classList.contains('orientation-blocked')
+) {
+  syncGame1MobileLayout();
+  fitGameCanvasViewport();
+  buildBoard();
+}
 
     lastViewportWidth = nextWidth;
     lastViewportHeight = nextHeight;
@@ -1562,6 +1577,7 @@ window.addEventListener('orientationchange', () => {
       currentSlots.length &&
       !document.body.classList.contains('orientation-blocked')
     ) {
+      syncGame1MobileLayout();
       fitGameCanvasViewport();
       buildBoard();
     }
@@ -1572,4 +1588,60 @@ window.addEventListener('orientationchange', () => {
 });
 
 updateSlotsFromInput({ build: false });
+syncGame1MobileLayout();
 updateOrientationGate();
+
+function syncGame1MobileLayout() {
+  if (
+    !gameCardFull ||
+    !gameMain ||
+    !gameMainHeader ||
+    !gamePlayArea ||
+    !gameSidebar ||
+    !gameSidebarInner ||
+    !scoreboardCard ||
+    !game1BackBtn ||
+    !gameHeaderActions
+  ) {
+    return;
+  }
+
+  const shouldUseMobileLayout = isMobileOrTabletLike();
+
+  document.body.classList.toggle('game1-mobile-layout', shouldUseMobileLayout);
+
+  if (shouldUseMobileLayout && !mobileLayoutApplied) {
+    if (gameMainHeader.parentElement !== gameCardFull) {
+      gameCardFull.insertBefore(gameMainHeader, gameCardFull.firstChild);
+    }
+
+    if (scoreboardCard.parentElement !== gameCardFull) {
+      gameCardFull.appendChild(scoreboardCard);
+    }
+
+    if (game1BackBtn.parentElement !== gameCardFull) {
+      game1BackBtn.classList.add('mobile-back-btn');
+      gameCardFull.appendChild(game1BackBtn);
+    }
+
+    mobileLayoutApplied = true;
+    return;
+  }
+
+  if (!shouldUseMobileLayout && mobileLayoutApplied) {
+    if (gameMainHeader.parentElement !== gameMain) {
+      gameMain.insertBefore(gameMainHeader, gameMain.firstChild);
+    }
+
+    if (scoreboardCard.parentElement !== gameSidebarInner) {
+      gameSidebarInner.appendChild(scoreboardCard);
+    }
+
+    if (game1BackBtn.parentElement !== gameHeaderActions) {
+      game1BackBtn.classList.remove('mobile-back-btn');
+      gameHeaderActions.appendChild(game1BackBtn);
+    }
+
+    mobileLayoutApplied = false;
+  }
+}
