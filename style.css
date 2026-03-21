@@ -1295,6 +1295,147 @@ body.orientation-blocked .orientation-lock-overlay {
   }
 }
 
+/* 모바일/태블릿: 경마 게임을 이미지처럼 재배치 */
+@media (max-width: 1024px) and (pointer: coarse) {
+  body.game2-mobile-layout #game2Screen .race-card {
+    padding: 12px;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: auto;
+  }
+
+  /* 상단 제목 영역 */
+  body.game2-mobile-layout #game2Screen .race-main-header {
+    order: 1;
+    width: 100%;
+    padding: 4px 4px 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-main-header h2 {
+    font-size: clamp(2.1rem, 7vw, 2.7rem);
+    margin-bottom: 10px;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-main-header .sub-text {
+    font-size: 0.96rem;
+    line-height: 1.65;
+    max-width: 360px;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-main-header .game-header-actions {
+    display: none;
+  }
+
+  /* 설정 카드 */
+  body.game2-mobile-layout #game2Screen .race-sidebar {
+    order: 2;
+    width: 100%;
+    min-width: 0;
+    border-radius: 22px;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-sidebar-inner {
+    height: auto;
+    overflow: visible;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  body.game2-mobile-layout #game2Screen .controls-wrap,
+  body.game2-mobile-layout #game2Screen .scoreboard-card {
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  /* 참가 말 목록은 모바일/태블릿에서 숨김 */
+  body.game2-mobile-layout #game2Screen .race-sidebar .scoreboard-card {
+    display: none;
+  }
+
+  body.game2-mobile-layout #game2Screen .button-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  body.game2-mobile-layout #game2Screen .action-btn {
+    width: 100%;
+    padding: 16px 12px;
+    font-size: 1.02rem;
+    border-radius: 999px;
+  }
+
+  /* 트랙 + 순위 영역 */
+  body.game2-mobile-layout #game2Screen .race-main {
+    order: 3;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-track-wrap {
+    width: 100%;
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-bottom-grid {
+    width: 100%;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-panel {
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-ranking-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  /* 말 UI 크기 */
+  body.game2-mobile-layout #game2Screen .race-horse {
+    max-width: 185px;
+    padding: 7px 10px;
+  }
+
+  body.game2-mobile-layout #game2Screen .horse-name {
+    font-size: 0.88rem;
+  }
+
+  body.game2-mobile-layout #game2Screen .horse-status {
+    font-size: 0.7rem;
+  }
+
+  /* 맨 아래 목록 버튼 */
+  body.game2-mobile-layout #game2Screen .mobile-race-back-btn {
+    order: 4;
+    width: 100%;
+    display: block;
+    text-align: center;
+    padding: 18px 22px;
+    font-size: 1.2rem;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--soft-brown);
+    box-shadow: 0 6px 16px rgba(130, 100, 80, 0.08);
+  }
+}
+
 @media (max-width: 640px) and (pointer: coarse) {
   body.game1-mode .game-card-full {
     padding: 10px;
@@ -1330,6 +1471,53 @@ body.orientation-blocked .orientation-lock-overlay {
   body.game1-mode.game1-mobile-layout .mobile-back-btn {
     font-size: 1.1rem;
     padding: 16px 18px;
+  }
+}
+
+@media (max-width: 640px) and (pointer: coarse) {
+  body.game2-mobile-layout #game2Screen .race-card {
+    padding: 10px;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-layout {
+    gap: 14px;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-main-header {
+    padding: 2px 2px 0;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-main-header h2 {
+    font-size: 2rem;
+  }
+
+  body.game2-mobile-layout #game2Screen .small-badge {
+    font-size: 0.82rem;
+    padding: 8px 12px;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-track-wrap,
+  body.game2-mobile-layout #game2Screen .race-panel,
+  body.game2-mobile-layout #game2Screen .race-sidebar-inner,
+  body.game2-mobile-layout #game2Screen .controls-wrap {
+    padding: 12px;
+  }
+
+  body.game2-mobile-layout #game2Screen .action-btn,
+  body.game2-mobile-layout #game2Screen .mobile-race-back-btn {
+    width: 100%;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-horse {
+    max-width: 168px;
+  }
+
+  body.game2-mobile-layout #game2Screen .horse-name {
+    font-size: 0.82rem;
+  }
+
+  body.game2-mobile-layout #game2Screen .horse-status {
+    font-size: 0.68rem;
   }
 }
 
