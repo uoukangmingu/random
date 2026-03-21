@@ -52,7 +52,6 @@ const raceStatusText = document.getElementById('raceStatusText')
 const raceTotalInfo = document.getElementById('raceTotalInfo')
 const horseLegend = document.getElementById('horseLegend')
 const raceTrackWrap = document.getElementById('raceTrackWrap')
-const raceCommentaryList = document.getElementById('raceCommentaryList')
 const raceRankingList = document.getElementById('raceRankingList')
 const raceDesc = document.querySelector('#game2Screen .race-main-header .sub-text')
 
@@ -1825,17 +1824,8 @@ function updateRaceDescription() {
 }
 
 function addRaceCommentary(text) {
-  if (!raceCommentaryList) return
-
-  const item = document.createElement('div')
-  item.className = 'race-commentary-item'
-  item.innerHTML = `<strong>중계</strong> ${escapeHtml(text)}`
-
-  raceCommentaryList.prepend(item)
-
-  while (raceCommentaryList.children.length > 30) {
-    raceCommentaryList.removeChild(raceCommentaryList.lastChild)
-  }
+  if (!raceStatusText) return
+  raceStatusText.textContent = text
 }
 
 function renderRaceLegend() {
@@ -1975,8 +1965,8 @@ function ensureRaceReady() {
 
   renderRacePreview()
 
-  if (raceCommentaryList && !raceCommentaryList.children.length) {
-    addRaceCommentary('출전 준비 완료. 시작 버튼을 누르면 경주가 시작된다.')
+  if (raceStatusText && !raceRunning) {
+    raceStatusText.textContent = '출전 준비 완료. 시작 버튼을 누르면 경주가 시작된다.'
   }
 }
 
@@ -2044,9 +2034,6 @@ function shuffleRace() {
   setRaceHorses(shuffleArray(parsed.horses))
   renderRacePreview()
 
-  if (raceStatusText) {
-    raceStatusText.textContent = '셔플 완료! 출발 레인 순서가 랜덤으로 섞였다.'
-  }
   addRaceCommentary('출전 순서가 랜덤으로 재배치되었습니다.')
 }
 
@@ -2068,17 +2055,10 @@ function resetRace() {
     }
   }
 
-  if (raceCommentaryList) {
-    raceCommentaryList.innerHTML = ''
-  }
-
   renderRacePreview()
   setRaceInputLock(false)
   setRaceShuffleLock(false)
 
-  if (raceStatusText) {
-    raceStatusText.textContent = '리셋 완료! 참가 말 구성을 다시 반영했다.'
-  }
   addRaceCommentary('출전 준비가 다시 완료되었습니다.')
 }
 
@@ -2295,25 +2275,16 @@ function startRace() {
   renderRacePreview()
   resetRaceHorseStates()
 
-  if (raceCommentaryList) {
-    raceCommentaryList.innerHTML = ''
-  }
-
-  addRaceCommentary('출발 준비 완료!')
-  addRaceCommentary('게이트 오픈, 경주가 시작되었습니다!')
-
   raceRunning = true
   raceFinished = false
   raceLastTimestamp = 0
   setRaceInputLock(true)
   setRaceShuffleLock(true)
 
-  if (raceStatusText) {
-    raceStatusText.textContent = '경주 진행 중...'
-  }
+  addRaceCommentary('게이트 오픈, 경주가 시작되었습니다!')
 
-  raceEventTimer = setInterval(triggerRaceEvent, 1200)
-  raceCommentaryTimer = setInterval(pushAutoCommentary, 1800)
+  raceEventTimer = setInterval(triggerRaceEvent, 900)
+  raceCommentaryTimer = setInterval(pushAutoCommentary, 1400)
   raceAnimationFrame = requestAnimationFrame(raceFrame)
 }
 
