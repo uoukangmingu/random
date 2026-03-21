@@ -377,20 +377,17 @@ input:disabled {
 }
 
 .slot-legend::-webkit-scrollbar,
-.race-commentary-list::-webkit-scrollbar,
 .race-ranking-list::-webkit-scrollbar {
   width: 8px;
 }
 
 .slot-legend::-webkit-scrollbar-thumb,
-.race-commentary-list::-webkit-scrollbar-thumb,
 .race-ranking-list::-webkit-scrollbar-thumb {
   background: rgba(157, 125, 107, 0.35);
   border-radius: 999px;
 }
 
 .slot-legend::-webkit-scrollbar-track,
-.race-commentary-list::-webkit-scrollbar-track,
 .race-ranking-list::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.35);
   border-radius: 999px;
@@ -878,7 +875,7 @@ body.game1-mode .game-play-area {
 
 .race-bottom-grid {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: 1fr;
   gap: 14px;
 }
 
@@ -891,13 +888,16 @@ body.game1-mode .game-play-area {
   min-height: 220px;
 }
 
+.race-ranking-panel {
+  min-height: 220px;
+}
+
 .race-panel-head h3 {
   font-weight: 700;
   color: var(--soft-brown);
   margin-bottom: 12px;
 }
 
-.race-commentary-list,
 .race-ranking-list {
   display: flex;
   flex-direction: column;
@@ -907,7 +907,6 @@ body.game1-mode .game-play-area {
   padding-right: 4px;
 }
 
-.race-commentary-item,
 .race-ranking-item {
   background: #fff;
   border-radius: 16px;
@@ -918,7 +917,6 @@ body.game1-mode .game-play-area {
   line-height: 1.5;
 }
 
-.race-commentary-item strong,
 .race-ranking-item strong {
   color: var(--soft-brown);
 }
@@ -1333,4 +1331,11 @@ body.orientation-blocked .orientation-lock-overlay {
     font-size: 1.1rem;
     padding: 16px 18px;
   }
+}
+
+.action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none;
 }
