@@ -1,4 +1,4 @@
-﻿﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -55,7 +55,7 @@
           <div>
             <p class="small-badge">🎲 luck games 🎲</p>
             <h2>운 게임 목록</h2>
-            <p class="sub-text">1번 게임은 플레이 가능하고, 나머지는 추후 개발 예정이다.</p>
+            <p class="sub-text">1번과 2번 게임은 플레이 가능하고, 나머지는 추후 개발 예정이다.</p>
           </div>
           <button class="back-btn" data-target="menu" type="button">← 뒤로가기</button>
         </div>
@@ -67,11 +67,12 @@
             <p>구슬이 아래 그릇에 담기는 랜덤 분배 게임</p>
           </button>
 
-          <button class="game-item game-coming-soon" type="button">
+          <button class="game-item game-launch" data-game="2" type="button">
             <div class="game-num">2</div>
-            <h3>게임 2</h3>
-            <p>추후 개발 예정</p>
+            <h3>경마</h3>
+            <p>완전 랜덤으로 진행되는 자동 경주 게임</p>
           </button>
+
           <button class="game-item game-coming-soon" type="button">
             <div class="game-num">3</div>
             <h3>게임 3</h3>
@@ -186,6 +187,89 @@
       </div>
 
       <div id="drawerBackdrop" class="drawer-backdrop"></div>
+    </section>
+
+    <section id="game2Screen" class="screen game-screen">
+      <div class="card game-card race-card">
+        <div class="race-layout">
+          <aside class="race-sidebar">
+            <div class="race-sidebar-inner">
+              <div class="sidebar-head">
+                <h3 class="sidebar-title">경마 설정</h3>
+                <p class="sub-text">
+                  이름을 쉼표로 구분해 참가 말을 생성.
+                  예: 홍길동, 김아무개, 박철수
+                </p>
+              </div>
+
+              <div class="controls-wrap">
+                <div class="input-card">
+                  <label for="raceConfigInput">설정</label>
+                  <input
+                    id="raceConfigInput"
+                    type="text"
+                    value="홍길동, 김아무개, 박철수"
+                    autocomplete="off"
+                  />
+                  <p class="helper-text">
+                    쉼표(,)로 구분해 입력. 중복 이름은 불가하며 최대 20마리까지 가능.
+                  </p>
+                </div>
+
+                <div class="button-row">
+                  <button id="shuffleRaceBtn" class="action-btn secondary" type="button">셔플</button>
+                  <button id="startRaceBtn" class="action-btn primary" type="button">시작</button>
+                  <button id="resetRaceBtn" class="action-btn soft" type="button">리셋</button>
+                </div>
+
+                <div id="raceStatusText" class="status-text">
+                  참가 말을 설정하면 아래 트랙에 실시간 반영된다.
+                </div>
+              </div>
+
+              <div class="scoreboard-card">
+                <div class="scoreboard-head">
+                  <h3>참가 말 목록</h3>
+                  <span id="raceTotalInfo">총 0마리</span>
+                </div>
+                <div id="horseLegend" class="slot-legend"></div>
+              </div>
+            </div>
+          </aside>
+
+          <div class="race-main">
+            <div class="race-main-header">
+              <div>
+                <p class="small-badge game-mini-badge">🏇 game 2 🏇</p>
+                <h2>경마</h2>
+                <p class="sub-text">각 이름당 말 1마리만 참가하는 완전 랜덤 자동 경주 게임이다.</p>
+              </div>
+
+              <div class="game-header-actions">
+                <button class="back-btn" data-target="luck" type="button">← 목록으로</button>
+              </div>
+            </div>
+
+            <div id="raceTrackWrap" class="race-track-wrap"></div>
+
+            <div class="race-bottom-grid">
+              <div class="race-panel">
+                <div class="race-panel-head">
+                  <h3>실시간 해설</h3>
+                </div>
+                <div id="raceCommentaryList" class="race-commentary-list"></div>
+              </div>
+
+              <div class="race-panel">
+                <div class="race-panel-head">
+                  <h3>실시간 순위</h3>
+                </div>
+                <div id="raceRankingList" class="race-ranking-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
