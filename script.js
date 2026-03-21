@@ -55,6 +55,13 @@ const raceTrackWrap = document.getElementById('raceTrackWrap')
 const raceRankingList = document.getElementById('raceRankingList')
 const raceDesc = document.querySelector('#game2Screen .race-main-header .sub-text')
 
+const raceLayout = document.querySelector('#game2Screen .race-layout')
+const raceSidebar = document.querySelector('#game2Screen .race-sidebar')
+const raceMain = document.querySelector('#game2Screen .race-main')
+const raceMainHeader = document.querySelector('#game2Screen .race-main-header')
+const raceHeaderActions = document.querySelector('#game2Screen .race-main-header .game-header-actions')
+const raceBackBtn = document.querySelector('#game2Screen .race-main-header .back-btn[data-target="luck"]')
+
 const {
   Engine,
   Render,
@@ -191,6 +198,7 @@ let lastAppliedRawText = configInput ? configInput.value : ''
 let lastViewportWidth = window.innerWidth
 let lastViewportHeight = window.innerHeight
 let mobileLayoutApplied = false
+let raceMobileLayoutApplied = false
 
 const RACE_MAX_COUNT = 20
 const RACE_DISTANCE = 2400
@@ -396,6 +404,50 @@ function syncGame1MobileLayout() {
   }
 }
 
+function syncRaceMobileLayout() {
+  if (
+    !raceLayout ||
+    !raceSidebar ||
+    !raceMain ||
+    !raceMainHeader ||
+    !raceHeaderActions ||
+    !raceBackBtn
+  ) {
+    return
+  }
+
+  const shouldUseMobileLayout = isMobileOrTabletLike()
+
+  document.body.classList.toggle('game2-mobile-layout', shouldUseMobileLayout)
+
+  if (shouldUseMobileLayout && !raceMobileLayoutApplied) {
+    if (raceMainHeader.parentElement !== raceLayout) {
+      raceLayout.insertBefore(raceMainHeader, raceLayout.firstChild)
+    }
+
+    if (raceBackBtn.parentElement !== raceLayout) {
+      raceBackBtn.classList.add('mobile-race-back-btn')
+      raceLayout.appendChild(raceBackBtn)
+    }
+
+    raceMobileLayoutApplied = true
+    return
+  }
+
+  if (!shouldUseMobileLayout && raceMobileLayoutApplied) {
+    if (raceMainHeader.parentElement !== raceMain) {
+      raceMain.insertBefore(raceMainHeader, raceMain.firstChild)
+    }
+
+    if (raceBackBtn.parentElement !== raceHeaderActions) {
+      raceBackBtn.classList.remove('mobile-race-back-btn')
+      raceHeaderActions.appendChild(raceBackBtn)
+    }
+
+    raceMobileLayoutApplied = false
+  }
+}
+
 function showScreen(target) {
   if (!screens[target]) return
 
@@ -423,6 +475,7 @@ function showScreen(target) {
   }
 
   if (target === 'game2') {
+    syncRaceMobileLayout()
     ensureRaceReady()
   }
 
@@ -2435,6 +2488,10 @@ window.addEventListener('resize', () => {
       buildBoard()
     }
 
+    if (screens.game2?.classList.contains('active')) {
+      syncRaceMobileLayout()
+    }
+
     lastViewportWidth = nextWidth
     lastViewportHeight = nextHeight
   }, 180)
@@ -2458,6 +2515,10 @@ window.addEventListener('orientationchange', () => {
       buildBoard()
     }
 
+    if (screens.game2?.classList.contains('active')) {
+      syncRaceMobileLayout()
+    }
+
     lastViewportWidth = nextWidth
     lastViewportHeight = nextHeight
   }, 220)
@@ -2466,6 +2527,7 @@ window.addEventListener('orientationchange', () => {
 updateSlotsFromInput({ build: false })
 updateRaceFromInput({ render: false })
 syncGame1MobileLayout()
+syncRaceMobileLayout()
 updateOrientationGate()
 setGame1InputLock(false)
 setGame1ShuffleLock(false)
