@@ -1,4 +1,4 @@
-﻿* {
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -313,6 +313,12 @@ input {
   box-shadow: 0 0 0 5px rgba(227, 217, 255, 0.35);
 }
 
+input:disabled {
+  background: #f1e7dd;
+  color: #9b8577;
+  cursor: not-allowed;
+}
+
 .helper-text,
 .status-text,
 #totalInfo {
@@ -370,16 +376,22 @@ input {
   padding-right: 6px;
 }
 
-.slot-legend::-webkit-scrollbar {
+.slot-legend::-webkit-scrollbar,
+.race-commentary-list::-webkit-scrollbar,
+.race-ranking-list::-webkit-scrollbar {
   width: 8px;
 }
 
-.slot-legend::-webkit-scrollbar-thumb {
+.slot-legend::-webkit-scrollbar-thumb,
+.race-commentary-list::-webkit-scrollbar-thumb,
+.race-ranking-list::-webkit-scrollbar-thumb {
   background: rgba(157, 125, 107, 0.35);
   border-radius: 999px;
 }
 
-.slot-legend::-webkit-scrollbar-track {
+.slot-legend::-webkit-scrollbar-track,
+.race-commentary-list::-webkit-scrollbar-track,
+.race-ranking-list::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.35);
   border-radius: 999px;
 }
@@ -570,7 +582,7 @@ input {
   animation-delay: 1.5s;
 }
 
-/* 데스크톱 */
+/* 데스크톱 game1 */
 body.game1-mode {
   overflow: hidden;
 }
@@ -695,6 +707,301 @@ body.game1-mode .game-play-area {
   display: none;
 }
 
+/* =========================
+   game2 : race
+========================= */
+
+.race-card {
+  padding: 20px;
+}
+
+.race-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 720px;
+}
+
+.race-sidebar {
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.34);
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 24px;
+  box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
+}
+
+.race-sidebar-inner {
+  height: 100%;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.race-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.race-main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.race-track-wrap {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.5), transparent 24%),
+    linear-gradient(180deg, #fff8f2 0%, #fff1e6 100%);
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  border-radius: 28px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 16px 28px rgba(120, 90, 70, 0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.race-lane {
+  position: relative;
+  min-height: 72px;
+  border-radius: 20px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.2) 0px,
+      rgba(255, 255, 255, 0.2) 28px,
+      rgba(255, 255, 255, 0.08) 28px,
+      rgba(255, 255, 255, 0.08) 56px
+    ),
+    linear-gradient(180deg, #dcb89a 0%, #cfa37d 100%);
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+}
+
+.race-lane-label {
+  position: absolute;
+  left: 10px;
+  top: 8px;
+  z-index: 2;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 249, 244, 0.9);
+  color: var(--brown);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.race-start-line,
+.race-finish-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  z-index: 1;
+}
+
+.race-start-line {
+  left: 56px;
+  background: repeating-linear-gradient(
+    180deg,
+    #fff 0 8px,
+    #ff8f8f 8px 16px
+  );
+}
+
+.race-finish-line {
+  right: 18px;
+  background: repeating-linear-gradient(
+    180deg,
+    #fff 0 8px,
+    #444 8px 16px
+  );
+}
+
+.race-track-inner {
+  position: relative;
+  min-height: 72px;
+  margin-left: 62px;
+  margin-right: 40px;
+}
+
+.race-horse {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--horse-color, rgba(255, 249, 244, 0.96));
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 14px rgba(120, 90, 70, 0.12);
+  transition: left 0.08s linear, transform 0.18s ease, box-shadow 0.18s ease;
+  z-index: 2;
+  max-width: 220px;
+}
+
+.horse-emoji {
+  font-size: 1.2rem;
+  flex: 0 0 auto;
+}
+
+.horse-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.horse-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--brown);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.horse-status {
+  font-size: 0.74rem;
+  color: #8b7366;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.race-bottom-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 14px;
+}
+
+.race-panel {
+  background: var(--card-strong);
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 24px;
+  box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
+  padding: 16px;
+  min-height: 220px;
+}
+
+.race-panel-head h3 {
+  font-weight: 700;
+  color: var(--soft-brown);
+  margin-bottom: 12px;
+}
+
+.race-commentary-list,
+.race-ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.race-commentary-item,
+.race-ranking-item {
+  background: #fff;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 6px 14px rgba(120, 90, 70, 0.05);
+  padding: 12px 14px;
+  color: var(--brown);
+  line-height: 1.5;
+}
+
+.race-commentary-item strong,
+.race-ranking-item strong {
+  color: var(--soft-brown);
+}
+
+.race-ranking-item.top {
+  background: linear-gradient(135deg, #fff5c9, #fffdf1);
+}
+
+.race-horse.horse-finished {
+  animation: horseFinishPop 0.7s ease, horseFinishGlow 1.4s ease-in-out infinite alternate;
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.55),
+    0 0 18px rgba(255, 223, 154, 0.85),
+    0 10px 18px rgba(120, 90, 70, 0.18);
+}
+
+.race-horse.horse-finished::after {
+  content: '✨';
+  position: absolute;
+  right: -8px;
+  top: -10px;
+  font-size: 1.1rem;
+  animation: finishSparkle 0.9s ease-in-out infinite alternate;
+}
+
+.race-lane.lane-finished {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.35),
+    0 0 18px rgba(255, 232, 173, 0.4);
+}
+
+.orientation-lock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(246, 234, 220, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+.orientation-lock-card {
+  width: min(92vw, 420px);
+  background: rgba(255, 249, 244, 0.96);
+  border: 3px solid rgba(255, 255, 255, 0.86);
+  border-radius: 28px;
+  box-shadow: 0 16px 30px rgba(116, 86, 68, 0.14);
+  padding: 28px 22px;
+  text-align: center;
+}
+
+.orientation-lock-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.orientation-lock-card h3 {
+  font-family: 'Gaegu', cursive;
+  font-size: 2rem;
+  color: var(--soft-brown);
+  margin-bottom: 8px;
+}
+
+.orientation-lock-card p {
+  color: #8b7366;
+  line-height: 1.6;
+}
+
+body.orientation-blocked {
+  overflow: hidden !important;
+}
+
+body.orientation-blocked .app {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.orientation-blocked .orientation-lock-overlay {
+  display: flex;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -727,6 +1034,49 @@ body.game1-mode .game-play-area {
   }
 }
 
+@keyframes horseFinishPop {
+  0% {
+    transform: translateY(-50%) scale(1);
+  }
+  40% {
+    transform: translateY(-50%) scale(1.12);
+  }
+  100% {
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+@keyframes horseFinishGlow {
+  from {
+    filter: brightness(1);
+  }
+  to {
+    filter: brightness(1.08);
+  }
+}
+
+@keyframes finishSparkle {
+  from {
+    transform: translateY(0) scale(0.9) rotate(-6deg);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateY(-4px) scale(1.08) rotate(8deg);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 1024px) {
+  .race-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .race-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 980px) {
   .game-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -752,6 +1102,31 @@ body.game1-mode .game-play-area {
   }
 }
 
+@media (max-width: 640px) {
+  .race-card {
+    padding: 12px;
+  }
+
+  .race-sidebar-inner,
+  .race-panel,
+  .race-track-wrap {
+    padding: 14px;
+  }
+
+  .race-horse {
+    max-width: 180px;
+    padding: 7px 10px;
+  }
+
+  .horse-name {
+    font-size: 0.84rem;
+  }
+
+  .horse-status {
+    font-size: 0.7rem;
+  }
+}
+
 @media (max-width: 480px) {
   .button-row {
     flex-direction: column;
@@ -768,7 +1143,7 @@ body.game1-mode .game-play-area {
   }
 }
 
-/* 모바일/태블릿: 이미지 같은 세로 스택 레이아웃 */
+/* 모바일/태블릿: game1 이미지 같은 세로 스택 레이아웃 */
 @media (max-width: 1024px) and (pointer: coarse) {
   body.game1-mode {
     overflow-y: auto;
@@ -958,56 +1333,4 @@ body.game1-mode .game-play-area {
     font-size: 1.1rem;
     padding: 16px 18px;
   }
-}
-
-.orientation-lock-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 120;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(246, 234, 220, 0.96);
-  backdrop-filter: blur(10px);
-}
-
-.orientation-lock-card {
-  width: min(92vw, 420px);
-  background: rgba(255, 249, 244, 0.96);
-  border: 3px solid rgba(255, 255, 255, 0.86);
-  border-radius: 28px;
-  box-shadow: 0 16px 30px rgba(116, 86, 68, 0.14);
-  padding: 28px 22px;
-  text-align: center;
-}
-
-.orientation-lock-icon {
-  font-size: 3rem;
-  margin-bottom: 10px;
-}
-
-.orientation-lock-card h3 {
-  font-family: 'Gaegu', cursive;
-  font-size: 2rem;
-  color: var(--soft-brown);
-  margin-bottom: 8px;
-}
-
-.orientation-lock-card p {
-  color: #8b7366;
-  line-height: 1.6;
-}
-
-body.orientation-blocked {
-  overflow: hidden !important;
-}
-
-body.orientation-blocked .app {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-body.orientation-blocked .orientation-lock-overlay {
-  display: flex;
 }
