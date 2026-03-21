@@ -1527,3 +1527,25 @@ body.orientation-blocked .orientation-lock-overlay {
   transform: none !important;
   box-shadow: none;
 }
+
+/* 모바일 세로 경마: 해설 높이 고정해서 아래 요소 흔들림 방지 */
+@media (max-width: 1024px) and (pointer: coarse) {
+  body.game2-mobile-layout #raceStatusText.status-text {
+    line-height: 1.5;
+    min-height: calc(1.5em * 2);
+    height: calc(1.5em * 2);
+    overflow: hidden;
+
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
+@media (max-width: 640px) and (pointer: coarse) {
+  body.game2-mobile-layout #raceStatusText.status-text {
+    line-height: 1.45;
+    min-height: calc(1.45em * 2);
+    height: calc(1.45em * 2);
+  }
+}
