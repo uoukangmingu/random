@@ -55,7 +55,7 @@
           <div>
             <p class="small-badge">🎲 luck games 🎲</p>
             <h2>운 게임 목록</h2>
-            <p class="sub-text">1번과 2번 게임은 플레이 가능하고, 나머지는 추후 개발 예정이다.</p>
+            <p class="sub-text">1번, 2번, 3번 게임은 플레이 가능하고, 나머지는 추후 개발 예정이다.</p>
           </div>
           <button class="back-btn" data-target="menu" type="button">← 뒤로가기</button>
         </div>
@@ -73,10 +73,10 @@
             <p>완전 랜덤으로 진행되는 자동 경주 게임</p>
           </button>
 
-          <button class="game-item game-coming-soon" type="button">
+          <button class="game-item game-launch" data-game="3" type="button">
             <div class="game-num">3</div>
-            <h3>게임 3</h3>
-            <p>추후 개발 예정</p>
+            <h3>팽이 배틀</h3>
+            <p>동시에 떨어진 팽이들이 끝까지 살아남는 생존 배틀 게임</p>
           </button>
           <button class="game-item game-coming-soon" type="button">
             <div class="game-num">4</div>
@@ -258,6 +258,88 @@
                   <h3>실시간 순위</h3>
                 </div>
                 <div id="raceRankingList" class="race-ranking-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="game3Screen" class="screen game-screen">
+      <div class="card game-card top-card">
+        <div class="top-layout">
+          <aside class="top-sidebar">
+            <div class="top-sidebar-inner">
+              <div class="sidebar-head">
+                <h3 class="sidebar-title">팽이 배틀 설정</h3>
+                <p class="sub-text">
+                  이름을 쉼표로 구분해 참가 팽이를 생성.
+                  예: 홍길동, 김아무개, 박철수
+                </p>
+              </div>
+
+              <div class="controls-wrap">
+                <div class="input-card">
+                  <label for="topConfigInput">설정</label>
+                  <input
+                    id="topConfigInput"
+                    type="text"
+                    value="홍길동, 김아무개, 박철수, 이영희"
+                    autocomplete="off"
+                  />
+                  <p class="helper-text">
+                    쉼표(,)로 구분해 입력. 중복 이름은 불가하며 최대 20명까지 가능.
+                  </p>
+                </div>
+
+                <div class="button-row">
+                  <button id="shuffleTopBtn" class="action-btn secondary" type="button">셔플</button>
+                  <button id="startTopBtn" class="action-btn primary" type="button">시작</button>
+                  <button id="resetTopBtn" class="action-btn soft" type="button">리셋</button>
+                </div>
+
+                <div id="topStatusText" class="status-text">
+                  참가자를 설정하면 아래 경기장에 실시간 반영된다.
+                </div>
+              </div>
+
+              <div class="scoreboard-card">
+                <div class="scoreboard-head">
+                  <h3>참가 팽이 목록</h3>
+                  <span id="topTotalInfo">총 0명</span>
+                </div>
+                <div id="topLegend" class="slot-legend"></div>
+              </div>
+            </div>
+          </aside>
+
+          <div class="top-main">
+            <div class="top-main-header race-main-header">
+              <div>
+                <p class="small-badge game-mini-badge">🌀 game 3 🌀</p>
+                <h2>팽이 배틀</h2>
+                <p class="sub-text">이름마다 팽이 하나가 생성되어 끝까지 살아남는 자동 생존 배틀 게임이다.</p>
+              </div>
+
+              <div class="game-header-actions">
+                <button class="back-btn" data-target="luck" type="button">← 목록으로</button>
+              </div>
+            </div>
+
+            <div class="top-arena-shell">
+              <div class="top-arena-head">
+                <div class="top-arena-pill">생존자 <strong id="topAliveInfo">0명</strong></div>
+                <div class="top-arena-pill">이벤트 <strong id="topEventInfo">대기 중</strong></div>
+              </div>
+              <div id="topArena" class="top-arena"></div>
+            </div>
+
+            <div class="top-bottom-grid">
+              <div class="race-panel top-ranking-panel">
+                <div class="race-panel-head">
+                  <h3>실시간 생존 순위</h3>
+                </div>
+                <div id="topRankingList" class="race-ranking-list top-ranking-list"></div>
               </div>
             </div>
           </div>
