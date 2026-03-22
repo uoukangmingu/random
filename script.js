@@ -1,4 +1,4 @@
-const screens = {
+﻿const screens = {
   home: document.getElementById('homeScreen'),
   menu: document.getElementById('menuScreen'),
   luck: document.getElementById('luckScreen'),

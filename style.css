@@ -1,4 +1,4 @@
-* {
+﻿* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -1679,6 +1679,20 @@ body.orientation-blocked .orientation-lock-overlay {
     0 0 22px rgba(255, 220, 176, 0.35);
 }
 
+.top-arena.wall-open .top-arena-boundary {
+  border-width: 3px;
+  border-style: dashed;
+  background: none;
+  box-shadow:
+    inset 0 0 0 0 rgba(0, 0, 0, 0),
+    0 0 0 1px rgba(255, 255, 255, 0.18);
+  opacity: 0.58;
+}
+
+.top-arena.wall-open.sudden-death .top-arena-boundary {
+  opacity: 0.88;
+}
+
 .top-arena-core {
   position: absolute;
   left: 50%;
@@ -1890,6 +1904,114 @@ body.orientation-blocked .orientation-lock-overlay {
 
   #game3Screen .top-fighter-name {
     font-size: 0.72rem;
+    bottom: -22px;
+  }
+}
+
+/* =========================
+   game3 desktop fit
+========================= */
+@media (min-width: 1025px) {
+  body.game3-mode {
+    overflow: hidden;
+  }
+
+  body.game3-mode .app {
+    min-height: 100dvh;
+    align-items: stretch;
+    padding: clamp(8px, 1.2vw, 16px);
+  }
+
+  body.game3-mode .game-screen {
+    height: calc(100dvh - clamp(16px, 2.4vw, 32px));
+  }
+
+  body.game3-mode #game3Screen .top-card {
+    height: 100%;
+    padding: clamp(10px, 1.2vw, 16px);
+    overflow: hidden;
+  }
+
+  body.game3-mode #game3Screen .top-layout {
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+    gap: clamp(10px, 1vw, 16px);
+  }
+
+  body.game3-mode #game3Screen .top-sidebar {
+    height: 100%;
+    min-height: 0;
+  }
+
+  body.game3-mode #game3Screen .top-sidebar-inner {
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px;
+  }
+
+  body.game3-mode #game3Screen .top-main {
+    height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 290px);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: clamp(10px, 1vw, 14px);
+    align-items: stretch;
+  }
+
+  body.game3-mode #game3Screen .top-main-header {
+    grid-column: 1 / -1;
+    min-height: 0;
+  }
+
+  body.game3-mode #game3Screen .top-arena-shell {
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+  }
+
+  body.game3-mode #game3Screen .top-arena-head {
+    margin-bottom: 10px;
+  }
+
+  body.game3-mode #game3Screen .top-arena {
+    width: min(100%, calc(100dvh - 240px));
+    aspect-ratio: 1 / 1;
+    max-height: 100%;
+    min-height: 0;
+    margin: 0 auto;
+  }
+
+  body.game3-mode #game3Screen .top-bottom-grid {
+    min-height: 0;
+    height: 100%;
+  }
+
+  body.game3-mode #game3Screen .top-ranking-panel {
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+  }
+
+  body.game3-mode #game3Screen .top-ranking-panel .race-panel-head {
+    margin-bottom: 10px;
+  }
+
+  body.game3-mode #game3Screen .top-ranking-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  body.game3-mode #game3Screen .top-fighter-name {
+    font-size: 0.74rem;
     bottom: -22px;
   }
 }
