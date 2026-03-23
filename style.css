@@ -982,6 +982,275 @@ body.game1-mode .game-play-area {
     0 0 18px rgba(255, 232, 173, 0.4);
 }
 
+/* =========================
+   game3 : arithmetic ladder
+========================= */
+
+.math-ladder-cross.active {
+  stroke: #f2a5bf;
+  stroke-width: 5;
+}
+
+.math-ladder-token.hit {
+  transform: translate(-50%, -50%) scale(1.08);
+  box-shadow: 0 10px 24px rgba(120, 90, 70, 0.14);
+}
+
+.math-ladder-result-chip.winner {
+  background: linear-gradient(135deg, #fff5c9, #fffdf1);
+}
+
+.arithmetic-card {
+  padding: 20px;
+}
+
+.arithmetic-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 720px;
+}
+
+.arithmetic-sidebar {
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.34);
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 24px;
+  box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
+}
+
+.arithmetic-sidebar-inner {
+  height: 100%;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.arithmetic-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.arithmetic-main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.arithmetic-board-wrap {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.5), transparent 24%),
+    linear-gradient(180deg, #fff8f2 0%, #fff1e6 100%);
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  border-radius: 28px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 16px 28px rgba(120, 90, 70, 0.08);
+  padding: 18px;
+  height: 640px;
+  min-height: 640px;
+  overflow: hidden;
+}
+
+.math-ladder-board {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.math-ladder-map {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  will-change: transform;
+  transition: transform 260ms ease;
+}
+
+.math-ladder-top-row,
+.math-ladder-bottom-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  gap: 12px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.math-ladder-top-row {
+  top: 0;
+}
+
+.math-ladder-bottom-row {
+  bottom: 0;
+}
+
+.math-ladder-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.math-ladder-runner {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 16px rgba(120, 90, 70, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  transition: left 0.22s linear, top 0.22s linear;
+}
+
+.math-ladder-token {
+  position: absolute;
+  min-width: 68px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #fffaf5;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--brown);
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+
+
+.arithmetic-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.math-ladder-top-row,
+.math-ladder-bottom-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  gap: 12px;
+  z-index: 4;
+}
+
+
+
+
+.math-ladder-name-chip,
+.math-ladder-result-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  border-radius: 18px;
+  background: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 6px 14px rgba(120, 90, 70, 0.06);
+  font-weight: 700;
+  color: var(--brown);
+  text-align: center;
+  padding: 10px;
+}
+
+
+
+
+
+.math-ladder-path {
+  stroke: #aa8f7e;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.math-ladder-cross {
+  stroke: rgba(157, 125, 107, 0.7);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.math-ladder-cross.active {
+  stroke: #f2a5bf;
+  stroke-width: 5;
+}
+
+.math-ladder-runner {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 16px rgba(120, 90, 70, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  transition: left 0.22s linear, top 0.22s linear;
+}
+
+.math-ladder-token {
+  position: absolute;
+  min-width: 68px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #fffaf5;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--brown);
+  transform: translate(-50%, -50%);
+  z-index: 4;
+}
+
+.math-ladder-token.number {
+  background: linear-gradient(135deg, var(--sky), #eef7ff);
+}
+
+.math-ladder-token.operator {
+  background: linear-gradient(135deg, var(--pink), #fff0f5);
+  font-size: 1.1rem;
+}
+
+.math-ladder-token.hit {
+  transform: translate(-50%, -50%) scale(1.08);
+  box-shadow: 0 10px 24px rgba(120, 90, 70, 0.14);
+}
+
+.math-ladder-result-chip.winner {
+  background: linear-gradient(135deg, #fff5c9, #fffdf1);
+}
+
+.math-ladder-formula {
+  margin-top: 6px;
+  font-size: 0.88rem;
+  color: #8b7366;
+  line-height: 1.5;
+}
+
 .orientation-lock-overlay {
   position: fixed;
   inset: 0;
@@ -1473,6 +1742,36 @@ body.orientation-blocked .orientation-lock-overlay {
     background: #fff;
     color: var(--soft-brown);
     box-shadow: 0 6px 16px rgba(130, 100, 80, 0.08);
+  }
+}
+
+@media (max-width: 1024px) and (pointer: coarse) {
+  #game3Screen .arithmetic-card {
+    padding: 12px;
+  }
+
+  #game3Screen .arithmetic-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  #game3Screen .arithmetic-sidebar-inner,
+  #game3Screen .arithmetic-board-wrap,
+  #game3Screen .race-panel {
+    padding: 14px;
+  }
+
+  #game3Screen .arithmetic-board-wrap {
+    min-height: 480px;
+  }
+
+  #game3Screen .button-row {
+    grid-template-columns: 1fr;
+  }
+
+  #game3Screen .action-btn,
+  #game3Screen .back-btn {
+    width: 100%;
   }
 }
 
