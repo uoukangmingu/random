@@ -1,9 +1,11 @@
+
 const screens = {
   home: document.getElementById('homeScreen'),
   menu: document.getElementById('menuScreen'),
   luck: document.getElementById('luckScreen'),
   game1: document.getElementById('game1Screen'),
-  game2: document.getElementById('game2Screen')
+  game2: document.getElementById('game2Screen'),
+  game3: document.getElementById('game3Screen')
 }
 
 const startBtn = document.getElementById('startBtn')
@@ -61,6 +63,16 @@ const raceMain = document.querySelector('#game2Screen .race-main')
 const raceMainHeader = document.querySelector('#game2Screen .race-main-header')
 const raceHeaderActions = document.querySelector('#game2Screen .race-main-header .game-header-actions')
 const raceBackBtn = document.querySelector('#game2Screen .race-main-header .back-btn[data-target="luck"]')
+
+const mathLadderInput = document.getElementById('mathLadderInput')
+const shuffleMathLadderBtn = document.getElementById('shuffleMathLadderBtn')
+const startMathLadderBtn = document.getElementById('startMathLadderBtn')
+const resetMathLadderBtn = document.getElementById('resetMathLadderBtn')
+const mathLadderStatusText = document.getElementById('mathLadderStatusText')
+const mathLadderTotalInfo = document.getElementById('mathLadderTotalInfo')
+const mathLadderLegend = document.getElementById('mathLadderLegend')
+const mathLadderBoard = document.getElementById('mathLadderBoard')
+const mathLadderResultList = document.getElementById('mathLadderResultList')
 
 const {
   Engine,
@@ -215,6 +227,18 @@ let raceLeaderName = ''
 let lastRaceValidConfigText = raceConfigInput ? raceConfigInput.value : ''
 let lastRaceAppliedRawText = raceConfigInput ? raceConfigInput.value : ''
 
+const MATH_LADDER_MAX_COUNT = 8
+const MATH_LADDER_MIN_COUNT = 2
+const MATH_LADDER_TOKEN_ORDER = ['number1', 'op1', 'number2', 'op2', 'number3']
+const MATH_OPERATORS = ['+', '-', '*', '/']
+
+let mathLadderPlayers = []
+let mathLadderRunning = false
+let mathLadderFinished = false
+let lastMathLadderValidText = mathLadderInput ? mathLadderInput.value : ''
+let lastMathLadderAppliedRawText = mathLadderInput ? mathLadderInput.value : ''
+let currentMathLadderData = null
+
 function getCurrentNormalBallCount() {
   const slotCount = currentSlots.length || 1
   return getBallCountBySlotCount(slotCount)
@@ -242,6 +266,20 @@ function setRaceInputLock(isLocked) {
   raceConfigInput.disabled = isLocked
   raceConfigInput.style.opacity = isLocked ? '0.65' : '1'
   raceConfigInput.style.cursor = isLocked ? 'not-allowed' : ''
+}
+
+function setMathLadderInputLock(isLocked) {
+  if (!mathLadderInput) return
+  mathLadderInput.disabled = isLocked
+  mathLadderInput.style.opacity = isLocked ? '0.65' : '1'
+  mathLadderInput.style.cursor = isLocked ? 'not-allowed' : ''
+}
+
+function setMathLadderShuffleLock(isLocked) {
+  if (!shuffleMathLadderBtn) return
+  shuffleMathLadderBtn.disabled = isLocked
+  shuffleMathLadderBtn.style.opacity = isLocked ? '0.55' : '1'
+  shuffleMathLadderBtn.style.cursor = isLocked ? 'not-allowed' : ''
 }
 
 function setGame1ShuffleLock(isLocked) {
@@ -470,6 +508,11 @@ function showScreen(target) {
     setRaceShuffleLock(false)
   }
 
+  if (target !== 'game3') {
+    setMathLadderInputLock(false)
+    setMathLadderShuffleLock(false)
+  }
+
   if (target === 'game1') {
     ensureGameReady()
   }
@@ -477,6 +520,10 @@ function showScreen(target) {
   if (target === 'game2') {
     syncRaceMobileLayout()
     ensureRaceReady()
+  }
+
+  if (target === 'game3') {
+    ensureMathLadderReady()
   }
 
   updateOrientationGate()
@@ -2380,6 +2427,10 @@ gameLaunchButtons.forEach((button) => {
     if (button.dataset.game === '2') {
       showScreen('game2')
     }
+
+    if (button.dataset.game === '3') {
+      showScreen('game3')
+    }
   })
 })
 
@@ -2459,6 +2510,738 @@ if (raceConfigInput) {
   })
 }
 
+if (shuffleMathLadderBtn) {
+  shuffleMathLadderBtn.addEventListener('click', shuffleMathLadder)
+}
+
+if (startMathLadderBtn) {
+  startMathLadderBtn.addEventListener('click', startMathLadder)
+}
+
+if (resetMathLadderBtn) {
+  resetMathLadderBtn.addEventListener('click', resetMathLadder)
+}
+
+if (mathLadderInput) {
+  mathLadderInput.addEventListener('input', () => {
+    ensureMathLadderReady()
+  })
+
+  mathLadderInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      startMathLadder()
+    }
+  })
+}
+
+function parseMathLadderPlayers(text) {
+  const rawItems = text
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (!rawItems.length) {
+    return { status: 'EMPTY' }
+  }
+
+  if (rawItems.length < MATH_LADDER_MIN_COUNT) {
+    return { status: 'TOO_FEW' }
+  }
+
+  if (rawItems.length > MATH_LADDER_MAX_COUNT) {
+    return { status: 'TOO_MANY' }
+  }
+
+  const uniqueNames = new Set()
+  const players = []
+
+  for (const name of rawItems) {
+    if (name.length > 8) {
+      return { status: 'NAME_TOO_LONG' }
+    }
+
+    if (uniqueNames.has(name)) {
+      return { status: 'DUPLICATE' }
+    }
+
+    uniqueNames.add(name)
+
+    players.push({
+      id: `player-${players.length + 1}`,
+      name
+    })
+  }
+
+  return { status: 'OK', players }
+}
+
+function applyMathOperator(a, op, b) {
+  if (op === '+') return a + b
+  if (op === '-') return a - b
+  if (op === '*') return a * b
+  if (op === '/') return b === 0 ? 0 : a / b
+  return 0
+}
+
+function calculateMathExpression(a, op1, b, op2, c) {
+  const highPriority = ['*', '/']
+
+  if (highPriority.includes(op1) && highPriority.includes(op2)) {
+    const first = applyMathOperator(a, op1, b)
+    return applyMathOperator(first, op2, c)
+  }
+
+  if (highPriority.includes(op1) && !highPriority.includes(op2)) {
+    const first = applyMathOperator(a, op1, b)
+    return applyMathOperator(first, op2, c)
+  }
+
+  if (!highPriority.includes(op1) && highPriority.includes(op2)) {
+    const second = applyMathOperator(b, op2, c)
+    return applyMathOperator(a, op1, second)
+  }
+
+  const first = applyMathOperator(a, op1, b)
+  return applyMathOperator(first, op2, c)
+}
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+function getRandomMathOperator() {
+  return MATH_OPERATORS[Math.floor(Math.random() * MATH_OPERATORS.length)]
+}
+
+
+/* script.js */
+/* 1) 아래 블록 전체 교체 */
+/* 교체 범위:
+   function createMathFormulaData() { ... }
+   ~
+   function ensureMathLadderReady() { ... }
+*/
+
+function setMathLadderPlayers(players) {
+  mathLadderPlayers = players.map((player, index) => ({
+    ...player,
+    color: raceHorsePalette[index % raceHorsePalette.length],
+    formula: null
+  }))
+
+  if (mathLadderInput) {
+    lastMathLadderValidText = mathLadderInput.value
+    lastMathLadderAppliedRawText = mathLadderInput.value
+  }
+}
+
+function renderMathLadderLegend() {
+  if (!mathLadderLegend || !mathLadderTotalInfo) return
+
+  mathLadderLegend.innerHTML = ''
+
+  mathLadderPlayers.forEach((player) => {
+    const chip = document.createElement('div')
+    chip.className = 'legend-chip'
+    chip.innerHTML = `
+      <span class="legend-dot" style="background:${player.color};"></span>
+      <span>${escapeHtml(player.name)}</span>
+    `
+    mathLadderLegend.appendChild(chip)
+  })
+
+  mathLadderTotalInfo.textContent = `총 ${mathLadderPlayers.length}명`
+}
+
+function renderMathLadderResults() {
+  if (!mathLadderResultList) return
+
+  mathLadderResultList.innerHTML = ''
+
+  const ranking = [...mathLadderPlayers]
+    .filter((player) => player.formula)
+    .sort((a, b) => b.formula.result - a.formula.result)
+
+  ranking.forEach((player, index) => {
+    const item = document.createElement('div')
+    item.className = `race-ranking-item${index === 0 ? ' top' : ''}`
+
+    const displayResult = Number(player.formula.result.toFixed(2))
+
+    item.innerHTML = `
+      <strong>${index + 1}위. ${escapeHtml(player.name)}</strong><br />
+      <span>${escapeHtml(player.formula.display)}</span>
+      <div class="math-ladder-formula">결과: ${displayResult}</div>
+    `
+
+    mathLadderResultList.appendChild(item)
+  })
+}
+
+function handleMathLadderParseFailure(parsed) {
+  if (!mathLadderStatusText) return false
+
+  if (parsed.status === 'EMPTY') {
+    mathLadderStatusText.textContent = '참가자 이름을 입력해줘.'
+    return false
+  }
+
+  if (parsed.status === 'TOO_FEW') {
+    mathLadderStatusText.textContent = '최소 2명부터 시작할 수 있다.'
+    return false
+  }
+
+  if (parsed.status === 'TOO_MANY') {
+    mathLadderStatusText.textContent = `최대 ${MATH_LADDER_MAX_COUNT}명까지 가능하다.`
+    return false
+  }
+
+  if (parsed.status === 'DUPLICATE') {
+    mathLadderStatusText.textContent = '같은 이름은 2번 이상 입력할 수 없다.'
+    return false
+  }
+
+  if (parsed.status === 'NAME_TOO_LONG') {
+    mathLadderStatusText.textContent = '이름은 최대 8자까지만 입력해줘.'
+    return false
+  }
+
+  return parsed.status === 'OK'
+}
+
+function getMathLadderOperatorDisplay(op) {
+  if (op === '*') return '×'
+  if (op === '/') return '÷'
+  return op
+}
+
+function buildMathLadderData(players, { randomize = false } = {}) {
+const width = Math.max(mathLadderBoard?.clientWidth || 820, 560)
+const viewportHeight = Math.max(mathLadderBoard?.clientHeight || 640, 640)
+const mapHeight = Math.max(1800, Math.round(viewportHeight * 2.8))
+
+const sidePadding = Math.max(40, Math.min(72, width * 0.06))
+const topY = 120
+const bottomY = mapHeight - 120
+const usableHeight = bottomY - topY
+
+const columns = players.map((player, index) => {
+  const x =
+    players.length === 1
+      ? width / 2
+      : sidePadding + ((width - sidePadding * 2) / (players.length - 1)) * index
+
+  return {
+    index,
+    x,
+    playerId: player.id,
+    name: player.name
+  }
+})
+
+const rungRows = Array.from({ length: 18 }, (_, index) => ({
+  index,
+  y: topY + (usableHeight / 19) * (index + 1)
+}))
+
+const tokenRows = MATH_LADDER_TOKEN_ORDER.map((type, index) => ({
+  index,
+  type,
+  y: topY + (usableHeight / 6) * (index + 1)
+}))
+
+  const rungs = randomize ? buildMathLadderRungs(columns.length, rungRows.map((row) => row.y)) : []
+  const tokens = buildMathLadderTokens(tokenRows, columns.length, { randomize })
+
+const data = {
+  width,
+  height: mapHeight,
+  mapHeight,
+  viewportHeight,
+  topY,
+  bottomY,
+  columns,
+  rungRows,
+  tokenRows,
+  rungs,
+  tokens,
+  players: players.map((player, index) => ({
+    ...player,
+    startIndex: index
+  })),
+  runnerMap: new Map(),
+  tokenElementMap: new Map(),
+  rungElementMap: new Map(),
+  resultChipMap: new Map(),
+  mapLayer: null,
+  cameraY: 0
+}
+
+  data.traces = data.players.map((player) => traceMathLadderPath(player.startIndex, data))
+
+  data.players.forEach((player, index) => {
+    player.formula = randomize ? data.traces[index].formula : null
+  })
+
+  return data
+}
+
+function buildMathLadderRungs(columnCount, rowYs) {
+  const rungs = []
+
+  rowYs.forEach((rowY, rowIndex) => {
+    const picked = []
+    const targetCount = Math.max(
+      1,
+      Math.min(
+        Math.floor(columnCount / 2),
+        getRandomInt(1, Math.max(1, Math.floor(columnCount / 2)))
+      )
+    )
+
+    let safety = 0
+    while (picked.length < targetCount && safety < 200) {
+      const from = getRandomInt(0, columnCount - 2)
+      const blocked = picked.some((value) => Math.abs(value - from) <= 1)
+
+      if (!blocked) {
+        picked.push(from)
+      }
+
+      safety += 1
+    }
+
+    picked
+      .sort((a, b) => a - b)
+      .forEach((from) => {
+        rungs.push({
+          id: `math-rung-${rowIndex}-${from}`,
+          rowY,
+          from,
+          to: from + 1
+        })
+      })
+  })
+
+  return rungs
+}
+
+function buildMathLadderTokens(tokenRows, columnCount, { randomize = false } = {}) {
+  return tokenRows.map((row) => {
+    return Array.from({ length: columnCount }, (_, columnIndex) => {
+      let rawValue = '?'
+      let displayValue = '?'
+
+      if (randomize) {
+        if (row.type === 'op1' || row.type === 'op2') {
+          rawValue = getRandomMathOperator()
+          displayValue = getMathLadderOperatorDisplay(rawValue)
+        } else if (row.type === 'number1') {
+          rawValue = getRandomInt(0, 100)
+          displayValue = String(rawValue)
+        } else {
+          rawValue = getRandomInt(1, 100)
+          displayValue = String(rawValue)
+        }
+      }
+
+      return {
+        id: `math-token-${row.index}-${columnIndex}`,
+        rowIndex: row.index,
+        colIndex: columnIndex,
+        type: row.type,
+        rawValue,
+        displayValue
+      }
+    })
+  })
+}
+
+function traceMathLadderPath(startIndex, data) {
+  const rungMap = new Map()
+
+  data.rungs.forEach((rung) => {
+    if (!rungMap.has(rung.rowY)) rungMap.set(rung.rowY, [])
+    rungMap.get(rung.rowY).push(rung)
+  })
+
+  const events = [
+    ...data.rungRows.map((row) => ({ kind: 'rung', y: row.y })),
+    ...data.tokenRows.map((row) => ({ kind: 'token', y: row.y, rowIndex: row.index }))
+  ].sort((a, b) => a.y - b.y)
+
+  let currentCol = startIndex
+  const points = [{ x: data.columns[currentCol].x, y: data.topY }]
+  const tokensHit = []
+
+  events.forEach((event) => {
+    points.push({ x: data.columns[currentCol].x, y: event.y })
+
+    if (event.kind === 'rung') {
+      const rowRungs = rungMap.get(event.y) || []
+      const moveRight = rowRungs.find((rung) => rung.from === currentCol)
+      const moveLeft = rowRungs.find((rung) => rung.to === currentCol)
+      const activeRung = moveRight || moveLeft
+
+      if (activeRung) {
+        currentCol = moveRight ? activeRung.to : activeRung.from
+        points.push({
+          x: data.columns[currentCol].x,
+          y: event.y,
+          rungId: activeRung.id
+        })
+      }
+    }
+
+    if (event.kind === 'token') {
+      const token = data.tokens[event.rowIndex][currentCol]
+      tokensHit.push(token)
+      points[points.length - 1].tokenId = token.id
+    }
+  })
+
+  points.push({ x: data.columns[currentCol].x, y: data.bottomY })
+
+  return {
+    startIndex,
+    endIndex: currentCol,
+    points,
+    tokensHit,
+    formula: buildFormulaFromTrace(tokensHit)
+  }
+}
+
+function buildFormulaFromTrace(tokensHit) {
+  if (!tokensHit || tokensHit.length !== 5) return null
+
+  const number1 = Number(tokensHit[0].rawValue)
+  const op1 = tokensHit[1].rawValue
+  const number2 = Number(tokensHit[2].rawValue)
+  const op2 = tokensHit[3].rawValue
+  const number3 = Number(tokensHit[4].rawValue)
+
+  const result = calculateMathExpression(number1, op1, number2, op2, number3)
+
+  return {
+    number1,
+    op1,
+    number2,
+    op2,
+    number3,
+    result,
+    display: `${number1} ${getMathLadderOperatorDisplay(op1)} ${number2} ${getMathLadderOperatorDisplay(op2)} ${number3}`
+  }
+}
+
+function setMathLadderCamera(data, targetY, animate = true) {
+  if (!data?.mapLayer) return
+
+  const maxScroll = Math.max(0, data.mapHeight - data.viewportHeight)
+  const desiredScroll = clampValue(
+    targetY - data.viewportHeight * 0.38,
+    0,
+    maxScroll
+  )
+
+  data.cameraY = desiredScroll
+  data.mapLayer.style.transition = animate ? 'transform 260ms ease' : 'none'
+  data.mapLayer.style.transform = `translateY(${-desiredScroll}px)`
+}
+
+function renderMathLadderBoard(data, { preview = false, showResults = false } = {}) {
+  if (!mathLadderBoard) return
+
+  mathLadderBoard.innerHTML = ''
+  mathLadderBoard.style.height = `${data.viewportHeight}px`
+
+  data.runnerMap = new Map()
+  data.tokenElementMap = new Map()
+  data.rungElementMap = new Map()
+  data.resultChipMap = new Map()
+
+  const topRow = document.createElement('div')
+  topRow.className = 'math-ladder-top-row'
+  topRow.style.gridTemplateColumns = `repeat(${data.players.length}, minmax(0, 1fr))`
+
+  data.players.forEach((player) => {
+    const chip = document.createElement('div')
+    chip.className = 'math-ladder-name-chip'
+    chip.textContent = player.name
+    topRow.appendChild(chip)
+  })
+
+  const bottomRow = document.createElement('div')
+  bottomRow.className = 'math-ladder-bottom-row'
+  bottomRow.style.gridTemplateColumns = `repeat(${data.players.length}, minmax(0, 1fr))`
+
+  data.players.forEach((player) => {
+    const chip = document.createElement('div')
+    chip.className = 'math-ladder-result-chip'
+    chip.dataset.playerId = player.id
+    chip.innerHTML = showResults && player.formula
+      ? `<strong>${escapeHtml(player.name)}</strong><br><span>${Number(player.formula.result.toFixed(2))}</span>`
+      : `<strong>${escapeHtml(player.name)}</strong>`
+    bottomRow.appendChild(chip)
+    data.resultChipMap.set(player.id, chip)
+  })
+
+  const mapLayer = document.createElement('div')
+  mapLayer.className = 'math-ladder-map'
+  mapLayer.style.height = `${data.mapHeight}px`
+  data.mapLayer = mapLayer
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('viewBox', `0 0 ${data.width} ${data.mapHeight}`)
+  svg.setAttribute('preserveAspectRatio', 'none')
+  svg.classList.add('math-ladder-svg')
+
+  data.columns.forEach((column) => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+    line.setAttribute('x1', column.x)
+    line.setAttribute('y1', data.topY)
+    line.setAttribute('x2', column.x)
+    line.setAttribute('y2', data.bottomY)
+    line.setAttribute('class', 'math-ladder-path')
+    svg.appendChild(line)
+  })
+
+  data.rungs.forEach((rung) => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+    line.setAttribute('x1', data.columns[rung.from].x)
+    line.setAttribute('y1', rung.rowY)
+    line.setAttribute('x2', data.columns[rung.to].x)
+    line.setAttribute('y2', rung.rowY)
+    line.setAttribute('class', 'math-ladder-cross')
+    line.dataset.rungId = rung.id
+    svg.appendChild(line)
+    data.rungElementMap.set(rung.id, line)
+  })
+
+  mapLayer.appendChild(svg)
+
+  data.tokenRows.forEach((row) => {
+    data.columns.forEach((column, columnIndex) => {
+      const token = data.tokens[row.index][columnIndex]
+      const tokenEl = document.createElement('div')
+      tokenEl.className = `math-ladder-token ${row.type.includes('op') ? 'operator' : 'number'}`
+      tokenEl.dataset.tokenId = token.id
+      tokenEl.textContent = preview ? '?' : token.displayValue
+      tokenEl.style.left = `${column.x}px`
+      tokenEl.style.top = `${row.y}px`
+      mapLayer.appendChild(tokenEl)
+      data.tokenElementMap.set(token.id, tokenEl)
+    })
+  })
+
+  data.players.forEach((player) => {
+    const runner = document.createElement('div')
+    runner.className = 'math-ladder-runner'
+    runner.textContent = player.name.slice(0, 1)
+    runner.style.left = `${data.columns[player.startIndex].x}px`
+    runner.style.top = `${data.topY}px`
+    runner.style.background = player.color
+    runner.style.borderColor = 'rgba(255,255,255,0.95)'
+    mapLayer.appendChild(runner)
+    data.runnerMap.set(player.id, runner)
+  })
+
+  mathLadderBoard.appendChild(mapLayer)
+  mathLadderBoard.appendChild(topRow)
+  mathLadderBoard.appendChild(bottomRow)
+
+  setMathLadderCamera(data, data.topY, false)
+}
+
+function animateMathLadderRunner(player, trace, data) {
+  const runner = data.runnerMap.get(player.id)
+  if (!runner) return Promise.resolve()
+
+  const moveRunner = (x, y, duration = 220) => {
+    return new Promise((resolve) => {
+      runner.style.transition = `left ${duration}ms linear, top ${duration}ms linear`
+      requestAnimationFrame(() => {
+        runner.style.left = `${x}px`
+        runner.style.top = `${y}px`
+        setMathLadderCamera(data, y, true)
+      })
+      setTimeout(resolve, duration + 30)
+    })
+  }
+
+  const flashToken = (tokenId) => {
+    const tokenEl = data.tokenElementMap.get(tokenId)
+    if (!tokenEl) return
+    tokenEl.classList.add('hit')
+    setTimeout(() => tokenEl.classList.remove('hit'), 280)
+  }
+
+  const activateRung = (rungId) => {
+    const rungEl = data.rungElementMap.get(rungId)
+    if (!rungEl) return
+    rungEl.classList.add('active')
+  }
+
+  return (async () => {
+    setMathLadderCamera(data, trace.points[0].y, false)
+
+    for (let index = 1; index < trace.points.length; index += 1) {
+      const point = trace.points[index]
+      const prev = trace.points[index - 1]
+      const distance = Math.hypot(point.x - prev.x, point.y - prev.y)
+      const duration = Math.max(140, Math.min(320, distance * 1.8))
+
+      await moveRunner(point.x, point.y, duration)
+
+      if (point.rungId) activateRung(point.rungId)
+      if (point.tokenId) flashToken(point.tokenId)
+    }
+
+    const resultChip = data.resultChipMap.get(player.id)
+    if (resultChip && player.formula) {
+      resultChip.innerHTML = `
+        <strong>${escapeHtml(player.name)}</strong><br>
+        <span>${Number(player.formula.result.toFixed(2))}</span>
+      `
+    }
+  })()
+}
+
+async function runMathLadderAnimation(data) {
+  renderMathLadderLegend()
+
+  for (let index = 0; index < data.players.length; index += 1) {
+    const player = data.players[index]
+    const trace = data.traces[index]
+
+    await animateMathLadderRunner(player, trace, data)
+    await new Promise((resolve) => setTimeout(resolve, 120))
+  }
+
+  finishMathLadder(data)
+}
+
+function finishMathLadder(data) {
+  mathLadderRunning = false
+  mathLadderFinished = true
+
+  const ranking = [...data.players]
+    .filter((player) => player.formula)
+    .sort((a, b) => b.formula.result - a.formula.result)
+
+  const winnerId = ranking[0]?.id
+
+  if (winnerId && data.resultChipMap.has(winnerId)) {
+    data.resultChipMap.get(winnerId).classList.add('winner')
+  }
+
+  renderMathLadderResults()
+  setMathLadderInputLock(false)
+  setMathLadderShuffleLock(false)
+
+  if (mathLadderStatusText) {
+    mathLadderStatusText.textContent = '사다리 완주 완료! 결과를 확인해줘.'
+  }
+setMathLadderCamera(data, data.bottomY, true)
+}
+
+function startMathLadder() {
+  if (!mathLadderInput || mathLadderRunning) return
+
+  const parsed = parseMathLadderPlayers(mathLadderInput.value)
+  if (!handleMathLadderParseFailure(parsed)) return
+
+  setMathLadderPlayers(parsed.players)
+  setMathLadderInputLock(true)
+  setMathLadderShuffleLock(true)
+  mathLadderRunning = true
+  mathLadderFinished = false
+
+  currentMathLadderData = buildMathLadderData(mathLadderPlayers, { randomize: true })
+  renderMathLadderBoard(currentMathLadderData, { preview: false, showResults: false })
+setMathLadderCamera(currentMathLadderData, currentMathLadderData.topY, false)
+
+  if (mathLadderStatusText) {
+    mathLadderStatusText.textContent = '사다리를 타는 중...'
+  }
+
+  runMathLadderAnimation(currentMathLadderData)
+}
+
+function shuffleMathLadder() {
+  if (!mathLadderInput || mathLadderRunning) return
+
+  const parsed = parseMathLadderPlayers(mathLadderInput.value)
+  if (!handleMathLadderParseFailure(parsed)) return
+
+  setMathLadderPlayers(shuffleArray(parsed.players))
+  mathLadderInput.value = mathLadderPlayers.map((player) => player.name).join(', ')
+
+  currentMathLadderData = buildMathLadderData(mathLadderPlayers, { randomize: false })
+  renderMathLadderBoard(currentMathLadderData, { preview: true, showResults: false })
+  renderMathLadderLegend()
+  renderMathLadderResults()
+
+  if (mathLadderStatusText) {
+    mathLadderStatusText.textContent = '참가자 시작 위치가 랜덤으로 재배치되었다.'
+  }
+}
+
+function resetMathLadder() {
+  if (!mathLadderInput) return
+
+  const parsed = parseMathLadderPlayers(mathLadderInput.value)
+
+  if (parsed.status === 'OK') {
+    setMathLadderPlayers(parsed.players)
+  } else {
+    mathLadderInput.value = lastMathLadderValidText
+    const fallbackParsed = parseMathLadderPlayers(lastMathLadderValidText)
+    if (fallbackParsed.status === 'OK') {
+      setMathLadderPlayers(fallbackParsed.players)
+    }
+  }
+
+  mathLadderPlayers.forEach((player) => {
+    player.formula = null
+  })
+
+  mathLadderRunning = false
+  mathLadderFinished = false
+  currentMathLadderData = buildMathLadderData(mathLadderPlayers, { randomize: false })
+
+  renderMathLadderBoard(currentMathLadderData, { preview: true, showResults: false })
+setMathLadderCamera(currentMathLadderData, currentMathLadderData.topY, false)
+  renderMathLadderLegend()
+  renderMathLadderResults()
+  setMathLadderInputLock(false)
+  setMathLadderShuffleLock(false)
+
+  if (mathLadderStatusText) {
+    mathLadderStatusText.textContent = '사다리 준비가 다시 완료되었다.'
+  }
+}
+
+function ensureMathLadderReady() {
+  if (!mathLadderInput || mathLadderRunning) return
+
+  const parsed = parseMathLadderPlayers(mathLadderInput.value)
+  if (!handleMathLadderParseFailure(parsed)) return
+
+  setMathLadderPlayers(parsed.players)
+  currentMathLadderData = buildMathLadderData(mathLadderPlayers, { randomize: false })
+
+  renderMathLadderBoard(currentMathLadderData, { preview: true, showResults: false })
+setMathLadderCamera(currentMathLadderData, currentMathLadderData.topY, false)
+  renderMathLadderLegend()
+  renderMathLadderResults()
+
+  if (mathLadderStatusText) {
+    mathLadderStatusText.textContent = '참가자 설정 완료. 시작 버튼을 누르면 랜덤 사다리가 생성된다.'
+  }
+}
+
+
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer)
   resizeTimer = setTimeout(() => {
@@ -2492,6 +3275,18 @@ window.addEventListener('resize', () => {
       syncRaceMobileLayout()
     }
 
+if (screens.game3?.classList.contains('active') && currentMathLadderData) {
+  renderMathLadderBoard(currentMathLadderData, {
+    preview: !mathLadderFinished,
+    showResults: mathLadderFinished
+  })
+  setMathLadderCamera(
+    currentMathLadderData,
+    currentMathLadderData.topY + currentMathLadderData.cameraY,
+    false
+  )
+}
+
     lastViewportWidth = nextWidth
     lastViewportHeight = nextHeight
   }, 180)
@@ -2519,6 +3314,18 @@ window.addEventListener('orientationchange', () => {
       syncRaceMobileLayout()
     }
 
+if (screens.game3?.classList.contains('active') && currentMathLadderData) {
+  renderMathLadderBoard(currentMathLadderData, {
+    preview: !mathLadderFinished,
+    showResults: mathLadderFinished
+  })
+  setMathLadderCamera(
+    currentMathLadderData,
+    currentMathLadderData.topY + currentMathLadderData.cameraY,
+    false
+  )
+}
+
     lastViewportWidth = nextWidth
     lastViewportHeight = nextHeight
   }, 220)
@@ -2533,3 +3340,6 @@ setGame1InputLock(false)
 setGame1ShuffleLock(false)
 setRaceInputLock(false)
 setRaceShuffleLock(false)
+ensureMathLadderReady()
+setMathLadderInputLock(false)
+setMathLadderShuffleLock(false)
