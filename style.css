@@ -1,4 +1,4 @@
-﻿* {
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -326,11 +326,45 @@ input:disabled {
   line-height: 1.5;
 }
 
+#raceStatusText {
+  min-height: 56px;
+  height: 56px;
+  overflow-y: auto;
+  padding-right: 4px;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 640px) {
+  #raceStatusText {
+    min-height: 64px;
+    height: 64px;
+  }
+}
+
 .button-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
-  flex-wrap: wrap;
   margin-top: 16px;
+  width: 100%;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 13px 14px;
+  text-align: center;
+  white-space: nowrap;
+  word-break: keep-all;
+  line-height: 1.2;
+  border-radius: 999px;
+  font-weight: 700;
+  color: var(--brown);
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.08);
+  transition: transform 0.2s ease;
 }
 
 .action-btn {
@@ -1126,8 +1160,14 @@ body.orientation-blocked .orientation-lock-overlay {
 }
 
 @media (max-width: 480px) {
+
   .button-row {
-    flex-direction: column;
+    gap: 8px;
+  }
+
+  .action-btn {
+    padding: 12px 8px;
+    font-size: 0.92rem;
   }
 
   .action-btn,
@@ -1456,7 +1496,7 @@ body.orientation-blocked .orientation-lock-overlay {
   }
 
   body.game1-mode .button-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   body.game1-mode .action-btn,
@@ -1526,492 +1566,4 @@ body.orientation-blocked .orientation-lock-overlay {
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none;
-}
-
-/* 모바일 세로 경마: 해설 높이 고정해서 아래 요소 흔들림 방지 */
-@media (max-width: 1024px) and (pointer: coarse) {
-  body.game2-mobile-layout #raceStatusText.status-text {
-    line-height: 1.5;
-    min-height: calc(1.5em * 2);
-    height: calc(1.5em * 2);
-    overflow: hidden;
-
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-}
-
-@media (max-width: 640px) and (pointer: coarse) {
-  body.game2-mobile-layout #raceStatusText.status-text {
-    line-height: 1.45;
-    min-height: calc(1.45em * 2);
-    height: calc(1.45em * 2);
-  }
-}
-
-/* =========================
-   game3 : top battle
-========================= */
-
-.top-card {
-  padding: 20px;
-}
-
-.top-layout {
-  display: grid;
-  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
-  gap: 16px;
-  min-height: 720px;
-}
-
-.top-sidebar {
-  min-width: 0;
-  background: rgba(255, 255, 255, 0.34);
-  border: 2px solid rgba(255, 255, 255, 0.75);
-  border-radius: 24px;
-  box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
-}
-
-.top-sidebar-inner {
-  height: 100%;
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.top-main {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.top-main-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.top-arena-shell {
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.52), transparent 24%),
-    linear-gradient(180deg, #fff8f6 0%, #fff0e5 100%);
-  border: 3px solid rgba(255, 255, 255, 0.8);
-  border-radius: 28px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42), 0 16px 28px rgba(120, 90, 70, 0.08);
-  padding: 16px;
-}
-
-.top-arena-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-
-.top-arena-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--soft-brown);
-  box-shadow: 0 6px 14px rgba(120, 90, 70, 0.06);
-  font-weight: 700;
-}
-
-.top-arena {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  min-height: 0;
-  overflow: hidden;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at 50% 40%, #fffaf8 0%, #ffeede 32%, #f3d7c0 58%, #e5b893 78%, #d49b73 100%);
-  box-shadow: inset 0 0 35px rgba(110, 73, 48, 0.16);
-}
-
-.top-arena::before,
-.top-arena::after {
-  content: '';
-  position: absolute;
-  inset: 12px;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.top-arena::before {
-  border: 2px dashed rgba(255, 255, 255, 0.28);
-}
-
-.top-arena::after {
-  inset: auto;
-  width: 94px;
-  height: 94px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.04) 68%, transparent 70%);
-}
-
-.top-arena-boundary {
-  position: absolute;
-  border-radius: 50%;
-  border: 10px solid rgba(255, 255, 255, 0.62);
-  box-shadow:
-    inset 0 0 0 8px rgba(215, 151, 103, 0.32),
-    0 0 0 2px rgba(255, 255, 255, 0.15);
-  background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 72%);
-  transition: width 0.35s ease, height 0.35s ease, left 0.35s ease, top 0.35s ease, box-shadow 0.35s ease;
-}
-
-.top-arena.sudden-death .top-arena-boundary {
-  box-shadow:
-    inset 0 0 0 10px rgba(255, 183, 128, 0.42),
-    0 0 22px rgba(255, 220, 176, 0.35);
-}
-
-.top-arena.wall-open .top-arena-boundary {
-  border-width: 3px;
-  border-style: dashed;
-  background: none;
-  box-shadow:
-    inset 0 0 0 0 rgba(0, 0, 0, 0),
-    0 0 0 1px rgba(255, 255, 255, 0.18);
-  opacity: 0.58;
-}
-
-.top-arena.wall-open.sudden-death .top-arena-boundary {
-  opacity: 0.88;
-}
-
-.top-arena-core {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 82px;
-  height: 82px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.05) 62%, transparent 64%);
-  pointer-events: none;
-}
-
-.top-fighter {
-  position: absolute;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  will-change: transform, left, top;
-  transition: opacity 0.25s ease, filter 0.25s ease, box-shadow 0.25s ease;
-}
-
-.top-fighter.preview {
-  filter: saturate(0.95);
-}
-
-.top-fighter-disc {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 34%, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.2) 22%, transparent 23%),
-    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.24) 0%, transparent 62%),
-    linear-gradient(135deg, var(--fighter-color) 0%, color-mix(in srgb, var(--fighter-color) 75%, #ffffff 25%) 100%);
-  border: 3px solid rgba(255, 255, 255, 0.84);
-  box-shadow:
-    0 8px 18px rgba(120, 90, 70, 0.18),
-    inset 0 -8px 16px rgba(107, 76, 56, 0.12);
-  overflow: hidden;
-}
-
-.top-fighter-disc-inner {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 42%;
-  height: 42%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.15) 70%, transparent 72%);
-  box-shadow: 0 0 0 5px rgba(255,255,255,0.18);
-}
-
-.top-fighter-shine {
-  position: absolute;
-  inset: 14% 18% auto auto;
-  width: 34%;
-  height: 18%;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.44);
-  transform: rotate(28deg);
-}
-
-.top-fighter-name {
-  position: absolute;
-  left: 50%;
-  bottom: -24px;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #6e5344;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
-}
-
-.top-fighter.is-glowing .top-fighter-disc,
-.top-fighter.is-winner .top-fighter-disc {
-  box-shadow:
-    0 0 0 4px rgba(255, 255, 255, 0.42),
-    0 0 18px rgba(255, 229, 176, 0.9),
-    0 8px 18px rgba(120, 90, 70, 0.18),
-    inset 0 -8px 16px rgba(107, 76, 56, 0.12);
-}
-
-.top-fighter.is-eliminated {
-  opacity: 0.48;
-  filter: grayscale(0.16);
-}
-
-.top-fighter.is-out {
-  opacity: 0.18;
-}
-
-.top-fighter.is-stopped .top-fighter-disc {
-  filter: saturate(0.82);
-}
-
-.top-bottom-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-}
-
-.top-ranking-panel {
-  min-height: 220px;
-}
-
-.top-ranking-item.out {
-  opacity: 0.72;
-}
-
-.top-ranking-line {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: space-between;
-}
-
-.top-ranking-name {
-  flex: 1 1 auto;
-  text-align: right;
-  font-weight: 700;
-  color: var(--brown);
-}
-
-.top-ranking-meta {
-  margin-top: 4px;
-  font-size: 0.82rem;
-  color: #8b7366;
-}
-
-@media (max-width: 1024px) {
-  .top-layout {
-    grid-template-columns: 1fr;
-    min-height: auto;
-  }
-}
-
-@media (max-width: 1024px) and (pointer: coarse) {
-  #game3Screen .top-card {
-    padding: 12px;
-  }
-
-  #game3Screen .top-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  #game3Screen .top-sidebar,
-  #game3Screen .top-arena-shell,
-  #game3Screen .top-ranking-panel {
-    border-radius: 22px;
-  }
-
-  #game3Screen .top-sidebar-inner,
-  #game3Screen .top-arena-shell,
-  #game3Screen .top-ranking-panel,
-  #game3Screen .controls-wrap,
-  #game3Screen .scoreboard-card {
-    padding: 14px;
-  }
-
-  #game3Screen .top-sidebar .scoreboard-card {
-    display: none;
-  }
-
-  #game3Screen .button-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  #game3Screen .action-btn,
-  #game3Screen .back-btn {
-    width: 100%;
-  }
-
-  #game3Screen .top-arena {
-    aspect-ratio: 1 / 1;
-  }
-}
-
-@media (max-width: 640px) and (pointer: coarse) {
-  #game3Screen .top-card {
-    padding: 10px;
-  }
-
-  #game3Screen .top-main-header h2 {
-    font-size: 2rem;
-  }
-
-  #game3Screen .small-badge {
-    font-size: 0.82rem;
-    padding: 8px 12px;
-  }
-
-  #game3Screen .top-sidebar-inner,
-  #game3Screen .top-arena-shell,
-  #game3Screen .top-ranking-panel,
-  #game3Screen .controls-wrap {
-    padding: 12px;
-  }
-
-  #game3Screen .top-arena-pill {
-    width: 100%;
-    justify-content: center;
-  }
-
-  #game3Screen .top-fighter-name {
-    font-size: 0.72rem;
-    bottom: -22px;
-  }
-}
-
-/* =========================
-   game3 desktop fit
-========================= */
-@media (min-width: 1025px) {
-  body.game3-mode {
-    overflow: hidden;
-  }
-
-  body.game3-mode .app {
-    min-height: 100dvh;
-    align-items: stretch;
-    padding: clamp(8px, 1.2vw, 16px);
-  }
-
-  body.game3-mode .game-screen {
-    height: calc(100dvh - clamp(16px, 2.4vw, 32px));
-  }
-
-  body.game3-mode #game3Screen .top-card {
-    height: 100%;
-    padding: clamp(10px, 1.2vw, 16px);
-    overflow: hidden;
-  }
-
-  body.game3-mode #game3Screen .top-layout {
-    height: 100%;
-    min-height: 0;
-    grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
-    gap: clamp(10px, 1vw, 16px);
-  }
-
-  body.game3-mode #game3Screen .top-sidebar {
-    height: 100%;
-    min-height: 0;
-  }
-
-  body.game3-mode #game3Screen .top-sidebar-inner {
-    height: 100%;
-    min-height: 0;
-    overflow: auto;
-    padding: 16px;
-  }
-
-  body.game3-mode #game3Screen .top-main {
-    height: 100%;
-    min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(250px, 290px);
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: clamp(10px, 1vw, 14px);
-    align-items: stretch;
-  }
-
-  body.game3-mode #game3Screen .top-main-header {
-    grid-column: 1 / -1;
-    min-height: 0;
-  }
-
-  body.game3-mode #game3Screen .top-arena-shell {
-    min-height: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    padding: 14px;
-  }
-
-  body.game3-mode #game3Screen .top-arena-head {
-    margin-bottom: 10px;
-  }
-
-  body.game3-mode #game3Screen .top-arena {
-    width: min(100%, calc(100dvh - 240px));
-    aspect-ratio: 1 / 1;
-    max-height: 100%;
-    min-height: 0;
-    margin: 0 auto;
-  }
-
-  body.game3-mode #game3Screen .top-bottom-grid {
-    min-height: 0;
-    height: 100%;
-  }
-
-  body.game3-mode #game3Screen .top-ranking-panel {
-    min-height: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    padding: 14px;
-  }
-
-  body.game3-mode #game3Screen .top-ranking-panel .race-panel-head {
-    margin-bottom: 10px;
-  }
-
-  body.game3-mode #game3Screen .top-ranking-list {
-    flex: 1 1 auto;
-    min-height: 0;
-    max-height: none;
-    overflow-y: auto;
-  }
-
-  body.game3-mode #game3Screen .top-fighter-name {
-    font-size: 0.74rem;
-    bottom: -22px;
-  }
 }
