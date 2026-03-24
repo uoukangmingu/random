@@ -2875,7 +2875,6 @@ function prepareBattleRoundRows(roundPlayers) {
           <span class="battle-player-name">${escapeHtml(player.label)}</span>
           <span class="battle-result-pill hidden" aria-hidden="true"></span>
         </div>
-        <div class="battle-player-sub">카드를 기다리는 중</div>
       </div>
       <div class="battle-hand hand-five">${slotsMarkup}</div>
     `
@@ -3122,7 +3121,7 @@ function createBattleFinalSummary(player) {
 
   const rankBadge = document.createElement('div')
   rankBadge.className = 'battle-final-rank'
-  rankBadge.innerHTML = `<strong>${player.finalRank}위</strong><span>${escapeHtml(player.label)}</span>`
+  rankBadge.innerHTML = `<strong>${player.finalRank}위</strong>`
 
   const finalBox = document.createElement('div')
   finalBox.className = 'battle-final-result-box'
