@@ -55,7 +55,7 @@
           <div>
             <p class="small-badge">🎲 luck games 🎲</p>
             <h2>운 게임 목록</h2>
-            <p class="sub-text">1번, 2번, 3번 게임은 플레이 가능하고, 나머지는 추후 개발 예정이다.</p>
+            <p class="sub-text">1번부터 3번까지 플레이 가능하며, 나머지 게임은 추후 순차적으로 개발될 예정이다.</p>
           </div>
           <button class="back-btn" data-target="menu" type="button">← 뒤로가기</button>
         </div>
@@ -73,11 +73,11 @@
             <p>완전 랜덤으로 진행되는 자동 경주 게임</p>
           </button>
 
-<button class="game-item game-launch" data-game="3" type="button">
-  <div class="game-num">3</div>
-  <h3>사칙연산 사다리</h3>
-  <p>사다리를 타며 식을 완성하고 계산 결과로 순위를 정하는 게임</p>
-</button>
+          <button class="game-item game-launch" data-game="3" type="button">
+            <div class="game-num">3</div>
+            <h3>카드 연산 배틀</h3>
+            <p>카드를 뒤집어 중간 계산과 최종 순위를 겨루는 게임</p>
+          </button>
 
           <button class="game-item game-coming-soon" type="button">
             <div class="game-num">4</div>
@@ -265,85 +265,94 @@
         </div>
       </div>
     </section>
-<section id="game3Screen" class="screen game-screen">
-  <div class="card game-card arithmetic-card">
-    <div class="arithmetic-layout">
-      <aside class="arithmetic-sidebar">
-        <div class="arithmetic-sidebar-inner">
-          <div class="sidebar-head">
-            <h3 class="sidebar-title">사칙연산 사다리 설정</h3>
-            <p class="sub-text">
-              이름을 쉼표로 구분해 입력.
-              예: 홍길동, 김아무개, 박철수
-            </p>
-          </div>
+    <section id="game3Screen" class="screen game-screen">
+      <div class="card game-card battle-card-screen">
+        <div class="battle-layout">
+          <aside class="battle-sidebar">
+            <div class="battle-sidebar-inner">
+              <div class="sidebar-head">
+                <h3 class="sidebar-title">카드 설정</h3>
+                <p class="sub-text">
+                  이름을 쉼표로 구분해 참가자를 등록.
+                  예: 홍길동, 김아무개, 박철수
+                </p>
+              </div>
 
-          <div class="controls-wrap">
-            <div class="input-card">
-              <label for="mathLadderInput">설정</label>
-              <input
-                id="mathLadderInput"
-                type="text"
-                value="홍길동, 김아무개, 박철수"
-                autocomplete="off"
-              />
-              <p class="helper-text">
-                쉼표(,)로 구분해 입력. 최소 2명, 최대 8명까지 가능.
-              </p>
+              <div class="controls-wrap">
+                <div class="input-card">
+                  <label for="battleConfigInput">참가자</label>
+                  <input
+                    id="battleConfigInput"
+                    type="text"
+                    value="홍길동, 김아무개, 박철수"
+                    autocomplete="off"
+                  />
+                  <p class="helper-text">
+                    쉼표(,)로 구분해 입력. 참가자*n 형식은 불가하며 최대 8명까지 가능.
+                  </p>
+                </div>
+
+                <div class="button-row">
+                  <button id="shuffleBattleBtn" class="action-btn secondary" type="button">셔플</button>
+                  <button id="startBattleBtn" class="action-btn primary" type="button">시작</button>
+                  <button id="resetBattleBtn" class="action-btn soft" type="button">리셋</button>
+                </div>
+
+                <div id="battleStatusText" class="status-text">
+                  참가자를 설정하면 아래 카드 테이블에 실시간 반영된다.
+                </div>
+              </div>
+
+              <div class="scoreboard-card">
+                <div class="scoreboard-head">
+                  <h3>참가자 목록</h3>
+                  <span id="battleTotalInfo">총 0명</span>
+                </div>
+                <div id="battleLegend" class="slot-legend"></div>
+              </div>
+            </div>
+          </aside>
+
+          <div class="battle-main">
+            <div class="battle-main-header">
+              <div>
+                <p class="small-badge game-mini-badge">🃏 game 3 🃏</p>
+                <h2>카드 연산 배틀</h2>
+                <p class="sub-text">카드 5장을 순서대로 공개해 중간 계산과 최종 점수 순위를 겨루는 게임이다.</p>
+              </div>
+
+              <div class="game-header-actions">
+                <button class="back-btn" data-target="luck" type="button">← 목록으로</button>
+              </div>
             </div>
 
-            <div class="button-row">
-              <button id="shuffleMathLadderBtn" class="action-btn secondary" type="button">셔플</button>
-              <button id="startMathLadderBtn" class="action-btn primary" type="button">시작</button>
-              <button id="resetMathLadderBtn" class="action-btn soft" type="button">리셋</button>
+            <div class="battle-table-card">
+              <div class="battle-deck-stage">
+                <div class="battle-deck-label">shuffle deck</div>
+                <div id="battleDeck" class="battle-deck" aria-hidden="true">
+                  <span class="battle-deck-card battle-deck-card-1"></span>
+                  <span class="battle-deck-card battle-deck-card-2"></span>
+                  <span class="battle-deck-card battle-deck-card-3"></span>
+                  <span class="battle-deck-card battle-deck-card-4"></span>
+                </div>
+              </div>
+
+              <div id="battleTable" class="battle-table"></div>
             </div>
 
-            <div id="mathLadderStatusText" class="status-text">
-              참가자를 설정하면 사다리와 시작 위치가 실시간 반영된다.
+            <div class="battle-bottom-grid">
+              <div class="battle-panel">
+                <div class="battle-panel-head">
+                  <h3>실시간 결과</h3>
+                </div>
+                <div id="battleRankingList" class="battle-ranking-list"></div>
+              </div>
             </div>
-          </div>
-
-          <div class="scoreboard-card">
-            <div class="scoreboard-head">
-              <h3>참가자 목록</h3>
-              <span id="mathLadderTotalInfo">총 0명</span>
-            </div>
-            <div id="mathLadderLegend" class="slot-legend"></div>
-          </div>
-        </div>
-      </aside>
-
-      <div class="arithmetic-main">
-        <div class="arithmetic-main-header">
-          <div>
-            <p class="small-badge game-mini-badge">🧮 game 3 🧮</p>
-            <h2>사칙연산 사다리</h2>
-            <p class="sub-text">
-              숫자, 연산자, 숫자, 연산자, 숫자를 얻어 식을 완성하고 결과가 큰 순서대로 순위를 정한다.
-            </p>
-          </div>
-
-          <div class="game-header-actions">
-            <button class="back-btn" data-target="luck" type="button">← 목록으로</button>
-          </div>
-        </div>
-
-        <div class="arithmetic-board-wrap">
-          <div id="mathLadderBoard" class="math-ladder-board"></div>
-        </div>
-
-        <div class="arithmetic-bottom-grid">
-          <div class="race-panel">
-            <div class="race-panel-head">
-              <h3>계산 결과</h3>
-            </div>
-            <div id="mathLadderResultList" class="race-ranking-list"></div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
+
   </main>
 
   <div id="popupOverlay" class="popup-overlay hidden">
