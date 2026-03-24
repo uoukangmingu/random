@@ -1,4 +1,3 @@
-
 const screens = {
   home: document.getElementById('homeScreen'),
   menu: document.getElementById('menuScreen'),
@@ -64,15 +63,18 @@ const raceMainHeader = document.querySelector('#game2Screen .race-main-header')
 const raceHeaderActions = document.querySelector('#game2Screen .race-main-header .game-header-actions')
 const raceBackBtn = document.querySelector('#game2Screen .race-main-header .back-btn[data-target="luck"]')
 
-const mathLadderInput = document.getElementById('mathLadderInput')
-const shuffleMathLadderBtn = document.getElementById('shuffleMathLadderBtn')
-const startMathLadderBtn = document.getElementById('startMathLadderBtn')
-const resetMathLadderBtn = document.getElementById('resetMathLadderBtn')
-const mathLadderStatusText = document.getElementById('mathLadderStatusText')
-const mathLadderTotalInfo = document.getElementById('mathLadderTotalInfo')
-const mathLadderLegend = document.getElementById('mathLadderLegend')
-const mathLadderBoard = document.getElementById('mathLadderBoard')
-const mathLadderResultList = document.getElementById('mathLadderResultList')
+const battleConfigInput = document.getElementById('battleConfigInput')
+const shuffleBattleBtn = document.getElementById('shuffleBattleBtn')
+const startBattleBtn = document.getElementById('startBattleBtn')
+const resetBattleBtn = document.getElementById('resetBattleBtn')
+const battleStatusText = document.getElementById('battleStatusText')
+const battleTotalInfo = document.getElementById('battleTotalInfo')
+const battleLegend = document.getElementById('battleLegend')
+const battleTable = document.getElementById('battleTable')
+const battleRankingList = document.getElementById('battleRankingList')
+const battleDeck = document.getElementById('battleDeck')
+const battleDesc = document.querySelector('#game3Screen .battle-main-header .sub-text')
+
 
 const {
   Engine,
@@ -227,17 +229,19 @@ let raceLeaderName = ''
 let lastRaceValidConfigText = raceConfigInput ? raceConfigInput.value : ''
 let lastRaceAppliedRawText = raceConfigInput ? raceConfigInput.value : ''
 
-const MATH_LADDER_MAX_COUNT = 8
-const MATH_LADDER_MIN_COUNT = 2
-const MATH_LADDER_TOKEN_ORDER = ['number1', 'op1', 'number2', 'op2', 'number3']
-const MATH_OPERATORS = ['+', '-', '*', '/']
+const BATTLE_MAX_PLAYERS = 8
+const BATTLE_OPERATORS = ['+', '-', '×', '÷']
 
-let mathLadderPlayers = []
-let mathLadderRunning = false
-let mathLadderFinished = false
-let lastMathLadderValidText = mathLadderInput ? mathLadderInput.value : ''
-let lastMathLadderAppliedRawText = mathLadderInput ? mathLadderInput.value : ''
-let currentMathLadderData = null
+let battlePlayers = []
+let battleGameRunning = false
+let battleFlowToken = 0
+let battleCurrentToken = 0
+let battlePhase = 'idle'
+let battleRoundPlayers = []
+let battleInteractionLocked = false
+let lastBattleValidConfigText = battleConfigInput ? battleConfigInput.value : ''
+let lastBattleAppliedRawText = battleConfigInput ? battleConfigInput.value : ''
+let popupWaitResolver = null
 
 function getCurrentNormalBallCount() {
   const slotCount = currentSlots.length || 1
@@ -266,20 +270,6 @@ function setRaceInputLock(isLocked) {
   raceConfigInput.disabled = isLocked
   raceConfigInput.style.opacity = isLocked ? '0.65' : '1'
   raceConfigInput.style.cursor = isLocked ? 'not-allowed' : ''
-}
-
-function setMathLadderInputLock(isLocked) {
-  if (!mathLadderInput) return
-  mathLadderInput.disabled = isLocked
-  mathLadderInput.style.opacity = isLocked ? '0.65' : '1'
-  mathLadderInput.style.cursor = isLocked ? 'not-allowed' : ''
-}
-
-function setMathLadderShuffleLock(isLocked) {
-  if (!shuffleMathLadderBtn) return
-  shuffleMathLadderBtn.disabled = isLocked
-  shuffleMathLadderBtn.style.opacity = isLocked ? '0.55' : '1'
-  shuffleMathLadderBtn.style.cursor = isLocked ? 'not-allowed' : ''
 }
 
 function setGame1ShuffleLock(isLocked) {
@@ -347,6 +337,19 @@ function closePopup() {
   if (popupOverlay) {
     popupOverlay.classList.add('hidden')
   }
+
+  if (popupWaitResolver) {
+    const resolver = popupWaitResolver
+    popupWaitResolver = null
+    resolver()
+  }
+}
+
+function showPopupAndWait(title, message, options = {}) {
+  showPopup(title, message, options)
+  return new Promise((resolve) => {
+    popupWaitResolver = resolve
+  })
 }
 
 function setDrawerState(isOpen) {
@@ -489,6 +492,7 @@ function syncRaceMobileLayout() {
 function showScreen(target) {
   if (!screens[target]) return
 
+  closePopup()
   Object.values(screens).forEach((screen) => screen?.classList.remove('active'))
   screens[target].classList.add('active')
 
@@ -509,8 +513,9 @@ function showScreen(target) {
   }
 
   if (target !== 'game3') {
-    setMathLadderInputLock(false)
-    setMathLadderShuffleLock(false)
+    stopBattleFlow()
+    setBattleInputLock(false)
+    setBattleShuffleLock(false)
   }
 
   if (target === 'game1') {
@@ -523,7 +528,7 @@ function showScreen(target) {
   }
 
   if (target === 'game3') {
-    ensureMathLadderReady()
+    ensureBattleReady()
   }
 
   updateOrientationGate()
@@ -1891,7 +1896,10 @@ function handleRaceParseFailure(parsed, options = {}) {
       raceStatusText.textContent = '같은 이름은 2번 이상 입력할 수 없다. 말은 이름당 1마리만 가능하다.'
     }
     if (showPopupOnInvalid) {
-      showPopup('중복 이름 불가', '경마 게임은 같은 이름의 말을 여러 마리 만들 수 없어. 이름당 1마리만 가능해.')
+      showPopup(
+        '중복 이름 불가',
+        '경마 게임은 같은 이름의 말을 여러 마리 만들 수 없어. 이름당 1마리만 가능해.'
+      )
     }
     return false
   }
@@ -1901,7 +1909,10 @@ function handleRaceParseFailure(parsed, options = {}) {
       raceStatusText.textContent = '입력 형식을 확인해줘. 예: 홍길동, 김아무개, 박철수'
     }
     if (showPopupOnInvalid) {
-      showPopup('입력 확인', '경마 게임은 이름만 쉼표로 구분해 적어줘. 예: 홍길동, 김아무개, 박철수')
+      showPopup(
+        '입력 확인',
+        '경마 게임은 이름만 쉼표로 구분해 적어줘. 예: 홍길동, 김아무개, 박철수'
+      )
     }
     return false
   }
@@ -2361,6 +2372,790 @@ function raceFrame(timestamp) {
   raceAnimationFrame = requestAnimationFrame(raceFrame)
 }
 
+
+function setBattleInputLock(isLocked) {
+  if (!battleConfigInput) return
+  battleConfigInput.disabled = isLocked
+  battleConfigInput.style.opacity = isLocked ? '0.65' : '1'
+  battleConfigInput.style.cursor = isLocked ? 'not-allowed' : ''
+}
+
+function setBattleShuffleLock(isLocked) {
+  if (!shuffleBattleBtn) return
+  shuffleBattleBtn.disabled = isLocked
+  shuffleBattleBtn.style.opacity = isLocked ? '0.55' : '1'
+  shuffleBattleBtn.style.cursor = isLocked ? 'not-allowed' : ''
+}
+
+function updateBattleDescription() {
+  if (!battleDesc) return
+  battleDesc.textContent = `총 ${battlePlayers.length || 0}명이 카드 5장으로 중간 계산과 최종 점수 순위를 겨루는 게임이다.`
+}
+
+function formatBattleValue(value) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return '-'
+  return Number.isInteger(value) ? String(value) : value.toFixed(1)
+}
+
+function roundBattleValue(value) {
+  return Math.round(value * 10) / 10
+}
+
+function randomBattleOperator() {
+  return BATTLE_OPERATORS[Math.floor(Math.random() * BATTLE_OPERATORS.length)]
+}
+
+function operateBattle(left, operator, right) {
+  switch (operator) {
+    case '+':
+      return left + right
+    case '-':
+      return left - right
+    case '×':
+      return left * right
+    case '÷':
+      return right === 0 ? left : left / right
+    default:
+      return left
+  }
+}
+
+function getRandomBattleNumber({ allowZero = true } = {}) {
+  const min = allowZero ? 0 : 1
+  return Math.floor(rand(min, 101))
+}
+
+function parseBattleConfigToPlayers(text) {
+  const rawItems = text
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (!rawItems.length) {
+    return { status: 'EMPTY' }
+  }
+
+  if (rawItems.length > BATTLE_MAX_PLAYERS) {
+    return { status: 'TOO_MANY', count: rawItems.length }
+  }
+
+  const seen = new Set()
+  const players = []
+
+  for (const raw of rawItems) {
+    if (!raw || raw.includes('*')) {
+      return { status: 'INVALID' }
+    }
+
+    const normalized = raw.replace(/\u0000/g, '').trim()
+    if (!normalized) {
+      return { status: 'INVALID' }
+    }
+
+    if (seen.has(normalized)) {
+      return { status: 'DUPLICATE' }
+    }
+
+    seen.add(normalized)
+    players.push({
+      id: `battle-player-${players.length + 1}`,
+      label: normalized,
+      color: raceHorsePalette[players.length % raceHorsePalette.length]
+    })
+  }
+
+  return { status: 'OK', players }
+}
+
+function handleBattleParseFailure(parsed, { showPopupOnInvalid = false } = {}) {
+  if (!battleStatusText) return false
+
+  if (parsed.status === 'EMPTY') {
+    battleStatusText.textContent = '참가자를 먼저 입력해줘. 예: 홍길동, 김아무개, 박철수'
+    return false
+  }
+
+  if (parsed.status === 'TOO_MANY') {
+    battleStatusText.textContent = `참가자는 최대 ${BATTLE_MAX_PLAYERS}명까지 가능하다.`
+    if (showPopupOnInvalid) {
+      showPopup('참가자 수 초과', `카드 연산 배틀은 최대 ${BATTLE_MAX_PLAYERS}명까지만 참가할 수 있어.`)
+    }
+    return false
+  }
+
+  if (parsed.status === 'DUPLICATE') {
+    battleStatusText.textContent = '같은 이름은 2번 이상 입력할 수 없다.'
+    if (showPopupOnInvalid) {
+      showPopup('중복 이름 불가', '카드 연산 배틀은 같은 이름을 중복 등록할 수 없어.')
+    }
+    return false
+  }
+
+  battleStatusText.textContent = '입력 형식을 확인해줘. 참가자*n 형식은 사용할 수 없다. 예: 홍길동, 김아무개, 박철수'
+  if (showPopupOnInvalid) {
+    showPopup('입력 확인', '참가자 이름만 쉼표로 구분해 적어줘. 참가자*n 형식은 사용할 수 없어.')
+  }
+  return false
+}
+
+function setBattlePlayers(players) {
+  battlePlayers = players
+  if (battleConfigInput) {
+    lastBattleValidConfigText = battleConfigInput.value
+    lastBattleAppliedRawText = battleConfigInput.value
+  }
+  updateBattleDescription()
+}
+
+function renderBattleLegend() {
+  if (!battleLegend || !battleTotalInfo) return
+
+  battleLegend.innerHTML = ''
+
+  battlePlayers.forEach((player) => {
+    const chip = document.createElement('div')
+    chip.className = 'legend-chip'
+    chip.innerHTML = `
+      <span class="legend-dot" style="background:${player.color}"></span>
+      <span>${escapeHtml(player.label)}</span>
+    `
+    battleLegend.appendChild(chip)
+  })
+
+  battleTotalInfo.textContent = `총 ${battlePlayers.length}명`
+}
+
+function createBattleGhostSlots(count) {
+  return Array.from({ length: count }, () => '<div class="battle-slot is-ghost"></div>').join('')
+}
+
+function renderBattleRowsPreview() {
+  if (!battleTable) return
+
+  battleTable.innerHTML = ''
+
+  battlePlayers.forEach((player) => {
+    const row = document.createElement('div')
+    row.className = 'battle-row'
+    row.dataset.playerId = player.id
+    row.innerHTML = `
+      <div class="battle-row-main">
+        <div class="battle-player-head">
+          <span class="legend-dot" style="background:${player.color}"></span>
+          <span class="battle-player-name">${escapeHtml(player.label)}</span>
+          <span class="battle-result-pill hidden">최종 -</span>
+        </div>
+        <div class="battle-player-sub">카드를 기다리는 중</div>
+      </div>
+      <div class="battle-hand hand-five">
+        ${createBattleGhostSlots(5)}
+      </div>
+    `
+    battleTable.appendChild(row)
+  })
+}
+
+function renderBattleRanking(ranking = []) {
+  if (!battleRankingList) return
+
+  if (!ranking.length) {
+    battleRankingList.innerHTML = '<div class="battle-ranking-empty">참가자를 입력한 뒤 시작 버튼을 누르면<br>최종 순위가 여기에 표시된다.</div>'
+    return
+  }
+
+  battleRankingList.innerHTML = ''
+
+  ranking.forEach((player, index) => {
+    const item = document.createElement('div')
+    item.className = `battle-ranking-item${index === 0 ? ' top' : ''}`
+    item.innerHTML = `
+      <div class="battle-rank-num">${index + 1}</div>
+      <div class="battle-rank-main">
+        <div class="battle-rank-name">${escapeHtml(player.label)}</div>
+        <div class="battle-rank-formula">${escapeHtml(getBattleFinalFormulaText(player))}</div>
+      </div>
+      <div class="battle-rank-score">${formatBattleValue(player.final)}점</div>
+    `
+    battleRankingList.appendChild(item)
+  })
+}
+
+function renderBattlePreview() {
+  renderBattleLegend()
+  renderBattleRowsPreview()
+  renderBattleRanking([])
+}
+
+function updateBattleFromInput({ render = true } = {}) {
+  if (!battleConfigInput) return false
+
+  const parsed = parseBattleConfigToPlayers(battleConfigInput.value)
+
+  if (parsed.status !== 'OK') {
+    return handleBattleParseFailure(parsed)
+  }
+
+  setBattlePlayers(parsed.players)
+
+  if (render) {
+    renderBattlePreview()
+    if (battleStatusText) {
+      battleStatusText.textContent = `실시간 반영 완료: 총 ${battlePlayers.length}명`
+    }
+  }
+
+  return true
+}
+
+function ensureBattleReady() {
+  if (!battleConfigInput) return
+
+  if (!battlePlayers.length) {
+    const parsed = parseBattleConfigToPlayers(battleConfigInput.value)
+
+    if (parsed.status === 'OK') {
+      setBattlePlayers(parsed.players)
+    } else {
+      battleConfigInput.value = '홍길동, 김아무개, 박철수'
+      const fallbackParsed = parseBattleConfigToPlayers(battleConfigInput.value)
+      if (fallbackParsed.status === 'OK') {
+        setBattlePlayers(fallbackParsed.players)
+      }
+    }
+  }
+
+  renderBattlePreview()
+
+  if (battleStatusText && !battleGameRunning) {
+    battleStatusText.textContent = '참가 준비 완료. 시작 버튼을 누르면 카드가 섞이고, 각 참가자가 직접 카드를 뒤집는다.'
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function isBattleFlowActive(token) {
+  return battleFlowToken === token && screens.game3?.classList.contains('active')
+}
+
+function stopBattleFlow() {
+  battleFlowToken += 1
+  battleCurrentToken = 0
+  battlePhase = 'idle'
+  battleRoundPlayers = []
+  battleInteractionLocked = false
+  battleGameRunning = false
+  battleDeck?.classList.remove('is-shuffling')
+  setBattleInputLock(false)
+  setBattleShuffleLock(false)
+}
+
+function getBattlePhase1FormulaText(player) {
+  return `${player.cards[0].text} ${player.cards[1].text} ${player.cards[2].text} = ${formatBattleValue(player.interim)}`
+}
+
+function getBattleFinalFormulaText(player) {
+  return `${formatBattleValue(player.interim)} ${player.cards[3].text} ${player.cards[4].text} = ${formatBattleValue(player.final)}`
+}
+
+function buildBattleRoundPlayers() {
+  return battlePlayers.map((player) => {
+    const number1 = getRandomBattleNumber()
+    const operator1 = randomBattleOperator()
+    const number2 = getRandomBattleNumber({ allowZero: operator1 !== '÷' })
+    const operator2 = randomBattleOperator()
+    const number3 = getRandomBattleNumber({ allowZero: operator2 !== '÷' })
+
+    const interim = roundBattleValue(operateBattle(number1, operator1, number2))
+    const final = roundBattleValue(operateBattle(interim, operator2, number3))
+
+    return {
+      ...player,
+      cards: [
+        { type: 'number', value: number1, text: String(number1) },
+        { type: 'operator', value: operator1, text: operator1 },
+        { type: 'number', value: number2, text: String(number2) },
+        { type: 'operator', value: operator2, text: operator2 },
+        { type: 'number', value: number3, text: String(number3) }
+      ],
+      interim,
+      final,
+      nextRevealIndex: 0,
+      phase1Done: false,
+      finalDone: false
+    }
+  })
+}
+
+function createBattleCardElement(card, { flipped = false, actualIndex = null } = {}) {
+  const cardEl = document.createElement('div')
+  cardEl.className = `battle-card type-${card.type}${flipped ? ' is-flipped' : ''}`
+  cardEl.style.setProperty('--deal-rotate', `${Math.round(rand(-18, 18))}deg`)
+  if (actualIndex !== null) {
+    cardEl.dataset.cardIndex = String(actualIndex)
+  }
+  cardEl.setAttribute('role', 'button')
+  cardEl.setAttribute('tabindex', '-1')
+  cardEl.setAttribute('aria-disabled', 'true')
+  cardEl.innerHTML = `
+    <div class="battle-card-inner">
+      <div class="battle-card-face battle-card-back"></div>
+      <div class="battle-card-face battle-card-front">
+        <div class="battle-card-value">${card.type === 'result' ? `<small>${escapeHtml(card.label || '중간 결과')}</small>${escapeHtml(card.text)}` : escapeHtml(card.text)}</div>
+      </div>
+    </div>
+  `
+  return cardEl
+}
+
+function getBattleRowElement(playerId) {
+  return battleTable?.querySelector(`[data-player-id="${playerId}"]`) || null
+}
+
+function getBattleRoundPlayer(playerId) {
+  return battleRoundPlayers.find((player) => player.id === playerId) || null
+}
+
+function createBattleSlots(count) {
+  return Array.from({ length: count }, () => {
+    const slot = document.createElement('div')
+    slot.className = 'battle-slot'
+    return slot
+  })
+}
+
+function prepareBattleRoundRows(roundPlayers) {
+  if (!battleTable) return
+
+  battleTable.innerHTML = ''
+
+  roundPlayers.forEach((player) => {
+    const row = document.createElement('div')
+    row.className = 'battle-row'
+    row.dataset.playerId = player.id
+
+    const slotsMarkup = Array.from({ length: 5 }, () => '<div class="battle-slot"></div>').join('')
+
+    row.innerHTML = `
+      <div class="battle-row-main">
+        <div class="battle-player-head">
+          <span class="legend-dot" style="background:${player.color}"></span>
+          <span class="battle-player-name">${escapeHtml(player.label)}</span>
+          <span class="battle-result-pill hidden">최종 -</span>
+        </div>
+        <div class="battle-player-sub">카드 배분 대기 중</div>
+      </div>
+      <div class="battle-hand hand-five">${slotsMarkup}</div>
+    `
+    battleTable.appendChild(row)
+  })
+}
+
+async function playBattleShuffleAnimation(token) {
+  if (!battleDeck) return
+  battleDeck.classList.add('is-shuffling')
+  if (battleStatusText) {
+    battleStatusText.textContent = '카드를 섞는 중...'
+  }
+  await sleep(1650)
+  if (!isBattleFlowActive(token)) return
+  battleDeck.classList.remove('is-shuffling')
+}
+
+async function dealBattleCards(roundPlayers, token) {
+  for (const player of roundPlayers) {
+    const row = getBattleRowElement(player.id)
+    if (!row) continue
+
+    const subText = row.querySelector('.battle-player-sub')
+    if (subText) {
+      subText.textContent = '카드를 받고 있다...'
+    }
+
+    const slots = row.querySelectorAll('.battle-slot')
+
+    for (let index = 0; index < player.cards.length; index += 1) {
+      if (!isBattleFlowActive(token)) return
+
+      const slot = slots[index]
+      if (!slot) continue
+
+      const cardEl = createBattleCardElement(player.cards[index], { actualIndex: index })
+      slot.appendChild(cardEl)
+      requestAnimationFrame(() => {
+        cardEl.classList.add('is-dealt')
+      })
+      await sleep(95)
+    }
+
+    if (subText) {
+      subText.textContent = '1번째 카드를 선택해 공개'
+    }
+  }
+
+  await sleep(320)
+}
+
+function updateBattlePlayerSubText(player) {
+  const row = getBattleRowElement(player.id)
+  const subText = row?.querySelector('.battle-player-sub')
+  if (!subText) return
+
+  if (player.finalDone) {
+    subText.textContent = getBattleFinalFormulaText(player)
+    return
+  }
+
+  if (!player.phase1Done) {
+    subText.textContent = `${player.nextRevealIndex + 1}번째 카드를 선택해 공개`
+    return
+  }
+
+  const allPhase1Done = battleRoundPlayers.length > 0 && battleRoundPlayers.every((item) => item.phase1Done)
+  if (!allPhase1Done) {
+    subText.textContent = `1차 결과 ${formatBattleValue(player.interim)} 공개 완료 · 다른 참가자 대기 중`
+    return
+  }
+
+  if (player.nextRevealIndex <= 3) {
+    subText.textContent = '4번째 카드를 선택해 공개'
+    return
+  }
+
+  subText.textContent = '5번째 카드를 선택해 공개'
+}
+
+function updateAllBattlePlayerSubTexts() {
+  battleRoundPlayers.forEach((player) => {
+    updateBattlePlayerSubText(player)
+  })
+}
+
+function setBattleCardAvailability(cardEl, isEnabled) {
+  if (!cardEl) return
+  cardEl.classList.toggle('is-clickable', isEnabled)
+  cardEl.classList.toggle('is-locked', !isEnabled)
+  cardEl.setAttribute('tabindex', isEnabled ? '0' : '-1')
+  cardEl.setAttribute('aria-disabled', isEnabled ? 'false' : 'true')
+}
+
+function canFlipBattleCard(player, cardIndex) {
+  if (!battleGameRunning || battleInteractionLocked) return false
+  if (!player || player.finalDone) return false
+
+  if (battlePhase === 'phase1') {
+    return cardIndex === player.nextRevealIndex && cardIndex >= 0 && cardIndex <= 2
+  }
+
+  if (battlePhase === 'phase2') {
+    if (!battleRoundPlayers.every((item) => item.phase1Done)) return false
+    return cardIndex === player.nextRevealIndex && cardIndex >= 3 && cardIndex <= 4
+  }
+
+  return false
+}
+
+function refreshBattleCardAvailability() {
+  battleRoundPlayers.forEach((player) => {
+    const row = getBattleRowElement(player.id)
+    if (!row) return
+
+    row.querySelectorAll('.battle-card').forEach((cardEl) => {
+      const cardIndex = Number(cardEl.dataset.cardIndex)
+      if (!Number.isFinite(cardIndex)) {
+        setBattleCardAvailability(cardEl, false)
+        return
+      }
+
+      setBattleCardAvailability(cardEl, canFlipBattleCard(player, cardIndex) && !cardEl.classList.contains('is-flipped'))
+    })
+  })
+}
+
+async function condenseBattlePlayerRow(player, token) {
+  const row = getBattleRowElement(player.id)
+  if (!row) return
+
+  row.classList.add('is-condensing')
+  row.querySelectorAll('.battle-card').forEach((card, index) => {
+    const actualIndex = Number(card.dataset.cardIndex)
+    if (index < 3 || actualIndex <= 2) {
+      card.classList.add('is-retiring')
+    }
+  })
+
+  await sleep(340)
+  if (!isBattleFlowActive(token)) return
+
+  const hand = row.querySelector('.battle-hand')
+  if (!hand) return
+
+  hand.className = 'battle-hand hand-three'
+  hand.innerHTML = ''
+
+  const slots = createBattleSlots(3)
+  slots.forEach((slot) => hand.appendChild(slot))
+
+  const resultCard = createBattleCardElement(
+    { type: 'result', value: player.interim, text: formatBattleValue(player.interim), label: '1차 결과' },
+    { flipped: true }
+  )
+  slots[0].appendChild(resultCard)
+  requestAnimationFrame(() => {
+    resultCard.classList.add('is-dealt')
+  })
+
+  const opCard = createBattleCardElement(player.cards[3], { actualIndex: 3 })
+  const numCard = createBattleCardElement(player.cards[4], { actualIndex: 4 })
+  slots[1].appendChild(opCard)
+  slots[2].appendChild(numCard)
+
+  requestAnimationFrame(() => {
+    opCard.classList.add('is-dealt')
+    numCard.classList.add('is-dealt')
+  })
+
+  row.classList.remove('is-condensing')
+  updateBattlePlayerSubText(player)
+}
+
+function applyBattleFinalRow(player) {
+  const row = getBattleRowElement(player.id)
+  if (!row) return
+
+  const subText = row.querySelector('.battle-player-sub')
+  const resultPill = row.querySelector('.battle-result-pill')
+
+  if (subText) {
+    subText.textContent = getBattleFinalFormulaText(player)
+  }
+
+  if (resultPill) {
+    resultPill.textContent = `최종 ${formatBattleValue(player.final)}점`
+    resultPill.classList.remove('hidden')
+  }
+}
+
+function getBattleRanking(roundPlayers) {
+  return [...roundPlayers].sort((a, b) => {
+    if (b.final !== a.final) return b.final - a.final
+    return a.label.localeCompare(b.label, 'ko')
+  })
+}
+
+function buildBattleFinalPopupHtml(ranking) {
+  return ranking
+    .map((player, index) => {
+      return `
+        <span style="display:block;margin:10px 0;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.72);">
+          <strong>${index + 1}위. ${escapeHtml(player.label)}</strong><br>
+          <span style="display:block;margin-top:4px;color:#8f7363;">1차: ${escapeHtml(getBattlePhase1FormulaText(player))}</span>
+          <span style="display:block;margin-top:4px;color:#8f7363;">최종: ${escapeHtml(getBattleFinalFormulaText(player))}</span>
+        </span>
+      `
+    })
+    .join('')
+}
+
+async function finalizeBattleIfReady(token) {
+  const remaining = battleRoundPlayers.filter((player) => !player.finalDone).length
+  if (remaining > 0) {
+    if (battleStatusText) {
+      battleStatusText.textContent = `아직 ${remaining}명의 최종 카드 공개가 남아 있다.`
+    }
+    return
+  }
+
+  const ranking = getBattleRanking(battleRoundPlayers)
+  renderBattleRanking(ranking)
+
+  if (battleStatusText) {
+    battleStatusText.textContent = '모든 참가자의 최종 결과가 공개되었다. 팝업에서 순위를 확인해줘.'
+  }
+
+  await showPopupAndWait(
+    '최종결과 확인',
+    buildBattleFinalPopupHtml(ranking) || '<span>결과가 없습니다.</span>',
+    { icon: '🏆', allowHtml: true }
+  )
+
+  if (!isBattleFlowActive(token)) return
+
+  battleGameRunning = false
+  battlePhase = 'done'
+  battleInteractionLocked = false
+  setBattleInputLock(false)
+  setBattleShuffleLock(false)
+  refreshBattleCardAvailability()
+}
+
+async function handleBattleCardReveal(player, cardIndex) {
+  if (!battleGameRunning) return
+
+  const token = battleCurrentToken
+  if (!isBattleFlowActive(token)) return
+
+  const row = getBattleRowElement(player.id)
+  const targetCard = row?.querySelector(`.battle-card[data-card-index="${cardIndex}"]`)
+  if (!targetCard || targetCard.classList.contains('is-flipped') || !canFlipBattleCard(player, cardIndex)) {
+    return
+  }
+
+  battleInteractionLocked = true
+  refreshBattleCardAvailability()
+
+  targetCard.classList.add('is-flipped')
+  await sleep(260)
+  if (!isBattleFlowActive(token)) return
+
+  player.nextRevealIndex = Math.max(player.nextRevealIndex, cardIndex + 1)
+
+  if (battlePhase === 'phase1') {
+    if (cardIndex < 2) {
+      updateBattlePlayerSubText(player)
+      if (battleStatusText) {
+        battleStatusText.textContent = `${player.label}의 ${cardIndex + 1}번째 카드가 공개되었다.`
+      }
+      battleInteractionLocked = false
+      refreshBattleCardAvailability()
+      return
+    }
+
+    player.phase1Done = true
+
+    await showPopupAndWait(
+      `${player.label}의 1차 수식 완성`,
+      `${getBattlePhase1FormulaText(player)}`,
+      { icon: '🧮' }
+    )
+    if (!isBattleFlowActive(token)) return
+
+    await condenseBattlePlayerRow(player, token)
+    if (!isBattleFlowActive(token)) return
+
+    const pendingPhase1 = battleRoundPlayers.filter((item) => !item.phase1Done).length
+    if (pendingPhase1 === 0) {
+      battlePhase = 'phase2'
+      if (battleStatusText) {
+        battleStatusText.textContent = '모든 참가자의 1차 결과 카드가 공개되었다. 이제 4번째와 5번째 카드를 열 수 있다.'
+      }
+    } else if (battleStatusText) {
+      battleStatusText.textContent = `아직 ${pendingPhase1}명의 1차 결과 카드가 남아 있다.`
+    }
+
+    updateAllBattlePlayerSubTexts()
+    battleInteractionLocked = false
+    refreshBattleCardAvailability()
+    return
+  }
+
+  if (battlePhase === 'phase2') {
+    if (cardIndex === 3) {
+      updateBattlePlayerSubText(player)
+      if (battleStatusText) {
+        battleStatusText.textContent = `${player.label}의 4번째 카드가 공개되었다. 이제 5번째 카드를 열 수 있다.`
+      }
+      battleInteractionLocked = false
+      refreshBattleCardAvailability()
+      return
+    }
+
+    player.finalDone = true
+    applyBattleFinalRow(player)
+    await finalizeBattleIfReady(token)
+    if (!isBattleFlowActive(token) || battlePhase === 'done') return
+
+    battleInteractionLocked = false
+    refreshBattleCardAvailability()
+  }
+}
+
+async function startBattleGame() {
+  if (!battleConfigInput || battleGameRunning) return
+
+  const parsed = parseBattleConfigToPlayers(battleConfigInput.value)
+  if (parsed.status !== 'OK') {
+    handleBattleParseFailure(parsed, { showPopupOnInvalid: true })
+    return
+  }
+
+  stopBattleFlow()
+  battleFlowToken += 1
+  const token = battleFlowToken
+  battleCurrentToken = token
+
+  setBattlePlayers(parsed.players)
+  battleGameRunning = true
+  battlePhase = 'dealing'
+  battleInteractionLocked = true
+  setBattleInputLock(true)
+  setBattleShuffleLock(true)
+  renderBattleLegend()
+  renderBattleRanking([])
+
+  battleRoundPlayers = buildBattleRoundPlayers()
+  prepareBattleRoundRows(battleRoundPlayers)
+
+  await playBattleShuffleAnimation(token)
+  if (!isBattleFlowActive(token)) return
+
+  await dealBattleCards(battleRoundPlayers, token)
+  if (!isBattleFlowActive(token)) return
+
+  battlePhase = 'phase1'
+  battleInteractionLocked = false
+  updateAllBattlePlayerSubTexts()
+  refreshBattleCardAvailability()
+
+  if (battleStatusText) {
+    battleStatusText.textContent = '각 참가자의 카드를 직접 눌러 공개해줘. 먼저 1번째~3번째 카드까지 열어 1차 수식을 완성해야 한다.'
+  }
+}
+
+function shuffleBattle() {
+  if (!battleConfigInput || battleGameRunning) return
+
+  const parsed = parseBattleConfigToPlayers(battleConfigInput.value)
+  if (parsed.status !== 'OK') {
+    handleBattleParseFailure(parsed, { showPopupOnInvalid: true })
+    return
+  }
+
+  const shuffledPlayers = shuffleArray(parsed.players.map((player) => player.label))
+  battleConfigInput.value = shuffledPlayers.join(', ')
+  updateBattleFromInput()
+
+  if (battleStatusText) {
+    battleStatusText.textContent = '참가자 순서를 랜덤으로 섞었다.'
+  }
+}
+
+function resetBattle() {
+  stopBattleFlow()
+  closePopup()
+
+  if (!battleConfigInput) return
+
+  const parsed = parseBattleConfigToPlayers(battleConfigInput.value)
+  if (parsed.status === 'OK') {
+    setBattlePlayers(parsed.players)
+  } else {
+    battleConfigInput.value = lastBattleValidConfigText || '홍길동, 김아무개, 박철수'
+    const fallbackParsed = parseBattleConfigToPlayers(battleConfigInput.value)
+    if (fallbackParsed.status === 'OK') {
+      setBattlePlayers(fallbackParsed.players)
+    }
+  }
+
+  renderBattlePreview()
+
+  if (battleStatusText) {
+    battleStatusText.textContent = '카드 게임이 초기화되었다. 다시 시작하면 참가자가 직접 카드를 뒤집을 수 있다.'
+  }
+}
+
+
 function startRace() {
   if (!raceConfigInput) return
 
@@ -2464,6 +3259,18 @@ if (resetRaceBtn) {
   resetRaceBtn.addEventListener('click', resetRace)
 }
 
+if (shuffleBattleBtn) {
+  shuffleBattleBtn.addEventListener('click', shuffleBattle)
+}
+
+if (startBattleBtn) {
+  startBattleBtn.addEventListener('click', startBattleGame)
+}
+
+if (resetBattleBtn) {
+  resetBattleBtn.addEventListener('click', resetBattle)
+}
+
 if (drawerToggleBtn) {
   drawerToggleBtn.addEventListener('click', () => {
     const willOpen = !gameSidebar.classList.contains('open')
@@ -2510,836 +3317,136 @@ if (raceConfigInput) {
   })
 }
 
-if (shuffleMathLadderBtn) {
-  shuffleMathLadderBtn.addEventListener('click', shuffleMathLadder)
-}
 
-if (startMathLadderBtn) {
-  startMathLadderBtn.addEventListener('click', startMathLadder)
-}
-
-if (resetMathLadderBtn) {
-  resetMathLadderBtn.addEventListener('click', resetMathLadder)
-}
-
-if (mathLadderInput) {
-  mathLadderInput.addEventListener('input', () => {
-    ensureMathLadderReady()
+if (battleConfigInput) {
+  battleConfigInput.addEventListener('input', () => {
+    updateBattleFromInput()
   })
 
-  mathLadderInput.addEventListener('keydown', (event) => {
+  battleConfigInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault()
-      startMathLadder()
+      startBattleGame()
     }
   })
 }
 
-function parseMathLadderPlayers(text) {
-  const rawItems = text
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
+if (battleTable) {
+  battleTable.addEventListener('click', (event) => {
+    const targetCard = event.target.closest('.battle-card')
+    const row = event.target.closest('.battle-row')
+    if (!targetCard || !row) return
 
-  if (!rawItems.length) {
-    return { status: 'EMPTY' }
-  }
+    const player = getBattleRoundPlayer(row.dataset.playerId)
+    const cardIndex = Number(targetCard.dataset.cardIndex)
 
-  if (rawItems.length < MATH_LADDER_MIN_COUNT) {
-    return { status: 'TOO_FEW' }
-  }
+    if (!player || !Number.isFinite(cardIndex)) return
 
-  if (rawItems.length > MATH_LADDER_MAX_COUNT) {
-    return { status: 'TOO_MANY' }
-  }
-
-  const uniqueNames = new Set()
-  const players = []
-
-  for (const name of rawItems) {
-    if (name.length > 8) {
-      return { status: 'NAME_TOO_LONG' }
-    }
-
-    if (uniqueNames.has(name)) {
-      return { status: 'DUPLICATE' }
-    }
-
-    uniqueNames.add(name)
-
-    players.push({
-      id: `player-${players.length + 1}`,
-      name
-    })
-  }
-
-  return { status: 'OK', players }
-}
-
-function applyMathOperator(a, op, b) {
-  if (op === '+') return a + b
-  if (op === '-') return a - b
-  if (op === '*') return a * b
-  if (op === '/') return b === 0 ? 0 : a / b
-  return 0
-}
-
-function calculateMathExpression(a, op1, b, op2, c) {
-  const highPriority = ['*', '/']
-
-  if (highPriority.includes(op1) && highPriority.includes(op2)) {
-    const first = applyMathOperator(a, op1, b)
-    return applyMathOperator(first, op2, c)
-  }
-
-  if (highPriority.includes(op1) && !highPriority.includes(op2)) {
-    const first = applyMathOperator(a, op1, b)
-    return applyMathOperator(first, op2, c)
-  }
-
-  if (!highPriority.includes(op1) && highPriority.includes(op2)) {
-    const second = applyMathOperator(b, op2, c)
-    return applyMathOperator(a, op1, second)
-  }
-
-  const first = applyMathOperator(a, op1, b)
-  return applyMathOperator(first, op2, c)
-}
-
-function getRandomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
-
-function getRandomMathOperator() {
-  return MATH_OPERATORS[Math.floor(Math.random() * MATH_OPERATORS.length)]
-}
-
-
-/* script.js */
-/* 1) 아래 블록 전체 교체 */
-/* 교체 범위:
-   function createMathFormulaData() { ... }
-   ~
-   function ensureMathLadderReady() { ... }
-*/
-
-function setMathLadderPlayers(players) {
-  mathLadderPlayers = players.map((player, index) => ({
-    ...player,
-    color: raceHorsePalette[index % raceHorsePalette.length],
-    formula: null
-  }))
-
-  if (mathLadderInput) {
-    lastMathLadderValidText = mathLadderInput.value
-    lastMathLadderAppliedRawText = mathLadderInput.value
-  }
-}
-
-function renderMathLadderLegend() {
-  if (!mathLadderLegend || !mathLadderTotalInfo) return
-
-  mathLadderLegend.innerHTML = ''
-
-  mathLadderPlayers.forEach((player) => {
-    const chip = document.createElement('div')
-    chip.className = 'legend-chip'
-    chip.innerHTML = `
-      <span class="legend-dot" style="background:${player.color};"></span>
-      <span>${escapeHtml(player.name)}</span>
-    `
-    mathLadderLegend.appendChild(chip)
+    handleBattleCardReveal(player, cardIndex)
   })
 
-  mathLadderTotalInfo.textContent = `총 ${mathLadderPlayers.length}명`
-}
+  battleTable.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
 
-function renderMathLadderResults() {
-  if (!mathLadderResultList) return
+    const targetCard = event.target.closest('.battle-card')
+    const row = event.target.closest('.battle-row')
+    if (!targetCard || !row) return
 
-  mathLadderResultList.innerHTML = ''
+    const player = getBattleRoundPlayer(row.dataset.playerId)
+    const cardIndex = Number(targetCard.dataset.cardIndex)
 
-  const ranking = [...mathLadderPlayers]
-    .filter((player) => player.formula)
-    .sort((a, b) => b.formula.result - a.formula.result)
+    if (!player || !Number.isFinite(cardIndex)) return
 
-  ranking.forEach((player, index) => {
-    const item = document.createElement('div')
-    item.className = `race-ranking-item${index === 0 ? ' top' : ''}`
-
-    const displayResult = Number(player.formula.result.toFixed(2))
-
-    item.innerHTML = `
-      <strong>${index + 1}위. ${escapeHtml(player.name)}</strong><br />
-      <span>${escapeHtml(player.formula.display)}</span>
-      <div class="math-ladder-formula">결과: ${displayResult}</div>
-    `
-
-    mathLadderResultList.appendChild(item)
+    event.preventDefault()
+    handleBattleCardReveal(player, cardIndex)
   })
 }
-
-function handleMathLadderParseFailure(parsed) {
-  if (!mathLadderStatusText) return false
-
-  if (parsed.status === 'EMPTY') {
-    mathLadderStatusText.textContent = '참가자 이름을 입력해줘.'
-    return false
-  }
-
-  if (parsed.status === 'TOO_FEW') {
-    mathLadderStatusText.textContent = '최소 2명부터 시작할 수 있다.'
-    return false
-  }
-
-  if (parsed.status === 'TOO_MANY') {
-    mathLadderStatusText.textContent = `최대 ${MATH_LADDER_MAX_COUNT}명까지 가능하다.`
-    return false
-  }
-
-  if (parsed.status === 'DUPLICATE') {
-    mathLadderStatusText.textContent = '같은 이름은 2번 이상 입력할 수 없다.'
-    return false
-  }
-
-  if (parsed.status === 'NAME_TOO_LONG') {
-    mathLadderStatusText.textContent = '이름은 최대 8자까지만 입력해줘.'
-    return false
-  }
-
-  return parsed.status === 'OK'
-}
-
-function getMathLadderOperatorDisplay(op) {
-  if (op === '*') return '×'
-  if (op === '/') return '÷'
-  return op
-}
-
-function buildMathLadderData(players, { randomize = false } = {}) {
-const width = Math.max(mathLadderBoard?.clientWidth || 820, 560)
-const viewportHeight = Math.max(mathLadderBoard?.clientHeight || 640, 640)
-const mapHeight = Math.max(1800, Math.round(viewportHeight * 2.8))
-
-const sidePadding = Math.max(40, Math.min(72, width * 0.06))
-const topY = 120
-const bottomY = mapHeight - 120
-const usableHeight = bottomY - topY
-
-const columns = players.map((player, index) => {
-  const x =
-    players.length === 1
-      ? width / 2
-      : sidePadding + ((width - sidePadding * 2) / (players.length - 1)) * index
-
-  return {
-    index,
-    x,
-    playerId: player.id,
-    name: player.name
-  }
-})
-
-const rungRows = Array.from({ length: 18 }, (_, index) => ({
-  index,
-  y: topY + (usableHeight / 19) * (index + 1)
-}))
-
-const tokenRows = MATH_LADDER_TOKEN_ORDER.map((type, index) => ({
-  index,
-  type,
-  y: topY + (usableHeight / 6) * (index + 1)
-}))
-
-  const rungs = randomize ? buildMathLadderRungs(columns.length, rungRows.map((row) => row.y)) : []
-  const tokens = buildMathLadderTokens(tokenRows, columns.length, { randomize })
-
-const data = {
-  width,
-  height: mapHeight,
-  mapHeight,
-  viewportHeight,
-  topY,
-  bottomY,
-  columns,
-  rungRows,
-  tokenRows,
-  rungs,
-  tokens,
-  players: players.map((player, index) => ({
-    ...player,
-    startIndex: index
-  })),
-  runnerMap: new Map(),
-  tokenElementMap: new Map(),
-  rungElementMap: new Map(),
-  resultChipMap: new Map(),
-  mapLayer: null,
-  cameraY: 0
-}
-
-  data.traces = data.players.map((player) => traceMathLadderPath(player.startIndex, data))
-
-  data.players.forEach((player, index) => {
-    player.formula = randomize ? data.traces[index].formula : null
-  })
-
-  return data
-}
-
-function buildMathLadderRungs(columnCount, rowYs) {
-  const rungs = []
-
-  rowYs.forEach((rowY, rowIndex) => {
-    const picked = []
-    const targetCount = Math.max(
-      1,
-      Math.min(
-        Math.floor(columnCount / 2),
-        getRandomInt(1, Math.max(1, Math.floor(columnCount / 2)))
-      )
-    )
-
-    let safety = 0
-    while (picked.length < targetCount && safety < 200) {
-      const from = getRandomInt(0, columnCount - 2)
-      const blocked = picked.some((value) => Math.abs(value - from) <= 1)
-
-      if (!blocked) {
-        picked.push(from)
-      }
-
-      safety += 1
-    }
-
-    picked
-      .sort((a, b) => a - b)
-      .forEach((from) => {
-        rungs.push({
-          id: `math-rung-${rowIndex}-${from}`,
-          rowY,
-          from,
-          to: from + 1
-        })
-      })
-  })
-
-  return rungs
-}
-
-function buildMathLadderTokens(tokenRows, columnCount, { randomize = false } = {}) {
-  return tokenRows.map((row) => {
-    return Array.from({ length: columnCount }, (_, columnIndex) => {
-      let rawValue = '?'
-      let displayValue = '?'
-
-      if (randomize) {
-        if (row.type === 'op1' || row.type === 'op2') {
-          rawValue = getRandomMathOperator()
-          displayValue = getMathLadderOperatorDisplay(rawValue)
-        } else if (row.type === 'number1') {
-          rawValue = getRandomInt(0, 100)
-          displayValue = String(rawValue)
-        } else {
-          rawValue = getRandomInt(1, 100)
-          displayValue = String(rawValue)
-        }
-      }
-
-      return {
-        id: `math-token-${row.index}-${columnIndex}`,
-        rowIndex: row.index,
-        colIndex: columnIndex,
-        type: row.type,
-        rawValue,
-        displayValue
-      }
-    })
-  })
-}
-
-function traceMathLadderPath(startIndex, data) {
-  const rungMap = new Map()
-
-  data.rungs.forEach((rung) => {
-    if (!rungMap.has(rung.rowY)) rungMap.set(rung.rowY, [])
-    rungMap.get(rung.rowY).push(rung)
-  })
-
-  const events = [
-    ...data.rungRows.map((row) => ({ kind: 'rung', y: row.y })),
-    ...data.tokenRows.map((row) => ({ kind: 'token', y: row.y, rowIndex: row.index }))
-  ].sort((a, b) => a.y - b.y)
-
-  let currentCol = startIndex
-  const points = [{ x: data.columns[currentCol].x, y: data.topY }]
-  const tokensHit = []
-
-  events.forEach((event) => {
-    points.push({ x: data.columns[currentCol].x, y: event.y })
-
-    if (event.kind === 'rung') {
-      const rowRungs = rungMap.get(event.y) || []
-      const moveRight = rowRungs.find((rung) => rung.from === currentCol)
-      const moveLeft = rowRungs.find((rung) => rung.to === currentCol)
-      const activeRung = moveRight || moveLeft
-
-      if (activeRung) {
-        currentCol = moveRight ? activeRung.to : activeRung.from
-        points.push({
-          x: data.columns[currentCol].x,
-          y: event.y,
-          rungId: activeRung.id
-        })
-      }
-    }
-
-    if (event.kind === 'token') {
-      const token = data.tokens[event.rowIndex][currentCol]
-      tokensHit.push(token)
-      points[points.length - 1].tokenId = token.id
-    }
-  })
-
-  points.push({ x: data.columns[currentCol].x, y: data.bottomY })
-
-  return {
-    startIndex,
-    endIndex: currentCol,
-    points,
-    tokensHit,
-    formula: buildFormulaFromTrace(tokensHit)
-  }
-}
-
-function buildFormulaFromTrace(tokensHit) {
-  if (!tokensHit || tokensHit.length !== 5) return null
-
-  const number1 = Number(tokensHit[0].rawValue)
-  const op1 = tokensHit[1].rawValue
-  const number2 = Number(tokensHit[2].rawValue)
-  const op2 = tokensHit[3].rawValue
-  const number3 = Number(tokensHit[4].rawValue)
-
-  const result = calculateMathExpression(number1, op1, number2, op2, number3)
-
-  return {
-    number1,
-    op1,
-    number2,
-    op2,
-    number3,
-    result,
-    display: `${number1} ${getMathLadderOperatorDisplay(op1)} ${number2} ${getMathLadderOperatorDisplay(op2)} ${number3}`
-  }
-}
-
-function setMathLadderCamera(data, targetY, animate = true) {
-  if (!data?.mapLayer) return
-
-  const maxScroll = Math.max(0, data.mapHeight - data.viewportHeight)
-  const desiredScroll = clampValue(
-    targetY - data.viewportHeight * 0.38,
-    0,
-    maxScroll
-  )
-
-  data.cameraY = desiredScroll
-  data.mapLayer.style.transition = animate ? 'transform 260ms ease' : 'none'
-  data.mapLayer.style.transform = `translateY(${-desiredScroll}px)`
-}
-
-function renderMathLadderBoard(data, { preview = false, showResults = false } = {}) {
-  if (!mathLadderBoard) return
-
-  mathLadderBoard.innerHTML = ''
-  mathLadderBoard.style.height = `${data.viewportHeight}px`
-
-  data.runnerMap = new Map()
-  data.tokenElementMap = new Map()
-  data.rungElementMap = new Map()
-  data.resultChipMap = new Map()
-
-  const topRow = document.createElement('div')
-  topRow.className = 'math-ladder-top-row'
-  topRow.style.gridTemplateColumns = `repeat(${data.players.length}, minmax(0, 1fr))`
-
-  data.players.forEach((player) => {
-    const chip = document.createElement('div')
-    chip.className = 'math-ladder-name-chip'
-    chip.textContent = player.name
-    topRow.appendChild(chip)
-  })
-
-  const bottomRow = document.createElement('div')
-  bottomRow.className = 'math-ladder-bottom-row'
-  bottomRow.style.gridTemplateColumns = `repeat(${data.players.length}, minmax(0, 1fr))`
-
-  data.players.forEach((player) => {
-    const chip = document.createElement('div')
-    chip.className = 'math-ladder-result-chip'
-    chip.dataset.playerId = player.id
-    chip.innerHTML = showResults && player.formula
-      ? `<strong>${escapeHtml(player.name)}</strong><br><span>${Number(player.formula.result.toFixed(2))}</span>`
-      : `<strong>${escapeHtml(player.name)}</strong>`
-    bottomRow.appendChild(chip)
-    data.resultChipMap.set(player.id, chip)
-  })
-
-  const mapLayer = document.createElement('div')
-  mapLayer.className = 'math-ladder-map'
-  mapLayer.style.height = `${data.mapHeight}px`
-  data.mapLayer = mapLayer
-
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  svg.setAttribute('viewBox', `0 0 ${data.width} ${data.mapHeight}`)
-  svg.setAttribute('preserveAspectRatio', 'none')
-  svg.classList.add('math-ladder-svg')
-
-  data.columns.forEach((column) => {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
-    line.setAttribute('x1', column.x)
-    line.setAttribute('y1', data.topY)
-    line.setAttribute('x2', column.x)
-    line.setAttribute('y2', data.bottomY)
-    line.setAttribute('class', 'math-ladder-path')
-    svg.appendChild(line)
-  })
-
-  data.rungs.forEach((rung) => {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
-    line.setAttribute('x1', data.columns[rung.from].x)
-    line.setAttribute('y1', rung.rowY)
-    line.setAttribute('x2', data.columns[rung.to].x)
-    line.setAttribute('y2', rung.rowY)
-    line.setAttribute('class', 'math-ladder-cross')
-    line.dataset.rungId = rung.id
-    svg.appendChild(line)
-    data.rungElementMap.set(rung.id, line)
-  })
-
-  mapLayer.appendChild(svg)
-
-  data.tokenRows.forEach((row) => {
-    data.columns.forEach((column, columnIndex) => {
-      const token = data.tokens[row.index][columnIndex]
-      const tokenEl = document.createElement('div')
-      tokenEl.className = `math-ladder-token ${row.type.includes('op') ? 'operator' : 'number'}`
-      tokenEl.dataset.tokenId = token.id
-      tokenEl.textContent = preview ? '?' : token.displayValue
-      tokenEl.style.left = `${column.x}px`
-      tokenEl.style.top = `${row.y}px`
-      mapLayer.appendChild(tokenEl)
-      data.tokenElementMap.set(token.id, tokenEl)
-    })
-  })
-
-  data.players.forEach((player) => {
-    const runner = document.createElement('div')
-    runner.className = 'math-ladder-runner'
-    runner.textContent = player.name.slice(0, 1)
-    runner.style.left = `${data.columns[player.startIndex].x}px`
-    runner.style.top = `${data.topY}px`
-    runner.style.background = player.color
-    runner.style.borderColor = 'rgba(255,255,255,0.95)'
-    mapLayer.appendChild(runner)
-    data.runnerMap.set(player.id, runner)
-  })
-
-  mathLadderBoard.appendChild(mapLayer)
-  mathLadderBoard.appendChild(topRow)
-  mathLadderBoard.appendChild(bottomRow)
-
-  setMathLadderCamera(data, data.topY, false)
-}
-
-function animateMathLadderRunner(player, trace, data) {
-  const runner = data.runnerMap.get(player.id)
-  if (!runner) return Promise.resolve()
-
-  const moveRunner = (x, y, duration = 220) => {
-    return new Promise((resolve) => {
-      runner.style.transition = `left ${duration}ms linear, top ${duration}ms linear`
-      requestAnimationFrame(() => {
-        runner.style.left = `${x}px`
-        runner.style.top = `${y}px`
-        setMathLadderCamera(data, y, true)
-      })
-      setTimeout(resolve, duration + 30)
-    })
-  }
-
-  const flashToken = (tokenId) => {
-    const tokenEl = data.tokenElementMap.get(tokenId)
-    if (!tokenEl) return
-    tokenEl.classList.add('hit')
-    setTimeout(() => tokenEl.classList.remove('hit'), 280)
-  }
-
-  const activateRung = (rungId) => {
-    const rungEl = data.rungElementMap.get(rungId)
-    if (!rungEl) return
-    rungEl.classList.add('active')
-  }
-
-  return (async () => {
-    setMathLadderCamera(data, trace.points[0].y, false)
-
-    for (let index = 1; index < trace.points.length; index += 1) {
-      const point = trace.points[index]
-      const prev = trace.points[index - 1]
-      const distance = Math.hypot(point.x - prev.x, point.y - prev.y)
-      const duration = Math.max(140, Math.min(320, distance * 1.8))
-
-      await moveRunner(point.x, point.y, duration)
-
-      if (point.rungId) activateRung(point.rungId)
-      if (point.tokenId) flashToken(point.tokenId)
-    }
-
-    const resultChip = data.resultChipMap.get(player.id)
-    if (resultChip && player.formula) {
-      resultChip.innerHTML = `
-        <strong>${escapeHtml(player.name)}</strong><br>
-        <span>${Number(player.formula.result.toFixed(2))}</span>
-      `
-    }
-  })()
-}
-
-async function runMathLadderAnimation(data) {
-  renderMathLadderLegend()
-
-  for (let index = 0; index < data.players.length; index += 1) {
-    const player = data.players[index]
-    const trace = data.traces[index]
-
-    await animateMathLadderRunner(player, trace, data)
-    await new Promise((resolve) => setTimeout(resolve, 120))
-  }
-
-  finishMathLadder(data)
-}
-
-function finishMathLadder(data) {
-  mathLadderRunning = false
-  mathLadderFinished = true
-
-  const ranking = [...data.players]
-    .filter((player) => player.formula)
-    .sort((a, b) => b.formula.result - a.formula.result)
-
-  const winnerId = ranking[0]?.id
-
-  if (winnerId && data.resultChipMap.has(winnerId)) {
-    data.resultChipMap.get(winnerId).classList.add('winner')
-  }
-
-  renderMathLadderResults()
-  setMathLadderInputLock(false)
-  setMathLadderShuffleLock(false)
-
-  if (mathLadderStatusText) {
-    mathLadderStatusText.textContent = '사다리 완주 완료! 결과를 확인해줘.'
-  }
-setMathLadderCamera(data, data.bottomY, true)
-}
-
-function startMathLadder() {
-  if (!mathLadderInput || mathLadderRunning) return
-
-  const parsed = parseMathLadderPlayers(mathLadderInput.value)
-  if (!handleMathLadderParseFailure(parsed)) return
-
-  setMathLadderPlayers(parsed.players)
-  setMathLadderInputLock(true)
-  setMathLadderShuffleLock(true)
-  mathLadderRunning = true
-  mathLadderFinished = false
-
-  currentMathLadderData = buildMathLadderData(mathLadderPlayers, { randomize: true })
-  renderMathLadderBoard(currentMathLadderData, { preview: false, showResults: false })
-setMathLadderCamera(currentMathLadderData, currentMathLadderData.topY, false)
-
-  if (mathLadderStatusText) {
-    mathLadderStatusText.textContent = '사다리를 타는 중...'
-  }
-
-  runMathLadderAnimation(currentMathLadderData)
-}
-
-function shuffleMathLadder() {
-  if (!mathLadderInput || mathLadderRunning) return
-
-  const parsed = parseMathLadderPlayers(mathLadderInput.value)
-  if (!handleMathLadderParseFailure(parsed)) return
-
-  setMathLadderPlayers(shuffleArray(parsed.players))
-  mathLadderInput.value = mathLadderPlayers.map((player) => player.name).join(', ')
-
-  currentMathLadderData = buildMathLadderData(mathLadderPlayers, { randomize: false })
-  renderMathLadderBoard(currentMathLadderData, { preview: true, showResults: false })
-  renderMathLadderLegend()
-  renderMathLadderResults()
-
-  if (mathLadderStatusText) {
-    mathLadderStatusText.textContent = '참가자 시작 위치가 랜덤으로 재배치되었다.'
-  }
-}
-
-function resetMathLadder() {
-  if (!mathLadderInput) return
-
-  const parsed = parseMathLadderPlayers(mathLadderInput.value)
-
-  if (parsed.status === 'OK') {
-    setMathLadderPlayers(parsed.players)
-  } else {
-    mathLadderInput.value = lastMathLadderValidText
-    const fallbackParsed = parseMathLadderPlayers(lastMathLadderValidText)
-    if (fallbackParsed.status === 'OK') {
-      setMathLadderPlayers(fallbackParsed.players)
-    }
-  }
-
-  mathLadderPlayers.forEach((player) => {
-    player.formula = null
-  })
-
-  mathLadderRunning = false
-  mathLadderFinished = false
-  currentMathLadderData = buildMathLadderData(mathLadderPlayers, { randomize: false })
-
-  renderMathLadderBoard(currentMathLadderData, { preview: true, showResults: false })
-setMathLadderCamera(currentMathLadderData, currentMathLadderData.topY, false)
-  renderMathLadderLegend()
-  renderMathLadderResults()
-  setMathLadderInputLock(false)
-  setMathLadderShuffleLock(false)
-
-  if (mathLadderStatusText) {
-    mathLadderStatusText.textContent = '사다리 준비가 다시 완료되었다.'
-  }
-}
-
-function ensureMathLadderReady() {
-  if (!mathLadderInput || mathLadderRunning) return
-
-  const parsed = parseMathLadderPlayers(mathLadderInput.value)
-  if (!handleMathLadderParseFailure(parsed)) return
-
-  setMathLadderPlayers(parsed.players)
-  currentMathLadderData = buildMathLadderData(mathLadderPlayers, { randomize: false })
-
-  renderMathLadderBoard(currentMathLadderData, { preview: true, showResults: false })
-setMathLadderCamera(currentMathLadderData, currentMathLadderData.topY, false)
-  renderMathLadderLegend()
-  renderMathLadderResults()
-
-  if (mathLadderStatusText) {
-    mathLadderStatusText.textContent = '참가자 설정 완료. 시작 버튼을 누르면 랜덤 사다리가 생성된다.'
-  }
-}
-
 
 window.addEventListener('resize', () => {
+  const nextWidth = window.innerWidth
+  const nextHeight = window.innerHeight
+
+  if (shouldIgnoreMobileChromeResize(nextWidth, nextHeight)) {
+    lastViewportWidth = nextWidth
+    lastViewportHeight = nextHeight
+    return
+  }
+
   clearTimeout(resizeTimer)
   resizeTimer = setTimeout(() => {
-    const nextWidth = window.innerWidth
-    const nextHeight = window.innerHeight
+    const widthChanged = Math.abs(nextWidth - lastViewportWidth) > 4
+    const heightChanged = Math.abs(nextHeight - lastViewportHeight) > 4
 
-    updateOrientationGate()
-
-    if (shouldIgnoreMobileChromeResize(nextWidth, nextHeight)) {
-      lastViewportWidth = nextWidth
-      lastViewportHeight = nextHeight
-      return
-    }
-
-    if (!isMobileOrTabletLike() && window.innerWidth > 980) {
-      setDrawerState(false)
-    }
-
-    if (
-      screens.game1?.classList.contains('active') &&
-      engine &&
-      currentSlots.length &&
-      !document.body.classList.contains('orientation-blocked')
-    ) {
-      syncGame1MobileLayout()
-      fitGameCanvasViewport()
-      buildBoard()
-    }
-
-    if (screens.game2?.classList.contains('active')) {
-      syncRaceMobileLayout()
-    }
-
-if (screens.game3?.classList.contains('active') && currentMathLadderData) {
-  renderMathLadderBoard(currentMathLadderData, {
-    preview: !mathLadderFinished,
-    showResults: mathLadderFinished
-  })
-  setMathLadderCamera(
-    currentMathLadderData,
-    currentMathLadderData.topY + currentMathLadderData.cameraY,
-    false
-  )
-}
+    if (!widthChanged && !heightChanged) return
 
     lastViewportWidth = nextWidth
     lastViewportHeight = nextHeight
-  }, 180)
+
+    syncGame1MobileLayout()
+    syncRaceMobileLayout()
+    updateOrientationGate()
+
+    if (screens.game1?.classList.contains('active')) {
+      fitGameCanvasViewport()
+
+      if (engine && currentSlots.length) {
+        buildBoard()
+      }
+    }
+
+    if (screens.game2?.classList.contains('active') && raceHorses.length) {
+      renderRacePreview()
+    }
+  }, 120)
 })
 
 window.addEventListener('orientationchange', () => {
   setTimeout(() => {
-    const nextWidth = window.innerWidth
-    const nextHeight = window.innerHeight
-
+    syncGame1MobileLayout()
+    syncRaceMobileLayout()
     updateOrientationGate()
 
-    if (
-      screens.game1?.classList.contains('active') &&
-      engine &&
-      currentSlots.length &&
-      !document.body.classList.contains('orientation-blocked')
-    ) {
-      syncGame1MobileLayout()
+    if (screens.game1?.classList.contains('active')) {
       fitGameCanvasViewport()
-      buildBoard()
+
+      if (engine && currentSlots.length) {
+        buildBoard()
+      }
     }
 
-    if (screens.game2?.classList.contains('active')) {
-      syncRaceMobileLayout()
+    if (screens.game2?.classList.contains('active') && raceHorses.length) {
+      renderRacePreview()
     }
-
-if (screens.game3?.classList.contains('active') && currentMathLadderData) {
-  renderMathLadderBoard(currentMathLadderData, {
-    preview: !mathLadderFinished,
-    showResults: mathLadderFinished
-  })
-  setMathLadderCamera(
-    currentMathLadderData,
-    currentMathLadderData.topY + currentMathLadderData.cameraY,
-    false
-  )
-}
-
-    lastViewportWidth = nextWidth
-    lastViewportHeight = nextHeight
-  }, 220)
+  }, 150)
 })
 
-updateSlotsFromInput({ build: false })
-updateRaceFromInput({ render: false })
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (screens.game2?.classList.contains('active')) {
+      stopRaceLoop()
+    }
+  }
+})
+
+updateGame1BallCountText()
 syncGame1MobileLayout()
 syncRaceMobileLayout()
 updateOrientationGate()
+
 setGame1InputLock(false)
 setGame1ShuffleLock(false)
+
 setRaceInputLock(false)
 setRaceShuffleLock(false)
-ensureMathLadderReady()
-setMathLadderInputLock(false)
-setMathLadderShuffleLock(false)
+
+if (configInput) {
+  updateSlotsFromInput({ build: false })
+}
+
+if (raceConfigInput) {
+  updateRaceFromInput({ render: false })
+}
+
+if (screens.home) {
+  showScreen('home')
+}
