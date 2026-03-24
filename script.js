@@ -1,4 +1,4 @@
-const screens = {
+﻿const screens = {
   home: document.getElementById('homeScreen'),
   menu: document.getElementById('menuScreen'),
   luck: document.getElementById('luckScreen'),
@@ -2543,9 +2543,8 @@ function renderBattleRowsPreview() {
         <div class="battle-player-head">
           <span class="legend-dot" style="background:${player.color}"></span>
           <span class="battle-player-name">${escapeHtml(player.label)}</span>
-          <span class="battle-result-pill hidden">최종 -</span>
+          <span class="battle-result-pill hidden" aria-hidden="true"></span>
         </div>
-        <div class="battle-player-sub">카드를 기다리는 중</div>
       </div>
       <div class="battle-hand hand-five">
         ${createBattleGhostSlots(5)}
@@ -2681,7 +2680,9 @@ function buildBattleRoundPlayers() {
       ],
       interim,
       final,
-      nextRevealIndex: 0,
+      nextRevealIndex: 3,
+      phase1Revealed: [false, false, false],
+      phase2Revealed: [false, false],
       phase1Done: false,
       finalDone: false
     }
@@ -2742,9 +2743,8 @@ function prepareBattleRoundRows(roundPlayers) {
         <div class="battle-player-head">
           <span class="legend-dot" style="background:${player.color}"></span>
           <span class="battle-player-name">${escapeHtml(player.label)}</span>
-          <span class="battle-result-pill hidden">최종 -</span>
+          <span class="battle-result-pill hidden" aria-hidden="true"></span>
         </div>
-        <div class="battle-player-sub">카드 배분 대기 중</div>
       </div>
       <div class="battle-hand hand-five">${slotsMarkup}</div>
     `
@@ -2768,10 +2768,6 @@ async function dealBattleCards(roundPlayers, token) {
     const row = getBattleRowElement(player.id)
     if (!row) continue
 
-    const subText = row.querySelector('.battle-player-sub')
-    if (subText) {
-      subText.textContent = '카드를 받고 있다...'
-    }
 
     const slots = row.querySelectorAll('.battle-slot')
 
@@ -2789,9 +2785,6 @@ async function dealBattleCards(roundPlayers, token) {
       await sleep(95)
     }
 
-    if (subText) {
-      subText.textContent = '1번째 카드를 선택해 공개'
-    }
   }
 
   await sleep(320)
@@ -2808,7 +2801,10 @@ function updateBattlePlayerSubText(player) {
   }
 
   if (!player.phase1Done) {
-    subText.textContent = `${player.nextRevealIndex + 1}번째 카드를 선택해 공개`
+    const remaining = [1, 2, 3].filter((number, index) => !player.phase1Revealed[index])
+    subText.textContent = remaining.length
+      ? `${remaining.join(', ')}번째 카드 중 원하는 카드를 선택해 공개`
+      : '1차 수식 확인 중'
     return
   }
 
@@ -2818,12 +2814,21 @@ function updateBattlePlayerSubText(player) {
     return
   }
 
-  if (player.nextRevealIndex <= 3) {
-    subText.textContent = '4번째 카드를 선택해 공개'
+  const remainingPhase2 = []
+  if (!player.phase2Revealed?.[0]) remainingPhase2.push('4번째')
+  if (!player.phase2Revealed?.[1]) remainingPhase2.push('5번째')
+
+  if (remainingPhase2.length === 2) {
+    subText.textContent = '4번째 또는 5번째 카드를 원하는 순서로 공개'
     return
   }
 
-  subText.textContent = '5번째 카드를 선택해 공개'
+  if (remainingPhase2.length === 1) {
+    subText.textContent = `${remainingPhase2[0]} 카드를 선택해 공개`
+    return
+  }
+
+  subText.textContent = '최종 수식 확인 중'
 }
 
 function updateAllBattlePlayerSubTexts() {
@@ -2845,12 +2850,18 @@ function canFlipBattleCard(player, cardIndex) {
   if (!player || player.finalDone) return false
 
   if (battlePhase === 'phase1') {
-    return cardIndex === player.nextRevealIndex && cardIndex >= 0 && cardIndex <= 2
+    return cardIndex >= 0 && cardIndex <= 2 && !player.phase1Revealed[cardIndex]
   }
 
   if (battlePhase === 'phase2') {
     if (!battleRoundPlayers.every((item) => item.phase1Done)) return false
-    return cardIndex === player.nextRevealIndex && cardIndex >= 3 && cardIndex <= 4
+    if (cardIndex === 3) {
+      return !player.phase2Revealed?.[0]
+    }
+    if (cardIndex === 4) {
+      return !player.phase2Revealed?.[1]
+    }
+    return false
   }
 
   return false
@@ -2924,17 +2935,12 @@ function applyBattleFinalRow(player) {
   const row = getBattleRowElement(player.id)
   if (!row) return
 
-  const subText = row.querySelector('.battle-player-sub')
   const resultPill = row.querySelector('.battle-result-pill')
+  if (!resultPill) return
 
-  if (subText) {
-    subText.textContent = getBattleFinalFormulaText(player)
-  }
-
-  if (resultPill) {
-    resultPill.textContent = `최종 ${formatBattleValue(player.final)}점`
-    resultPill.classList.remove('hidden')
-  }
+  resultPill.innerHTML = `<strong>최종</strong><span>${escapeHtml(formatBattleValue(player.final))}점</span>`
+  resultPill.classList.remove('hidden')
+  resultPill.setAttribute('aria-hidden', 'false')
 }
 
 function getBattleRanking(roundPlayers) {
@@ -2958,6 +2964,13 @@ function buildBattleFinalPopupHtml(ranking) {
     .join('')
 }
 
+
+function applyBattleFinalCardsToRows(roundPlayers) {
+  roundPlayers.forEach((player) => {
+    applyBattleFinalRow(player)
+  })
+}
+
 async function finalizeBattleIfReady(token) {
   const remaining = battleRoundPlayers.filter((player) => !player.finalDone).length
   if (remaining > 0) {
@@ -2971,7 +2984,7 @@ async function finalizeBattleIfReady(token) {
   renderBattleRanking(ranking)
 
   if (battleStatusText) {
-    battleStatusText.textContent = '모든 참가자의 최종 결과가 공개되었다. 팝업에서 순위를 확인해줘.'
+    battleStatusText.textContent = '모든 참가자의 최종 결과가 공개되었다. 팝업을 닫으면 각 참가자 옆에 최종 결과 카드가 표시된다.'
   }
 
   await showPopupAndWait(
@@ -2981,6 +2994,8 @@ async function finalizeBattleIfReady(token) {
   )
 
   if (!isBattleFlowActive(token)) return
+
+  applyBattleFinalCardsToRows(ranking)
 
   battleGameRunning = false
   battlePhase = 'done'
@@ -3009,13 +3024,14 @@ async function handleBattleCardReveal(player, cardIndex) {
   await sleep(260)
   if (!isBattleFlowActive(token)) return
 
-  player.nextRevealIndex = Math.max(player.nextRevealIndex, cardIndex + 1)
-
   if (battlePhase === 'phase1') {
-    if (cardIndex < 2) {
+    player.phase1Revealed[cardIndex] = true
+
+    const revealedCount = player.phase1Revealed.filter(Boolean).length
+    if (revealedCount < 3) {
       updateBattlePlayerSubText(player)
       if (battleStatusText) {
-        battleStatusText.textContent = `${player.label}의 ${cardIndex + 1}번째 카드가 공개되었다.`
+        battleStatusText.textContent = `${player.label}의 ${cardIndex + 1}번째 카드가 공개되었다. 첫 3장 중 남은 카드를 이어서 선택해줘.`
       }
       battleInteractionLocked = false
       refreshBattleCardAvailability()
@@ -3038,7 +3054,7 @@ async function handleBattleCardReveal(player, cardIndex) {
     if (pendingPhase1 === 0) {
       battlePhase = 'phase2'
       if (battleStatusText) {
-        battleStatusText.textContent = '모든 참가자의 1차 결과 카드가 공개되었다. 이제 4번째와 5번째 카드를 열 수 있다.'
+        battleStatusText.textContent = '모든 참가자의 1차 결과 카드가 공개되었다. 이제 4번째와 5번째 카드를 원하는 순서로 열 수 있다.'
       }
     } else if (battleStatusText) {
       battleStatusText.textContent = `아직 ${pendingPhase1}명의 1차 결과 카드가 남아 있다.`
@@ -3051,10 +3067,23 @@ async function handleBattleCardReveal(player, cardIndex) {
   }
 
   if (battlePhase === 'phase2') {
-    if (cardIndex === 3) {
+    const phase2Index = cardIndex === 3 ? 0 : cardIndex === 4 ? 1 : -1
+    if (phase2Index === -1) {
+      battleInteractionLocked = false
+      refreshBattleCardAvailability()
+      return
+    }
+
+    player.phase2Revealed[phase2Index] = true
+    const remainingPhase2 = [3, 4].filter((index) => {
+      const mappedIndex = index === 3 ? 0 : 1
+      return !player.phase2Revealed[mappedIndex]
+    })
+
+    if (remainingPhase2.length > 0) {
       updateBattlePlayerSubText(player)
       if (battleStatusText) {
-        battleStatusText.textContent = `${player.label}의 4번째 카드가 공개되었다. 이제 5번째 카드를 열 수 있다.`
+        battleStatusText.textContent = `${player.label}의 ${cardIndex + 1}번째 카드가 공개되었다. 남은 ${remainingPhase2[0] + 1}번째 카드도 원하는 때에 공개해줘.`
       }
       battleInteractionLocked = false
       refreshBattleCardAvailability()
@@ -3062,7 +3091,6 @@ async function handleBattleCardReveal(player, cardIndex) {
     }
 
     player.finalDone = true
-    applyBattleFinalRow(player)
     await finalizeBattleIfReady(token)
     if (!isBattleFlowActive(token) || battlePhase === 'done') return
 
@@ -3109,7 +3137,7 @@ async function startBattleGame() {
   refreshBattleCardAvailability()
 
   if (battleStatusText) {
-    battleStatusText.textContent = '각 참가자의 카드를 직접 눌러 공개해줘. 먼저 1번째~3번째 카드까지 열어 1차 수식을 완성해야 한다.'
+    battleStatusText.textContent = '각 참가자의 첫 3장 카드는 원하는 순서로 공개할 수 있다. 세 장이 모두 열리면 1차 결과가 확정된다.'
   }
 }
 

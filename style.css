@@ -1,3 +1,5 @@
+﻿/* style.css - 1부 */
+
 * {
   margin: 0;
   padding: 0;
@@ -1716,6 +1718,10 @@ body.orientation-blocked .orientation-lock-overlay {
   flex-wrap: wrap;
 }
 
+.battle-ranking-list-hidden {
+  display: none !important;
+}
+
 .battle-player-name {
   font-weight: 700;
   color: var(--soft-brown);
@@ -1725,14 +1731,34 @@ body.orientation-blocked .orientation-lock-overlay {
 .battle-result-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  border-radius: 999px;
-  background: #fff8e0;
-  border: 2px solid #fff3c7;
+  justify-content: center;
+  min-width: 66px;
+  min-height: 82px;
+  padding: 8px 9px;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.42), transparent 24%),
+    linear-gradient(180deg, #fffdf9 0%, #fff0e5 100%);
+  border: 2px solid rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 20px rgba(114, 86, 68, 0.12);
   color: #8c6f47;
-  font-size: 0.82rem;
+  font-family: 'Gaegu', cursive;
+  font-size: 0.98rem;
   font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.battle-result-pill strong {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.battle-result-pill span {
+  font-size: 1.06rem;
+  line-height: 1.05;
 }
 
 .battle-result-pill.hidden {
@@ -1740,9 +1766,7 @@ body.orientation-blocked .orientation-lock-overlay {
 }
 
 .battle-player-sub {
-  margin-top: 6px;
-  font-size: 0.84rem;
-  color: #977f72;
+  display: none;
 }
 
 .battle-hand {
@@ -1852,6 +1876,18 @@ body.orientation-blocked .orientation-lock-overlay {
 
 .battle-card-back::before {
   content: '✦';
+}
+
+.battle-card.type-operator .battle-card-back {
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.34), transparent 23%),
+    linear-gradient(145deg, #ffc68f 0%, #ff9fb2 52%, #ffdcbf 100%);
+}
+
+.battle-card.type-result .battle-card-back {
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.34), transparent 23%),
+    linear-gradient(145deg, #ffe9a6 0%, #ffd8a7 52%, #ffe8c9 100%);
 }
 
 .battle-card-front {
