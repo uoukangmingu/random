@@ -1,4 +1,4 @@
-﻿const screens = {
+const screens = {
   home: document.getElementById('homeScreen'),
   menu: document.getElementById('menuScreen'),
   luck: document.getElementById('luckScreen'),
@@ -141,6 +141,7 @@ const raceHorsePalette = [
 ]
 
 const nameColorMap = new Map()
+const raceNameColorMap = new Map()
 
 function getColorForName(name) {
   if (!nameColorMap.has(name)) {
@@ -148,6 +149,14 @@ function getColorForName(name) {
     nameColorMap.set(name, slotPalette[colorIndex])
   }
   return nameColorMap.get(name)
+}
+
+function getRaceColorForName(name) {
+  if (!raceNameColorMap.has(name)) {
+    const colorIndex = raceNameColorMap.size % raceHorsePalette.length
+    raceNameColorMap.set(name, raceHorsePalette[colorIndex])
+  }
+  return raceNameColorMap.get(name)
 }
 
 function clampValue(value, min, max) {
@@ -214,7 +223,7 @@ let lastViewportHeight = window.innerHeight
 let mobileLayoutApplied = false
 let raceMobileLayoutApplied = false
 
-const RACE_MAX_COUNT = 20
+const RACE_MAX_COUNT = 8
 const RACE_DISTANCE = 2400
 
 let raceHorses = []
@@ -508,6 +517,8 @@ function showScreen(target) {
 
   if (target !== 'game2') {
     stopRaceLoop()
+    raceFinished = false
+    resetRaceHorseStates()
     setRaceInputLock(false)
     setRaceShuffleLock(false)
   }
@@ -1848,7 +1859,7 @@ function parseRaceConfigToHorses(text) {
       id: `horse-${index + 1}`,
       name,
       label: name,
-      color: raceHorsePalette[index % raceHorsePalette.length],
+      color: getRaceColorForName(name),
       progress: 0,
       finished: false,
       finishOrder: 0,
@@ -2957,12 +2968,69 @@ function updateAllBattlePlayerSubTexts() {
   })
 }
 
-function setBattleCardAvailability(cardEl, isEnabled) {
+function setBattleCardAvailability(cardEl, isEnabled, options = {}) {
   if (!cardEl) return
+
+  const { showLocked = false } = options
+
   cardEl.classList.toggle('is-clickable', isEnabled)
-  cardEl.classList.toggle('is-locked', !isEnabled)
+  cardEl.classList.toggle('is-soft-disabled', !isEnabled && !showLocked)
+  cardEl.classList.toggle('is-locked', !isEnabled && showLocked)
   cardEl.setAttribute('tabindex', isEnabled ? '0' : '-1')
   cardEl.setAttribute('aria-disabled', isEnabled ? 'false' : 'true')
+}
+
+function getBattleCardAvailabilityState(player, cardIndex, cardEl) {
+  const isFlipped = Boolean(cardEl?.classList.contains('is-flipped'))
+
+  if (!Number.isFinite(cardIndex) || isFlipped) {
+    return { isEnabled: false, showLocked: false }
+  }
+
+  if (!battleGameRunning || !player || player.finalDone) {
+    return { isEnabled: false, showLocked: false }
+  }
+
+  if (battlePhase === 'phase1') {
+    if (cardIndex >= 0 && cardIndex <= 2) {
+      return {
+        isEnabled: !battleInteractionLocked && !player.phase1Revealed[cardIndex],
+        showLocked: false
+      }
+    }
+
+    if (cardIndex === 3 || cardIndex === 4) {
+      return { isEnabled: false, showLocked: true }
+    }
+
+    return { isEnabled: false, showLocked: false }
+  }
+
+  if (battlePhase === 'phase2') {
+    const allPhase1Done = battleRoundPlayers.every((item) => item.phase1Done)
+
+    if (!allPhase1Done && (cardIndex === 3 || cardIndex === 4)) {
+      return { isEnabled: false, showLocked: true }
+    }
+
+    if (cardIndex === 3) {
+      return {
+        isEnabled: !battleInteractionLocked && !player.phase2Revealed?.[0],
+        showLocked: false
+      }
+    }
+
+    if (cardIndex === 4) {
+      return {
+        isEnabled: !battleInteractionLocked && !player.phase2Revealed?.[1],
+        showLocked: false
+      }
+    }
+
+    return { isEnabled: false, showLocked: false }
+  }
+
+  return { isEnabled: false, showLocked: false }
 }
 
 function canFlipBattleCard(player, cardIndex) {
@@ -2994,12 +3062,9 @@ function refreshBattleCardAvailability() {
 
     row.querySelectorAll('.battle-card').forEach((cardEl) => {
       const cardIndex = Number(cardEl.dataset.cardIndex)
-      if (!Number.isFinite(cardIndex)) {
-        setBattleCardAvailability(cardEl, false)
-        return
-      }
+      const state = getBattleCardAvailabilityState(player, cardIndex, cardEl)
 
-      setBattleCardAvailability(cardEl, canFlipBattleCard(player, cardIndex) && !cardEl.classList.contains('is-flipped'))
+      setBattleCardAvailability(cardEl, state.isEnabled, { showLocked: state.showLocked })
     })
   })
 }
@@ -3051,16 +3116,50 @@ async function condenseBattlePlayerRow(player, token) {
   updateBattlePlayerSubText(player)
 }
 
+function createBattleFinalSummary(player) {
+  const summary = document.createElement('div')
+  summary.className = 'battle-final-summary'
+
+  const rankBadge = document.createElement('div')
+  rankBadge.className = 'battle-final-rank'
+  rankBadge.innerHTML = `<strong>${player.finalRank}위</strong><span>${escapeHtml(player.label)}</span>`
+
+  const finalBox = document.createElement('div')
+  finalBox.className = 'battle-final-result-box'
+  finalBox.innerHTML = `
+    <small>최종 결과</small>
+    <strong>${formatBattleValue(player.final)}점</strong>
+  `
+
+  summary.appendChild(rankBadge)
+  summary.appendChild(finalBox)
+
+  return summary
+}
+
 function applyBattleFinalRow(player) {
   const row = getBattleRowElement(player.id)
   if (!row) return
 
-  const resultPill = row.querySelector('.battle-result-pill')
-  if (!resultPill) return
+  row.classList.add('is-finalized')
 
-  resultPill.innerHTML = `<strong>최종</strong><span>${escapeHtml(formatBattleValue(player.final))}점</span>`
-  resultPill.classList.remove('hidden')
-  resultPill.setAttribute('aria-hidden', 'false')
+  const resultPill = row.querySelector('.battle-result-pill')
+  if (resultPill) {
+    resultPill.classList.add('hidden')
+    resultPill.setAttribute('aria-hidden', 'true')
+  }
+
+  const subText = row.querySelector('.battle-player-sub')
+  if (subText) {
+    subText.textContent = ''
+  }
+
+  const hand = row.querySelector('.battle-hand')
+  if (!hand) return
+
+  hand.className = 'battle-hand battle-hand-final'
+  hand.innerHTML = ''
+  hand.appendChild(createBattleFinalSummary(player))
 }
 
 function getBattleRanking(roundPlayers) {
@@ -3086,7 +3185,8 @@ function buildBattleFinalPopupHtml(ranking) {
 
 
 function applyBattleFinalCardsToRows(roundPlayers) {
-  roundPlayers.forEach((player) => {
+  roundPlayers.forEach((player, index) => {
+    player.finalRank = index + 1
     applyBattleFinalRow(player)
   })
 }
@@ -3314,8 +3414,17 @@ function startRace() {
   }
 
   stopRaceLoop()
-  setRaceHorses(parsed.horses)
-  syncRaceInputToCurrentOrder()
+
+  const parsedOrderKey = parsed.horses.map((horse) => horse.label).join('||')
+  const currentOrderKey = raceHorses.map((horse) => horse.label).join('||')
+
+  if (raceHorses.length && parsedOrderKey === currentOrderKey) {
+    syncRaceInputToCurrentOrder()
+  } else {
+    setRaceHorses(parsed.horses)
+    syncRaceInputToCurrentOrder()
+  }
+
   renderRacePreview()
   resetRaceHorseStates()
 
@@ -3325,7 +3434,7 @@ function startRace() {
   setRaceInputLock(true)
   setRaceShuffleLock(true)
 
-  addRaceCommentary('게이트 오픈, 경주가 시작되었습니다! 셔플한 레인 순서 그대로 출발합니다.')
+  addRaceCommentary('게이트 오픈, 경주가 시작되었습니다! 셔플한 레인 순서와 지정 색상 그대로 출발합니다.')
 
   raceEventTimer = setInterval(triggerRaceEvent, 760)
   raceCommentaryTimer = setInterval(pushAutoCommentary, 1180)
