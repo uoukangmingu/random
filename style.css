@@ -2053,42 +2053,145 @@ body.orientation-blocked .orientation-lock-overlay {
   }
 }
 
+.battle-mobile-back-wrap {
+  display: none;
+}
+
 @media (max-width: 760px) {
-  .battle-card-screen {
+  #game3Screen .battle-card-screen {
     padding: 12px;
   }
 
-  .battle-sidebar-inner,
-  .battle-table-card,
-  .battle-panel {
-    padding: 14px;
+  #game3Screen .battle-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 
-  .battle-row {
-    grid-template-columns: 1fr;
+  #game3Screen .battle-main {
+    display: contents;
+  }
+
+  #game3Screen .battle-main-header {
+    order: 1;
+    padding: 20px 18px;
+    border-radius: 28px;
+    background: rgba(255, 249, 244, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.82);
+    box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
+  }
+
+  #game3Screen .battle-main-header .game-header-actions {
+    display: none;
+  }
+
+  #game3Screen .battle-sidebar {
+    order: 2;
+    border-radius: 28px;
+  }
+
+  #game3Screen .battle-sidebar-inner {
+    padding: 18px;
+    gap: 14px;
+  }
+
+  #game3Screen .battle-sidebar .controls-wrap {
+    margin-top: 0;
+    padding: 16px;
+    border-radius: 24px;
+  }
+
+  #game3Screen .battle-sidebar .scoreboard-card {
+    display: none;
+  }
+
+  #game3Screen .battle-sidebar .button-row {
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  #game3Screen .battle-sidebar .action-btn {
+    min-height: 52px;
+    padding: 14px 10px;
+    font-size: 0.98rem;
+  }
+
+  #game3Screen .battle-table-card {
+    order: 3;
+    padding: 18px 14px 16px;
+    border-radius: 28px;
+  }
+
+  #game3Screen .battle-deck-stage {
+    margin-bottom: 18px;
+  }
+
+  #game3Screen .battle-table {
     gap: 12px;
   }
 
-  .battle-hand.hand-five,
-  .battle-hand.hand-three {
-    grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+  #game3Screen .battle-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 24px;
   }
 
-  .battle-slot {
-    height: 104px;
+  #game3Screen .battle-player-head {
+    align-items: center;
+    gap: 8px;
   }
 
-  .battle-card {
+  #game3Screen .battle-player-sub {
+    display: block;
+    margin-top: 8px;
+    color: #907567;
+    line-height: 1.45;
+    font-size: 0.96rem;
+  }
+
+  #game3Screen .battle-hand.hand-five,
+  #game3Screen .battle-hand.hand-three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  #game3Screen .battle-slot {
+    height: 106px;
+    border-radius: 18px;
+  }
+
+  #game3Screen .battle-card {
     width: 72px;
     height: 104px;
+    margin: 0 auto;
   }
 
-  .battle-card.type-number .battle-card-value,
-  .battle-card.type-operator .battle-card-value {
+  #game3Screen .battle-card.type-number .battle-card-value,
+  #game3Screen .battle-card.type-operator .battle-card-value {
     font-size: 1.8rem;
   }
 
-  .battle-card.type-result .battle-card-value {
+  #game3Screen .battle-card.type-result .battle-card-value {
     font-size: 1.45rem;
+  }
+
+  #game3Screen .battle-ranking-list {
+    display: none !important;
+  }
+
+  #game3Screen .battle-mobile-back-wrap {
+    display: block;
+    margin-top: 12px;
+  }
+
+  #game3Screen .battle-mobile-back-btn {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    min-height: 54px;
+    border-radius: 999px;
+    font-size: 1rem;
   }
 }
