@@ -218,12 +218,14 @@ input {
 
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
+  grid-auto-rows: 1fr;
 }
 
 .game-item {
   width: 100%;
+  min-height: 198px;
   background: #fffaf5;
   border: 2px solid #f2e5d8;
   border-radius: 24px;
@@ -233,6 +235,9 @@ input {
   transition: transform 0.2s ease;
   color: var(--brown);
   appearance: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .game-item.game-launch {
@@ -247,8 +252,6 @@ input {
 .game-item:nth-child(6) { background: #f4fff4; }
 .game-item:nth-child(7) { background: #f9f2ff; }
 .game-item:nth-child(8) { background: #eef9ff; }
-.game-item:nth-child(9) { background: #fff4ee; }
-.game-item:nth-child(10) { background: #f6f7ff; }
 
 .game-num {
   width: 54px;
@@ -1118,7 +1121,7 @@ body.orientation-blocked .orientation-lock-overlay {
 
 @media (max-width: 980px) {
   .game-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1131,7 +1134,12 @@ body.orientation-blocked .orientation-lock-overlay {
   }
 
   .game-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .game-item {
+    min-height: 180px;
   }
 
   .menu-btn {

@@ -1853,7 +1853,13 @@ function parseRaceConfigToHorses(text) {
       finished: false,
       finishOrder: 0,
       currentStatus: '다그닥',
-      baseSpeed: 30 + Math.random() * 8,
+      baseSpeed: 30.8 + Math.random() * 6.8,
+      tempoSeed: Math.random() * Math.PI * 2,
+      strideSeed: Math.random() * Math.PI * 2,
+      formBias: -2.4 + Math.random() * 4.8,
+      kickBias: Math.random() * 6.5,
+      staminaBias: Math.random() * 5.8,
+      burstSeed: Math.random() * Math.PI * 2,
       bonusSpeed: 0,
       slowPenalty: 0,
       eventUntil: 0,
@@ -1876,6 +1882,32 @@ function parseRaceConfigToHorses(text) {
     status: 'OK',
     horses
   }
+}
+
+function syncRaceInputToCurrentOrder() {
+  if (!raceConfigInput) return
+
+  const orderedText = raceHorses.map((horse) => horse.label).join(', ')
+  raceConfigInput.value = orderedText
+  lastRaceValidConfigText = orderedText
+  lastRaceAppliedRawText = orderedText
+}
+
+function getRaceSortedHorses() {
+  return [...raceHorses].sort((a, b) => {
+    if (a.finished && b.finished) return a.finishOrder - b.finishOrder
+    if (a.finished) return -1
+    if (b.finished) return 1
+    return b.progress - a.progress
+  })
+}
+
+function applyRaceEventEffect(horse, { bonus = 0, penalty = 0, duration = 1600, status = '정상 질주' } = {}) {
+  const now = performance.now()
+  horse.bonusSpeed = bonus
+  horse.slowPenalty = penalty
+  horse.eventUntil = now + duration
+  horse.currentStatus = status
 }
 
 function handleRaceParseFailure(parsed, options = {}) {
@@ -2010,12 +2042,7 @@ function renderRaceRanking() {
 
   raceRankingList.innerHTML = ''
 
-  const ranking = [...raceHorses].sort((a, b) => {
-    if (a.finished && b.finished) return a.finishOrder - b.finishOrder
-    if (a.finished) return -1
-    if (b.finished) return 1
-    return b.progress - a.progress
-  })
+  const ranking = getRaceSortedHorses()
 
   ranking.forEach((horse, index) => {
     const item = document.createElement('div')
@@ -2143,9 +2170,10 @@ function shuffleRace() {
   setRaceInputLock(false)
   setRaceShuffleLock(false)
   setRaceHorses(shuffleArray(parsed.horses))
+  syncRaceInputToCurrentOrder()
   renderRacePreview()
 
-  addRaceCommentary('출전 순서가 랜덤으로 재배치되었습니다.')
+  addRaceCommentary('출전 순서가 랜덤으로 재배치되었습니다. 시작을 누르면 이 순서 그대로 출발합니다.')
 }
 
 function resetRace() {
@@ -2174,12 +2202,7 @@ function resetRace() {
 }
 
 function getLeaderHorse() {
-  return [...raceHorses].sort((a, b) => {
-    if (a.finished && b.finished) return a.finishOrder - b.finishOrder
-    if (a.finished) return -1
-    if (b.finished) return 1
-    return b.progress - a.progress
-  })[0]
+  return getRaceSortedHorses()[0]
 }
 
 function maybeCommentLeaderChange() {
@@ -2195,81 +2218,122 @@ function maybeCommentLeaderChange() {
 function triggerRaceEvent() {
   if (!raceRunning || raceFinished) return
 
-  const candidates = raceHorses.filter((horse) => !horse.finished)
-  if (!candidates.length) return
+  const ranking = getRaceSortedHorses().filter((horse) => !horse.finished)
+  if (!ranking.length) return
 
-  const horse = getRandomItem(candidates)
+  const groupSize = Math.max(1, Math.ceil(ranking.length / 3))
+  const leaders = ranking.slice(0, groupSize)
+  const trailers = ranking.slice(-groupSize)
+  const midStart = Math.max(1, Math.floor(ranking.length / 3))
+  const midEnd = Math.max(midStart + 1, Math.ceil((ranking.length * 2) / 3))
+  const midPack = ranking.slice(midStart, midEnd)
+  const upperMidPack = ranking.slice(1, Math.max(2, groupSize + 1))
   const now = performance.now()
   const roll = Math.random()
 
-  if (roll < 0.18) {
-    horse.bonusSpeed = 18 + Math.random() * 8
-    horse.slowPenalty = 0
-    horse.eventUntil = now + 1800
-    horse.currentStatus = '가속 중'
-    addRaceCommentary(`${horse.label}, 갑자기 치고 나갑니다!`)
+  if (roll < 0.22) {
+    const horse = getRandomItem(trailers)
+    applyRaceEventEffect(horse, {
+      bonus: 18 + Math.random() * 10,
+      duration: 1500 + Math.random() * 700,
+      status: '막판 추격'
+    })
+    addRaceCommentary(`${horse.label}, 뒤에서 폭발적인 추격이 나옵니다!`)
     return
   }
 
-  if (roll < 0.36) {
-    horse.slowPenalty = 14 + Math.random() * 7
-    horse.bonusSpeed = 0
-    horse.eventUntil = now + 1700
-    horse.currentStatus = '주춤'
-    addRaceCommentary(`${horse.label}, 속도가 잠깐 떨어집니다!`)
+  if (roll < 0.40) {
+    const horse = getRandomItem(midPack.length ? midPack : ranking)
+    applyRaceEventEffect(horse, {
+      bonus: 14 + Math.random() * 8,
+      duration: 1200 + Math.random() * 650,
+      status: '치고 나감'
+    })
+    addRaceCommentary(`${horse.label}, 중위권에서 한 번에 치고 올라옵니다!`)
     return
   }
 
-  if (roll < 0.48) {
-    horse.fallUntil = now + 1400
-    horse.eventUntil = now + 1900
-    horse.bonusSpeed = 0
-    horse.slowPenalty = 28
-    horse.currentStatus = '넘어짐'
-    addRaceCommentary(`${horse.label}말이 방금 넘어졌습니다!`)
+  if (roll < 0.58) {
+    const horse = getRandomItem(leaders)
+    applyRaceEventEffect(horse, {
+      penalty: 14 + Math.random() * 8,
+      duration: 1300 + Math.random() * 700,
+      status: '페이스 흔들림'
+    })
+    addRaceCommentary(`${horse.label}, 선두권에서 페이스가 눈에 띄게 꺾입니다!`)
     return
   }
 
-  if (roll < 0.62) {
-    horse.bonusSpeed = 24
-    horse.slowPenalty = 0
-    horse.eventUntil = now + 1600
-    horse.currentStatus = '막판 스퍼트'
-    addRaceCommentary(`${horse.label}, 막판 스퍼트가 나옵니다!`)
+  if (roll < 0.73) {
+    const attackerPool = [...upperMidPack, ...trailers].filter(Boolean)
+    const horse = getRandomItem(attackerPool.length ? attackerPool : ranking)
+    applyRaceEventEffect(horse, {
+      bonus: 15 + Math.random() * 8,
+      duration: 1200 + Math.random() * 500,
+      status: '바깥쪽 질주'
+    })
+
+    const leader = leaders[0]
+    if (leader && leader !== horse) {
+      leader.slowPenalty = Math.max(leader.slowPenalty, 7 + Math.random() * 5)
+      leader.eventUntil = Math.max(leader.eventUntil, now + 1200)
+      if (!leader.finished) {
+        leader.currentStatus = '견제당함'
+      }
+    }
+
+    addRaceCommentary(`${horse.label}, 선두권을 강하게 압박합니다!`)
     return
   }
 
-  const top2 = [...raceHorses]
-    .filter((item) => !item.finished)
-    .sort((a, b) => b.progress - a.progress)
-    .slice(0, 2)
+  if (roll < 0.90) {
+    const dangerPool = [...leaders, ...midPack, ...trailers].filter(Boolean)
+    const horse = getRandomItem(dangerPool.length ? dangerPool : ranking)
+    horse.fallUntil = now + 1200 + Math.random() * 850
+    horse.progress = Math.max(0, horse.progress - (16 + Math.random() * 22))
+    applyRaceEventEffect(horse, {
+      penalty: 18 + Math.random() * 10,
+      duration: 1800 + Math.random() * 800,
+      status: '넘어짐'
+    })
+    updateHorsePosition(horse)
+    addRaceCommentary(`${horse.label}, 크게 휘청하며 속도가 확 떨어집니다!`)
+    return
+  }
 
-  if (top2.length === 2) {
-    addRaceCommentary(`${top2[0].label}와 ${top2[1].label}, 선두권 접전입니다!`)
-  } else {
-    addRaceCommentary(`${horse.label}, 안정적으로 페이스를 유지하고 있습니다.`)
+  const leader = ranking[0]
+  const chaser = ranking[1]
+  const tail = ranking[ranking.length - 1]
+
+  if (leader && chaser && tail && leader !== tail) {
+    addRaceCommentary(`${leader.label}가 버티는 가운데 ${tail.label}까지 다시 살아납니다!`)
+  } else if (leader) {
+    addRaceCommentary(`${leader.label}, 아직 끝까지 안심할 수 없는 흐름입니다!`)
   }
 }
 
 function pushAutoCommentary() {
   if (!raceRunning || raceFinished) return
 
-  const ranking = [...raceHorses].sort((a, b) => {
-    if (a.finished && b.finished) return a.finishOrder - b.finishOrder
-    if (a.finished) return -1
-    if (b.finished) return 1
-    return b.progress - a.progress
-  })
+  const ranking = getRaceSortedHorses()
 
   if (!ranking.length) return
 
   const leader = ranking[0]
   const chaser = ranking[1]
+  const third = ranking[2]
+  const gap = leader && chaser ? leader.progress - chaser.progress : 0
 
-  if (leader && chaser && !leader.finished && !chaser.finished) {
-    addRaceCommentary(`${leader.label}가 선두, ${chaser.label}가 바짝 추격합니다!`)
+  if (leader && chaser && third && !leader.finished && !chaser.finished) {
+    if (gap < 70) {
+      addRaceCommentary(`${leader.label}, ${chaser.label}, ${third.label}까지 한 덩어리로 몰립니다!`)
+    } else {
+      addRaceCommentary(`${leader.label}가 앞서가지만 ${chaser.label}가 다시 거리를 줄입니다!`)
+    }
+  } else if (leader && chaser && !leader.finished && !chaser.finished) {
+    addRaceCommentary(`${leader.label}가 선두, ${chaser.label}가 끝까지 물고 늘어집니다!`)
   } else if (leader && !leader.finished) {
-    addRaceCommentary(`${leader.label}, 여전히 레이스를 이끌고 있습니다!`)
+    addRaceCommentary(`${leader.label}, 아직도 뒤를 따돌리지 못하고 있습니다!`)
   }
 }
 
@@ -2317,6 +2381,15 @@ function raceFrame(timestamp) {
   const dt = Math.min(0.05, (timestamp - raceLastTimestamp) / 1000)
   raceLastTimestamp = timestamp
 
+  const activeRanking = getRaceSortedHorses().filter((horse) => !horse.finished)
+  const leaderProgress = activeRanking[0]?.progress || 0
+  const tailProgress = activeRanking[activeRanking.length - 1]?.progress || 0
+  const averageProgress = activeRanking.length
+    ? activeRanking.reduce((sum, horse) => sum + horse.progress, 0) / activeRanking.length
+    : 0
+  const spread = leaderProgress - tailProgress
+  const rankMap = new Map(activeRanking.map((horse, index) => [horse.id, index]))
+
   raceHorses.forEach((horse) => {
     if (horse.finished) return
 
@@ -2325,23 +2398,68 @@ function raceFrame(timestamp) {
       horse.slowPenalty = 0
       horse.eventUntil = 0
       if (!horse.finished) {
-        horse.currentStatus = '정상 질주'
+        horse.currentStatus = '다그닥'
       }
     }
 
-    let speed = horse.baseSpeed + Math.sin(timestamp * 0.0016 + horse.baseSpeed) * 3.2
+    if (horse.fallUntil && timestamp > horse.fallUntil) {
+      horse.fallUntil = 0
+      if (!horse.finished && horse.currentStatus === '넘어짐') {
+        horse.currentStatus = '다시 추격'
+      }
+    }
 
-    if (horse.progress > RACE_DISTANCE * 0.78) {
-      speed += Math.random() * 4.5
+    const rankIndex = rankMap.get(horse.id) ?? activeRanking.length - 1
+    const gapToLeader = leaderProgress - horse.progress
+    const gapToAverage = averageProgress - horse.progress
+    const progressRatio = horse.progress / RACE_DISTANCE
+    const packBias = Math.max(0, Math.min(6.2, (gapToAverage / RACE_DISTANCE) * 24))
+    const comebackBoost = rankIndex >= Math.floor(activeRanking.length / 2)
+      ? Math.max(0, Math.min(7.8, (gapToLeader / RACE_DISTANCE) * 34))
+      : Math.max(0, Math.min(3.8, (gapToLeader / RACE_DISTANCE) * 15))
+    const leaderDrag = rankIndex === 0
+      ? Math.max(0, Math.min(4.8, (spread / RACE_DISTANCE) * 10))
+      : rankIndex === 1
+        ? Math.max(0, Math.min(1.8, (spread / RACE_DISTANCE) * 4))
+        : 0
+    const fatiguePenalty = rankIndex <= 1 && progressRatio > 0.48
+      ? Math.max(0, Math.min(5.6, ((progressRatio - 0.48) / 0.52) * (2.8 + spread / 220)))
+      : 0
+    const lateKick = progressRatio > 0.72
+      ? horse.kickBias * ((progressRatio - 0.72) / 0.28)
+      : 0
+    const rhythmSwing = Math.sin(timestamp * 0.00195 + horse.tempoSeed) * (2.8 + horse.kickBias * 0.16)
+      + Math.cos(timestamp * 0.00112 + horse.strideSeed) * (1.8 + horse.staminaBias * 0.12)
+      + Math.sin(timestamp * 0.0026 + horse.burstSeed) * 1.9
+
+    let speed = horse.baseSpeed
+      + horse.formBias
+      + rhythmSwing
+      + (Math.random() - 0.5) * 2.8
+
+    speed += packBias
+    speed += comebackBoost
+    speed += lateKick
+    speed -= leaderDrag
+    speed -= fatiguePenalty
+
+    if (horse.progress > RACE_DISTANCE * 0.58) {
+      if (rankIndex === 0) {
+        speed -= Math.min(3.8, (spread / RACE_DISTANCE) * 8.5)
+      } else if (rankIndex >= 1 && rankIndex <= 3) {
+        speed += Math.max(0, Math.min(4.8, (gapToLeader / RACE_DISTANCE) * 14))
+      } else {
+        speed += Math.max(0, Math.min(3.6, (gapToLeader / RACE_DISTANCE) * 10))
+      }
     }
 
     if (horse.fallUntil && timestamp < horse.fallUntil) {
-      speed = 2 + Math.random() * 1.5
+      speed = 1.4 + Math.random() * 1.8
     }
 
     speed += horse.bonusSpeed
     speed -= horse.slowPenalty
-    speed = Math.max(3, speed)
+    speed = Math.max(2, speed)
 
     horse.progress += speed * dt
 
@@ -3197,6 +3315,7 @@ function startRace() {
 
   stopRaceLoop()
   setRaceHorses(parsed.horses)
+  syncRaceInputToCurrentOrder()
   renderRacePreview()
   resetRaceHorseStates()
 
@@ -3206,10 +3325,10 @@ function startRace() {
   setRaceInputLock(true)
   setRaceShuffleLock(true)
 
-  addRaceCommentary('게이트 오픈, 경주가 시작되었습니다!')
+  addRaceCommentary('게이트 오픈, 경주가 시작되었습니다! 셔플한 레인 순서 그대로 출발합니다.')
 
-  raceEventTimer = setInterval(triggerRaceEvent, 900)
-  raceCommentaryTimer = setInterval(pushAutoCommentary, 1400)
+  raceEventTimer = setInterval(triggerRaceEvent, 760)
+  raceCommentaryTimer = setInterval(pushAutoCommentary, 1180)
   raceAnimationFrame = requestAnimationFrame(raceFrame)
 }
 
