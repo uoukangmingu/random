@@ -3586,7 +3586,7 @@ function getSimGameInfoHtml() {
           <li><strong>추가 체력</strong>: 기본 체력 50에 더해지는 값이다. 최종 체력은 <strong>50 + 추가 체력</strong>으로 계산된다.</li>
           <li><strong>공격력</strong>: 충돌 시 상대에게 줄 수 있는 기본 피해량에 영향을 준다.</li>
           <li><strong>공격 성공률</strong>: 충돌 순간 공격 판정이 실제로 들어갈 확률이다. 수치가 높을수록 공격이 더 잘 맞는다.</li>
-          <li><strong>방어력</strong>: 들어오는 피해를 줄여준다. 같은 공격을 받아도 방어력이 높으면 더 오래 버틴다.</li>
+          <li><strong>방어력</strong>: 상대와의 전투에서 상대의 공격 성공률을 방어력 수치만큼 확률적으로 감소시키는 능력치이다.</li>
         </ul>
       </section>
 
