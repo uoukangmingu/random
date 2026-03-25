@@ -615,6 +615,42 @@ function syncRaceMobileLayout() {
   }
 }
 
+function forceScrollToTop() {
+  const scrollingElement = document.scrollingElement || document.documentElement || document.body
+
+  window.scrollTo(0, 0)
+
+  if (scrollingElement) {
+    scrollingElement.scrollTop = 0
+  }
+
+  if (document.documentElement) {
+    document.documentElement.scrollTop = 0
+  }
+
+  if (document.body) {
+    document.body.scrollTop = 0
+  }
+}
+
+function forceGame4EntryScrollTop() {
+  if (!isMobileOrTabletLike()) return
+
+  forceScrollToTop()
+
+  requestAnimationFrame(() => {
+    forceScrollToTop()
+
+    requestAnimationFrame(() => {
+      forceScrollToTop()
+    })
+  })
+
+  setTimeout(() => {
+    forceScrollToTop()
+  }, 120)
+}
+
 function showScreen(target) {
   if (!screens[target]) return
 
@@ -671,6 +707,7 @@ function showScreen(target) {
   if (target === 'game4') {
     ensureSimReady()
     syncSimResponsiveLayout()
+    forceGame4EntryScrollTop()
   }
 
   updateOrientationGate()
