@@ -55,7 +55,7 @@
           <div>
             <p class="small-badge">🎲 luck games 🎲</p>
             <h2>운 게임 목록</h2>
-            <p class="sub-text">총 8개 게임으로 구성되며, 현재는 1번부터 3번까지 플레이 가능하다. 남은 게임도 순차적으로 추가될 예정이다.</p>
+            <p class="sub-text">총 8개 게임으로 구성되며, 현재는 1번부터 4번까지 플레이 가능하다. 남은 게임도 순차적으로 추가될 예정이다.</p>
           </div>
           <button class="back-btn" data-target="menu" type="button">← 뒤로가기</button>
         </div>
@@ -79,10 +79,10 @@
             <p>카드를 뒤집어 중간 계산과 최종 순위를 겨루는 게임</p>
           </button>
 
-          <button class="game-item game-coming-soon" type="button">
+          <button class="game-item game-launch" data-game="4" type="button">
             <div class="game-num">4</div>
-            <h3>게임 4</h3>
-            <p>추후 개발 예정</p>
+            <h3>생존 볼 배틀</h3>
+            <p>스탯을 배정받은 공들이 부딪히며 최후의 1인을 가리는 관찰형 배틀</p>
           </button>
           <button class="game-item game-coming-soon" type="button">
             <div class="game-num">5</div>
@@ -341,13 +341,119 @@
       </div>
     </section>
 
+    <section id="game4Screen" class="screen game-screen">
+      <div class="card game-card sim-card-screen sim-view-setup">
+        <div class="sim-layout">
+          <aside class="sim-sidebar">
+            <div class="sim-sidebar-inner">
+              <div class="sidebar-head">
+                <h3 class="sidebar-title">생존 배틀 설정</h3>
+                <p class="sub-text">
+                  이름을 쉼표로 구분해 참가자를 등록.
+                  예: 홍길동, 김아무개, 박철수
+                </p>
+              </div>
+
+              <div class="controls-wrap">
+                <div class="input-card">
+                  <label for="simConfigInput">참가자</label>
+                  <input
+                    id="simConfigInput"
+                    type="text"
+                    value="홍길동, 김아무개, 박철수, 최영희"
+                    autocomplete="off"
+                  />
+                  <p class="helper-text">
+                    쉼표(,)로 구분해 입력. 중복 이름은 불가하며 최대 6명까지 가능.
+                  </p>
+                </div>
+
+                <div class="button-row">
+                  <button id="shuffleSimBtn" class="action-btn secondary" type="button">셔플</button>
+                  <button id="startSimSetupBtn" class="action-btn primary" type="button">시작</button>
+                  <button id="resetSimBtn" class="action-btn soft" type="button">리셋</button>
+                </div>
+
+                <button id="startSimBattleBtn" class="action-btn primary sim-battle-start-btn" type="button" disabled>전투시작</button>
+
+                <div id="simStatusText" class="status-text">
+                  참가자를 설정하면 스탯 카드 대기 상태가 실시간 반영된다.
+                </div>
+              </div>
+
+              <div class="scoreboard-card">
+                <div class="scoreboard-head">
+                  <h3>참가자 목록</h3>
+                  <span id="simTotalInfo">총 0명</span>
+                </div>
+                <div id="simLegend" class="slot-legend"></div>
+              </div>
+            </div>
+          </aside>
+
+          <div class="sim-main">
+            <div class="sim-main-header">
+              <div>
+                <p class="small-badge game-mini-badge">⚔️ game 4 ⚔️</p>
+                <h2>생존 볼 배틀</h2>
+                <p class="sub-text">전투 전에는 스탯 카드를 확인하고, 전투가 시작되면 경기장과 스탯 요약표만 남는 관찰형 생존 배틀 게임이다.</p>
+              </div>
+
+              <div class="game-header-actions">
+                <button class="back-btn" data-target="luck" type="button">← 목록으로</button>
+              </div>
+            </div>
+
+            <div class="sim-setup-card">
+              <div class="sim-setup-head">
+                <div class="battle-deck-label">shuffle stat cards</div>
+                <span id="simPhaseBadge" class="sim-phase-badge">대기</span>
+              </div>
+
+              <div id="simDeck" class="battle-deck sim-deck" aria-hidden="true">
+                <span class="battle-deck-card battle-deck-card-1"></span>
+                <span class="battle-deck-card battle-deck-card-2"></span>
+                <span class="battle-deck-card battle-deck-card-3"></span>
+                <span class="battle-deck-card battle-deck-card-4"></span>
+              </div>
+
+              <div id="simStatsBoard" class="sim-stats-board"></div>
+            </div>
+
+            <div class="sim-arena-card">
+              <div class="sim-panel-head">
+                <h3>전투 경기장</h3>
+                <p class="sub-text">공끼리 부딪히는 순간 판정이 끝나고, 머리 위 체력바에 즉시 반영된다.</p>
+              </div>
+
+              <div id="simArenaWrap" class="sim-arena-wrap">
+                <div id="simHealthOverlay" class="sim-health-overlay"></div>
+              </div>
+            </div>
+
+            <div class="sim-battle-summary-card">
+              <div class="sim-panel-head">
+                <h3>참가자 스탯 요약</h3>
+                <p class="sub-text">전투 시작 시 확정된 능력치를 표로 요약한다.</p>
+              </div>
+              <div id="simBattleSummary" class="sim-battle-summary"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sim-mobile-back-wrap">
+          <button class="back-btn sim-mobile-back-btn" data-target="luck" type="button">← 목록으로</button>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <div id="popupOverlay" class="popup-overlay hidden">
     <div class="popup">
       <div class="popup-icon">🛠️</div>
       <h3 id="popupTitle">개발중</h3>
-      <p id="popupMessage">아직 준비중이야!</p>
+      <div id="popupMessage" class="popup-message">아직 준비중이야!</div>
       <button id="closePopupBtn" class="popup-btn" type="button">확인</button>
     </div>
   </div>

@@ -560,7 +560,7 @@ input:disabled {
   margin-bottom: 10px;
 }
 
-.popup p {
+.popup-message {
   color: #8b7366;
   line-height: 1.6;
   margin-bottom: 18px;
@@ -2352,5 +2352,975 @@ body.orientation-blocked .orientation-lock-overlay {
 
   .battle-final-result-box strong {
     font-size: 1.38rem;
+  }
+}
+
+
+/* =========================
+   game4 : survival ball battle
+========================= */
+
+.sim-card-screen {
+  padding: 20px;
+}
+
+.sim-card-screen.sim-view-setup .sim-arena-card,
+.sim-card-screen.sim-view-setup .sim-battle-summary-card {
+  display: none;
+}
+
+.sim-card-screen.sim-view-battle .sim-setup-card {
+  display: none;
+}
+
+.sim-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 720px;
+}
+
+.sim-sidebar {
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.34);
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 24px;
+  box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
+}
+
+.sim-sidebar-inner {
+  height: 100%;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sim-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sim-main-header,
+.sim-panel-head,
+.sim-setup-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sim-setup-card,
+.sim-arena-card,
+.sim-battle-summary-card {
+  background: rgba(255, 255, 255, 0.42);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 26px;
+  box-shadow: 0 14px 28px rgba(120, 90, 70, 0.08);
+  padding: 18px;
+}
+
+.sim-battle-start-btn {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.sim-phase-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 98px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff8df;
+  color: #8d6f52;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.sim-deck {
+  margin: 18px auto 14px;
+}
+
+.sim-stats-board {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sim-empty-state {
+  padding: 18px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #8c7262;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.sim-player-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 200px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: rgba(255, 250, 245, 0.78);
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.06);
+}
+
+.sim-player-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sim-player-name {
+  font-weight: 700;
+  color: var(--soft-brown);
+  word-break: break-all;
+}
+
+.sim-player-total {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #fff8df;
+  color: #8d6f52;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.sim-player-sub {
+  margin-top: 8px;
+  color: #907567;
+  line-height: 1.45;
+  font-size: 0.92rem;
+}
+
+.sim-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 78px));
+  gap: 8px;
+  justify-content: end;
+}
+
+.sim-stat-card {
+  width: 78px;
+  height: 118px;
+  perspective: 1100px;
+  opacity: 0;
+  transform: translate(-54px, -30px) scale(0.72) rotate(-10deg);
+  transition:
+    transform 0.42s cubic-bezier(0.2, 0.85, 0.24, 1),
+    opacity 0.22s ease;
+}
+
+.sim-stat-card.is-dealt {
+  opacity: 1;
+  transform: translate(0, 0) scale(1) rotate(0deg);
+}
+
+.sim-stat-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.58s cubic-bezier(0.22, 0.8, 0.2, 1);
+}
+
+.sim-stat-card.is-flipped .sim-stat-card-inner {
+  transform: rotateY(180deg);
+}
+
+.sim-stat-card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  backface-visibility: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 22px rgba(114, 86, 68, 0.11);
+}
+
+.sim-stat-card-back {
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 1.95rem;
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.28), transparent 23%),
+    linear-gradient(145deg, #b68cff 0%, #8eb8ff 48%, #9fe8da 100%);
+}
+
+.sim-stat-card-front {
+  transform: rotateY(180deg);
+  background: linear-gradient(180deg, #fffdfa 0%, #fff3ea 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px;
+  font-family: 'Gaegu', cursive;
+  color: var(--soft-brown);
+}
+
+.sim-stat-card-front small {
+  font-size: 0.78rem;
+  line-height: 1.15;
+  color: #8f7363;
+}
+
+.sim-stat-card-front strong {
+  font-size: 1.68rem;
+  line-height: 1;
+  align-self: flex-end;
+}
+
+.sim-stat-card.type-health .sim-stat-card-front { background: linear-gradient(180deg, #fff1f5 0%, #ffdfe9 100%); }
+.sim-stat-card.type-attack .sim-stat-card-front { background: linear-gradient(180deg, #fff5e9 0%, #ffe1c1 100%); }
+.sim-stat-card.type-accuracy .sim-stat-card-front { background: linear-gradient(180deg, #eef7ff 0%, #dff0ff 100%); }
+.sim-stat-card.type-defense .sim-stat-card-front { background: linear-gradient(180deg, #eefaf6 0%, #d6f1e8 100%); }
+
+.sim-arena-wrap {
+  position: relative;
+  width: 100%;
+  height: 460px;
+  border-radius: 26px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 22% 16%, rgba(255, 255, 255, 0.38), transparent 26%),
+    linear-gradient(180deg, #fff6ef 0%, #fff1ea 100%);
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 16px 28px rgba(120, 90, 70, 0.08);
+}
+
+.sim-arena-wrap::before {
+  content: '전투 시작 전';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(143, 115, 99, 0.6);
+  font-family: 'Gaegu', cursive;
+  font-size: 2rem;
+}
+
+.sim-arena-wrap.is-running::before {
+  display: none;
+}
+
+.sim-arena-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.sim-health-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.sim-shrink-zone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  border: 3px solid rgba(255, 255, 255, 0);
+  box-shadow: none;
+  opacity: 0;
+  transition:
+    left 0.1s linear,
+    top 0.1s linear,
+    width 0.1s linear,
+    height 0.1s linear,
+    opacity 0.24s ease,
+    border-color 0.24s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.sim-shrink-zone.is-active {
+  opacity: 1;
+}
+
+.sim-shrink-zone.is-danger {
+  border-color: rgba(255, 92, 92, 0.95);
+  box-shadow: none;
+}
+
+.sim-shrink-zone.is-frozen {
+  opacity: 1;
+}
+
+.sim-ball-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  min-width: 74px;
+  max-width: 92px;
+  padding: 4px 6px 5px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84) 0%, rgba(255, 250, 247, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.94);
+  box-shadow: 0 5px 12px rgba(114, 86, 68, 0.12);
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  backdrop-filter: blur(5px);
+  z-index: 4;
+  transition: opacity 0.18s ease, transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+}
+
+.sim-ball-label.is-dead {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 4px 10px rgba(80, 64, 58, 0.05);
+  opacity: 0.32;
+  filter: saturate(0.45);
+  z-index: 1;
+}
+
+.sim-ball-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.sim-ball-name,
+.sim-ball-hptext {
+  color: #7f6555;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.sim-ball-label.is-dead .sim-ball-name,
+.sim-ball-label.is-dead .sim-ball-hptext {
+  color: rgba(102, 88, 82, 0.72);
+}
+
+.sim-ball-place {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgba(255, 239, 180, 0.96);
+  color: #7b5f2b;
+  font-size: 0.58rem;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+}
+
+.sim-ball-label.is-dead .sim-ball-place,
+.sim-ball-label.is-winner .sim-ball-place {
+  display: inline-flex;
+}
+
+.sim-ball-hpbar {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(120, 102, 91, 0.12) 0%, rgba(120, 102, 91, 0.2) 100%);
+  box-shadow: inset 0 1px 2px rgba(82, 60, 49, 0.08);
+}
+
+.sim-ball-hpbar::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid rgba(255,255,255,0.35);
+  pointer-events: none;
+}
+
+.sim-ball-hpbar span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff7c98 0%, #ffb86a 45%, #86e29f 100%);
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.24);
+  transition: width 0.16s ease;
+}
+
+.sim-ball-label.is-dead .sim-ball-hpbar {
+  opacity: 0.12;
+}
+
+.sim-ball-label.is-dead .sim-ball-hpbar span {
+  background: linear-gradient(90deg, rgba(151,141,137,0.22) 0%, rgba(151,141,137,0.12) 100%);
+}
+
+
+.sim-ball-label.is-hit {
+  animation: simHitCard 0.28s ease;
+  box-shadow: 0 0 0 3px rgba(255, 132, 150, 0.38), 0 0 20px rgba(255, 120, 144, 0.24), 0 10px 22px rgba(114, 86, 68, 0.2);
+}
+
+.sim-hit-burst {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.98) 0%, rgba(255,213,213,0.97) 36%, rgba(255,126,150,0.94) 100%);
+  color: #7f2842;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.82), 0 10px 22px rgba(255, 108, 142, 0.28);
+  transform: translate(-50%, -50%) scale(0.45);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+
+.sim-hit-burst.is-active {
+  animation: simHitBurst 0.7s ease-out forwards;
+}
+
+
+
+@keyframes simHitCard {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  24% {
+    transform: translate(calc(-50% - 3px), calc(-50% + 1px)) scale(1.03);
+  }
+  48% {
+    transform: translate(calc(-50% + 3px), calc(-50% - 1px)) scale(0.99);
+  }
+  72% {
+    transform: translate(calc(-50% - 2px), calc(-50% + 1px)) scale(1.01);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes simHitBurst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -34%) scale(0.45);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -54%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -98%) scale(1.08);
+  }
+}
+
+
+.sim-battle-summary {
+  overflow-x: auto;
+}
+
+.sim-summary-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  background: rgba(255, 250, 245, 0.86);
+  border: 2px solid rgba(255,255,255,0.78);
+}
+
+.sim-summary-table th,
+.sim-summary-table td {
+  padding: 12px 14px;
+  text-align: center;
+  color: #7f6657;
+  font-size: 0.95rem;
+}
+
+.sim-summary-table th {
+  background: rgba(255, 243, 228, 0.92);
+  font-weight: 800;
+}
+
+.sim-summary-table tbody tr:nth-child(even) td {
+  background: rgba(255,255,255,0.5);
+}
+
+.sim-summary-name {
+  text-align: left !important;
+  font-weight: 800;
+}
+
+@media (max-width: 1024px) {
+  #game4Screen .sim-sidebar-inner,
+  #game4Screen .sim-setup-card,
+  #game4Screen .sim-arena-card,
+  #game4Screen .sim-battle-summary-card {
+    padding: 16px;
+  }
+
+  #game4Screen .sim-main {
+    order: 1;
+  }
+
+  #game4Screen .sim-main-header {
+    padding: 20px 18px;
+    border-radius: 28px;
+    background: rgba(255, 249, 244, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.82);
+    box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
+  }
+
+  #game4Screen .sim-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  #game4Screen .sim-stat-card {
+    width: 100%;
+    height: 102px;
+  }
+
+  #game4Screen .sim-stat-card-front strong {
+    font-size: 1.46rem;
+  }
+
+  #game4Screen .sim-player-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  #game4Screen .sim-arena-wrap {
+    height: 360px;
+  }
+}
+
+@media (max-width: 520px) {
+  #game4Screen .sim-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #game4Screen .sim-stat-card {
+    max-width: 92px;
+    margin: 0 auto;
+  }
+
+  #game4Screen .sim-arena-wrap {
+    height: 320px;
+  }
+
+  #game4Screen .sim-ball-label {
+    width: 74px;
+    margin-left: -37px;
+  }
+}
+
+
+.sim-map-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.sim-map-option {
+  width: 100%;
+  text-align: left;
+  padding: 14px;
+  border-radius: 18px;
+  border: 2px solid rgba(255,255,255,0.92);
+  background: rgba(255, 250, 245, 0.92);
+  box-shadow: 0 8px 18px rgba(114, 86, 68, 0.1);
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.sim-map-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(114, 86, 68, 0.14);
+  border-color: rgba(255, 214, 164, 0.95);
+}
+
+.sim-map-option strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--soft-brown);
+  font-size: 1rem;
+}
+
+.sim-map-option span {
+  display: block;
+  color: #8f7363;
+  line-height: 1.48;
+  font-size: 0.9rem;
+}
+
+.sim-map-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.sim-map-preview i {
+  display: block;
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,189,164,0.9), rgba(175,213,255,0.9));
+  opacity: 0.92;
+}
+
+.sim-map-option[data-sim-map-id="bomb"] .sim-map-preview i {
+  background: linear-gradient(90deg, #ffc49e, #ff7f7f);
+}
+
+.sim-map-option[data-sim-map-id="rotor"] .sim-map-preview i {
+  background: linear-gradient(90deg, #d7d9ff, #b8f0d6);
+}
+
+.sim-map-option[data-sim-map-id="pinball"] .sim-map-preview i {
+  background: linear-gradient(90deg, #ffe4a8, #bce8ff);
+}
+
+.sim-map-note {
+  margin-top: 4px;
+  color: #8f7363;
+  line-height: 1.5;
+}
+
+
+
+/* =========================
+   game4 : tablet / mobile layout refinements
+========================= */
+
+.sim-mobile-back-wrap {
+  display: none;
+}
+
+#game4Screen .sim-status-text,
+#game4Screen #simStatusText {
+  min-height: 48px;
+}
+
+@media (max-width: 1024px) and (pointer: coarse) {
+  #game4Screen .sim-card-screen {
+    padding: 12px;
+  }
+
+  #game4Screen .sim-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: auto;
+  }
+
+  #game4Screen .sim-main {
+    display: contents;
+  }
+
+  #game4Screen .sim-main-header {
+    order: 1;
+    width: 100%;
+    padding: 18px 16px 14px;
+    border-radius: 24px;
+    background: rgba(255, 249, 244, 0.92);
+    border: 2px solid rgba(255, 255, 255, 0.82);
+    box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
+  }
+
+  #game4Screen .sim-main-header h2 {
+    font-size: clamp(2rem, 6.8vw, 2.65rem);
+    margin-bottom: 8px;
+  }
+
+  #game4Screen .sim-main-header .sub-text {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 520px;
+  }
+
+  #game4Screen .sim-main-header .game-header-actions {
+    display: none;
+  }
+
+  #game4Screen .sim-sidebar {
+    order: 2;
+    width: 100%;
+    border-radius: 24px;
+  }
+
+  #game4Screen .sim-sidebar-inner {
+    height: auto;
+    overflow: visible;
+    padding: 14px;
+    gap: 12px;
+  }
+
+  #game4Screen .controls-wrap,
+  #game4Screen .scoreboard-card,
+  #game4Screen .sim-setup-card,
+  #game4Screen .sim-arena-card,
+  #game4Screen .sim-battle-summary-card {
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  #game4Screen .sim-card-screen.sim-view-setup .sim-sidebar {
+    order: 2;
+  }
+
+  #game4Screen .sim-card-screen.sim-view-setup .sim-setup-card {
+    order: 3;
+  }
+
+  #game4Screen .sim-card-screen.sim-view-battle .sim-arena-card {
+    order: 2;
+  }
+
+  #game4Screen .sim-card-screen.sim-view-battle .sim-battle-summary-card {
+    order: 3;
+  }
+
+  #game4Screen .sim-card-screen.sim-view-battle .sim-sidebar {
+    order: 4;
+  }
+
+  #game4Screen .sim-card-screen.sim-view-battle .scoreboard-card {
+    display: none;
+  }
+
+  #game4Screen .button-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  #game4Screen .action-btn {
+    width: 100%;
+    min-height: 52px;
+    padding: 14px 12px;
+    font-size: 1rem;
+  }
+
+  #game4Screen #simStatusText {
+    min-height: 64px;
+    line-height: 1.5;
+  }
+
+  #game4Screen .sim-player-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  #game4Screen .sim-player-sub {
+    font-size: 0.9rem;
+  }
+
+  #game4Screen .sim-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+
+  #game4Screen .sim-stat-card {
+    width: 100%;
+    height: 108px;
+    max-width: none;
+  }
+
+  #game4Screen .sim-stat-card-front {
+    padding: 10px;
+  }
+
+  #game4Screen .sim-stat-card-front small {
+    font-size: 0.72rem;
+  }
+
+  #game4Screen .sim-stat-card-front strong {
+    font-size: 1.38rem;
+  }
+
+  #game4Screen .sim-setup-head,
+  #game4Screen .sim-panel-head {
+    gap: 10px;
+  }
+
+  #game4Screen .sim-panel-head .sub-text,
+  #game4Screen .sim-setup-head + .sub-text {
+    font-size: 0.9rem;
+  }
+
+  #game4Screen .sim-deck {
+    transform: scale(0.92);
+    transform-origin: top center;
+    margin: 10px auto 6px;
+  }
+
+  #game4Screen .sim-arena-wrap {
+    height: clamp(320px, 56vw, 430px);
+    border-radius: 22px;
+  }
+
+  #game4Screen .sim-arena-wrap::before {
+    font-size: 1.7rem;
+  }
+
+  #game4Screen .sim-health-overlay {
+    inset: 0;
+  }
+
+  #game4Screen .sim-ball-label {
+    width: 86px;
+    margin-left: -43px;
+    padding: 6px 8px;
+  }
+
+  #game4Screen .sim-battle-summary {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #game4Screen .sim-summary-table {
+    min-width: 500px;
+  }
+
+  #game4Screen .sim-summary-table th,
+  #game4Screen .sim-summary-table td {
+    padding: 11px 12px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  #game4Screen .sim-mobile-back-wrap {
+    order: 5;
+    display: block;
+    margin-top: 2px;
+  }
+
+  #game4Screen .sim-mobile-back-btn {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 54px;
+    padding: 16px 18px;
+    font-size: 1.08rem;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--soft-brown);
+    box-shadow: 0 6px 16px rgba(130, 100, 80, 0.08);
+  }
+}
+
+@media (max-width: 640px) and (pointer: coarse) {
+  #game4Screen .sim-card-screen {
+    padding: 10px;
+  }
+
+  #game4Screen .sim-layout {
+    gap: 12px;
+  }
+
+  #game4Screen .sim-main-header {
+    padding: 16px 14px 12px;
+  }
+
+  #game4Screen .sim-main-header h2 {
+    font-size: 2rem;
+  }
+
+  #game4Screen .small-badge {
+    font-size: 0.82rem;
+    padding: 8px 12px;
+  }
+
+  #game4Screen .sim-sidebar-inner,
+  #game4Screen .controls-wrap,
+  #game4Screen .scoreboard-card,
+  #game4Screen .sim-setup-card,
+  #game4Screen .sim-arena-card,
+  #game4Screen .sim-battle-summary-card {
+    padding: 12px;
+  }
+
+  #game4Screen #simStatusText {
+    min-height: 72px;
+    font-size: 0.92rem;
+  }
+
+  #game4Screen .sim-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  #game4Screen .sim-stat-card {
+    max-width: 94px;
+    height: 104px;
+    margin: 0 auto;
+  }
+
+  #game4Screen .sim-player-total {
+    font-size: 0.78rem;
+    padding: 6px 10px;
+  }
+
+  #game4Screen .sim-player-sub {
+    font-size: 0.86rem;
+  }
+
+  #game4Screen .sim-deck {
+    transform: scale(0.82);
+    margin-top: 2px;
+  }
+
+  #game4Screen .sim-arena-wrap {
+    height: 300px;
+  }
+
+  #game4Screen .sim-arena-wrap::before {
+    font-size: 1.45rem;
+  }
+
+  #game4Screen .sim-ball-label {
+    width: 72px;
+    margin-left: -36px;
+    padding: 5px 7px;
+    font-size: 0.66rem;
+  }
+
+  #game4Screen .sim-summary-table {
+    min-width: 460px;
+  }
+
+  #game4Screen .sim-summary-table th,
+  #game4Screen .sim-summary-table td {
+    padding: 10px 10px;
+    font-size: 0.84rem;
+  }
+
+  #game4Screen .sim-mobile-back-btn {
+    min-height: 52px;
+    padding: 15px 16px;
+    font-size: 1rem;
   }
 }
