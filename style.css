@@ -3018,6 +3018,11 @@ body.orientation-blocked .orientation-lock-overlay {
   display: none;
 }
 
+.sim-mobile-battle-start-slot,
+.sim-mobile-reset-slot {
+  display: none;
+}
+
 #game4Screen .sim-status-text,
 #game4Screen #simStatusText {
   min-height: 48px;
@@ -3106,20 +3111,28 @@ body.orientation-blocked .orientation-lock-overlay {
     order: 4;
   }
 
-  #game4Screen .sim-card-screen.sim-view-battle .scoreboard-card {
+  #game4Screen .scoreboard-card {
+    display: none;
+  }
+
+  #game4Screen .sim-card-screen.sim-view-battle .sim-sidebar {
     display: none;
   }
 
   #game4Screen .button-row {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  #game4Screen .button-row .action-btn {
+    min-height: 46px;
+    padding: 12px 8px;
+    font-size: 0.92rem;
   }
 
   #game4Screen .action-btn {
     width: 100%;
-    min-height: 52px;
-    padding: 14px 12px;
-    font-size: 1rem;
   }
 
   #game4Screen #simStatusText {
@@ -3211,10 +3224,42 @@ body.orientation-blocked .orientation-lock-overlay {
     white-space: nowrap;
   }
 
+  #game4Screen .sim-card-screen.sim-view-setup .sim-mobile-battle-start-slot {
+    display: block;
+    margin-top: 16px;
+  }
+
+  #game4Screen .sim-mobile-battle-start-slot .sim-battle-start-btn {
+    width: 100%;
+    min-height: 56px;
+    padding: 16px 18px;
+    font-size: 1.02rem;
+    border-radius: 999px;
+  }
+
+  #game4Screen .sim-mobile-reset-slot {
+    order: 4;
+    display: none;
+  }
+
+  #game4Screen .sim-card-screen.sim-view-battle .sim-mobile-reset-slot {
+    display: block;
+    margin-top: 2px;
+  }
+
+  #game4Screen .sim-mobile-reset-slot .action-btn.soft {
+    width: 100%;
+    min-height: 58px;
+    padding: 16px 18px;
+    font-size: 1.08rem;
+    border-radius: 999px;
+    box-shadow: 0 6px 16px rgba(130, 100, 80, 0.08);
+  }
+
   #game4Screen .sim-mobile-back-wrap {
     order: 5;
     display: block;
-    margin-top: 2px;
+    margin-top: 14px;
   }
 
   #game4Screen .sim-mobile-back-btn {
@@ -3285,7 +3330,11 @@ body.orientation-blocked .orientation-lock-overlay {
   }
 
   #game4Screen .sim-player-sub {
-    font-size: 0.86rem;
+    display: none;
+  }
+
+  #game4Screen .sim-stat-card-front strong {
+    font-size: 1.5rem;
   }
 
   #game4Screen .sim-deck {
@@ -3318,6 +3367,18 @@ body.orientation-blocked .orientation-lock-overlay {
     font-size: 0.84rem;
   }
 
+  #game4Screen .button-row {
+    gap: 7px;
+  }
+
+  #game4Screen .button-row .action-btn {
+    min-height: 44px;
+    padding: 11px 6px;
+    font-size: 0.86rem;
+  }
+
+  #game4Screen .sim-mobile-battle-start-slot .sim-battle-start-btn,
+  #game4Screen .sim-mobile-reset-slot .action-btn.soft,
   #game4Screen .sim-mobile-back-btn {
     min-height: 52px;
     padding: 15px 16px;

@@ -93,6 +93,22 @@ const simRankingList = document.getElementById('simRankingList')
 const simPhaseBadge = document.getElementById('simPhaseBadge')
 const simDesc = document.querySelector('#game4Screen .sim-main-header .sub-text')
 const simCardScreen = document.querySelector('#game4Screen .sim-card-screen')
+const simLayout = document.querySelector('#game4Screen .sim-layout')
+const simSidebar = document.querySelector('#game4Screen .sim-sidebar')
+const simSidebarInner = document.querySelector('#game4Screen .sim-sidebar-inner')
+const simMain = document.querySelector('#game4Screen .sim-main')
+const simMainHeader = document.querySelector('#game4Screen .sim-main-header')
+const simHeaderActions = document.querySelector('#game4Screen .sim-main-header .game-header-actions')
+const simBackBtn = document.querySelector('#game4Screen .sim-main-header .back-btn[data-target="luck"]')
+const simControlsWrap = document.querySelector('#game4Screen .controls-wrap')
+const simButtonRow = document.querySelector('#game4Screen .controls-wrap .button-row')
+const simScoreboardCard = document.querySelector('#game4Screen .scoreboard-card')
+const simSetupCard = document.querySelector('#game4Screen .sim-setup-card')
+const simArenaCard = document.querySelector('#game4Screen .sim-arena-card')
+const simBattleSummaryCard = document.querySelector('#game4Screen .sim-battle-summary-card')
+const simMobileBackWrap = document.querySelector('#game4Screen .sim-mobile-back-wrap')
+const simMobileBattleStartSlot = document.querySelector('#game4Screen .sim-mobile-battle-start-slot')
+const simMobileResetSlot = document.querySelector('#game4Screen .sim-mobile-reset-slot')
 
 
 const {
@@ -641,6 +657,7 @@ function showScreen(target) {
 
   if (target === 'game4') {
     ensureSimReady()
+    syncSimResponsiveLayout()
   }
 
   updateOrientationGate()
@@ -3535,10 +3552,57 @@ function updateSimDescription() {
   simDesc.textContent = `최대 ${SIM_MAX_PLAYERS}명의 참가자가 각자 4가지 스탯 총합 100의 카드를 배정받은 뒤, 공끼리 충돌하는 순간 즉시 전투 판정이 반영되는 관찰형 시뮬레이션 게임이다.`
 }
 
+function shouldUseSimResponsiveLayout() {
+  return window.innerWidth <= 1024 && window.matchMedia('(pointer: coarse)').matches
+}
+
+function syncSimResponsiveLayout() {
+  if (
+    !simCardScreen ||
+    !simControlsWrap ||
+    !simButtonRow ||
+    !startSimBattleBtn ||
+    !resetSimBtn ||
+    !simMobileBattleStartSlot ||
+    !simMobileResetSlot
+  ) {
+    return
+  }
+
+  const shouldUseResponsiveLayout = shouldUseSimResponsiveLayout()
+
+  document.body.classList.toggle('game4-mobile-layout', shouldUseResponsiveLayout)
+
+  if (shouldUseResponsiveLayout) {
+    if (startSimBattleBtn.parentElement !== simMobileBattleStartSlot) {
+      simMobileBattleStartSlot.appendChild(startSimBattleBtn)
+    }
+
+    if (simCardScreen.classList.contains('sim-view-battle')) {
+      if (resetSimBtn.parentElement !== simMobileResetSlot) {
+        simMobileResetSlot.appendChild(resetSimBtn)
+      }
+    } else if (resetSimBtn.parentElement !== simButtonRow) {
+      simButtonRow.appendChild(resetSimBtn)
+    }
+
+    return
+  }
+
+  if (startSimBattleBtn.parentElement !== simControlsWrap) {
+    simControlsWrap.insertBefore(startSimBattleBtn, simStatusText || null)
+  }
+
+  if (resetSimBtn.parentElement !== simButtonRow) {
+    simButtonRow.appendChild(resetSimBtn)
+  }
+}
+
 function setSimViewMode(mode = 'setup') {
   if (!simCardScreen) return
   simCardScreen.classList.remove('sim-view-setup', 'sim-view-battle')
   simCardScreen.classList.add(mode === 'battle' ? 'sim-view-battle' : 'sim-view-setup')
+  syncSimResponsiveLayout()
 }
 
 function renderSimBattleSummary(players = []) {
@@ -5531,6 +5595,7 @@ window.addEventListener('resize', () => {
 
     syncGame1MobileLayout()
     syncRaceMobileLayout()
+    syncSimResponsiveLayout()
     updateOrientationGate()
 
     if (screens.game1?.classList.contains('active')) {
@@ -5555,6 +5620,7 @@ window.addEventListener('orientationchange', () => {
   setTimeout(() => {
     syncGame1MobileLayout()
     syncRaceMobileLayout()
+    syncSimResponsiveLayout()
     updateOrientationGate()
 
     if (screens.game1?.classList.contains('active')) {
@@ -5611,3 +5677,5 @@ if (simConfigInput) {
 if (screens.home) {
   showScreen('home')
 }
+
+syncSimResponsiveLayout()
