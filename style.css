@@ -574,6 +574,69 @@ input:disabled {
   font-weight: 700;
 }
 
+.popup.game-info-popup {
+  max-width: 760px;
+  padding: 28px 24px;
+  text-align: left;
+}
+
+.popup.game-info-popup .popup-icon {
+  margin-bottom: 10px;
+}
+
+.popup.game-info-popup h3 {
+  margin-bottom: 14px;
+}
+
+.popup.game-info-popup .popup-message {
+  max-height: min(66vh, 640px);
+  overflow-y: auto;
+  padding-right: 6px;
+  margin-bottom: 20px;
+}
+
+.popup.game-info-popup .popup-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.game-info-lead {
+  color: #866b5c;
+  line-height: 1.7;
+}
+
+.game-info-section {
+  background: rgba(255, 248, 241, 0.82);
+  border: 2px solid rgba(255, 255, 255, 0.84);
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.05);
+}
+
+.game-info-section h4 {
+  margin-bottom: 8px;
+  color: var(--soft-brown);
+  font-size: 1.03rem;
+}
+
+.game-info-section ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #8b7366;
+  line-height: 1.65;
+}
+
+.game-info-section li + li {
+  margin-top: 6px;
+}
+
 .background-deco {
   position: fixed;
   border-radius: 50%;
@@ -2413,6 +2476,29 @@ body.orientation-blocked .orientation-lock-overlay {
   flex-wrap: wrap;
 }
 
+.sim-header-inline-actions {
+  margin-top: 12px;
+}
+
+.sim-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  background: linear-gradient(180deg, rgba(255, 250, 245, 0.96) 0%, rgba(255, 243, 233, 0.96) 100%);
+  color: var(--soft-brown);
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.08);
+}
+
+.sim-info-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(120, 90, 70, 0.11);
+}
+
 .sim-setup-card,
 .sim-arena-card,
 .sim-battle-summary-card {
@@ -3065,6 +3151,16 @@ body.orientation-blocked .orientation-lock-overlay {
     max-width: 520px;
   }
 
+  #game4Screen .sim-header-inline-actions {
+    margin-top: 14px;
+  }
+
+  #game4Screen .sim-info-btn {
+    min-height: 44px;
+    padding: 11px 16px;
+    font-size: 0.94rem;
+  }
+
   #game4Screen .sim-main-header .game-header-actions {
     display: none;
   }
@@ -3299,6 +3395,12 @@ body.orientation-blocked .orientation-lock-overlay {
     padding: 8px 12px;
   }
 
+  #game4Screen .sim-info-btn {
+    width: 100%;
+    min-height: 46px;
+    font-size: 0.95rem;
+  }
+
   #game4Screen .sim-sidebar-inner,
   #game4Screen .controls-wrap,
   #game4Screen .scoreboard-card,
@@ -3383,5 +3485,25 @@ body.orientation-blocked .orientation-lock-overlay {
     min-height: 52px;
     padding: 15px 16px;
     font-size: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .popup.game-info-popup {
+    padding: 22px 18px;
+    border-radius: 24px;
+  }
+
+  .popup.game-info-popup h3 {
+    font-size: 1.72rem;
+  }
+
+  .game-info-section {
+    padding: 12px 13px;
+  }
+
+  .game-info-section ul {
+    padding-left: 16px;
+    font-size: 0.94rem;
   }
 }

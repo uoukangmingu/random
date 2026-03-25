@@ -20,6 +20,7 @@ const popupTitle = document.getElementById('popupTitle')
 const popupMessage = document.getElementById('popupMessage')
 const closePopupBtn = document.getElementById('closePopupBtn')
 const popupIcon = document.querySelector('.popup-icon')
+const popupBox = popupOverlay?.querySelector('.popup') || null
 
 const configInput = document.getElementById('configInput')
 const shuffleBtn = document.getElementById('shuffleBtn')
@@ -109,6 +110,7 @@ const simBattleSummaryCard = document.querySelector('#game4Screen .sim-battle-su
 const simMobileBackWrap = document.querySelector('#game4Screen .sim-mobile-back-wrap')
 const simMobileBattleStartSlot = document.querySelector('#game4Screen .sim-mobile-battle-start-slot')
 const simMobileResetSlot = document.querySelector('#game4Screen .sim-mobile-reset-slot')
+const simInfoBtn = document.getElementById('simInfoBtn')
 
 
 const {
@@ -383,7 +385,14 @@ function escapeHtml(text) {
 }
 
 function showPopup(title, message, options = {}) {
-  const { icon = '🛠️', allowHtml = false } = options
+  const { icon = '🛠️', allowHtml = false, popupClass = '' } = options
+
+  if (popupBox) {
+    popupBox.className = 'popup'
+    if (popupClass) {
+      popupBox.classList.add(...String(popupClass).split(/\s+/).filter(Boolean))
+    }
+  }
 
   if (popupIcon) {
     popupIcon.textContent = icon
@@ -430,6 +439,10 @@ function closePopup(options = {}) {
   if (popupOverlay) {
     popupOverlay.classList.add('hidden')
     delete popupOverlay.dataset.locked
+  }
+
+  if (popupBox) {
+    popupBox.className = 'popup'
   }
 
   if (closePopupBtn) {
@@ -3552,6 +3565,60 @@ function updateSimDescription() {
   simDesc.textContent = `최대 ${SIM_MAX_PLAYERS}명의 참가자가 각자 4가지 스탯 총합 100의 카드를 배정받은 뒤, 공끼리 충돌하는 순간 즉시 전투 판정이 반영되는 관찰형 시뮬레이션 게임이다.`
 }
 
+function getSimGameInfoHtml() {
+  return `
+    <div class="game-info-content">
+      <p class="game-info-lead">생존 볼 배틀은 참가자마다 총합 100의 스탯을 랜덤 배정한 뒤, 공끼리 충돌할 때마다 즉시 전투 판정이 일어나는 관찰형 생존 게임이다.</p>
+
+      <section class="game-info-section">
+        <h4>게임 진행 방식</h4>
+        <ul>
+          <li>참가자 이름을 쉼표로 입력하고 <strong>시작</strong>을 누르면 각 참가자에게 4장의 스탯 카드가 랜덤 배정된다.</li>
+          <li>카드가 순차적으로 공개되면 <strong>전투시작</strong> 버튼이 활성화된다.</li>
+          <li>전투가 시작되면 설정 화면은 정리되고, 경기장과 최종 스탯 요약표 중심의 관전 화면으로 바뀐다.</li>
+          <li>마지막까지 살아남은 1명이 우승하며, 탈락 순서를 기준으로 최종 순위가 정해진다.</li>
+        </ul>
+      </section>
+
+      <section class="game-info-section">
+        <h4>스탯 설명</h4>
+        <ul>
+          <li><strong>추가 체력</strong>: 기본 체력 50에 더해지는 값이다. 최종 체력은 <strong>50 + 추가 체력</strong>으로 계산된다.</li>
+          <li><strong>공격력</strong>: 충돌 시 상대에게 줄 수 있는 기본 피해량에 영향을 준다.</li>
+          <li><strong>공격 성공률</strong>: 충돌 순간 공격 판정이 실제로 들어갈 확률이다. 수치가 높을수록 공격이 더 잘 맞는다.</li>
+          <li><strong>방어력</strong>: 들어오는 피해를 줄여준다. 같은 공격을 받아도 방어력이 높으면 더 오래 버틴다.</li>
+        </ul>
+      </section>
+
+      <section class="game-info-section">
+        <h4>전투에서 보이는 것</h4>
+        <ul>
+          <li>각 공 위 라벨에서 이름과 현재 체력을 바로 볼 수 있다.</li>
+          <li>아래 요약표에서는 전투 시작 시 확정된 최종 스탯을 한눈에 비교할 수 있다.</li>
+          <li>맵에 따라 폭탄, 회전 막대, 범퍼 등 전투를 흔드는 요소가 등장할 수 있다.</li>
+        </ul>
+      </section>
+
+      <section class="game-info-section">
+        <h4>알아두면 좋은 점</h4>
+        <ul>
+          <li>셔플은 참가자 순서만 바꾸고, 실제 스탯은 시작할 때 다시 랜덤 배정된다.</li>
+          <li>리셋하면 전투 상태와 카드 배정이 모두 초기화되어 새 판처럼 다시 시작할 수 있다.</li>
+          <li>같은 이름은 중복 등록할 수 없고, 최대 ${SIM_MAX_PLAYERS}명까지 참가할 수 있다.</li>
+        </ul>
+      </section>
+    </div>
+  `
+}
+
+function openSimGameInfo() {
+  showPopup('게임 설명', getSimGameInfoHtml(), {
+    icon: '📖',
+    allowHtml: true,
+    popupClass: 'game-info-popup'
+  })
+}
+
 function shouldUseSimResponsiveLayout() {
   return window.innerWidth <= 1024 && window.matchMedia('(pointer: coarse)').matches
 }
@@ -5540,6 +5607,10 @@ if (resetSimBtn) {
 
 if (startSimBattleBtn) {
   startSimBattleBtn.addEventListener('click', startSimBattle)
+}
+
+if (simInfoBtn) {
+  simInfoBtn.addEventListener('click', openSimGameInfo)
 }
 
 if (battleTable) {
