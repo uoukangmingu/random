@@ -4581,6 +4581,45 @@ function spawnSimHitEffect(player, damage = 0) {
   })
 }
 
+function spawnSimBombExplosionEffect(bomb, { innerRadius = null, outerRadius = null, duration = 760 } = {}) {
+  if (!simHealthOverlay || !simArenaWrap || !simArenaRender || !bomb) return
+
+  const displayWidth = simArenaWrap.clientWidth || simArenaRender.options.width
+  const displayHeight = simArenaWrap.clientHeight || simArenaRender.options.height
+  const scaleX = displayWidth / simArenaRender.options.width
+  const scaleY = displayHeight / simArenaRender.options.height
+  const scale = Math.min(scaleX, scaleY)
+
+  const centerX = bomb.position.x * scaleX
+  const centerY = bomb.position.y * scaleY
+  const resolvedInnerRadius = innerRadius ?? bomb.plugin?.innerBlastRadius ?? 54
+  const resolvedOuterRadius = outerRadius ?? bomb.plugin?.blastRadius ?? 126
+
+  const core = document.createElement('div')
+  core.className = 'sim-bomb-blast-core'
+  core.style.left = `${centerX}px`
+  core.style.top = `${centerY}px`
+  core.style.setProperty('--blast-core-size', `${Math.max(54, resolvedInnerRadius * scale * 1.9)}px`)
+  simHealthOverlay.appendChild(core)
+
+  const ring = document.createElement('div')
+  ring.className = 'sim-bomb-blast-ring'
+  ring.style.left = `${centerX}px`
+  ring.style.top = `${centerY}px`
+  ring.style.setProperty('--blast-ring-size', `${Math.max(120, resolvedOuterRadius * scale * 2.2)}px`)
+  simHealthOverlay.appendChild(ring)
+
+  requestAnimationFrame(() => {
+    core.classList.add('is-active')
+    ring.classList.add('is-active')
+  })
+
+  setTimeout(() => {
+    core.remove()
+    ring.remove()
+  }, duration)
+}
+
 function createSimMapBodies(mapId, width, height) {
   const bodies = []
   const meta = { bombs: [], rotors: [] }
@@ -4616,9 +4655,10 @@ function createSimMapBodies(mapId, width, height) {
       bomb.plugin.lastHitAt = 0
       bomb.plugin.explodeAt = 3
       bomb.plugin.exploded = false
-      bomb.plugin.blastRadius = 82
+      bomb.plugin.innerBlastRadius = 54
+      bomb.plugin.blastRadius = 126
       bomb.plugin.blastDamage = 0
-      bomb.plugin.blastForce = 0.03
+      bomb.plugin.blastForce = 0.068
       applySimBombAppearance(bomb, 0)
       bodies.push(bomb)
       meta.bombs.push(bomb)
@@ -4630,13 +4670,13 @@ function createSimMapBodies(mapId, width, height) {
   }
 
   if (mapId === 'rotor') {
-    const rotorA = Bodies.rectangle(width * 0.5, height * 0.5, 240, 16, {
+    const rotorA = Bodies.rectangle(width * 0.57, height * 0.58, 188, 14, {
       isStatic: true,
       restitution: 1.04,
       render: { fillStyle: '#d8dcff', strokeStyle: '#fffef3', lineWidth: 3 }
     })
     rotorA.plugin.simHazardType = 'rotor'
-    rotorA.plugin.center = { x: width * 0.5, y: height * 0.5 }
+    rotorA.plugin.center = { x: width * 0.57, y: height * 0.58 }
     rotorA.plugin.spinSpeed = 0.0036
     rotorA.plugin.baseAngle = 0
 
@@ -4651,7 +4691,7 @@ function createSimMapBodies(mapId, width, height) {
     rotorB.plugin.baseAngle = 0.4
 
     bodies.push(rotorA, rotorB,
-      Bodies.circle(width * 0.5, height * 0.5, 15, { isStatic: true, restitution: 1.04, render: { fillStyle: '#fff4c1', strokeStyle: '#fffef3', lineWidth: 3 } }),
+      Bodies.circle(width * 0.57, height * 0.58, 15, { isStatic: true, restitution: 1.04, render: { fillStyle: '#fff4c1', strokeStyle: '#fffef3', lineWidth: 3 } }),
       Bodies.circle(width * 0.32, height * 0.28, 12, { isStatic: true, restitution: 1.04, render: { fillStyle: '#fff4c1', strokeStyle: '#fffef3', lineWidth: 3 } })
     )
     meta.rotors.push(rotorA, rotorB)
@@ -4680,6 +4720,17 @@ function triggerSimBombExplosion(bomb) {
   bomb.plugin.exploded = true
   applySimBombAppearance(bomb, 3)
   bomb.render.strokeStyle = '#ffffff'
+  bomb.render.lineWidth = 4
+
+  const innerRadius = bomb.plugin.innerBlastRadius || 54
+  const outerRadius = bomb.plugin.blastRadius || 126
+  const baseForce = bomb.plugin.blastForce || 0.068
+
+  spawnSimBombExplosionEffect(bomb, {
+    innerRadius,
+    outerRadius,
+    duration: 780
+  })
 
   simRoundPlayers.forEach((player) => {
     if (!player.isAlive) return
@@ -4688,15 +4739,28 @@ function triggerSimBombExplosion(bomb) {
     const dx = body.position.x - bomb.position.x
     const dy = body.position.y - bomb.position.y
     const distance = Math.sqrt(dx * dx + dy * dy)
-    if (distance <= 0 || distance > bomb.plugin.blastRadius) return
+    if (distance <= 0 || distance > outerRadius) return
 
-    const ratio = Math.max(0, 1 - distance / bomb.plugin.blastRadius)
     const safeDistance = Math.max(12, distance)
-    const pushForce = bomb.plugin.blastForce * (0.28 + ratio * 0.92)
+    let pushForce = 0
+
+    if (distance <= innerRadius) {
+      const innerRatio = 1 - distance / innerRadius
+      pushForce = baseForce * (1.1 + innerRatio * 1.75)
+    } else {
+      const outerRatio = 1 - (distance - innerRadius) / Math.max(1, outerRadius - innerRadius)
+      pushForce = baseForce * (0.38 + outerRatio * 0.92)
+    }
 
     Body.applyForce(body, body.position, {
       x: (dx / safeDistance) * pushForce,
-      y: (dy / safeDistance) * pushForce - pushForce * 0.1
+      y: (dy / safeDistance) * pushForce - pushForce * 0.16
+    })
+
+    flashSimBallBody(player, {
+      glowStroke: '#ffd98f',
+      lineWidth: 6,
+      duration: 320
     })
   })
 
@@ -4704,9 +4768,9 @@ function triggerSimBombExplosion(bomb) {
     if (simArenaWorld && bomb) {
       World.remove(simArenaWorld, bomb)
     }
-  }, 90)
+  }, 140)
 
-  syncSimCombatStatus('폭탄이 터졌다! 바로 근처의 공들이 폭발력에 밀려난다.')
+  syncSimCombatStatus('폭탄이 터졌다! 근처 공들이 강하게 튕겨 나간다.')
   updateSimArenaOverlay()
   maybeFinishSimBattle()
 }

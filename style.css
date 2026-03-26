@@ -2884,6 +2884,42 @@ body.orientation-blocked .orientation-lock-overlay {
   animation: simHitBurst 0.7s ease-out forwards;
 }
 
+.sim-bomb-blast-core,
+.sim-bomb-blast-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.22);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.sim-bomb-blast-core {
+  width: var(--blast-core-size, 88px);
+  height: var(--blast-core-size, 88px);
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.98) 0%, rgba(255,244,187,0.96) 22%, rgba(255,171,109,0.92) 52%, rgba(255,101,101,0.18) 76%, rgba(255,101,101,0) 100%);
+  box-shadow: 0 0 28px rgba(255, 181, 122, 0.46);
+}
+
+.sim-bomb-blast-ring {
+  width: var(--blast-ring-size, 220px);
+  height: var(--blast-ring-size, 220px);
+  border: 6px solid rgba(255, 241, 209, 0.95);
+  box-shadow:
+    0 0 0 10px rgba(255, 173, 110, 0.18),
+    0 0 28px rgba(255, 132, 112, 0.22);
+}
+
+.sim-bomb-blast-core.is-active {
+  animation: simBombBlastCore 0.48s ease-out forwards;
+}
+
+.sim-bomb-blast-ring.is-active {
+  animation: simBombBlastRing 0.72s cubic-bezier(0.14, 0.8, 0.22, 1) forwards;
+}
 
 
 @keyframes simHitCard {
@@ -2916,6 +2952,36 @@ body.orientation-blocked .orientation-lock-overlay {
   100% {
     opacity: 0;
     transform: translate(-50%, -98%) scale(1.08);
+  }
+}
+
+@keyframes simBombBlastCore {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.22);
+  }
+  24% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.26);
+  }
+}
+
+@keyframes simBombBlastRing {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.18);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.56);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.08);
   }
 }
 
