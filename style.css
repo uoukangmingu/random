@@ -521,6 +521,61 @@ input:disabled {
   line-height: 1.2;
 }
 
+.game-canvas-wrap,
+.race-track-wrap,
+.sim-arena-wrap,
+.sim-arena-zoom-stage {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.race-track-wrap {
+  position: relative;
+}
+
+.game-canvas-wrap.is-fast-forwarding,
+.race-track-wrap.is-fast-forwarding,
+.sim-arena-wrap.is-fast-forwarding,
+.sim-arena-zoom-stage.is-fast-forwarding,
+.game-canvas-wrap.is-fast-forward-blocked,
+.race-track-wrap.is-fast-forward-blocked,
+.sim-arena-wrap.is-fast-forward-blocked,
+.sim-arena-zoom-stage.is-fast-forward-blocked {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.48),
+    0 0 0 4px rgba(255, 225, 149, 0.42),
+    0 16px 28px rgba(120, 90, 70, 0.12);
+}
+
+.game-canvas-wrap.is-fast-forwarding::after,
+.race-track-wrap.is-fast-forwarding::after,
+.sim-arena-wrap.is-fast-forwarding::after,
+.sim-arena-zoom-stage.is-fast-forwarding::after,
+.game-canvas-wrap.is-fast-forward-blocked::after,
+.race-track-wrap.is-fast-forward-blocked::after,
+.sim-arena-wrap.is-fast-forward-blocked::after,
+.sim-arena-zoom-stage.is-fast-forward-blocked::after {
+  content: attr(data-fast-forward-label);
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 248, 222, 0.94);
+  color: #8b6a37;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.14);
+  pointer-events: none;
+  animation: fastForwardPulse 0.9s ease-in-out infinite;
+}
+
 .popup-overlay {
   position: fixed;
   inset: 0;
@@ -1132,6 +1187,17 @@ body.orientation-blocked .app {
 
 body.orientation-blocked .orientation-lock-overlay {
   display: flex;
+}
+
+@keyframes fastForwardPulse {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.92;
+  }
+  50% {
+    transform: translateY(-1px);
+    opacity: 1;
+  }
 }
 
 @keyframes fadeIn {
@@ -3151,7 +3217,7 @@ body.orientation-blocked .orientation-lock-overlay {
 
 .sim-arena-zoom-backdrop.is-active {
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 body.sim-arena-zoom-lock {
@@ -3761,4 +3827,25 @@ body.sim-arena-zoom-lock {
     padding-left: 16px;
     font-size: 0.94rem;
   }
+}
+
+.game-canvas-wrap.is-fast-forward-blocked,
+.race-track-wrap.is-fast-forward-blocked,
+.sim-arena-wrap.is-fast-forward-blocked {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.4),
+    0 0 0 4px rgba(255, 193, 193, 0.36),
+    0 16px 28px rgba(120, 90, 70, 0.1);
+}
+
+.game-canvas-wrap.is-fast-forward-blocked::after,
+.race-track-wrap.is-fast-forward-blocked::after,
+.sim-arena-wrap.is-fast-forward-blocked::after {
+  background: rgba(255, 238, 238, 0.96);
+  color: #b15f5f;
+}
+
+.sim-arena-zoom-stage.is-fast-forwarding,
+.sim-arena-zoom-stage.is-fast-forward-blocked {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.28);
 }

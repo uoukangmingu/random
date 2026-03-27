@@ -265,6 +265,17 @@ let raceMobileLayoutApplied = false
 
 const RACE_MAX_COUNT = 8
 const RACE_DISTANCE = 2400
+const FAST_FORWARD_HOLD_MS = 260
+const FAST_FORWARD_MULTIPLIER = 3
+const FAST_FORWARD_BLOCKED_MESSAGE = '빨리감기 불가능 게임'
+
+const fastForwardStates = {
+  game1: { target: gameCanvasWrap, active: false, timer: null, pointerId: null, blockedNotice: false },
+  game2: { target: raceTrackWrap, active: false, timer: null, pointerId: null, blockedNotice: false },
+  game4: { target: simArenaWrap, active: false, timer: null, pointerId: null, blockedNotice: false }
+}
+
+let raceElapsedMs = 0
 
 let raceHorses = []
 let raceRunning = false
@@ -674,6 +685,8 @@ function forceGame4EntryScrollTop() {
 function showScreen(target) {
   if (!screens[target]) return
 
+  releaseAllFastForward()
+
   const leavingGame4 = screens.game4?.classList.contains('active') && target !== 'game4'
   closePopup({ force: true })
   Object.values(screens).forEach((screen) => screen?.classList.remove('active'))
@@ -1000,6 +1013,7 @@ function clearWorldBodies() {
 }
 
 function clearSpawnTimers() {
+  releaseFastForward('game1')
   spawnTimers.forEach((timer) => clearTimeout(timer))
   spawnTimers = []
 
@@ -1152,6 +1166,7 @@ function getAggregatedCounts() {
 
 function finalizeResults() {
   if (finalResultsShown) return
+  releaseFastForward('game1')
   finalResultsShown = true
   clearFinalWatcher()
 
@@ -1195,19 +1210,20 @@ function startBombCountdown() {
   hideMainMovingObstacles()
 
   const countdownValues = [3, 2, 1]
+  const countdownStepDelay = getScaledDelay(1000, 'game1', 120)
 
   countdownValues.forEach((value, index) => {
     const timer = setTimeout(() => {
       if (statusText) {
         statusText.textContent = `폭탄 폭발까지 ${value}...`
       }
-    }, index * 1000)
+    }, index * countdownStepDelay)
     countdownTimers.push(timer)
   })
 
   const explodeTimer = setTimeout(() => {
     triggerBombExplosionChain()
-  }, 3000)
+  }, countdownStepDelay * countdownValues.length)
   countdownTimers.push(explodeTimer)
 }
 
@@ -1278,11 +1294,11 @@ function triggerBombExplosionChain() {
             statusText.textContent = '폭발 종료. 남은 구슬 정리 중...'
           }
           startFinalResultsWatcher()
-        }, 700)
+        }, getScaledDelay(700, 'game1', 120))
 
         countdownTimers.push(doneTimer)
       }
-    }, index * 160)
+    }, index * getScaledDelay(160, 'game1', 45))
 
     countdownTimers.push(timer)
   })
@@ -1295,6 +1311,7 @@ function startResultCountdown() {
   clearFinalWatcher()
 
   const countdownValues = [3, 2, 1]
+  const countdownStepDelay = getScaledDelay(1000, 'game1', 120)
 
   countdownValues.forEach((value, index) => {
     const timer = setTimeout(() => {
@@ -1310,7 +1327,7 @@ function startResultCountdown() {
       if (statusText) {
         statusText.textContent = `결과 공개까지 ${value}...`
       }
-    }, index * 1000)
+    }, index * countdownStepDelay)
 
     countdownTimers.push(timer)
   })
@@ -1326,7 +1343,7 @@ function startResultCountdown() {
     }
 
     finalizeResults()
-  }, 3000)
+  }, countdownStepDelay * countdownValues.length)
 
   countdownTimers.push(revealTimer)
 }
@@ -1878,31 +1895,42 @@ function spawnBalls() {
   ]
 
   const mixedOrder = shuffleArray(ballTypePool)
-
   let spawned = 0
+  let nextIndex = 0
 
-  mixedOrder.forEach((isBomb, index) => {
+  const scheduleNextSpawn = (delay = 0) => {
     const timer = setTimeout(() => {
+      if (nextIndex >= mixedOrder.length) return
+
+      const isBomb = mixedOrder[nextIndex]
+      nextIndex += 1
+
       const x = S(30) + Math.random() * (boardWidth - S(60))
       const y = S(22) + Math.random() * S(12)
 
       createBall(x, y, { isBomb })
       spawned += 1
+
       if (statusText) {
         statusText.textContent = `구슬이 떨어지는 중... ${spawned}/${totalDropCount}`
       }
 
-      if (spawned === totalDropCount) {
+      if (spawned >= totalDropCount) {
         roundSpawnComplete = true
         if (statusText) {
           statusText.textContent = `구슬 ${normalBallCount}개 + 폭탄 ${BOMB_COUNT}개 투하 완료. 멈추는 중...`
         }
         startSettleWatcher()
+        return
       }
-    }, index * SPAWN_INTERVAL_MS)
+
+      scheduleNextSpawn(getScaledDelay(SPAWN_INTERVAL_MS, 'game1', 4))
+    }, delay)
 
     spawnTimers.push(timer)
-  })
+  }
+
+  scheduleNextSpawn(0)
 }
 
 function refreshCounts() {
@@ -1998,6 +2026,165 @@ function resetRound() {
 
 function hasLiveRound() {
   return ballBodies.length > 0 && !finalResultsShown
+}
+
+function getScaledDelay(baseDelay, gameKey, minDelay = 50) {
+  return Math.max(minDelay, baseDelay / getFastForwardMultiplier(gameKey))
+}
+
+function getFastForwardMultiplier(gameKey) {
+  return fastForwardStates[gameKey]?.active ? FAST_FORWARD_MULTIPLIER : 1
+}
+
+function isFastForwardEligible(gameKey) {
+  switch (gameKey) {
+    case 'game1':
+      return false
+    case 'game2':
+      return screens.game2?.classList.contains('active') && raceRunning && !raceFinished
+    case 'game4':
+      return screens.game4?.classList.contains('active') && simBattleRunning && !simBattleFinished
+    default:
+      return false
+  }
+}
+
+function syncFastForwardRuntime(gameKey) {
+  const multiplier = getFastForwardMultiplier(gameKey)
+
+  if (gameKey === 'game1' && engine) {
+    engine.timing.timeScale = multiplier
+  }
+
+  if (gameKey === 'game4' && simArenaEngine) {
+    simArenaEngine.timing.timeScale = multiplier
+  }
+}
+
+function isFastForwardBlockedGame(gameKey) {
+  return gameKey === 'game1' && screens.game1?.classList.contains('active') && hasLiveRound()
+}
+
+function setFastForwardBlockedNotice(gameKey, isActive) {
+  const state = fastForwardStates[gameKey]
+  if (!state) return
+
+  state.blockedNotice = Boolean(isActive) && isFastForwardBlockedGame(gameKey)
+
+  if (state.target) {
+    state.target.classList.toggle('is-fast-forward-blocked', state.blockedNotice)
+    if (state.blockedNotice) {
+      state.target.setAttribute('data-fast-forward-label', FAST_FORWARD_BLOCKED_MESSAGE)
+    } else if (!state.active) {
+      state.target.removeAttribute('data-fast-forward-label')
+    }
+  }
+}
+
+function setFastForwardActive(gameKey, isActive) {
+  const state = fastForwardStates[gameKey]
+  if (!state) return
+
+  const nextActive = Boolean(isActive) && isFastForwardEligible(gameKey)
+  state.active = nextActive
+
+  if (nextActive) {
+    state.blockedNotice = false
+  }
+
+  if (state.target) {
+    state.target.classList.toggle('is-fast-forwarding', nextActive)
+    if (nextActive) {
+      state.target.setAttribute('data-fast-forward-label', `⏩ 빨리감기 x${FAST_FORWARD_MULTIPLIER}`)
+    } else if (!state.blockedNotice) {
+      state.target.removeAttribute('data-fast-forward-label')
+    }
+  }
+
+  syncFastForwardRuntime(gameKey)
+}
+
+function clearFastForwardHold(gameKey) {
+  const state = fastForwardStates[gameKey]
+  if (!state) return
+
+  if (state.timer) {
+    clearTimeout(state.timer)
+    state.timer = null
+  }
+
+  state.pointerId = null
+}
+
+function releaseFastForward(gameKey) {
+  clearFastForwardHold(gameKey)
+  setFastForwardActive(gameKey, false)
+  setFastForwardBlockedNotice(gameKey, false)
+}
+
+function releaseAllFastForward() {
+  releaseFastForward('game1')
+  releaseFastForward('game2')
+  releaseFastForward('game4')
+}
+
+function bindFastForwardTarget(gameKey) {
+  const state = fastForwardStates[gameKey]
+  const target = state?.target
+  if (!state || !target) return
+
+  const endHold = (event) => {
+    if (state.pointerId !== null && event?.pointerId !== undefined && event.pointerId !== state.pointerId) {
+      return
+    }
+
+    releaseFastForward(gameKey)
+
+    if (event?.pointerId !== undefined && typeof target.releasePointerCapture === 'function') {
+      try {
+        if (target.hasPointerCapture?.(event.pointerId)) {
+          target.releasePointerCapture(event.pointerId)
+        }
+      } catch (error) {}
+    }
+  }
+
+  target.addEventListener('pointerdown', (event) => {
+    const blockedGame = isFastForwardBlockedGame(gameKey)
+    if (!blockedGame && !isFastForwardEligible(gameKey)) return
+
+    clearFastForwardHold(gameKey)
+    state.pointerId = event.pointerId
+
+    if (typeof target.setPointerCapture === 'function') {
+      try {
+        target.setPointerCapture(event.pointerId)
+      } catch (error) {}
+    }
+
+    state.timer = setTimeout(() => {
+      state.timer = null
+      if (state.pointerId !== event.pointerId) return
+
+      if (isFastForwardBlockedGame(gameKey)) {
+        setFastForwardBlockedNotice(gameKey, true)
+        return
+      }
+
+      if (isFastForwardEligible(gameKey)) {
+        setFastForwardActive(gameKey, true)
+      }
+    }, FAST_FORWARD_HOLD_MS)
+
+    event.preventDefault()
+  }, { passive: false })
+
+  target.addEventListener('pointerup', endHold)
+  target.addEventListener('pointercancel', endHold)
+  target.addEventListener('pointerleave', endHold)
+  target.addEventListener('contextmenu', (event) => {
+    event.preventDefault()
+  })
 }
 
 function shouldIgnoreMobileChromeResize(nextWidth, nextHeight) {
@@ -2102,7 +2289,7 @@ function getRaceSortedHorses() {
 }
 
 function applyRaceEventEffect(horse, { bonus = 0, penalty = 0, duration = 1600, status = '정상 질주' } = {}) {
-  const now = performance.now()
+  const now = raceElapsedMs
   horse.bonusSpeed = bonus
   horse.slowPenalty = penalty
   horse.eventUntil = now + duration
@@ -2308,6 +2495,7 @@ function ensureRaceReady() {
 }
 
 function stopRaceLoop() {
+  releaseFastForward('game2')
   raceRunning = false
   raceLastTimestamp = 0
 
@@ -2317,12 +2505,12 @@ function stopRaceLoop() {
   }
 
   if (raceEventTimer) {
-    clearInterval(raceEventTimer)
+    clearTimeout(raceEventTimer)
     raceEventTimer = null
   }
 
   if (raceCommentaryTimer) {
-    clearInterval(raceCommentaryTimer)
+    clearTimeout(raceCommentaryTimer)
     raceCommentaryTimer = null
   }
 }
@@ -2414,6 +2602,26 @@ function maybeCommentLeaderChange() {
   }
 }
 
+function scheduleRaceEventLoop() {
+  if (!raceRunning || raceFinished) return
+
+  raceEventTimer = setTimeout(() => {
+    if (!raceRunning || raceFinished) return
+    triggerRaceEvent()
+    scheduleRaceEventLoop()
+  }, getScaledDelay(760, 'game2', 180))
+}
+
+function scheduleRaceCommentaryLoop() {
+  if (!raceRunning || raceFinished) return
+
+  raceCommentaryTimer = setTimeout(() => {
+    if (!raceRunning || raceFinished) return
+    pushAutoCommentary()
+    scheduleRaceCommentaryLoop()
+  }, getScaledDelay(1180, 'game2', 240))
+}
+
 function triggerRaceEvent() {
   if (!raceRunning || raceFinished) return
 
@@ -2427,7 +2635,7 @@ function triggerRaceEvent() {
   const midEnd = Math.max(midStart + 1, Math.ceil((ranking.length * 2) / 3))
   const midPack = ranking.slice(midStart, midEnd)
   const upperMidPack = ranking.slice(1, Math.max(2, groupSize + 1))
-  const now = performance.now()
+  const now = raceElapsedMs
   const roll = Math.random()
 
   if (roll < 0.22) {
@@ -2577,8 +2785,12 @@ function raceFrame(timestamp) {
     raceLastTimestamp = timestamp
   }
 
-  const dt = Math.min(0.05, (timestamp - raceLastTimestamp) / 1000)
+  const speedMultiplier = getFastForwardMultiplier('game2')
+  const rawDt = Math.min(0.05, (timestamp - raceLastTimestamp) / 1000)
+  const dt = rawDt * speedMultiplier
   raceLastTimestamp = timestamp
+  raceElapsedMs += dt * 1000
+  const raceNow = raceElapsedMs
 
   const activeRanking = getRaceSortedHorses().filter((horse) => !horse.finished)
   const leaderProgress = activeRanking[0]?.progress || 0
@@ -2592,7 +2804,7 @@ function raceFrame(timestamp) {
   raceHorses.forEach((horse) => {
     if (horse.finished) return
 
-    if (horse.eventUntil && timestamp > horse.eventUntil) {
+    if (horse.eventUntil && raceNow > horse.eventUntil) {
       horse.bonusSpeed = 0
       horse.slowPenalty = 0
       horse.eventUntil = 0
@@ -2601,7 +2813,7 @@ function raceFrame(timestamp) {
       }
     }
 
-    if (horse.fallUntil && timestamp > horse.fallUntil) {
+    if (horse.fallUntil && raceNow > horse.fallUntil) {
       horse.fallUntil = 0
       if (!horse.finished && horse.currentStatus === '넘어짐') {
         horse.currentStatus = '다시 추격'
@@ -2627,9 +2839,9 @@ function raceFrame(timestamp) {
     const lateKick = progressRatio > 0.72
       ? horse.kickBias * ((progressRatio - 0.72) / 0.28)
       : 0
-    const rhythmSwing = Math.sin(timestamp * 0.00195 + horse.tempoSeed) * (2.8 + horse.kickBias * 0.16)
-      + Math.cos(timestamp * 0.00112 + horse.strideSeed) * (1.8 + horse.staminaBias * 0.12)
-      + Math.sin(timestamp * 0.0026 + horse.burstSeed) * 1.9
+    const rhythmSwing = Math.sin(raceNow * 0.00195 + horse.tempoSeed) * (2.8 + horse.kickBias * 0.16)
+      + Math.cos(raceNow * 0.00112 + horse.strideSeed) * (1.8 + horse.staminaBias * 0.12)
+      + Math.sin(raceNow * 0.0026 + horse.burstSeed) * 1.9
 
     let speed = horse.baseSpeed
       + horse.formBias
@@ -2652,7 +2864,7 @@ function raceFrame(timestamp) {
       }
     }
 
-    if (horse.fallUntil && timestamp < horse.fallUntil) {
+    if (horse.fallUntil && raceNow < horse.fallUntil) {
       speed = 1.4 + Math.random() * 1.8
     }
 
@@ -2675,6 +2887,7 @@ function raceFrame(timestamp) {
   if (raceFinishOrder.length === raceHorses.length) {
     raceRunning = false
     raceFinished = true
+    releaseFastForward('game2')
     setRaceInputLock(false)
     setRaceShuffleLock(false)
     if (raceStatusText) {
@@ -3625,7 +3838,7 @@ function updateSimDescription() {
 function getSimGameInfoHtml() {
   return `
     <div class="game-info-content">
-      <p class="game-info-lead">생존 볼 배틀은 참가자마다 총합 100의 스탯을 랜덤 배정한 뒤, 공끼리 충돌할 때마다 즉시 전투 판정이 일어나는 관찰형 생존 게임이다.</p>
+      <p class="game-info-lead">볼 배틀은 참가자마다 총합 100의 스탯을 랜덤 배정한 뒤, 공끼리 충돌할 때마다 즉시 전투 판정이 일어나는 관찰형 생존 게임이다.</p>
 
       <section class="game-info-section">
         <h4>게임 진행 방식</h4>
@@ -3901,7 +4114,7 @@ function handleSimParseFailure(parsed, { showPopupOnInvalid = false } = {}) {
   if (parsed.status === 'TOO_MANY') {
     simStatusText.textContent = `참가자는 최대 ${SIM_MAX_PLAYERS}명까지 가능하다.`
     if (showPopupOnInvalid) {
-      showPopup('참가자 수 초과', `생존 볼 배틀은 최대 ${SIM_MAX_PLAYERS}명까지만 참가할 수 있어.`)
+      showPopup('참가자 수 초과', `볼 배틀은 최대 ${SIM_MAX_PLAYERS}명까지만 참가할 수 있어.`)
     }
     return false
   }
@@ -3909,7 +4122,7 @@ function handleSimParseFailure(parsed, { showPopupOnInvalid = false } = {}) {
   if (parsed.status === 'DUPLICATE') {
     simStatusText.textContent = '같은 이름은 2번 이상 입력할 수 없다.'
     if (showPopupOnInvalid) {
-      showPopup('중복 이름 불가', '생존 볼 배틀은 같은 이름을 중복 등록할 수 없어.')
+      showPopup('중복 이름 불가', '볼 배틀은 같은 이름을 중복 등록할 수 없어.')
     }
     return false
   }
@@ -4454,6 +4667,7 @@ function clearSimArena() {
 }
 
 function stopSimBattle({ preserveSetup = true } = {}) {
+  releaseFastForward('game4')
   simBattleToken += 1
   simCurrentToken = 0
   simBattleRunning = false
@@ -4518,7 +4732,7 @@ function resetSim() {
   setSimShuffleLock(false)
   setSimBattleStartState(false)
   if (simStatusText) {
-    simStatusText.textContent = '생존 볼 배틀이 초기화되었다. 다시 시작하면 새 스탯이 배정된다.'
+    simStatusText.textContent = '볼 배틀이 초기화되었다. 다시 시작하면 새 스탯이 배정된다.'
   }
 }
 
@@ -5021,6 +5235,7 @@ function initSimArena() {
   Matter.Render.run(simArenaRender)
   simArenaRunner = Matter.Runner.create()
   Matter.Runner.run(simArenaRunner, simArenaEngine)
+  syncFastForwardRuntime('game4')
 
   const walls = createSimWalls(width, height)
   const wallBodies = [walls.top, walls.bottom, walls.left, walls.right]
@@ -5468,6 +5683,7 @@ function maybeFinishSimBattle() {
   const survivors = simRoundPlayers.filter((player) => player.isAlive)
   if (survivors.length > 1) return false
 
+  releaseFastForward('game4')
   simBattleRunning = false
   simBattleFinished = true
 
@@ -5581,6 +5797,7 @@ async function startSimBattle() {
   }
 
   simBattleRunning = true
+  syncFastForwardRuntime('game4')
   setSimInputLock(true)
   setSimShuffleLock(true)
   updateSimPhase('전투 중')
@@ -5620,13 +5837,14 @@ function startRace() {
   raceRunning = true
   raceFinished = false
   raceLastTimestamp = 0
+  raceElapsedMs = 0
   setRaceInputLock(true)
   setRaceShuffleLock(true)
 
   addRaceCommentary('게이트 오픈, 경주가 시작되었습니다! 셔플한 레인 순서와 지정 색상 그대로 출발합니다.')
 
-  raceEventTimer = setInterval(triggerRaceEvent, 760)
-  raceCommentaryTimer = setInterval(pushAutoCommentary, 1180)
+  scheduleRaceEventLoop()
+  scheduleRaceCommentaryLoop()
   raceAnimationFrame = requestAnimationFrame(raceFrame)
 }
 
@@ -5822,9 +6040,9 @@ if (simArenaZoomBtn) {
   simArenaZoomBtn.addEventListener('click', toggleSimArenaZoom)
 }
 
-if (simArenaZoomBackdrop) {
-  simArenaZoomBackdrop.addEventListener('click', closeSimArenaZoom)
-}
+bindFastForwardTarget('game1')
+bindFastForwardTarget('game2')
+bindFastForwardTarget('game4')
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && simArenaZoomed) {
