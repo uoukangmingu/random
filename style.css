@@ -2526,6 +2526,23 @@ body.orientation-blocked .orientation-lock-overlay {
   flex-wrap: wrap;
 }
 
+.sim-main-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 12px;
+}
+
+.sim-main-header > div:first-child {
+  min-width: 0;
+}
+
+.sim-main-header .game-header-actions {
+  justify-self: end;
+  align-self: start;
+  margin-left: auto;
+}
+
 .sim-header-inline-actions {
   margin-top: 12px;
 }
