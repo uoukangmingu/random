@@ -433,12 +433,19 @@
 
             <div class="sim-arena-card">
               <div class="sim-panel-head">
-                <h3>전투 경기장</h3>
-                <p class="sub-text">공끼리 부딪히는 순간 판정이 끝나고, 머리 위 체력바에 즉시 반영된다.</p>
+                <div>
+                  <h3>전투 경기장</h3>
+                  <p class="sub-text">공끼리 부딪히는 순간 판정이 끝나고, 머리 위 체력바에 즉시 반영된다.</p>
+                </div>
+                <div class="sim-panel-head-actions">
+                  <button id="simArenaZoomBtn" class="sim-arena-zoom-btn" type="button" aria-pressed="false">크게 보기</button>
+                </div>
               </div>
 
-              <div id="simArenaWrap" class="sim-arena-wrap">
-                <div id="simHealthOverlay" class="sim-health-overlay"></div>
+              <div id="simArenaZoomStage" class="sim-arena-zoom-stage">
+                <div id="simArenaWrap" class="sim-arena-wrap">
+                  <div id="simHealthOverlay" class="sim-health-overlay"></div>
+                </div>
               </div>
             </div>
 
@@ -458,6 +465,7 @@
           <button class="back-btn sim-mobile-back-btn" data-target="luck" type="button">← 목록으로</button>
         </div>
       </div>
+      <div id="simArenaZoomBackdrop" class="sim-arena-zoom-backdrop" aria-hidden="true"></div>
     </section>
 
   </main>

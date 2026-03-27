@@ -111,6 +111,9 @@ const simMobileBackWrap = document.querySelector('#game4Screen .sim-mobile-back-
 const simMobileBattleStartSlot = document.querySelector('#game4Screen .sim-mobile-battle-start-slot')
 const simMobileResetSlot = document.querySelector('#game4Screen .sim-mobile-reset-slot')
 const simInfoBtn = document.getElementById('simInfoBtn')
+const simArenaZoomBtn = document.getElementById('simArenaZoomBtn')
+const simArenaZoomStage = document.getElementById('simArenaZoomStage')
+const simArenaZoomBackdrop = document.getElementById('simArenaZoomBackdrop')
 
 
 const {
@@ -327,6 +330,7 @@ let simArenaBodyMap = new Map()
 let simOverlayMap = new Map()
 let simArenaMeta = null
 let simSelectedMap = 'classic'
+let simArenaZoomed = false
 let lastSimValidConfigText = simConfigInput ? simConfigInput.value : ''
 let lastSimAppliedRawText = simConfigInput ? simConfigInput.value : ''
 
@@ -3718,11 +3722,91 @@ function syncSimResponsiveLayout() {
   }
 }
 
+function updateSimArenaZoomButton() {
+  if (!simArenaZoomBtn) return
+
+  const isBattleView = Boolean(simCardScreen?.classList.contains('sim-view-battle'))
+  simArenaZoomBtn.disabled = !isBattleView
+  simArenaZoomBtn.setAttribute('aria-pressed', simArenaZoomed ? 'true' : 'false')
+  simArenaZoomBtn.textContent = simArenaZoomed ? '원래 크기로' : '크게 보기'
+}
+
+function updateSimArenaZoomScale() {
+  if (!simArenaWrap) return
+
+  if (!simArenaZoomed || !simArenaZoomStage) {
+    simArenaWrap.style.removeProperty('--sim-arena-base-width')
+    simArenaWrap.style.removeProperty('--sim-arena-base-height')
+    simArenaWrap.style.removeProperty('--sim-arena-zoom-scale')
+    return
+  }
+
+  const baseWidth = simArenaRender?.options?.width || simArenaMeta?.width || simArenaWrap.clientWidth || 900
+  const baseHeight = simArenaRender?.options?.height || simArenaMeta?.height || simArenaWrap.clientHeight || 460
+  const stageWidth = Math.max(1, simArenaZoomStage.clientWidth)
+  const stageHeight = Math.max(1, simArenaZoomStage.clientHeight)
+  const zoomScale = clampValue(Math.min(stageWidth / baseWidth, stageHeight / baseHeight), 0.92, 2.4)
+
+  simArenaWrap.style.setProperty('--sim-arena-base-width', `${baseWidth}px`)
+  simArenaWrap.style.setProperty('--sim-arena-base-height', `${baseHeight}px`)
+  simArenaWrap.style.setProperty('--sim-arena-zoom-scale', String(zoomScale))
+}
+
+function closeSimArenaZoom() {
+  if (!simCardScreen) return
+
+  simArenaZoomed = false
+  simCardScreen.classList.remove('sim-arena-zoomed')
+  document.body.classList.remove('sim-arena-zoom-lock')
+  simArenaZoomBackdrop?.classList.remove('is-active')
+  if (simArenaZoomBackdrop) {
+    simArenaZoomBackdrop.setAttribute('aria-hidden', 'true')
+  }
+  updateSimArenaZoomScale()
+  updateSimArenaZoomButton()
+}
+
+function openSimArenaZoom() {
+  if (!simCardScreen || !simArenaWrap || !simCardScreen.classList.contains('sim-view-battle')) return
+
+  simArenaZoomed = true
+  simCardScreen.classList.add('sim-arena-zoomed')
+  document.body.classList.add('sim-arena-zoom-lock')
+  simArenaZoomBackdrop?.classList.add('is-active')
+  if (simArenaZoomBackdrop) {
+    simArenaZoomBackdrop.setAttribute('aria-hidden', 'false')
+  }
+
+  requestAnimationFrame(() => {
+    updateSimArenaZoomScale()
+  })
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      updateSimArenaZoomScale()
+    })
+  })
+
+  updateSimArenaZoomButton()
+}
+
+function toggleSimArenaZoom() {
+  if (simArenaZoomed) {
+    closeSimArenaZoom()
+    return
+  }
+  openSimArenaZoom()
+}
+
 function setSimViewMode(mode = 'setup') {
   if (!simCardScreen) return
   simCardScreen.classList.remove('sim-view-setup', 'sim-view-battle')
   simCardScreen.classList.add(mode === 'battle' ? 'sim-view-battle' : 'sim-view-setup')
+  if (mode !== 'battle') {
+    closeSimArenaZoom()
+  }
   syncSimResponsiveLayout()
+  updateSimArenaZoomButton()
 }
 
 function renderSimBattleSummary(players = []) {
@@ -4320,6 +4404,8 @@ function resetSimCardsOnly() {
 }
 
 function clearSimArena() {
+  closeSimArenaZoom()
+
   if (simArenaRender) {
     Matter.Render.stop(simArenaRender)
     if (simArenaRender.canvas && simArenaRender.canvas.parentNode) {
@@ -5313,6 +5399,8 @@ function buildSimFinalResultsHtml(ranking = []) {
 function ensureSimFinalResultsPopup() {
   if (!simBattleFinished) return false
 
+  closeSimArenaZoom()
+
   const ranking = getSimFinalRanking()
   const winner = ranking.find((player) => player.finalPlace === 1) || null
   const html = buildSimFinalResultsHtml(ranking)
@@ -5730,6 +5818,20 @@ if (simInfoBtn) {
   simInfoBtn.addEventListener('click', openSimGameInfo)
 }
 
+if (simArenaZoomBtn) {
+  simArenaZoomBtn.addEventListener('click', toggleSimArenaZoom)
+}
+
+if (simArenaZoomBackdrop) {
+  simArenaZoomBackdrop.addEventListener('click', closeSimArenaZoom)
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && simArenaZoomed) {
+    closeSimArenaZoom()
+  }
+})
+
 if (battleTable) {
   battleTable.addEventListener('click', (event) => {
     const targetCard = event.target.closest('.battle-card')
@@ -5798,8 +5900,13 @@ window.addEventListener('resize', () => {
       renderRacePreview()
     }
 
-    if (screens.game4?.classList.contains('active') && simBattleRunning) {
-      updateSimArenaOverlay()
+    if (screens.game4?.classList.contains('active')) {
+      if (simBattleRunning || simBattleFinished) {
+        updateSimArenaOverlay()
+      }
+      if (simArenaZoomed) {
+        updateSimArenaZoomScale()
+      }
     }
   }, 120)
 })
@@ -5823,8 +5930,13 @@ window.addEventListener('orientationchange', () => {
       renderRacePreview()
     }
 
-    if (screens.game4?.classList.contains('active') && simBattleRunning) {
-      updateSimArenaOverlay()
+    if (screens.game4?.classList.contains('active')) {
+      if (simBattleRunning || simBattleFinished) {
+        updateSimArenaOverlay()
+      }
+      if (simArenaZoomed) {
+        updateSimArenaZoomScale()
+      }
     }
   }, 150)
 })
@@ -5840,6 +5952,8 @@ document.addEventListener('visibilitychange', () => {
 updateGame1BallCountText()
 syncGame1MobileLayout()
 syncRaceMobileLayout()
+syncSimResponsiveLayout()
+updateSimArenaZoomButton()
 updateOrientationGate()
 
 setGame1InputLock(false)

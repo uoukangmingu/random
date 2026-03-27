@@ -1635,6 +1635,15 @@ body.orientation-blocked .orientation-lock-overlay {
   }
 }
 
+@media (max-width: 760px) {
+  .sim-card-screen.sim-arena-zoomed .sim-arena-card {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    padding: 14px;
+    gap: 12px;
+  }
+}
+
 @media (max-width: 640px) and (pointer: coarse) {
   body.game2-mobile-layout #game2Screen .race-card {
     padding: 10px;
@@ -2566,6 +2575,41 @@ body.orientation-blocked .orientation-lock-overlay {
   box-shadow: 0 10px 22px rgba(120, 90, 70, 0.11);
 }
 
+.sim-panel-head-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.sim-arena-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  background: linear-gradient(180deg, rgba(248, 255, 252, 0.98) 0%, rgba(228, 246, 255, 0.96) 100%);
+  color: var(--soft-brown);
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.08);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.sim-arena-zoom-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(120, 90, 70, 0.11);
+}
+
+.sim-arena-zoom-btn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .sim-setup-card,
 .sim-arena-card,
 .sim-battle-summary-card {
@@ -2739,6 +2783,11 @@ body.orientation-blocked .orientation-lock-overlay {
 .sim-stat-card.type-attack .sim-stat-card-front { background: linear-gradient(180deg, #fff5e9 0%, #ffe1c1 100%); }
 .sim-stat-card.type-accuracy .sim-stat-card-front { background: linear-gradient(180deg, #eef7ff 0%, #dff0ff 100%); }
 .sim-stat-card.type-defense .sim-stat-card-front { background: linear-gradient(180deg, #eefaf6 0%, #d6f1e8 100%); }
+
+.sim-arena-zoom-stage {
+  position: relative;
+  width: 100%;
+}
 
 .sim-arena-wrap {
   position: relative;
@@ -3053,6 +3102,62 @@ body.orientation-blocked .orientation-lock-overlay {
 }
 
 
+.sim-card-screen.sim-arena-zoomed .sim-arena-card {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(96vw, 1500px);
+  height: min(88vh, 960px);
+  margin: 0;
+  z-index: 96;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px;
+  background: #fffaf6;
+  box-shadow: 0 18px 38px rgba(73, 54, 45, 0.14);
+}
+
+.sim-card-screen.sim-arena-zoomed .sim-arena-zoom-stage {
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 24px;
+}
+
+.sim-card-screen.sim-arena-zoomed .sim-arena-wrap {
+  width: var(--sim-arena-base-width, 900px);
+  height: var(--sim-arena-base-height, 460px);
+  max-width: none;
+  transform: scale(var(--sim-arena-zoom-scale, 1));
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.sim-arena-zoom-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 250, 244, 0.04);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+  z-index: 95;
+}
+
+.sim-arena-zoom-backdrop.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.sim-arena-zoom-lock {
+  overflow: hidden;
+}
+
 .sim-battle-summary {
   overflow-x: auto;
 }
@@ -3294,6 +3399,12 @@ body.orientation-blocked .orientation-lock-overlay {
     font-size: 0.94rem;
   }
 
+  #game4Screen .sim-arena-zoom-btn {
+    min-height: 44px;
+    padding: 11px 16px;
+    font-size: 0.94rem;
+  }
+
   #game4Screen .sim-main-header .game-header-actions {
     display: none;
   }
@@ -3529,6 +3640,17 @@ body.orientation-blocked .orientation-lock-overlay {
   }
 
   #game4Screen .sim-info-btn {
+    width: 100%;
+    min-height: 46px;
+    font-size: 0.95rem;
+  }
+
+  #game4Screen .sim-panel-head-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  #game4Screen .sim-arena-zoom-btn {
     width: 100%;
     min-height: 46px;
     font-size: 0.95rem;
