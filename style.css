@@ -681,25 +681,27 @@ input:disabled {
 
 /* 데스크톱 game1 */
 body.game1-mode {
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 body.game1-mode .app {
-  min-height: 100dvh;
-  align-items: stretch;
-  padding: clamp(8px, 1.2vw, 16px);
+  min-height: 100vh;
+  align-items: center;
+  padding: 28px 16px;
 }
 
 body.game1-mode .game-screen {
-  height: calc(100dvh - clamp(16px, 2vw, 32px));
+  height: auto;
 }
 
 body.game1-mode .game-card-full {
-  height: 100%;
+  min-height: 720px;
+  height: auto;
   display: grid;
   grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
-  gap: clamp(10px, 1.2vw, 16px);
-  padding: clamp(10px, 1.2vw, 16px);
+  gap: 16px;
+  padding: 20px;
   overflow: hidden;
 }
 
@@ -753,7 +755,38 @@ body.game1-mode .game-main {
   height: 100%;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   gap: clamp(8px, 1vw, 14px);
+}
+
+.game-board-card {
+  background: var(--card-strong);
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 24px;
+  box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.game-board-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.game-board-head h3 {
+  margin: 0;
+  font-weight: 700;
+  color: var(--soft-brown);
+}
+
+.game-board-head span {
+  color: #8c7262;
+  font-size: 0.92rem;
 }
 
 body.game1-mode .game-main-header {
@@ -793,11 +826,11 @@ body.game1-mode .game-header-actions {
 
 body.game1-mode .game-play-area {
   margin-top: 0;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .drawer-backdrop {
@@ -1336,6 +1369,15 @@ body.orientation-blocked .orientation-lock-overlay {
     display: none;
   }
 
+  body.game1-mode .game-board-card {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  body.game1-mode .game-board-head {
+    align-items: flex-start;
+  }
+
   body.game1-mode .game-play-area {
     display: block;
     margin-top: 0;
@@ -1569,6 +1611,18 @@ body.orientation-blocked .orientation-lock-overlay {
   body.game1-mode .action-btn,
   body.game1-mode .back-btn {
     width: 100%;
+  }
+
+  body.game1-mode .game-board-card {
+    padding: 12px;
+  }
+
+  body.game1-mode .game-board-head h3 {
+    font-size: 1rem;
+  }
+
+  body.game1-mode .game-board-head span {
+    font-size: 0.82rem;
   }
 
   body.game1-mode .game-canvas-wrap {
