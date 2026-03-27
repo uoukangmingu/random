@@ -495,8 +495,24 @@ function isTouchDevice() {
   return window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0
 }
 
+function getViewportShortSide() {
+  return Math.min(window.innerWidth, window.innerHeight)
+}
+
+function getViewportLongSide() {
+  return Math.max(window.innerWidth, window.innerHeight)
+}
+
+function isPhoneLike() {
+  return isTouchDevice() && getViewportShortSide() < 700
+}
+
+function isTabletLike() {
+  return isTouchDevice() && getViewportShortSide() >= 700 && getViewportLongSide() <= 1400
+}
+
 function isMobileOrTabletLike() {
-  return window.innerWidth <= 1024 && isTouchDevice()
+  return isPhoneLike() || isTabletLike()
 }
 
 function isPortraitMode() {
@@ -506,7 +522,7 @@ function isPortraitMode() {
 function updateOrientationGate() {
   const shouldBlock =
     screens.game1?.classList.contains('active') &&
-    isMobileOrTabletLike() &&
+    isPhoneLike() &&
     !isPortraitMode()
 
   document.body.classList.toggle('orientation-blocked', shouldBlock)
@@ -3657,7 +3673,7 @@ function openSimGameInfo() {
 }
 
 function shouldUseSimResponsiveLayout() {
-  return window.innerWidth <= 1024 && window.matchMedia('(pointer: coarse)').matches
+  return isMobileOrTabletLike()
 }
 
 function syncSimResponsiveLayout() {
