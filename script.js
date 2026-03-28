@@ -518,6 +518,18 @@ function closePopup(options = {}) {
   document.dispatchEvent(new CustomEvent('app-popup-closed', { detail: { force } }))
 }
 
+function showMinParticipantsPopup(maxCount) {
+  showPopup(
+    '참가자 등록 확인',
+    `최소 인원 2인 ~ 최대 ${maxCount}인이 이용가능합니다.<br>참가자 등록을 수정해주세요.`,
+    { icon: '⚠️', allowHtml: true }
+  )
+}
+
+function hasAtLeastTwoUniqueGame1Participants(slots) {
+  return new Set(slots.map((slot) => slot.name)).size >= 2
+}
+
 function showPopupAndWait(title, message, options = {}) {
   showPopup(title, message, options)
   return new Promise((resolve) => {
@@ -2022,6 +2034,11 @@ function startRound() {
     buildBoard()
   }
 
+  if (!hasAtLeastTwoUniqueGame1Participants(parsed.slots)) {
+    showMinParticipantsPopup(MAX_SLOT_COUNT)
+    return
+  }
+
   clearBallsOnly()
   refreshCounts()
   setDrawerState(false)
@@ -2612,6 +2629,11 @@ function shuffleRace() {
   const parsed = parseRaceConfigToHorses(raceConfigInput.value)
 
   if (!handleRaceParseFailure(parsed, { showPopupOnTooMany: true, showPopupOnInvalid: true })) {
+    return
+  }
+
+  if (parsed.horses.length < 2) {
+    showMinParticipantsPopup(RACE_MAX_COUNT)
     return
   }
 
@@ -3791,6 +3813,11 @@ async function startBattleGame() {
     return
   }
 
+  if (parsed.players.length < 2) {
+    showMinParticipantsPopup(BATTLE_MAX_PLAYERS)
+    return
+  }
+
   stopBattleFlow()
   battleFlowToken += 1
   const token = battleFlowToken
@@ -4622,6 +4649,11 @@ async function startSimSetup() {
   const parsed = parseSimConfigToPlayers(simConfigInput.value)
   if (parsed.status !== 'OK') {
     handleSimParseFailure(parsed, { showPopupOnInvalid: true })
+    return
+  }
+
+  if (parsed.players.length < 2) {
+    showMinParticipantsPopup(SIM_MAX_PLAYERS)
     return
   }
 
@@ -6600,6 +6632,11 @@ function startNavalGame() {
     return
   }
 
+  if (parsed.players.length < 2) {
+    showMinParticipantsPopup(NAVAL_MAX_PLAYERS)
+    return
+  }
+
   resetNavalBoardState()
 
   const roundPlayers = buildNavalRoundPlayers(parsed.players)
@@ -6668,6 +6705,11 @@ function startRace() {
   const parsed = parseRaceConfigToHorses(raceConfigInput.value)
 
   if (!handleRaceParseFailure(parsed, { showPopupOnTooMany: true, showPopupOnInvalid: true })) {
+    return
+  }
+
+  if (parsed.horses.length < 2) {
+    showMinParticipantsPopup(RACE_MAX_COUNT)
     return
   }
 
