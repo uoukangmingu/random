@@ -5,7 +5,8 @@ const screens = {
   game1: document.getElementById('game1Screen'),
   game2: document.getElementById('game2Screen'),
   game3: document.getElementById('game3Screen'),
-  game4: document.getElementById('game4Screen')
+  game4: document.getElementById('game4Screen'),
+  game5: document.getElementById('game5Screen')
 }
 
 const startBtn = document.getElementById('startBtn')
@@ -115,6 +116,22 @@ const simArenaZoomBtn = document.getElementById('simArenaZoomBtn')
 const simArenaZoomStage = document.getElementById('simArenaZoomStage')
 const simArenaZoomBackdrop = document.getElementById('simArenaZoomBackdrop')
 
+const navalConfigInput = document.getElementById('navalConfigInput')
+const shuffleNavalBtn = document.getElementById('shuffleNavalBtn')
+const startNavalBtn = document.getElementById('startNavalBtn')
+const resetNavalBtn = document.getElementById('resetNavalBtn')
+const navalStatusText = document.getElementById('navalStatusText')
+const navalTotalInfo = document.getElementById('navalTotalInfo')
+const navalLegend = document.getElementById('navalLegend')
+const navalBoard = document.getElementById('navalBoard')
+const navalBoardWrap = document.getElementById('navalBoardWrap')
+const navalBombLayer = document.getElementById('navalBombLayer')
+const navalBoardMeta = document.getElementById('navalBoardMeta')
+const navalBoardCard = document.querySelector('#game5Screen .naval-board-card')
+const navalLogList = document.getElementById('navalLogList')
+const navalRankingList = document.getElementById('navalRankingList')
+const navalDesc = document.querySelector('#game5Screen .naval-main-header .sub-text')
+
 
 const {
   Engine,
@@ -178,6 +195,15 @@ const raceHorsePalette = [
   '#f4d9ff',
   '#fff0c8',
   '#d9f6f2'
+]
+
+const navalPlayerPalette = [
+  '#f8c8d8',
+  '#cfeadf',
+  '#d9e9ff',
+  '#fde7b8',
+  '#ffd7c2',
+  '#e4dcff'
 ]
 
 const nameColorMap = new Map()
@@ -272,7 +298,8 @@ const FAST_FORWARD_BLOCKED_MESSAGE = '빨리감기 불가능 게임'
 const fastForwardStates = {
   game1: { target: gameCanvasWrap, active: false, timer: null, pointerId: null, blockedNotice: false },
   game2: { target: raceTrackWrap, active: false, timer: null, pointerId: null, blockedNotice: false },
-  game4: { target: simArenaWrap, active: false, timer: null, pointerId: null, blockedNotice: false }
+  game4: { target: simArenaWrap, active: false, timer: null, pointerId: null, blockedNotice: false },
+  game5: { target: navalBoardCard, active: false, timer: null, pointerId: null, blockedNotice: false }
 }
 
 let raceElapsedMs = 0
@@ -346,6 +373,24 @@ let lastSimValidConfigText = simConfigInput ? simConfigInput.value : ''
 let lastSimAppliedRawText = simConfigInput ? simConfigInput.value : ''
 
 let popupWaitResolver = null
+
+const NAVAL_MAX_PLAYERS = 6
+const NAVAL_BOARD_SIZE = 8
+const NAVAL_SHIP_LENGTH = 3
+const NAVAL_BOMB_INTERVAL_MS = 980
+
+let navalPlayers = []
+let navalRunning = false
+let navalFinished = false
+let navalBombTimer = null
+let navalBombedSet = new Set()
+let navalMissSet = new Set()
+let navalHitMap = new Map()
+let navalEliminationOrder = []
+let navalLogs = []
+let navalLastBombIndex = null
+let lastNavalValidConfigText = navalConfigInput ? navalConfigInput.value : ''
+let lastNavalAppliedRawText = navalConfigInput ? navalConfigInput.value : ''
 
 function getCurrentNormalBallCount() {
   const slotCount = currentSlots.length || 1
@@ -724,6 +769,11 @@ function showScreen(target) {
     }
   }
 
+  if (target !== 'game5') {
+    stopNavalGame({ preserveBoard: false })
+    setNavalInputLock(false)
+  }
+
   if (target === 'game1') {
     ensureGameReady()
   }
@@ -741,6 +791,10 @@ function showScreen(target) {
     ensureSimReady()
     syncSimResponsiveLayout()
     forceGame4EntryScrollTop()
+  }
+
+  if (target === 'game5') {
+    ensureNavalReady()
   }
 
   updateOrientationGate()
@@ -2044,6 +2098,8 @@ function isFastForwardEligible(gameKey) {
       return screens.game2?.classList.contains('active') && raceRunning && !raceFinished
     case 'game4':
       return screens.game4?.classList.contains('active') && simBattleRunning && !simBattleFinished
+    case 'game5':
+      return screens.game5?.classList.contains('active') && navalRunning && !navalFinished
     default:
       return false
   }
@@ -2060,6 +2116,7 @@ function syncFastForwardRuntime(gameKey) {
     simArenaEngine.timing.timeScale = multiplier
   }
 }
+
 
 function isFastForwardBlockedGame(gameKey) {
   return gameKey === 'game1' && screens.game1?.classList.contains('active') && hasLiveRound()
@@ -2102,6 +2159,11 @@ function setFastForwardActive(gameKey, isActive) {
   }
 
   syncFastForwardRuntime(gameKey)
+
+  if (gameKey === 'game5' && navalRunning && !navalFinished && navalBombTimer) {
+    clearTimeout(navalBombTimer)
+    navalBombTimer = setTimeout(executeNavalBombTurn, getScaledDelay(140, 'game5', 50))
+  }
 }
 
 function clearFastForwardHold(gameKey) {
@@ -2126,6 +2188,7 @@ function releaseAllFastForward() {
   releaseFastForward('game1')
   releaseFastForward('game2')
   releaseFastForward('game4')
+  releaseFastForward('game5')
 }
 
 function bindFastForwardTarget(gameKey) {
@@ -2990,7 +3053,7 @@ function parseBattleConfigToPlayers(text) {
     players.push({
       id: `battle-player-${players.length + 1}`,
       label: normalized,
-      color: raceHorsePalette[players.length % raceHorsePalette.length]
+      color: navalPlayerPalette[players.length % navalPlayerPalette.length]
     })
   }
 
@@ -4096,7 +4159,7 @@ function parseSimConfigToPlayers(text) {
     players.push({
       id: `sim-player-${players.length + 1}`,
       label: normalized,
-      color: raceHorsePalette[players.length % raceHorsePalette.length]
+      color: navalPlayerPalette[players.length % navalPlayerPalette.length]
     })
   }
 
@@ -5810,6 +5873,795 @@ async function startSimBattle() {
 }
 
 
+
+function setNavalInputLock(isLocked) {
+  if (!navalConfigInput) return
+  navalConfigInput.disabled = isLocked
+  navalConfigInput.style.opacity = isLocked ? '0.65' : '1'
+  navalConfigInput.style.cursor = isLocked ? 'not-allowed' : ''
+}
+
+function updateNavalDescription() {
+  if (!navalDesc) return
+  navalDesc.textContent = `하나의 공용 좌표판에 숨겨진 3칸짜리 배 ${navalPlayers.length || 0}척이 배치되고, 좌표 경고 후 폭격이 발생해 최후의 1인을 가린다.`
+}
+
+function parseNavalConfigToPlayers(text) {
+  const rawItems = text
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (!rawItems.length) {
+    return { status: 'EMPTY' }
+  }
+
+  if (rawItems.length > NAVAL_MAX_PLAYERS) {
+    return { status: 'TOO_MANY', count: rawItems.length }
+  }
+
+  const seen = new Set()
+  const players = []
+
+  for (const raw of rawItems) {
+    if (!raw || raw.includes('*')) {
+      return { status: 'INVALID' }
+    }
+
+    if (seen.has(raw)) {
+      return { status: 'DUPLICATE' }
+    }
+
+    seen.add(raw)
+    players.push({
+      id: `naval-player-${players.length + 1}`,
+      label: raw,
+      color: raceHorsePalette[players.length % raceHorsePalette.length]
+    })
+  }
+
+  return { status: 'OK', players }
+}
+
+function handleNavalParseFailure(parsed, { showPopupOnInvalid = false } = {}) {
+  if (!navalStatusText) return false
+
+  if (parsed.status === 'EMPTY') {
+    navalStatusText.textContent = '참가자를 먼저 입력해줘. 예: 홍길동, 김아무개, 박철수'
+  } else if (parsed.status === 'TOO_MANY') {
+    navalStatusText.textContent = `참가자는 최대 ${NAVAL_MAX_PLAYERS}명까지 가능하다.`
+    if (showPopupOnInvalid) {
+      showPopup('참가자 수 초과', `폭격 해전은 최대 ${NAVAL_MAX_PLAYERS}명까지 참가할 수 있어.`)
+    }
+  } else if (parsed.status === 'DUPLICATE') {
+    navalStatusText.textContent = '같은 이름은 2번 이상 입력할 수 없다.'
+    if (showPopupOnInvalid) {
+      showPopup('중복 이름 불가', '폭격 해전은 같은 이름을 중복 등록할 수 없어.')
+    }
+  } else {
+    navalStatusText.textContent = '입력 형식을 확인해줘. 예: 홍길동, 김아무개, 박철수'
+    if (showPopupOnInvalid) {
+      showPopup('입력 확인', '이름만 쉼표로 구분해 적어줘. 예: 홍길동, 김아무개, 박철수')
+    }
+  }
+
+  return false
+}
+
+function getNavalCoordLabel(index) {
+  const row = Math.floor(index / NAVAL_BOARD_SIZE)
+  const col = index % NAVAL_BOARD_SIZE
+  return `${String.fromCharCode(65 + col)}${row + 1}`
+}
+
+function createNavalCell(index) {
+  const cell = document.createElement('button')
+  cell.type = 'button'
+  cell.className = 'naval-cell'
+  cell.dataset.index = String(index)
+  cell.disabled = true
+  return cell
+}
+
+function renderNavalBoardBase() {
+  if (!navalBoard) return
+
+  navalBoard.innerHTML = ''
+  if (navalBombLayer) {
+    navalBombLayer.innerHTML = ''
+  }
+  navalBoard.style.setProperty('--naval-board-size', String(NAVAL_BOARD_SIZE))
+
+  for (let index = 0; index < NAVAL_BOARD_SIZE * NAVAL_BOARD_SIZE; index += 1) {
+    navalBoard.appendChild(createNavalCell(index))
+  }
+}
+
+function tryPlaceNavalShips(players) {
+  const occupied = new Set()
+
+  const placedPlayers = players.map((player) => ({
+    ...player,
+    shipIndices: [],
+    hitIndices: [],
+    remainingHull: NAVAL_SHIP_LENGTH,
+    isAlive: true,
+    eliminatedOrder: null,
+    finalPlace: null
+  }))
+
+  for (const player of placedPlayers) {
+    let placed = false
+
+    for (let attempt = 0; attempt < 500 && !placed; attempt += 1) {
+      const isHorizontal = Math.random() < 0.5
+      const startRow = Math.floor(Math.random() * NAVAL_BOARD_SIZE)
+      const startCol = Math.floor(Math.random() * NAVAL_BOARD_SIZE)
+      const indices = []
+
+      for (let offset = 0; offset < NAVAL_SHIP_LENGTH; offset += 1) {
+        const row = startRow + (isHorizontal ? 0 : offset)
+        const col = startCol + (isHorizontal ? offset : 0)
+
+        if (row >= NAVAL_BOARD_SIZE || col >= NAVAL_BOARD_SIZE) {
+          indices.length = 0
+          break
+        }
+
+        const index = row * NAVAL_BOARD_SIZE + col
+        indices.push(index)
+      }
+
+      if (indices.length !== NAVAL_SHIP_LENGTH) continue
+      if (indices.some((index) => occupied.has(index))) continue
+
+      indices.forEach((index) => occupied.add(index))
+      player.shipIndices = indices
+      placed = true
+    }
+
+    if (!placed) {
+      return null
+    }
+  }
+
+  return placedPlayers
+}
+
+function buildNavalRoundPlayers(players) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const placed = tryPlaceNavalShips(players)
+    if (placed) return placed
+  }
+  return null
+}
+
+function setNavalPlayers(players) {
+  navalPlayers = players
+  if (navalConfigInput) {
+    lastNavalValidConfigText = navalConfigInput.value
+    lastNavalAppliedRawText = navalConfigInput.value
+  }
+  updateNavalDescription()
+}
+
+function renderNavalLegend() {
+  if (!navalLegend || !navalTotalInfo) return
+
+  navalLegend.innerHTML = ''
+
+  const ranking = navalPlayers.length
+    ? (navalFinished ? getNavalFinalRanking() : getNavalProvisionalRanking())
+    : []
+
+  ranking.forEach((player, index) => {
+    const chip = document.createElement('div')
+    chip.className = `legend-chip naval-sidebar-rank-chip${index === 0 ? ' top' : ''}${!player.isAlive ? ' is-eliminated' : ''}`
+    const statusText = player.isAlive
+      ? `남은 선체 ${player.remainingHull ?? NAVAL_SHIP_LENGTH}/${NAVAL_SHIP_LENGTH}`
+      : `${player.eliminatedOrder}번째 탈락`
+
+    chip.innerHTML = `
+      <span class="naval-sidebar-rank-num">${index + 1}</span>
+      <span class="legend-dot" style="background:${player.color}"></span>
+      <span class="naval-sidebar-rank-meta">
+        <strong>${escapeHtml(player.label)}</strong>
+        <small>${statusText}</small>
+      </span>
+    `
+    navalLegend.appendChild(chip)
+  })
+
+  navalTotalInfo.textContent = `총 ${navalPlayers.length}명`
+}
+
+function renderNavalBoardState() {
+  if (!navalBoard) return
+
+  const cells = navalBoard.querySelectorAll('.naval-cell')
+
+  cells.forEach((cell, index) => {
+    const hitPlayerId = navalHitMap.get(index)
+    const isMiss = navalMissSet.has(index)
+    const isLast = navalLastBombIndex === index
+    const hitPlayer = hitPlayerId ? navalPlayers.find((player) => player.id === hitPlayerId) : null
+
+    cell.classList.remove('is-miss', 'is-hit', 'is-last-target')
+    cell.style.removeProperty('--naval-hit-color')
+    cell.textContent = ''
+
+    if (isMiss) {
+      cell.classList.add('is-miss')
+    }
+
+    if (hitPlayer) {
+      cell.classList.add('is-hit')
+      cell.style.setProperty('--naval-hit-color', hitPlayer.color)
+    }
+
+    if (isLast) {
+      cell.classList.add('is-last-target')
+    }
+  })
+
+  if (navalBoardMeta) {
+    navalBoardMeta.textContent = `${NAVAL_BOARD_SIZE} × ${NAVAL_BOARD_SIZE} · 투하 ${navalBombedSet.size}/${NAVAL_BOARD_SIZE * NAVAL_BOARD_SIZE}`
+  }
+}
+
+function renderNavalLogs() {
+  if (!navalLogList) return
+
+  if (!navalLogs.length) {
+    navalLogList.innerHTML = '<div class="naval-log-empty">폭격이 시작되면 좌표 로그가 여기에 쌓인다.</div>'
+    return
+  }
+
+  navalLogList.innerHTML = ''
+
+  navalLogs.forEach((item) => {
+    const row = document.createElement('div')
+    row.className = `naval-log-item ${item.type ? `type-${item.type}` : ''}`
+    row.textContent = item.text
+    navalLogList.appendChild(row)
+  })
+}
+
+function getNavalAlivePlayers() {
+  return navalPlayers.filter((player) => player.isAlive)
+}
+
+function getNavalProvisionalRanking() {
+  const alive = navalPlayers
+    .filter((player) => player.isAlive)
+    .sort((a, b) => {
+      if (b.remainingHull !== a.remainingHull) return b.remainingHull - a.remainingHull
+      return a.label.localeCompare(b.label, 'ko')
+    })
+
+  const eliminated = [...navalEliminationOrder].reverse()
+  return [...alive, ...eliminated]
+}
+
+function getNavalFinalRanking() {
+  const alive = navalPlayers.filter((player) => player.isAlive)
+  const survivor = alive.length ? alive[0] : null
+  const eliminated = [...navalEliminationOrder].reverse()
+  return survivor ? [survivor, ...eliminated] : eliminated
+}
+
+function renderNavalRanking() {
+  if (!navalRankingList) return
+
+  const ranking = navalFinished ? getNavalFinalRanking() : getNavalProvisionalRanking()
+
+  if (!ranking.length) {
+    navalRankingList.innerHTML = '<div class="naval-ranking-empty">참가자를 입력한 뒤 시작 버튼을 누르면 현재 생존 순위가 여기에 표시된다.</div>'
+    return
+  }
+
+  navalRankingList.innerHTML = ''
+
+  ranking.forEach((player, index) => {
+    const item = document.createElement('div')
+    item.className = `naval-ranking-item${index === 0 ? ' top' : ''}${!player.isAlive ? ' is-eliminated' : ''}`
+    const subText = player.isAlive
+      ? `남은 선체 ${player.remainingHull}/${NAVAL_SHIP_LENGTH}`
+      : `${player.eliminatedOrder}번째 탈락`
+
+    item.innerHTML = `
+      <div class="naval-rank-num">${index + 1}</div>
+      <div class="naval-rank-main">
+        <div class="naval-rank-name"><span class="naval-rank-color" style="--naval-player-color:${player.color};"></span>${escapeHtml(player.label)}</div>
+        <div class="naval-rank-sub">${subText}</div>
+      </div>
+      <div class="naval-rank-hull ${player.isAlive ? '' : 'is-out'}">${player.isAlive ? `${player.remainingHull}칸` : '탈락'}</div>
+    `
+    navalRankingList.appendChild(item)
+  })
+}
+
+function addNavalLog(text, type = 'info') {
+  navalLogs.unshift({ text, type })
+  navalLogs = navalLogs.slice(0, 30)
+}
+
+function updateNavalStatus(text) {
+  if (!navalStatusText) return
+  navalStatusText.textContent = text
+}
+
+function clearNavalBombTimer() {
+  if (navalBombTimer) {
+    clearTimeout(navalBombTimer)
+    navalBombTimer = null
+  }
+}
+
+function resetNavalBoardState() {
+  clearNavalBombTimer()
+  if (navalBombLayer) {
+    navalBombLayer.innerHTML = ''
+  }
+  navalRunning = false
+  navalFinished = false
+  navalBombedSet = new Set()
+  navalMissSet = new Set()
+  navalHitMap = new Map()
+  navalEliminationOrder = []
+  navalLogs = []
+  navalLastBombIndex = null
+}
+
+function stopNavalGame(options = {}) {
+  const { preserveBoard = true } = options
+  clearNavalBombTimer()
+  navalRunning = false
+  navalFinished = false
+
+  if (!preserveBoard) {
+    navalBombedSet = new Set()
+    navalMissSet = new Set()
+    navalHitMap = new Map()
+    navalEliminationOrder = []
+    navalLogs = []
+    navalLastBombIndex = null
+    navalPlayers = []
+    renderNavalBoardBase()
+    renderNavalBoardState()
+    renderNavalLogs()
+    renderNavalRanking()
+    renderNavalLegend()
+    updateNavalDescription()
+  }
+}
+
+function updateNavalFromInput({ render = true } = {}) {
+  if (!navalConfigInput) return false
+
+  const parsed = parseNavalConfigToPlayers(navalConfigInput.value)
+
+  if (parsed.status !== 'OK') {
+    return handleNavalParseFailure(parsed)
+  }
+
+  const readyPlayers = parsed.players.map((player) => ({
+    ...player,
+    remainingHull: NAVAL_SHIP_LENGTH,
+    isAlive: true,
+    eliminatedOrder: null
+  }))
+
+  setNavalPlayers(readyPlayers)
+
+  if (render) {
+    renderNavalLegend()
+    renderNavalBoardBase()
+    renderNavalBoardState()
+    renderNavalLogs()
+    renderNavalRanking()
+    updateNavalStatus(`실시간 반영 완료: 총 ${navalPlayers.length}명`)
+  }
+
+  return true
+}
+
+function ensureNavalReady() {
+  if (!navalConfigInput) return
+
+  if (!navalPlayers.length) {
+    const parsed = parseNavalConfigToPlayers(navalConfigInput.value)
+
+    if (parsed.status === 'OK') {
+      const previewPlayers = parsed.players.map((player) => ({
+        ...player,
+        remainingHull: NAVAL_SHIP_LENGTH,
+        isAlive: true,
+        eliminatedOrder: null
+      }))
+      setNavalPlayers(previewPlayers)
+    } else {
+      navalConfigInput.value = '홍길동, 김아무개, 박철수, 최영희'
+      const fallbackParsed = parseNavalConfigToPlayers(navalConfigInput.value)
+      if (fallbackParsed.status === 'OK') {
+        const previewPlayers = fallbackParsed.players.map((player) => ({
+          ...player,
+          remainingHull: NAVAL_SHIP_LENGTH,
+          isAlive: true,
+          eliminatedOrder: null
+        }))
+        setNavalPlayers(previewPlayers)
+      }
+    }
+  }
+
+  renderNavalLegend()
+  renderNavalBoardBase()
+  renderNavalBoardState()
+  renderNavalLogs()
+  renderNavalRanking()
+
+  if (!navalRunning && !navalFinished) {
+    updateNavalStatus('참가 준비 완료. 시작 버튼을 누르면 배가 랜덤 배치된다.')
+  }
+}
+
+function getRandomNavalTargetIndex() {
+  const candidates = []
+  for (let index = 0; index < NAVAL_BOARD_SIZE * NAVAL_BOARD_SIZE; index += 1) {
+    if (!navalBombedSet.has(index)) {
+      candidates.push(index)
+    }
+  }
+
+  if (!candidates.length) return -1
+  return candidates[Math.floor(Math.random() * candidates.length)]
+}
+
+function animateNavalBombDrop(targetIndex) {
+  if (!navalBoardWrap || !navalBombLayer || !navalBoard) {
+    return Promise.resolve()
+  }
+
+  const targetCell = navalBoard.querySelector(`.naval-cell[data-index="${targetIndex}"]`)
+  if (!targetCell) {
+    return Promise.resolve()
+  }
+
+  const speedMultiplier = getFastForwardMultiplier('game5')
+  const warningDuration = Math.max(140, 360 / speedMultiplier)
+  const bombDuration = Math.max(120, 250 / speedMultiplier)
+  const explodeDelay = warningDuration + Math.max(90, 250 / speedMultiplier)
+  const impactDuration = Math.max(220, 560 / speedMultiplier)
+  const burstDuration = Math.max(240, 620 / speedMultiplier)
+  const particleDuration = Math.max(220, 540 / speedMultiplier)
+  const cleanupDelay = explodeDelay + Math.max(220, 570 / speedMultiplier)
+
+  const boardRect = navalBoardWrap.getBoundingClientRect()
+  const cellRect = targetCell.getBoundingClientRect()
+  const centerX = cellRect.left - boardRect.left + cellRect.width / 2
+  const centerY = cellRect.top - boardRect.top + cellRect.height / 2
+
+  const warning = document.createElement('div')
+  warning.className = 'naval-target-warning'
+  warning.textContent = '⚠️'
+  warning.style.left = `${centerX}px`
+  warning.style.top = `${centerY}px`
+  navalBombLayer.appendChild(warning)
+
+  const targetPulse = document.createElement('div')
+  targetPulse.className = 'naval-target-pulse'
+  targetPulse.style.left = `${centerX}px`
+  targetPulse.style.top = `${centerY}px`
+  navalBombLayer.appendChild(targetPulse)
+
+  const bomb = document.createElement('div')
+  bomb.className = 'naval-bomb-drop'
+  bomb.textContent = '💣'
+  bomb.style.left = `${centerX}px`
+  bomb.style.top = `${centerY}px`
+  bomb.style.opacity = '0'
+  navalBombLayer.appendChild(bomb)
+
+  const impact = document.createElement('div')
+  impact.className = 'naval-bomb-impact'
+  impact.style.left = `${centerX}px`
+  impact.style.top = `${centerY}px`
+  navalBombLayer.appendChild(impact)
+
+  const burst = document.createElement('div')
+  burst.className = 'naval-bomb-burst'
+  burst.style.left = `${centerX}px`
+  burst.style.top = `${centerY}px`
+  navalBombLayer.appendChild(burst)
+
+  const particles = Array.from({ length: 10 }, () => {
+    const particle = document.createElement('span')
+    particle.className = 'naval-bomb-particle'
+    particle.style.left = `${centerX}px`
+    particle.style.top = `${centerY}px`
+    navalBombLayer.appendChild(particle)
+    return particle
+  })
+
+  targetCell.classList.add('is-arming')
+
+  warning.animate(
+    [
+      { transform: 'translate(-50%, -50%) scale(0.55)', opacity: 0 },
+      { transform: 'translate(-50%, -50%) scale(1.08)', opacity: 1, offset: 0.28 },
+      { transform: 'translate(-50%, -50%) scale(0.96)', opacity: 1, offset: 0.7 },
+      { transform: 'translate(-50%, -50%) scale(1.14)', opacity: 0 }
+    ],
+    {
+      duration: warningDuration,
+      easing: 'ease-out',
+      fill: 'forwards'
+    }
+  )
+
+  targetPulse.animate(
+    [
+      { transform: 'translate(-50%, -50%) scale(0.35)', opacity: 0.08 },
+      { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.4, offset: 0.4 },
+      { transform: 'translate(-50%, -50%) scale(1.42)', opacity: 0 }
+    ],
+    {
+      duration: Math.max(warningDuration + 60, 180),
+      easing: 'ease-out',
+      fill: 'forwards'
+    }
+  )
+
+  setTimeout(() => {
+    targetCell.classList.remove('is-arming')
+    targetCell.classList.add('is-targeting')
+
+    bomb.animate(
+      [
+        { transform: 'translate(-50%, -50%) scale(0.35) rotate(-16deg)', opacity: 0 },
+        { transform: 'translate(-50%, -50%) scale(1.08) rotate(8deg)', opacity: 1, offset: 0.44 },
+        { transform: 'translate(-50%, -50%) scale(0.96) rotate(-6deg)', opacity: 1, offset: 0.76 },
+        { transform: 'translate(-50%, -50%) scale(1) rotate(0deg)', opacity: 1 }
+      ],
+      {
+        duration: bombDuration,
+        easing: 'cubic-bezier(0.18, 0.86, 0.24, 1)',
+        fill: 'forwards'
+      }
+    )
+  }, warningDuration - 40)
+
+  setTimeout(() => {
+    targetCell.classList.remove('is-targeting')
+    targetCell.classList.add('is-impacting')
+    bomb.remove()
+
+    impact.animate(
+      [
+        { transform: 'translate(-50%, -50%) scale(0.18)', opacity: 0 },
+        { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.98, offset: 0.4 },
+        { transform: 'translate(-50%, -50%) scale(2.2)', opacity: 0 }
+      ],
+      {
+        duration: impactDuration,
+        easing: 'ease-out',
+        fill: 'forwards'
+      }
+    )
+
+    burst.animate(
+      [
+        { transform: 'translate(-50%, -50%) scale(0.36)', opacity: 0 },
+        { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.94, offset: 0.28 },
+        { transform: 'translate(-50%, -50%) scale(1.82)', opacity: 0 }
+      ],
+      {
+        duration: burstDuration,
+        easing: 'cubic-bezier(0.12, 0.84, 0.22, 1)',
+        fill: 'forwards'
+      }
+    )
+
+    particles.forEach((particle, index) => {
+      const angle = (index * Math.PI * 2) / particles.length
+      const distance = 22 + (index % 3) * 8
+      const x = Math.cos(angle) * distance
+      const y = Math.sin(angle) * distance
+      particle.animate(
+        [
+          { transform: 'translate(-50%, -50%) scale(0.22)', opacity: 0 },
+          { transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(1)`, opacity: 1, offset: 0.28 },
+          { transform: `translate(calc(-50% + ${x * 1.8}px), calc(-50% + ${y * 1.8}px)) scale(0.3)`, opacity: 0 }
+        ],
+        {
+          duration: particleDuration,
+          easing: 'ease-out',
+          fill: 'forwards'
+        }
+      )
+    })
+  }, explodeDelay)
+
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      targetCell.classList.remove('is-arming', 'is-targeting', 'is-impacting')
+      ;[warning, targetPulse, impact, burst, ...particles].forEach((node) => node.remove())
+      resolve()
+    }, cleanupDelay)
+  })
+}
+
+function applyNavalBombResult(targetIndex) {
+  navalBombedSet.add(targetIndex)
+  navalLastBombIndex = targetIndex
+
+  const hitPlayer = navalPlayers.find((player) => player.shipIndices?.includes(targetIndex)) || null
+  const coord = getNavalCoordLabel(targetIndex)
+
+  if (!hitPlayer) {
+    navalMissSet.add(targetIndex)
+    addNavalLog(`${coord} 좌표 폭발 · 빗나감`, 'drop')
+    updateNavalStatus(`${coord} 좌표 경고 후 폭발 · 빗나갔다!`)
+    return { type: 'miss', coord }
+  }
+
+  navalHitMap.set(targetIndex, hitPlayer.id)
+
+  if (!hitPlayer.hitIndices.includes(targetIndex)) {
+    hitPlayer.hitIndices.push(targetIndex)
+  }
+  hitPlayer.remainingHull = Math.max(0, NAVAL_SHIP_LENGTH - hitPlayer.hitIndices.length)
+
+  if (hitPlayer.remainingHull > 0) {
+    addNavalLog(`${coord} 좌표 명중 · ${hitPlayer.label} 피격 (${hitPlayer.remainingHull}/${NAVAL_SHIP_LENGTH})`, 'hit')
+    updateNavalStatus(`${coord} 명중! ${hitPlayer.label} 배가 피격됐다.`)
+    return { type: 'hit', coord, player: hitPlayer }
+  }
+
+  hitPlayer.isAlive = false
+  hitPlayer.eliminatedOrder = navalEliminationOrder.length + 1
+  navalEliminationOrder.push(hitPlayer)
+  addNavalLog(`${coord} 좌표 직격 · ${hitPlayer.label} 탈락`, 'out')
+  updateNavalStatus(`${coord} 직격! ${hitPlayer.label} 배가 침몰했다.`)
+  return { type: 'out', coord, player: hitPlayer }
+}
+
+function maybeFinishNavalGame() {
+  if (navalFinished) return true
+
+  const alivePlayers = getNavalAlivePlayers()
+  if (alivePlayers.length > 1) return false
+
+  navalRunning = false
+  navalFinished = true
+  clearNavalBombTimer()
+  setNavalInputLock(false)
+
+  const ranking = getNavalFinalRanking()
+  if (ranking[0]) {
+    ranking.forEach((player, index) => {
+      player.finalPlace = index + 1
+    })
+    addNavalLog(`${ranking[0].label} 최후의 1인 생존`, 'final')
+    updateNavalStatus(`${ranking[0].label} 최후의 1인 생존! 최종 결과를 확인해줘.`)
+  } else {
+    updateNavalStatus('게임이 종료되었다.')
+  }
+
+  renderNavalLegend()
+  renderNavalBoardState()
+  renderNavalLogs()
+  renderNavalRanking()
+
+  const html = ranking
+    .map((player, index) => `<span style="display:block;margin:8px 0;"><strong>${index + 1}위. ${escapeHtml(player.label)}</strong></span>`)
+    .join('')
+
+  showPopup('폭격 해전 결과', html || '<span>결과가 없습니다.</span>', {
+    icon: '💣',
+    allowHtml: true
+  })
+
+  return true
+}
+
+async function executeNavalBombTurn() {
+  if (!navalRunning || navalFinished) return
+
+  const targetIndex = getRandomNavalTargetIndex()
+  if (targetIndex < 0) {
+    maybeFinishNavalGame()
+    return
+  }
+
+  await animateNavalBombDrop(targetIndex)
+
+  if (!navalRunning || navalFinished) return
+
+  applyNavalBombResult(targetIndex)
+  renderNavalLegend()
+  renderNavalBoardState()
+  renderNavalLogs()
+  renderNavalRanking()
+
+  if (!maybeFinishNavalGame()) {
+    navalBombTimer = setTimeout(executeNavalBombTurn, getScaledDelay(NAVAL_BOMB_INTERVAL_MS, 'game5', 180))
+  }
+}
+
+function startNavalGame() {
+  if (!navalConfigInput || navalRunning) return
+
+  const parsed = parseNavalConfigToPlayers(navalConfigInput.value)
+
+  if (parsed.status !== 'OK') {
+    handleNavalParseFailure(parsed, { showPopupOnInvalid: true })
+    return
+  }
+
+  resetNavalBoardState()
+
+  const roundPlayers = buildNavalRoundPlayers(parsed.players)
+  if (!roundPlayers) {
+    updateNavalStatus('배를 배치하는 중 문제가 발생했다. 다시 시도해줘.')
+    showPopup('배치 오류', '배 랜덤 배치에 실패했어. 다시 시작해줘.')
+    return
+  }
+
+  setNavalPlayers(roundPlayers)
+  renderNavalBoardBase()
+  renderNavalBoardState()
+  renderNavalLegend()
+  renderNavalLogs()
+  renderNavalRanking()
+
+  navalRunning = true
+  navalFinished = false
+  setNavalInputLock(true)
+
+  updateNavalStatus('전투 진행 중 · 보드 아래 실시간 순위를 확인해줘.')
+
+  navalBombTimer = setTimeout(executeNavalBombTurn, getScaledDelay(520, 'game5', 140))
+}
+
+function resetNavalGame() {
+  resetNavalBoardState()
+  setNavalInputLock(false)
+
+  if (!navalConfigInput) return
+
+  const parsed = parseNavalConfigToPlayers(navalConfigInput.value)
+  if (parsed.status === 'OK') {
+    const previewPlayers = parsed.players.map((player) => ({
+      ...player,
+      remainingHull: NAVAL_SHIP_LENGTH,
+      isAlive: true,
+      eliminatedOrder: null
+    }))
+    setNavalPlayers(previewPlayers)
+  } else {
+    navalConfigInput.value = lastNavalValidConfigText || '홍길동, 김아무개, 박철수, 최영희'
+    const fallbackParsed = parseNavalConfigToPlayers(navalConfigInput.value)
+    if (fallbackParsed.status === 'OK') {
+      const previewPlayers = fallbackParsed.players.map((player) => ({
+        ...player,
+        remainingHull: NAVAL_SHIP_LENGTH,
+        isAlive: true,
+        eliminatedOrder: null
+      }))
+      setNavalPlayers(previewPlayers)
+    }
+  }
+
+  renderNavalBoardBase()
+  renderNavalBoardState()
+  renderNavalLegend()
+  renderNavalLogs()
+  renderNavalRanking()
+  updateNavalStatus('리셋 완료. 시작 버튼을 누르면 다시 시작된다.')
+}
+
 function startRace() {
   if (!raceConfigInput) return
 
@@ -5895,6 +6747,10 @@ gameLaunchButtons.forEach((button) => {
     if (button.dataset.game === '4') {
       showScreen('game4')
     }
+
+    if (button.dataset.game === '5') {
+      showScreen('game5')
+    }
   })
 })
 
@@ -5926,6 +6782,30 @@ if (startRaceBtn) {
 
 if (resetRaceBtn) {
   resetRaceBtn.addEventListener('click', resetRace)
+}
+
+
+if (startNavalBtn) {
+  startNavalBtn.addEventListener('click', startNavalGame)
+}
+
+if (resetNavalBtn) {
+  resetNavalBtn.addEventListener('click', resetNavalGame)
+}
+
+if (navalConfigInput) {
+  navalConfigInput.addEventListener('input', () => {
+    if (!navalRunning && !navalFinished) {
+      updateNavalFromInput()
+    }
+  })
+
+  navalConfigInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      startNavalGame()
+    }
+  })
 }
 
 if (shuffleBattleBtn) {
@@ -6043,6 +6923,7 @@ if (simArenaZoomBtn) {
 bindFastForwardTarget('game1')
 bindFastForwardTarget('game2')
 bindFastForwardTarget('game4')
+bindFastForwardTarget('game5')
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && simArenaZoomed) {
@@ -6192,6 +7073,14 @@ if (raceConfigInput) {
 
 if (simConfigInput) {
   updateSimFromInput({ render: false })
+}
+
+if (navalConfigInput) {
+  updateNavalFromInput({ render: false })
+  renderNavalBoardBase()
+  renderNavalBoardState()
+  renderNavalLogs()
+  renderNavalRanking()
 }
 
 if (screens.home) {
