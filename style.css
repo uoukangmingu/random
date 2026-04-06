@@ -3168,6 +3168,14 @@ body.orientation-blocked .orientation-lock-overlay {
 }
 
 
+.sim-card-screen.sim-arena-zoomed {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 .sim-card-screen.sim-arena-zoomed .sim-arena-card {
   position: fixed;
   left: 50%;
@@ -6807,4 +6815,232 @@ html.theme-dark .action-btn:disabled,
 html.theme-dark .utility-btn.is-unsupported,
 html.theme-dark button:disabled {
   opacity: 0.58;
+}
+
+
+/* =========================
+   game4 : popup / arena polish patch
+========================= */
+.popup.sim-map-popup {
+  width: min(92vw, 860px);
+  max-width: 860px;
+  padding: 30px 26px 24px;
+}
+
+.popup.sim-map-popup .popup-message {
+  max-height: min(70vh, 720px);
+}
+
+.sim-map-note {
+  margin: 2px 0 16px;
+  font-size: 0.96rem;
+  line-height: 1.6;
+}
+
+.sim-map-picker {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.sim-map-option {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-items: start;
+  gap: 0;
+  min-height: 156px;
+  padding: 18px 18px 16px 20px;
+}
+
+.sim-map-option strong {
+  margin-bottom: 8px;
+  padding-right: 10px;
+}
+
+.sim-map-option span {
+  padding-right: 6px;
+}
+
+.sim-map-preview {
+  margin-top: 14px;
+}
+
+#game4Screen .sim-arena-zoom-stage {
+  border-radius: 28px;
+  overflow: hidden;
+  isolation: isolate;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#game4Screen .sim-arena-wrap {
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+#game4Screen .sim-arena-wrap,
+#game4Screen .sim-arena-wrap canvas,
+#game4Screen .sim-health-overlay {
+  border-radius: inherit;
+}
+
+.sim-card-screen.sim-arena-zoomed .sim-arena-card {
+  overflow: hidden;
+}
+
+.sim-card-screen.sim-arena-zoomed .sim-arena-zoom-stage {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.sim-arena-zoom-backdrop {
+  background: rgba(6, 14, 28, 0.08);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.sim-arena-zoom-backdrop.is-active {
+  pointer-events: auto;
+}
+
+html.theme-dark .popup.sim-map-popup {
+  width: min(92vw, 880px) !important;
+  max-width: 880px !important;
+  background:
+    radial-gradient(circle at top center, rgba(124, 186, 255, 0.14), transparent 26%),
+    linear-gradient(180deg, rgba(15, 24, 41, 0.99) 0%, rgba(8, 14, 25, 1) 100%) !important;
+  border-color: rgba(124, 186, 255, 0.24) !important;
+  box-shadow:
+    0 26px 58px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 0 1px rgba(88, 135, 201, 0.16) !important;
+}
+
+html.theme-dark .popup.sim-map-popup .popup-message {
+  color: var(--night-copy) !important;
+}
+
+html.theme-dark .sim-map-note {
+  color: var(--night-copy-soft) !important;
+}
+
+html.theme-dark .sim-map-picker {
+  gap: 14px;
+}
+
+html.theme-dark .sim-map-option {
+  background:
+    linear-gradient(180deg, rgba(24, 39, 63, 0.98) 0%, rgba(14, 24, 41, 1) 100%) !important;
+  border: 2px solid rgba(124, 186, 255, 0.18) !important;
+  box-shadow:
+    0 16px 28px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+html.theme-dark .sim-map-option:hover {
+  border-color: rgba(124, 186, 255, 0.42) !important;
+  box-shadow:
+    0 20px 34px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(124, 186, 255, 0.12) !important;
+}
+
+html.theme-dark #game4Screen .sim-arena-zoom-stage,
+html.theme-dark .sim-card-screen.sim-arena-zoomed .sim-arena-zoom-stage {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html.theme-dark .sim-card-screen.sim-arena-zoomed .sim-arena-card {
+  background:
+    radial-gradient(circle at top center, rgba(124, 186, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(16, 30, 54, 0.995) 0%, rgba(9, 17, 31, 1) 100%) !important;
+  border-color: rgba(124, 186, 255, 0.24) !important;
+  box-shadow:
+    0 28px 58px rgba(0, 0, 0, 0.40),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+html.theme-dark .sim-card-screen.sim-arena-zoomed .sim-arena-wrap,
+html.theme-dark #game4Screen .sim-arena-wrap {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(125, 211, 252, 0.11), transparent 36%),
+    radial-gradient(circle at 20% 18%, rgba(182, 156, 255, 0.08), transparent 28%),
+    linear-gradient(180deg, #0b1833 0%, #091221 100%) !important;
+  border-color: rgba(125, 211, 252, 0.20) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 18px 30px rgba(0, 0, 0, 0.22) !important;
+}
+
+html.theme-dark .sim-arena-zoom-backdrop {
+  background: rgba(2, 8, 18, 0.16);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.theme-dark #simArenaZoomBackdrop {
+  background: rgba(3, 8, 16, 0.48) !important;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 760px) {
+  .popup.sim-map-popup {
+    width: min(94vw, 640px);
+    padding: 24px 18px 20px;
+  }
+
+  .sim-map-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-map-option {
+    min-height: auto;
+  }
+}
+
+
+/* ===== game4 zoom size fix ===== */
+.sim-card-screen.sim-arena-zoomed .sim-arena-card {
+  width: min(96vw, 1520px) !important;
+  height: min(92vh, 980px) !important;
+  padding: 18px 18px 16px !important;
+  gap: 16px !important;
+}
+
+.sim-card-screen.sim-arena-zoomed .sim-panel-head {
+  margin-bottom: 0 !important;
+}
+
+.sim-card-screen.sim-arena-zoomed .sim-arena-zoom-stage {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.sim-card-screen.sim-arena-zoomed .sim-arena-wrap {
+  flex: 0 0 auto !important;
+  width: var(--sim-arena-base-width, 900px) !important;
+  height: var(--sim-arena-base-height, 460px) !important;
+  max-width: none !important;
+  max-height: none !important;
+  transform: scale(var(--sim-arena-zoom-scale, 1.45)) !important;
+  transform-origin: center center !important;
+}
+
+@media (max-width: 900px) {
+  .sim-card-screen.sim-arena-zoomed .sim-arena-card {
+    width: calc(100vw - 14px) !important;
+    height: calc(100vh - 14px) !important;
+    padding: 14px !important;
+  }
+}
+
+html.theme-dark .sim-card-screen.sim-arena-zoomed .sim-arena-card {
+  width: min(96vw, 1520px) !important;
+  height: min(92vh, 980px) !important;
 }

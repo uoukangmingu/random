@@ -473,6 +473,7 @@ let simOverlayMap = new Map()
 let simArenaMeta = null
 let simSelectedMap = 'classic'
 let simArenaZoomed = false
+let simArenaZoomBaseRect = null
 let lastSimValidConfigText = simConfigInput ? simConfigInput.value : ''
 let lastSimAppliedRawText = simConfigInput ? simConfigInput.value : ''
 
@@ -4452,11 +4453,15 @@ function updateSimArenaZoomScale() {
     return
   }
 
-  const baseWidth = simArenaRender?.options?.width || simArenaMeta?.width || simArenaWrap.clientWidth || 900
-  const baseHeight = simArenaRender?.options?.height || simArenaMeta?.height || simArenaWrap.clientHeight || 460
+  const capturedBaseWidth = simArenaZoomBaseRect?.width || 0
+  const capturedBaseHeight = simArenaZoomBaseRect?.height || 0
+  const baseWidth = Math.max(1, capturedBaseWidth || simArenaWrap.clientWidth || simArenaMeta?.width || 900)
+  const baseHeight = Math.max(1, capturedBaseHeight || simArenaWrap.clientHeight || simArenaMeta?.height || 460)
   const stageWidth = Math.max(1, simArenaZoomStage.clientWidth)
   const stageHeight = Math.max(1, simArenaZoomStage.clientHeight)
-  const zoomScale = clampValue(Math.min(stageWidth / baseWidth, stageHeight / baseHeight), 0.92, 2.4)
+  const usableStageWidth = stageWidth * 0.94
+  const usableStageHeight = stageHeight * 0.92
+  const zoomScale = clampValue(Math.min(usableStageWidth / baseWidth, usableStageHeight / baseHeight), 1.12, 2.8)
 
   simArenaWrap.style.setProperty('--sim-arena-base-width', `${baseWidth}px`)
   simArenaWrap.style.setProperty('--sim-arena-base-height', `${baseHeight}px`)
@@ -4467,6 +4472,7 @@ function closeSimArenaZoom() {
   if (!simCardScreen) return
 
   simArenaZoomed = false
+  simArenaZoomBaseRect = null
   simCardScreen.classList.remove('sim-arena-zoomed')
   document.body.classList.remove('sim-arena-zoom-lock')
   simArenaZoomBackdrop?.classList.remove('is-active')
@@ -4479,6 +4485,12 @@ function closeSimArenaZoom() {
 
 function openSimArenaZoom() {
   if (!simCardScreen || !simArenaWrap || !simCardScreen.classList.contains('sim-view-battle')) return
+
+  const currentRect = simArenaWrap.getBoundingClientRect()
+  simArenaZoomBaseRect = {
+    width: Math.max(1, currentRect.width || simArenaWrap.clientWidth || simArenaMeta?.width || 900),
+    height: Math.max(1, currentRect.height || simArenaWrap.clientHeight || simArenaMeta?.height || 460)
+  }
 
   simArenaZoomed = true
   simCardScreen.classList.add('sim-arena-zoomed')
@@ -7380,6 +7392,14 @@ if (simInfoBtn) {
 
 if (simArenaZoomBtn) {
   simArenaZoomBtn.addEventListener('click', toggleSimArenaZoom)
+}
+
+if (simArenaZoomBackdrop) {
+  simArenaZoomBackdrop.addEventListener('click', () => {
+    if (simArenaZoomed) {
+      closeSimArenaZoom()
+    }
+  })
 }
 
 if (themeToggleBtn) {
