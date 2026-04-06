@@ -594,7 +594,13 @@ function escapeHtml(text) {
 
 function getSavedThemePreference() {
   try {
-    return localStorage.getItem(THEME_STORAGE_KEY) === 'dark' ? 'dark' : 'light'
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      return savedTheme
+    }
+
+    return 'dark'
   } catch (error) {
     return documentRoot.classList.contains('theme-dark') ? 'dark' : 'light'
   }
