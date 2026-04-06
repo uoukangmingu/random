@@ -277,6 +277,65 @@ input {
   line-height: 1.5;
 }
 
+.game-item p {
+  margin-bottom: 12px;
+}
+
+.game-meta {
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding-top: 8px;
+}
+
+.game-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.72), transparent 34%),
+    linear-gradient(180deg, rgba(255, 248, 252, 0.96) 0%, rgba(255, 241, 246, 0.92) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 8px 16px rgba(125, 97, 81, 0.08);
+}
+
+.game-meta-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #9f6f87;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.game-meta-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #6d5447;
+  text-align: right;
+  word-break: keep-all;
+  letter-spacing: 0.01em;
+}
+
+.game-meta-value:has(*) {
+  gap: 4px;
+}
+
+.game-meta.is-pending .game-meta-row {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.54), transparent 34%),
+    linear-gradient(180deg, rgba(255, 251, 246, 0.88) 0%, rgba(247, 241, 235, 0.84) 100%);
+}
 .controls-wrap,
 .scoreboard-card {
   background: var(--card-strong);
@@ -6631,10 +6690,43 @@ html.theme-dark .battle-card.type-result .battle-card-front {
 }
 
 html.theme-dark .battle-card-back {
-  background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.22), transparent 23%),
-    linear-gradient(145deg, #8161ff 0%, #5d8ef7 48%, #5ae0cc 100%) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html.theme-dark .battle-card.type-number .battle-card-back {
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.24), transparent 23%),
+    linear-gradient(145deg, #8161ff 0%, #5d8ef7 48%, #5ae0cc 100%) !important;
+}
+
+html.theme-dark .battle-card.type-operator .battle-card-back {
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.24), transparent 23%),
+    linear-gradient(145deg, #ffbf78 0%, #ff8fb1 52%, #ffd3b8 100%) !important;
+}
+
+html.theme-dark .battle-card.type-result .battle-card-back {
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.24), transparent 23%),
+    linear-gradient(145deg, #ffe08a 0%, #ffc86a 52%, #ffe6b5 100%) !important;
+}
+
+html.theme-dark .battle-card.is-locked.type-number .battle-card-back {
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.16), transparent 23%),
+    linear-gradient(145deg, rgba(129, 97, 255, 0.78) 0%, rgba(93, 142, 247, 0.74) 48%, rgba(90, 224, 204, 0.74) 100%) !important;
+}
+
+html.theme-dark .battle-card.is-locked.type-operator .battle-card-back {
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.16), transparent 23%),
+    linear-gradient(145deg, rgba(255, 191, 120, 0.82) 0%, rgba(255, 143, 177, 0.76) 52%, rgba(255, 211, 184, 0.72) 100%) !important;
+}
+
+html.theme-dark .battle-card.is-locked.type-result .battle-card-back {
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.16), transparent 23%),
+    linear-gradient(145deg, rgba(255, 224, 138, 0.84) 0%, rgba(255, 200, 106, 0.78) 52%, rgba(255, 230, 181, 0.74) 100%) !important;
 }
 
 html.theme-dark .battle-result-pill,
@@ -7223,4 +7315,107 @@ html.theme-dark #game4Screen .sim-main-header .sim-info-btn:hover {
   html.theme-dark #game4Screen .sim-main-header .sim-info-btn {
     width: 100%;
   }
+}
+
+
+html.theme-dark .game-meta-row {
+  background:
+    radial-gradient(circle at top left, rgba(99, 135, 214, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(18, 31, 55, 0.92) 0%, rgba(11, 22, 42, 0.94) 100%) !important;
+  border-color: rgba(153, 191, 255, 0.18) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 18px rgba(0, 0, 0, 0.22) !important;
+}
+
+html.theme-dark .game-meta-label {
+  color: #b7c9e6 !important;
+}
+
+html.theme-dark .game-meta-value {
+  color: #fff4d6 !important;
+  text-shadow: 0 0 10px rgba(255, 215, 130, 0.14);
+}
+
+html.theme-dark .game-meta.is-pending .game-meta-row {
+  background:
+    radial-gradient(circle at top left, rgba(88, 112, 153, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(24, 35, 58, 0.86) 0%, rgba(16, 25, 42, 0.88) 100%) !important;
+}
+
+@media (max-width: 720px) {
+  .game-meta {
+    gap: 8px;
+    padding-top: 6px;
+  }
+
+  .game-meta-row {
+    min-height: 40px;
+    padding: 9px 12px;
+  }
+
+  .game-meta-label {
+    font-size: 0.74rem;
+  }
+
+  .game-meta-value {
+    font-size: 0.82rem;
+  }
+}
+
+/* =========================
+   game3 night mode card readability fix
+========================= */
+html.theme-dark .battle-card-front {
+  border-color: rgba(228, 239, 255, 0.72) !important;
+  color: #f8fbff !important;
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(124, 186, 255, 0.08) !important;
+}
+
+html.theme-dark .battle-card.type-number .battle-card-front {
+  background:
+    radial-gradient(circle at 28% 20%, rgba(255, 255, 255, 0.22), transparent 26%),
+    linear-gradient(180deg, #edf5ff 0%, #dfeeff 100%) !important;
+  color: #536684 !important;
+}
+
+html.theme-dark .battle-card.type-operator .battle-card-front {
+  background:
+    radial-gradient(circle at 28% 20%, rgba(255, 255, 255, 0.24), transparent 26%),
+    linear-gradient(180deg, #fff0df 0%, #ffdfe8 100%) !important;
+  color: #775564 !important;
+}
+
+html.theme-dark .battle-card.type-result .battle-card-front {
+  background:
+    radial-gradient(circle at 28% 20%, rgba(255, 255, 255, 0.26), transparent 28%),
+    linear-gradient(180deg, #fff4ca 0%, #ffe7a6 100%) !important;
+  color: #6f5533 !important;
+}
+
+html.theme-dark .battle-card.is-flipped .battle-card-front {
+  border-color: rgba(245, 249, 255, 0.9) !important;
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+html.theme-dark .battle-card.is-flipped .battle-card-value {
+  color: inherit !important;
+  text-shadow: none !important;
+}
+
+html.theme-dark .battle-card.type-number .battle-card-value,
+html.theme-dark .battle-card.type-operator .battle-card-value,
+html.theme-dark .battle-card.type-result .battle-card-value {
+  color: inherit !important;
+}
+
+html.theme-dark .battle-card.type-result .battle-card-value small,
+html.theme-dark .battle-card.is-flipped .battle-card-value small {
+  color: rgba(111, 85, 51, 0.88) !important;
 }
