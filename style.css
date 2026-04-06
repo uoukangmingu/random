@@ -7135,3 +7135,92 @@ html.theme-dark body.game1-mode .slot-meta {
   color: rgba(224, 236, 249, 0.88) !important;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
+
+
+/* =========================
+   game4 mobile / tablet night-mode visibility fix
+========================= */
+html.theme-dark #game4Screen .sim-card-screen {
+  background: transparent;
+}
+
+html.theme-dark #game4Screen .sim-main-header {
+  background:
+    radial-gradient(circle at top center, rgba(124, 186, 255, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(18, 30, 50, 0.98) 0%, rgba(10, 18, 32, 0.99) 100%) !important;
+  border: 1px solid rgba(124, 186, 255, 0.22) !important;
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(88, 135, 201, 0.08) !important;
+}
+
+html.theme-dark #game4Screen .sim-main-header h2 {
+  color: var(--night-title) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
+}
+
+html.theme-dark #game4Screen .sim-main-header .sub-text {
+  color: var(--night-copy-soft) !important;
+}
+
+html.theme-dark #game4Screen .sim-main-header .small-badge {
+  background: linear-gradient(180deg, rgba(28, 45, 71, 0.96) 0%, rgba(16, 28, 48, 0.96) 100%) !important;
+  color: #ffd8e6 !important;
+  border-color: rgba(124, 186, 255, 0.18) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 20px rgba(0, 0, 0, 0.22) !important;
+}
+
+html.theme-dark #game4Screen .sim-header-inline-actions {
+  margin-top: 14px;
+}
+
+html.theme-dark #game4Screen .sim-main-header .sim-info-btn {
+  background: linear-gradient(180deg, rgba(24, 39, 63, 0.98) 0%, rgba(14, 24, 41, 1) 100%) !important;
+  color: var(--night-copy) !important;
+  border-color: rgba(124, 186, 255, 0.22) !important;
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+html.theme-dark #game4Screen .sim-main-header .sim-info-btn:hover {
+  border-color: rgba(124, 186, 255, 0.40) !important;
+  box-shadow:
+    0 16px 28px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(124, 186, 255, 0.10) !important;
+}
+
+@media (max-width: 1024px) and (pointer: coarse) {
+  html.theme-dark #game4Screen .sim-main-header {
+    background:
+      radial-gradient(circle at top center, rgba(122, 188, 255, 0.18), transparent 34%),
+      linear-gradient(180deg, rgba(16, 28, 47, 0.99) 0%, rgba(8, 15, 28, 1) 100%) !important;
+    border: 1px solid rgba(122, 188, 255, 0.22) !important;
+    box-shadow:
+      0 18px 36px rgba(0, 0, 0, 0.36),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 0 0 1px rgba(88, 135, 201, 0.10) !important;
+  }
+
+  html.theme-dark #game4Screen .sim-main-header .sub-text {
+    color: var(--night-copy-soft) !important;
+  }
+}
+
+@media (max-width: 640px) and (pointer: coarse) {
+  html.theme-dark #game4Screen .sim-main-header {
+    padding: 16px 14px 14px !important;
+    border-radius: 22px;
+  }
+
+  html.theme-dark #game4Screen .sim-main-header .small-badge {
+    margin-bottom: 12px;
+  }
+
+  html.theme-dark #game4Screen .sim-main-header .sim-info-btn {
+    width: 100%;
+  }
+}
