@@ -352,22 +352,22 @@ function getGame1BoardTheme() {
   }
 
   return {
-    wall: '#a7b8cc',
-    floor: '#7287a0',
-    wallSpinner: '#b9c8d8',
-    wallSpinnerStroke: '#eef7ff',
-    divider: '#6f8298',
-    guidePeg: '#a694ff',
-    guidePegStroke: '#edf5ff',
-    pegChaos: '#88dcff',
-    pegEven: '#f2b2cc',
-    pegOdd: '#a9d7ff',
-    pegStroke: '#eff7ff',
-    moverPalette: ['#f6cc74', '#8ccfff', '#7fe4d2'],
-    moverStroke: '#eef7ff',
-    bumperPalette: ['#7fe4d2', '#f2aeca', '#9fcfff', '#f5d984'],
-    bumperStroke: '#eff7ff',
-    ballStroke: '#f3fbff'
+    wall: '#8ea1b8',
+    floor: '#5c6f85',
+    wallSpinner: '#8fa4b7',
+    wallSpinnerStroke: '#d9e5f0',
+    divider: '#61748c',
+    guidePeg: '#7f7ab1',
+    guidePegStroke: '#d6e2ee',
+    pegChaos: '#5e9fbd',
+    pegEven: '#bf8aa3',
+    pegOdd: '#7da8c8',
+    pegStroke: '#d3deea',
+    moverPalette: ['#b99a61', '#6f95b2', '#5c998d'],
+    moverStroke: '#d6e2ee',
+    bumperPalette: ['#5f9484', '#aa7d95', '#6f98bb', '#b79a62'],
+    bumperStroke: '#d6e2ee',
+    ballStroke: '#edf6ff'
   }
 }
 
