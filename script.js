@@ -329,6 +329,48 @@ function getRaceColorForName(name) {
   return palette[raceNameColorMap.get(name) % palette.length]
 }
 
+function getGame1BoardTheme() {
+  if (!isDarkThemeEnabled()) {
+    return {
+      wall: '#ead8c9',
+      floor: '#e8cfbd',
+      wallSpinner: '#ead8c9',
+      wallSpinnerStroke: '#fff9f3',
+      divider: '#d8bfae',
+      guidePeg: '#e8d7f7',
+      guidePegStroke: '#fff7ff',
+      pegChaos: '#d7eef8',
+      pegEven: '#efd5e4',
+      pegOdd: '#d8eafc',
+      pegStroke: '#fff7ff',
+      moverPalette: ['#f5d7a7', '#d8ebff', '#f6dfb5'],
+      moverStroke: '#fffdf8',
+      bumperPalette: ['#d9f0e7', '#f1dced', '#d8ebff', '#f6dfb5'],
+      bumperStroke: '#fffdf8',
+      ballStroke: '#fffafc'
+    }
+  }
+
+  return {
+    wall: '#a7b8cc',
+    floor: '#7287a0',
+    wallSpinner: '#b9c8d8',
+    wallSpinnerStroke: '#eef7ff',
+    divider: '#6f8298',
+    guidePeg: '#a694ff',
+    guidePegStroke: '#edf5ff',
+    pegChaos: '#88dcff',
+    pegEven: '#f2b2cc',
+    pegOdd: '#a9d7ff',
+    pegStroke: '#eff7ff',
+    moverPalette: ['#f6cc74', '#8ccfff', '#7fe4d2'],
+    moverStroke: '#eef7ff',
+    bumperPalette: ['#7fe4d2', '#f2aeca', '#9fcfff', '#f5d984'],
+    bumperStroke: '#eff7ff',
+    ballStroke: '#f3fbff'
+  }
+}
+
 function clampValue(value, min, max) {
   return Math.max(min, Math.min(max, value))
 }
@@ -623,6 +665,10 @@ function refreshExtendedThemeVisuals() {
   if (currentSlots.length && slotOverlay) {
     renderSlotsOverlay()
     refreshCounts()
+
+    if (engine && !hasLiveRound()) {
+      buildBoard()
+    }
   }
 
   if (ballBodies.length) {
@@ -630,7 +676,7 @@ function refreshExtendedThemeVisuals() {
     ballBodies.forEach((body, index) => {
       if (body?.isBombBall || !body?.render) return
       body.render.fillStyle = palette[index % palette.length]
-      body.render.strokeStyle = isDarkThemeEnabled() ? '#f3fbff' : '#fffafc'
+      body.render.strokeStyle = getGame1BoardTheme().ballStroke
       body.render.lineWidth = isDarkThemeEnabled() ? 1.6 : 1.1
     })
   }
@@ -1883,6 +1929,8 @@ function buildBoard() {
   slotOverlay.style.bottom = `${S(16)}px`
   slotOverlay.style.height = `${clampValue(boardHeight * 0.16, S(74), S(112))}px`
 
+  const game1Theme = getGame1BoardTheme()
+
   const wallThickness = S(60)
   const slotTopY = boardHeight - slotAreaHeight
   const floorY = boardHeight + S(20)
@@ -1903,7 +1951,7 @@ function buildBoard() {
     {
       isStatic: true,
       restitution: 0.4,
-      render: { fillStyle: '#ead8c9' }
+      render: { fillStyle: game1Theme.wall }
     }
   )
 
@@ -1915,14 +1963,14 @@ function buildBoard() {
     {
       isStatic: true,
       restitution: 0.4,
-      render: { fillStyle: '#ead8c9' }
+      render: { fillStyle: game1Theme.wall }
     }
   )
 
   const floor = Bodies.rectangle(boardWidth / 2, floorY, boardWidth, wallThickness, {
     isStatic: true,
     restitution: 0.15,
-    render: { fillStyle: '#e8cfbd' }
+    render: { fillStyle: game1Theme.floor }
   })
 
   worldBodies.push(leftWall, rightWall, floor)
@@ -1946,8 +1994,8 @@ function buildBoard() {
       friction: 0,
       frictionStatic: 0,
       render: {
-        fillStyle: '#ead8c9',
-        strokeStyle: '#fff9f3',
+        fillStyle: game1Theme.wallSpinner,
+        strokeStyle: game1Theme.wallSpinnerStroke,
         lineWidth: Math.max(1, S(2))
       }
     })
@@ -1958,8 +2006,8 @@ function buildBoard() {
       friction: 0,
       frictionStatic: 0,
       render: {
-        fillStyle: '#ead8c9',
-        strokeStyle: '#fff9f3',
+        fillStyle: game1Theme.wallSpinner,
+        strokeStyle: game1Theme.wallSpinnerStroke,
         lineWidth: Math.max(1, S(2))
       }
     })
@@ -2004,7 +2052,7 @@ function buildBoard() {
       {
         isStatic: true,
         restitution: 0.5,
-        render: { fillStyle: '#d8bfae' }
+        render: { fillStyle: game1Theme.divider }
       }
     )
 
@@ -2018,8 +2066,8 @@ function buildBoard() {
       isStatic: true,
       restitution: 0.82,
       render: {
-        fillStyle: '#e8d7f7',
-        strokeStyle: '#fff7ff',
+        fillStyle: game1Theme.guidePeg,
+        strokeStyle: game1Theme.guidePegStroke,
         lineWidth: Math.max(1, S(2))
       }
     })
@@ -2057,8 +2105,8 @@ function buildBoard() {
         isStatic: true,
         restitution: isChaosRow ? 1.04 : 0.72,
         render: {
-          fillStyle: isChaosRow ? '#d7eef8' : row % 2 === 0 ? '#efd5e4' : '#d8eafc',
-          strokeStyle: '#fff7ff',
+          fillStyle: isChaosRow ? game1Theme.pegChaos : row % 2 === 0 ? game1Theme.pegEven : game1Theme.pegOdd,
+          strokeStyle: game1Theme.pegStroke,
           lineWidth: Math.max(1, S(2))
         }
       })
@@ -2068,13 +2116,13 @@ function buildBoard() {
   }
 
   const horizontalMoverConfigs = [
-    { x: boardWidth * 0.16, y: boardHeight * 0.22, w: S(78), h: S(12), ax: playableWidth * 0.06, ay: S(4), speed: 0.0017, phase: 0.2, color: '#f5d7a7' },
-    { x: boardWidth * 0.34, y: boardHeight * 0.31, w: S(82), h: S(12), ax: playableWidth * 0.07, ay: S(5), speed: 0.00155, phase: 1.0, color: '#d8ebff' },
-    { x: boardWidth * 0.50, y: boardHeight * 0.42, w: S(88), h: S(12), ax: playableWidth * 0.09, ay: S(6), speed: 0.0014, phase: 1.8, color: '#f5d7a7' },
-    { x: boardWidth * 0.66, y: boardHeight * 0.31, w: S(82), h: S(12), ax: playableWidth * 0.07, ay: S(5), speed: 0.0016, phase: 2.5, color: '#d8ebff' },
-    { x: boardWidth * 0.84, y: boardHeight * 0.22, w: S(78), h: S(12), ax: playableWidth * 0.06, ay: S(4), speed: 0.00175, phase: 3.0, color: '#f5d7a7' },
-    { x: boardWidth * 0.14, y: boardHeight * 0.56, w: S(72), h: S(12), ax: playableWidth * 0.05, ay: S(5), speed: 0.0019, phase: 0.7, color: '#d8ebff' },
-    { x: boardWidth * 0.86, y: boardHeight * 0.56, w: S(72), h: S(12), ax: playableWidth * 0.05, ay: S(5), speed: 0.00195, phase: 2.1, color: '#f6dfb5' }
+    { x: boardWidth * 0.16, y: boardHeight * 0.22, w: S(78), h: S(12), ax: playableWidth * 0.06, ay: S(4), speed: 0.0017, phase: 0.2, color: game1Theme.moverPalette[0] },
+    { x: boardWidth * 0.34, y: boardHeight * 0.31, w: S(82), h: S(12), ax: playableWidth * 0.07, ay: S(5), speed: 0.00155, phase: 1.0, color: game1Theme.moverPalette[1] },
+    { x: boardWidth * 0.50, y: boardHeight * 0.42, w: S(88), h: S(12), ax: playableWidth * 0.09, ay: S(6), speed: 0.0014, phase: 1.8, color: game1Theme.moverPalette[0] },
+    { x: boardWidth * 0.66, y: boardHeight * 0.31, w: S(82), h: S(12), ax: playableWidth * 0.07, ay: S(5), speed: 0.0016, phase: 2.5, color: game1Theme.moverPalette[1] },
+    { x: boardWidth * 0.84, y: boardHeight * 0.22, w: S(78), h: S(12), ax: playableWidth * 0.06, ay: S(4), speed: 0.00175, phase: 3.0, color: game1Theme.moverPalette[0] },
+    { x: boardWidth * 0.14, y: boardHeight * 0.56, w: S(72), h: S(12), ax: playableWidth * 0.05, ay: S(5), speed: 0.0019, phase: 0.7, color: game1Theme.moverPalette[1] },
+    { x: boardWidth * 0.86, y: boardHeight * 0.56, w: S(72), h: S(12), ax: playableWidth * 0.05, ay: S(5), speed: 0.00195, phase: 2.1, color: game1Theme.moverPalette[2] }
   ]
 
   horizontalMoverConfigs.forEach((cfg, index) => {
@@ -2084,7 +2132,7 @@ function buildBoard() {
       restitution: 1.08,
       render: {
         fillStyle: cfg.color,
-        strokeStyle: '#fffdf8',
+        strokeStyle: game1Theme.moverStroke,
         lineWidth: Math.max(1, S(2))
       }
     })
@@ -2110,8 +2158,8 @@ function buildBoard() {
     chamfer: { radius: S(7) },
     restitution: 1.1,
     render: {
-      fillStyle: '#d9f0e7',
-      strokeStyle: '#fffdf8',
+      fillStyle: game1Theme.bumperPalette[0],
+      strokeStyle: game1Theme.bumperStroke,
       lineWidth: Math.max(1, S(2))
     }
   })
@@ -2121,8 +2169,8 @@ function buildBoard() {
     chamfer: { radius: S(7) },
     restitution: 1.1,
     render: {
-      fillStyle: '#f1dced',
-      strokeStyle: '#fffdf8',
+      fillStyle: game1Theme.bumperPalette[1],
+      strokeStyle: game1Theme.bumperStroke,
       lineWidth: Math.max(1, S(2))
     }
   })
@@ -2132,8 +2180,8 @@ function buildBoard() {
     chamfer: { radius: S(7) },
     restitution: 1.08,
     render: {
-      fillStyle: '#d8ebff',
-      strokeStyle: '#fffdf8',
+      fillStyle: game1Theme.bumperPalette[2],
+      strokeStyle: game1Theme.bumperStroke,
       lineWidth: Math.max(1, S(2))
     }
   })
@@ -2143,8 +2191,8 @@ function buildBoard() {
     chamfer: { radius: S(7) },
     restitution: 1.08,
     render: {
-      fillStyle: '#f6dfb5',
-      strokeStyle: '#fffdf8',
+      fillStyle: game1Theme.bumperPalette[3],
+      strokeStyle: game1Theme.bumperStroke,
       lineWidth: Math.max(1, S(2))
     }
   })
@@ -2204,13 +2252,13 @@ function buildBoard() {
   })
 
   const bumperConfigs = [
-    { x: boardWidth * 0.10, y: boardHeight * 0.17, color: '#d9f0e7', phase: 0.3, ax: S(20), ay: S(7) },
-    { x: boardWidth * 0.24, y: boardHeight * 0.27, color: '#f1dced', phase: 1.1, ax: S(18), ay: S(8) },
-    { x: boardWidth * 0.50, y: boardHeight * 0.20, color: '#d8ebff', phase: 2.0, ax: S(14), ay: S(6) },
-    { x: boardWidth * 0.76, y: boardHeight * 0.27, color: '#f6dfb5', phase: 2.8, ax: S(18), ay: S(8) },
-    { x: boardWidth * 0.90, y: boardHeight * 0.17, color: '#d9f0e7', phase: 3.4, ax: S(20), ay: S(7) },
-    { x: boardWidth * 0.12, y: boardHeight * 0.48, color: '#f1dced', phase: 0.9, ax: S(16), ay: S(9) },
-    { x: boardWidth * 0.88, y: boardHeight * 0.48, color: '#d8ebff', phase: 2.6, ax: S(16), ay: S(9) }
+    { x: boardWidth * 0.10, y: boardHeight * 0.17, color: game1Theme.bumperPalette[0], phase: 0.3, ax: S(20), ay: S(7) },
+    { x: boardWidth * 0.24, y: boardHeight * 0.27, color: game1Theme.bumperPalette[1], phase: 1.1, ax: S(18), ay: S(8) },
+    { x: boardWidth * 0.50, y: boardHeight * 0.20, color: game1Theme.bumperPalette[2], phase: 2.0, ax: S(14), ay: S(6) },
+    { x: boardWidth * 0.76, y: boardHeight * 0.27, color: game1Theme.bumperPalette[3], phase: 2.8, ax: S(18), ay: S(8) },
+    { x: boardWidth * 0.90, y: boardHeight * 0.17, color: game1Theme.bumperPalette[0], phase: 3.4, ax: S(20), ay: S(7) },
+    { x: boardWidth * 0.12, y: boardHeight * 0.48, color: game1Theme.bumperPalette[1], phase: 0.9, ax: S(16), ay: S(9) },
+    { x: boardWidth * 0.88, y: boardHeight * 0.48, color: game1Theme.bumperPalette[2], phase: 2.6, ax: S(16), ay: S(9) }
   ]
 
   bumperConfigs.forEach((cfg, index) => {
@@ -2219,7 +2267,7 @@ function buildBoard() {
       restitution: 1.15,
       render: {
         fillStyle: cfg.color,
-        strokeStyle: '#fffdf8',
+        strokeStyle: game1Theme.bumperStroke,
         lineWidth: Math.max(1, S(2))
       }
     })
@@ -2263,7 +2311,9 @@ function renderSlotsOverlay() {
     const slotBox = document.createElement('div')
     slotBox.className = 'slot-box'
     slotBox.style.flex = '1 1 0'
-    slotBox.style.background = `linear-gradient(180deg, ${color} 0%, rgba(255,255,255,0.48) 100%)`
+    slotBox.style.background = isDarkThemeEnabled()
+      ? `linear-gradient(180deg, ${color}d9 0%, ${color}66 42%, rgba(8,16,29,0.96) 100%)`
+      : `linear-gradient(180deg, ${color} 0%, rgba(255,255,255,0.48) 100%)`
     slotBox.dataset.slotId = slot.id
 
     const nameEl = document.createElement('div')
@@ -2309,6 +2359,7 @@ function createBall(x, y, options = {}) {
   if (!isBomb) {
     const palette = getBallPaletteByTheme()
     const color = palette[Math.floor(Math.random() * palette.length)]
+    const game1Theme = getGame1BoardTheme()
     const ball = Bodies.circle(x, y, S(4.5), {
       restitution: rand(0.42, 0.6),
       friction: 0.002,
@@ -2316,7 +2367,7 @@ function createBall(x, y, options = {}) {
       density: 0.0018,
       render: {
         fillStyle: color,
-        strokeStyle: '#fffafc',
+        strokeStyle: game1Theme.ballStroke,
         lineWidth: Math.max(0.8, S(1.1))
       }
     })
