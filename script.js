@@ -23,6 +23,16 @@ const closePopupBtn = document.getElementById('closePopupBtn')
 const popupIcon = document.querySelector('.popup-icon')
 const popupBox = popupOverlay?.querySelector('.popup') || null
 
+const documentRoot = document.documentElement
+const themeToggleBtn = document.getElementById('themeToggleBtn')
+const themeToggleIcon = themeToggleBtn?.querySelector('.utility-btn-icon') || null
+const themeToggleLabel = themeToggleBtn?.querySelector('.utility-btn-label') || null
+const fullscreenToggleBtn = document.getElementById('fullscreenToggleBtn')
+const fullscreenToggleIcon = fullscreenToggleBtn?.querySelector('.utility-btn-icon') || null
+const fullscreenToggleLabel = fullscreenToggleBtn?.querySelector('.utility-btn-label') || null
+
+const THEME_STORAGE_KEY = 'roulette-theme-preference'
+
 const configInput = document.getElementById('configInput')
 const shuffleBtn = document.getElementById('shuffleBtn')
 const startGameBtn = document.getElementById('startGameBtn')
@@ -206,23 +216,117 @@ const navalPlayerPalette = [
   '#e4dcff'
 ]
 
+const DARK_SLOT_PALETTE = [
+  '#ff82ad',
+  '#6ce8d1',
+  '#7fd8ff',
+  '#ffd56f',
+  '#ffae84',
+  '#c9b6ff',
+  '#68f0c0',
+  '#ff9fc9',
+  '#9bdcff',
+  '#ffd09a'
+]
+
+const DARK_BALL_PALETTE = [
+  '#ff82ad',
+  '#65e7cf',
+  '#7dd5ff',
+  '#ffd567',
+  '#c5b2ff',
+  '#ffa97d'
+]
+
+const DARK_RACE_HORSE_PALETTE = [
+  '#ff8ab2',
+  '#69ead3',
+  '#80d8ff',
+  '#ffd66d',
+  '#ffb087',
+  '#cab7ff',
+  '#73f0c5',
+  '#ffa8d0',
+  '#9adfff',
+  '#ffd5a1',
+  '#d6c3ff',
+  '#89f2b8',
+  '#ffe07e',
+  '#ffb6dc',
+  '#9fd5ff',
+  '#ffc18b',
+  '#8ff0d7',
+  '#e0c4ff',
+  '#ffe89d',
+  '#9fe9df'
+]
+
+const DARK_COMMON_PLAYER_PALETTE = [
+  '#ff82ad',
+  '#6ce8d1',
+  '#7fd8ff',
+  '#ffd56f',
+  '#c9b6ff',
+  '#ffa97d'
+]
+
+const DARK_NAVAL_PLAYER_PALETTE = [
+  '#ff82ad',
+  '#6ce8d1',
+  '#7fd8ff',
+  '#ffd56f',
+  '#c9b6ff',
+  '#ffa97d'
+]
+
+const SIM_DARK_PLAYER_PALETTE = [
+  '#ff7aa8',
+  '#5eead4',
+  '#7dd3fc',
+  '#ffd166',
+  '#c4b5fd',
+  '#ff9b6b'
+]
+
 const nameColorMap = new Map()
 const raceNameColorMap = new Map()
 
+function getSlotPaletteByTheme() {
+  return isDarkThemeEnabled() ? DARK_SLOT_PALETTE : slotPalette
+}
+
+function getBallPaletteByTheme() {
+  return isDarkThemeEnabled() ? DARK_BALL_PALETTE : ballPalette
+}
+
+function getRacePaletteByTheme() {
+  return isDarkThemeEnabled() ? DARK_RACE_HORSE_PALETTE : raceHorsePalette
+}
+
+function getCommonPlayerPaletteByTheme() {
+  return isDarkThemeEnabled() ? DARK_COMMON_PLAYER_PALETTE : navalPlayerPalette
+}
+
+function getNavalPlayerPaletteByTheme() {
+  return isDarkThemeEnabled() ? DARK_NAVAL_PLAYER_PALETTE : raceHorsePalette
+}
+
 function getColorForName(name) {
   if (!nameColorMap.has(name)) {
-    const colorIndex = nameColorMap.size % slotPalette.length
-    nameColorMap.set(name, slotPalette[colorIndex])
+    nameColorMap.set(name, nameColorMap.size)
   }
-  return nameColorMap.get(name)
+
+  const palette = getSlotPaletteByTheme()
+  return palette[nameColorMap.get(name) % palette.length]
 }
 
 function getRaceColorForName(name) {
   if (!raceNameColorMap.has(name)) {
-    const colorIndex = raceNameColorMap.size % raceHorsePalette.length
-    raceNameColorMap.set(name, raceHorsePalette[colorIndex])
+    raceNameColorMap.set(name, raceNameColorMap.size)
   }
-  return raceNameColorMap.get(name)
+
+  const palette = getRacePaletteByTheme()
+  return palette[raceNameColorMap.get(name) % palette.length]
 }
 
 function clampValue(value, min, max) {
@@ -442,6 +546,309 @@ function escapeHtml(text) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;')
+}
+
+
+function getSavedThemePreference() {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === 'dark' ? 'dark' : 'light'
+  } catch (error) {
+    return documentRoot.classList.contains('theme-dark') ? 'dark' : 'light'
+  }
+}
+
+function isDarkThemeEnabled() {
+  return documentRoot.classList.contains('theme-dark')
+}
+
+function getSimPlayerPalette() {
+  return isDarkThemeEnabled() ? SIM_DARK_PLAYER_PALETTE : navalPlayerPalette
+}
+
+function getSimColorForIndex(index) {
+  const palette = getSimPlayerPalette()
+  return palette[index % palette.length]
+}
+
+function getSimBallStrokeColor() {
+  return isDarkThemeEnabled() ? '#ecf7ff' : '#fffaf8'
+}
+
+function refreshSimThemeVisuals() {
+  const palette = getSimPlayerPalette()
+
+  if (simPlayers.length) {
+    simPlayers = simPlayers.map((player, index) => ({
+      ...player,
+      color: palette[index % palette.length]
+    }))
+  }
+
+  if (simRoundPlayers.length) {
+    simRoundPlayers = simRoundPlayers.map((player, index) => ({
+      ...player,
+      color: palette[index % palette.length]
+    }))
+  }
+
+  if (simLegend) {
+    renderSimLegend()
+  }
+
+  if (simStatsBoard) {
+    if (simSetupDone && simRoundPlayers.length) {
+      renderSimStatsBoard(simRoundPlayers, { reveal: true, dealt: true })
+    } else if (simPlayers.length) {
+      renderSimStatsBoard(simPlayers)
+    }
+  }
+
+  if (simBattleSummary) {
+    renderSimBattleSummary(simBattleRunning || simBattleFinished ? simRoundPlayers : [])
+  }
+
+  if (simArenaBodyMap.size) {
+    simRoundPlayers.forEach((player) => {
+      const body = simArenaBodyMap.get(player.id)
+      if (!body?.render) return
+      body.render.fillStyle = player.color
+      body.render.strokeStyle = getSimBallStrokeColor()
+      body.render.lineWidth = isDarkThemeEnabled() ? 4 : 3
+    })
+  }
+}
+
+function refreshExtendedThemeVisuals() {
+  if (currentSlots.length && slotOverlay) {
+    renderSlotsOverlay()
+    refreshCounts()
+  }
+
+  if (ballBodies.length) {
+    const palette = getBallPaletteByTheme()
+    ballBodies.forEach((body, index) => {
+      if (body?.isBombBall || !body?.render) return
+      body.render.fillStyle = palette[index % palette.length]
+      body.render.strokeStyle = isDarkThemeEnabled() ? '#f3fbff' : '#fffafc'
+      body.render.lineWidth = isDarkThemeEnabled() ? 1.6 : 1.1
+    })
+  }
+
+  if (raceHorses.length) {
+    raceHorses = raceHorses.map((horse) => ({
+      ...horse,
+      color: getRaceColorForName(horse.label)
+    }))
+
+    renderRaceLegend()
+    raceHorses.forEach((horse) => {
+      if (horse?.runnerEl) {
+        horse.runnerEl.style.setProperty('--horse-color', horse.color)
+      }
+    })
+    renderRaceRanking()
+  }
+
+  if (battlePlayers.length) {
+    const palette = getCommonPlayerPaletteByTheme()
+    battlePlayers = battlePlayers.map((player, index) => ({
+      ...player,
+      color: palette[index % palette.length]
+    }))
+
+    renderBattleLegend()
+
+    document.querySelectorAll('#game3Screen .battle-row[data-player-id]').forEach((row) => {
+      const player = battlePlayers.find((item) => item.id === row.dataset.playerId)
+      const dot = row.querySelector('.legend-dot')
+      if (player && dot) {
+        dot.style.background = player.color
+      }
+    })
+
+    if (!battleGameRunning && battlePhase === 'idle') {
+      renderBattleRowsPreview()
+      renderBattleRanking([])
+    }
+  }
+
+  if (navalPlayers.length) {
+    const palette = getNavalPlayerPaletteByTheme()
+    navalPlayers = navalPlayers.map((player, index) => ({
+      ...player,
+      color: palette[index % palette.length]
+    }))
+
+    renderNavalLegend()
+    renderNavalBoardState()
+    renderNavalLogs()
+    renderNavalRanking()
+  }
+}
+
+function updateThemeToggleButton() {
+  if (!themeToggleBtn) return
+
+  const isDark = isDarkThemeEnabled()
+  const nextActionText = isDark ? '낮 모드로 전환' : '밤 모드로 전환'
+
+  themeToggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false')
+  themeToggleBtn.setAttribute('aria-label', nextActionText)
+  themeToggleBtn.title = nextActionText
+
+  if (themeToggleIcon) {
+    themeToggleIcon.textContent = isDark ? '☀️' : '🌙'
+  }
+
+  if (themeToggleLabel) {
+    themeToggleLabel.textContent = isDark ? '낮 모드' : '밤 모드'
+  }
+}
+
+function applyThemePreference(theme, options = {}) {
+  const { persist = true } = options
+  const useDarkTheme = theme === 'dark'
+
+  documentRoot.classList.toggle('theme-dark', useDarkTheme)
+
+  if (document.body) {
+    document.body.classList.toggle('theme-dark', useDarkTheme)
+  }
+
+  if (persist) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, useDarkTheme ? 'dark' : 'light')
+    } catch (error) {}
+  }
+
+  updateThemeToggleButton()
+  refreshSimThemeVisuals()
+  refreshExtendedThemeVisuals()
+}
+
+function toggleThemePreference() {
+  applyThemePreference(isDarkThemeEnabled() ? 'light' : 'dark')
+}
+
+function getActiveFullscreenElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null
+}
+
+function isFullscreenMode() {
+  return Boolean(getActiveFullscreenElement())
+}
+
+function canUseFullscreenMode() {
+  const target = document.documentElement
+  return Boolean(
+    document.fullscreenEnabled ||
+    document.webkitFullscreenEnabled ||
+    target?.requestFullscreen ||
+    target?.webkitRequestFullscreen
+  )
+}
+
+function requestAppFullscreen() {
+  const target = document.documentElement
+  const requestMethod = target?.requestFullscreen || target?.webkitRequestFullscreen
+
+  if (typeof requestMethod !== 'function') {
+    return Promise.reject(new Error('Fullscreen API is not supported'))
+  }
+
+  const result = requestMethod.call(target)
+  return result instanceof Promise ? result : Promise.resolve()
+}
+
+function exitAppFullscreen() {
+  const exitMethod = document.exitFullscreen || document.webkitExitFullscreen
+
+  if (typeof exitMethod !== 'function') {
+    return Promise.reject(new Error('Fullscreen exit is not supported'))
+  }
+
+  const result = exitMethod.call(document)
+  return result instanceof Promise ? result : Promise.resolve()
+}
+
+function updateFullscreenToggleButton() {
+  if (!fullscreenToggleBtn) return
+
+  const supported = canUseFullscreenMode()
+  const isActive = isFullscreenMode()
+  const buttonText = isActive ? '전체화면 해제' : '전체화면'
+  const actionText = supported
+    ? (isActive ? '전체화면 끄기' : '전체화면 켜기')
+    : '이 브라우저에서는 전체화면을 지원하지 않음'
+
+  fullscreenToggleBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false')
+  fullscreenToggleBtn.setAttribute('aria-label', actionText)
+  fullscreenToggleBtn.title = actionText
+  fullscreenToggleBtn.classList.toggle('is-unsupported', !supported)
+
+  if (fullscreenToggleIcon) {
+    fullscreenToggleIcon.textContent = isActive ? '🗗' : '⛶'
+  }
+
+  if (fullscreenToggleLabel) {
+    fullscreenToggleLabel.textContent = buttonText
+  }
+}
+
+function syncResponsiveAfterViewportModeChange() {
+  lastViewportWidth = window.innerWidth
+  lastViewportHeight = window.innerHeight
+
+  syncGame1MobileLayout()
+  syncRaceMobileLayout()
+  syncSimResponsiveLayout()
+  updateOrientationGate()
+
+  if (screens.game1?.classList.contains('active')) {
+    fitGameCanvasViewport()
+
+    if (engine && currentSlots.length) {
+      buildBoard()
+    }
+  }
+
+  if (screens.game2?.classList.contains('active') && raceHorses.length) {
+    renderRacePreview()
+  }
+
+  if (screens.game4?.classList.contains('active')) {
+    if (simBattleRunning || simBattleFinished) {
+      updateSimArenaOverlay()
+    }
+    if (simArenaZoomed) {
+      updateSimArenaZoomScale()
+    }
+  }
+
+  if (screens.game5?.classList.contains('active')) {
+    renderNavalBoardState()
+  }
+}
+
+async function toggleFullscreenMode() {
+  if (!canUseFullscreenMode()) {
+    showPopup('전체화면 안내', '현재 브라우저에서는 전체화면 전환을 지원하지 않아.')
+    updateFullscreenToggleButton()
+    return
+  }
+
+  try {
+    if (isFullscreenMode()) {
+      await exitAppFullscreen()
+    } else {
+      await requestAppFullscreen()
+    }
+  } catch (error) {
+    showPopup('전체화면 안내', '전체화면 전환이 차단되었거나 지원되지 않아.')
+  } finally {
+    updateFullscreenToggleButton()
+    setTimeout(syncResponsiveAfterViewportModeChange, 100)
+  }
 }
 
 function showPopup(title, message, options = {}) {
@@ -1899,7 +2306,8 @@ function createBall(x, y, options = {}) {
   const isBomb = Boolean(options.isBomb)
 
   if (!isBomb) {
-    const color = ballPalette[Math.floor(Math.random() * ballPalette.length)]
+    const palette = getBallPaletteByTheme()
+    const color = palette[Math.floor(Math.random() * palette.length)]
     const ball = Bodies.circle(x, y, S(4.5), {
       restitution: rand(0.42, 0.6),
       friction: 0.002,
@@ -3075,7 +3483,7 @@ function parseBattleConfigToPlayers(text) {
     players.push({
       id: `battle-player-${players.length + 1}`,
       label: normalized,
-      color: navalPlayerPalette[players.length % navalPlayerPalette.length]
+      color: getSimColorForIndex(players.length)
     })
   }
 
@@ -4186,7 +4594,7 @@ function parseSimConfigToPlayers(text) {
     players.push({
       id: `sim-player-${players.length + 1}`,
       label: normalized,
-      color: navalPlayerPalette[players.length % navalPlayerPalette.length]
+      color: getCommonPlayerPaletteByTheme()[players.length % getCommonPlayerPaletteByTheme().length]
     })
   }
 
@@ -4891,7 +5299,8 @@ function selectSimArenaMap() {
     document.addEventListener('app-popup-closed', handlePopupClosed)
     showPopup('전투 경기장 선택', buildSimMapPickerHtml(), {
       icon: '🗺️',
-      allowHtml: true
+      allowHtml: true,
+      popupClass: 'sim-map-popup'
     })
   })
 }
@@ -4905,29 +5314,40 @@ function createSimShrinkZone() {
 }
 
 function createSimWalls(width, height, thickness = 60) {
+  const fill = isDarkThemeEnabled() ? '#24344d' : '#eed9c7'
+  const stroke = isDarkThemeEnabled() ? '#8fd6ff' : '#fff8ef'
+  const lineWidth = isDarkThemeEnabled() ? 2 : 1
   return {
-    top: Bodies.rectangle(width / 2, -thickness / 2, width, thickness, { isStatic: true, restitution: 1, render: { fillStyle: '#eed9c7' } }),
-    bottom: Bodies.rectangle(width / 2, height + thickness / 2, width, thickness, { isStatic: true, restitution: 1, render: { fillStyle: '#eed9c7' } }),
-    left: Bodies.rectangle(-thickness / 2, height / 2, thickness, height, { isStatic: true, restitution: 1, render: { fillStyle: '#eed9c7' } }),
-    right: Bodies.rectangle(width + thickness / 2, height / 2, thickness, height, { isStatic: true, restitution: 1, render: { fillStyle: '#eed9c7' } })
+    top: Bodies.rectangle(width / 2, -thickness / 2, width, thickness, { isStatic: true, restitution: 1, render: { fillStyle: fill, strokeStyle: stroke, lineWidth } }),
+    bottom: Bodies.rectangle(width / 2, height + thickness / 2, width, thickness, { isStatic: true, restitution: 1, render: { fillStyle: fill, strokeStyle: stroke, lineWidth } }),
+    left: Bodies.rectangle(-thickness / 2, height / 2, thickness, height, { isStatic: true, restitution: 1, render: { fillStyle: fill, strokeStyle: stroke, lineWidth } }),
+    right: Bodies.rectangle(width + thickness / 2, height / 2, thickness, height, { isStatic: true, restitution: 1, render: { fillStyle: fill, strokeStyle: stroke, lineWidth } })
   }
 }
 
 function applySimBombAppearance(bomb, stage = 0) {
   if (!bomb) return
-  const palette = [
-    { fill: '#bdbdbd', stroke: '#f2f2f2', lineWidth: 3 },
-    { fill: '#9a9a9a', stroke: '#e7e7e7', lineWidth: 3 },
-    { fill: '#626262', stroke: '#d4d4d4', lineWidth: 3 },
-    { fill: '#111111', stroke: '#8d8d8d', lineWidth: 3 }
-  ]
+  const palette = isDarkThemeEnabled()
+    ? [
+        { fill: '#6b7788', stroke: '#d8ebff', lineWidth: 3 },
+        { fill: '#4d5665', stroke: '#bfe3ff', lineWidth: 3 },
+        { fill: '#2a313d', stroke: '#8fd6ff', lineWidth: 3 },
+        { fill: '#0a0f16', stroke: '#f6c66b', lineWidth: 4 }
+      ]
+    : [
+        { fill: '#bdbdbd', stroke: '#f2f2f2', lineWidth: 3 },
+        { fill: '#9a9a9a', stroke: '#e7e7e7', lineWidth: 3 },
+        { fill: '#626262', stroke: '#d4d4d4', lineWidth: 3 },
+        { fill: '#111111', stroke: '#8d8d8d', lineWidth: 3 }
+      ]
   const style = palette[Math.max(0, Math.min(stage, palette.length - 1))]
   bomb.render.fillStyle = style.fill
   bomb.render.strokeStyle = style.stroke
   bomb.render.lineWidth = style.lineWidth
 }
 
-function flashSimBallBody(player, { stroke = 'rgba(255,255,255,0.88)', glowStroke = '#fff7a8', lineWidth = 5, duration = 260 } = {}) {
+function flashSimBallBody(player, { stroke = null, glowStroke = '#fff7a8', lineWidth = 5, duration = 260 } = {}) {
+  stroke = stroke || getSimBallStrokeColor()
   const body = simArenaBodyMap.get(player?.id)
   if (!body || !body.render) return
   body.render.lineWidth = lineWidth
@@ -5278,8 +5698,8 @@ function createSimBody(player, worldWidth, worldHeight) {
       inertia: Infinity,
       render: {
         fillStyle: player.color,
-        strokeStyle: '#fffaf8',
-        lineWidth: 3
+        strokeStyle: getSimBallStrokeColor(),
+        lineWidth: isDarkThemeEnabled() ? 4 : 3
       }
     }
   )
@@ -5948,7 +6368,7 @@ function parseNavalConfigToPlayers(text) {
     players.push({
       id: `naval-player-${players.length + 1}`,
       label: raw,
-      color: raceHorsePalette[players.length % raceHorsePalette.length]
+      color: getNavalPlayerPaletteByTheme()[players.length % getNavalPlayerPaletteByTheme().length]
     })
   }
 
@@ -6962,6 +7382,26 @@ if (simArenaZoomBtn) {
   simArenaZoomBtn.addEventListener('click', toggleSimArenaZoom)
 }
 
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', toggleThemePreference)
+}
+
+if (fullscreenToggleBtn) {
+  fullscreenToggleBtn.addEventListener('click', () => {
+    toggleFullscreenMode()
+  })
+}
+
+document.addEventListener('fullscreenchange', () => {
+  updateFullscreenToggleButton()
+  syncResponsiveAfterViewportModeChange()
+})
+
+document.addEventListener('webkitfullscreenchange', () => {
+  updateFullscreenToggleButton()
+  syncResponsiveAfterViewportModeChange()
+})
+
 bindFastForwardTarget('game1')
 bindFastForwardTarget('game2')
 bindFastForwardTarget('game4')
@@ -7089,6 +7529,9 @@ document.addEventListener('visibilitychange', () => {
     }
   }
 })
+
+applyThemePreference(getSavedThemePreference(), { persist: false })
+updateFullscreenToggleButton()
 
 updateGame1BallCountText()
 syncGame1MobileLayout()

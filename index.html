@@ -4,6 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>랜덤 룰렛 사이트</title>
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem('roulette-theme-preference') === 'dark') {
+          document.documentElement.classList.add('theme-dark')
+        }
+      } catch (error) {}
+    })()
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -556,6 +565,17 @@
 
 
   </main>
+
+  <div class="utility-controls" aria-label="화면 설정">
+    <button id="themeToggleBtn" class="utility-btn utility-theme-btn" type="button" aria-pressed="false" aria-label="밤 모드로 전환" title="밤 모드로 전환">
+      <span class="utility-btn-icon" aria-hidden="true">🌙</span>
+      <span class="utility-btn-label">밤 모드</span>
+    </button>
+    <button id="fullscreenToggleBtn" class="utility-btn utility-fullscreen-btn" type="button" aria-pressed="false" aria-label="전체화면 켜기" title="전체화면 켜기">
+      <span class="utility-btn-icon" aria-hidden="true">⛶</span>
+      <span class="utility-btn-label">전체화면</span>
+    </button>
+  </div>
 
   <div id="popupOverlay" class="popup-overlay hidden">
     <div class="popup">

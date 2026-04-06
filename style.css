@@ -3245,6 +3245,7 @@ body.sim-arena-zoom-lock {
   text-align: center;
   color: #7f6657;
   font-size: 0.95rem;
+  border-bottom: 1px solid rgba(157, 125, 107, 0.14);
 }
 
 .sim-summary-table th {
@@ -3254,6 +3255,10 @@ body.sim-arena-zoom-lock {
 
 .sim-summary-table tbody tr:nth-child(even) td {
   background: rgba(255,255,255,0.5);
+}
+
+.sim-summary-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .sim-summary-name {
@@ -3333,6 +3338,7 @@ body.sim-arena-zoom-lock {
 }
 
 .sim-map-option {
+  position: relative;
   width: 100%;
   text-align: left;
   padding: 14px;
@@ -3341,13 +3347,25 @@ body.sim-arena-zoom-lock {
   background: rgba(255, 250, 245, 0.92);
   box-shadow: 0 8px 18px rgba(114, 86, 68, 0.1);
   cursor: pointer;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  overflow: hidden;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, filter 0.16s ease;
+}
+
+.sim-map-option::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  border-radius: 18px 0 0 18px;
+  background: linear-gradient(180deg, rgba(255,189,164,0.95), rgba(175,213,255,0.95));
+  opacity: 0.92;
 }
 
 .sim-map-option:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 24px rgba(114, 86, 68, 0.14);
   border-color: rgba(255, 214, 164, 0.95);
+  filter: saturate(1.03);
 }
 
 .sim-map-option strong {
@@ -3380,12 +3398,28 @@ body.sim-arena-zoom-lock {
   opacity: 0.92;
 }
 
+.sim-map-option[data-sim-map-id="classic"]::before {
+  background: linear-gradient(180deg, #7dc9ff, #ffd166);
+}
+
+.sim-map-option[data-sim-map-id="bomb"]::before {
+  background: linear-gradient(180deg, #ffb57a, #ff6b88);
+}
+
 .sim-map-option[data-sim-map-id="bomb"] .sim-map-preview i {
   background: linear-gradient(90deg, #ffc49e, #ff7f7f);
 }
 
+.sim-map-option[data-sim-map-id="rotor"]::before {
+  background: linear-gradient(180deg, #b69cff, #62e4c5);
+}
+
 .sim-map-option[data-sim-map-id="rotor"] .sim-map-preview i {
   background: linear-gradient(90deg, #d7d9ff, #b8f0d6);
+}
+
+.sim-map-option[data-sim-map-id="pinball"]::before {
+  background: linear-gradient(180deg, #ffd166, #7dd3fc);
 }
 
 .sim-map-option[data-sim-map-id="pinball"] .sim-map-preview i {
@@ -5513,4 +5547,1264 @@ body.sim-arena-zoom-lock {
   #game5Screen .naval-sidebar .slot-legend {
     max-height: 238px;
   }
+}
+
+
+/* =========================
+   utility controls : theme / fullscreen
+========================= */
+
+html {
+  color-scheme: light;
+}
+
+html.theme-dark {
+  color-scheme: dark;
+  --bg: #161219;
+  --bg2: #0f0d14;
+  --card: rgba(30, 24, 34, 0.9);
+  --card-strong: rgba(35, 28, 40, 0.94);
+  --brown: #f3e7dc;
+  --soft-brown: #f8c9d9;
+  --pink: #ff9fc0;
+  --mint: #66d4bb;
+  --sky: #83befe;
+  --lavender: #b5a2ff;
+  --yellow: #f0c35a;
+  --peach: #ffb893;
+  --shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+  --night-surface-1: #0f1726;
+  --night-surface-2: #152238;
+  --night-surface-3: #21334f;
+  --night-surface-4: #2c4366;
+  --night-border: rgba(120, 189, 255, 0.32);
+  --night-border-strong: rgba(149, 211, 255, 0.58);
+  --night-text: #f4f8ff;
+  --night-text-2: #d7e5fb;
+  --night-text-3: #aebfdc;
+  --night-muted-chip: #1d2a3d;
+}
+
+body {
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+button,
+input,
+.card,
+.controls-wrap,
+.scoreboard-card,
+.game-board-card,
+.race-panel,
+.race-track-wrap,
+.battle-table-card,
+.battle-panel,
+.sim-setup-card,
+.sim-arena-card,
+.sim-battle-summary-card,
+.naval-board-card,
+.popup,
+.orientation-lock-card {
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.utility-controls {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.utility-btn {
+  min-width: 132px;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-radius: 999px;
+  pointer-events: auto;
+  background: rgba(255, 250, 245, 0.94);
+  color: var(--soft-brown);
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  box-shadow: 0 12px 24px rgba(90, 70, 60, 0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-weight: 700;
+}
+
+.utility-btn:hover {
+  transform: translateY(-2px);
+}
+
+.utility-btn-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.utility-btn-label {
+  font-size: 0.94rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.utility-btn.is-unsupported {
+  opacity: 0.82;
+}
+
+body.orientation-blocked .utility-controls {
+  opacity: 0;
+  pointer-events: none;
+}
+
+html.theme-dark body {
+  background:
+    radial-gradient(circle at top left, rgba(255, 151, 189, 0.12), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(130, 190, 254, 0.14), transparent 28%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+  color: var(--brown);
+}
+
+html.theme-dark .background-deco {
+  opacity: 0.24;
+  filter: blur(8px);
+}
+
+html.theme-dark .card,
+html.theme-dark .controls-wrap,
+html.theme-dark .scoreboard-card,
+html.theme-dark .game-board-card,
+html.theme-dark .race-panel,
+html.theme-dark .battle-table-card,
+html.theme-dark .battle-panel,
+html.theme-dark .sim-setup-card,
+html.theme-dark .sim-arena-card,
+html.theme-dark .sim-battle-summary-card,
+html.theme-dark .naval-board-card,
+html.theme-dark .popup,
+html.theme-dark .orientation-lock-card,
+html.theme-dark .game-sidebar,
+html.theme-dark .race-sidebar,
+html.theme-dark .battle-sidebar,
+html.theme-dark .sim-sidebar,
+html.theme-dark .naval-sidebar {
+  background: rgba(26, 20, 31, 0.92);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+html.theme-dark .small-badge,
+html.theme-dark .battle-deck-label,
+html.theme-dark .sim-phase-badge,
+html.theme-dark .battle-result-pill,
+html.theme-dark .battle-final-rank,
+html.theme-dark .battle-final-result-box,
+html.theme-dark .legend-chip,
+html.theme-dark .race-ranking-item,
+html.theme-dark .battle-ranking-item,
+html.theme-dark .battle-ranking-empty,
+html.theme-dark .sim-empty-state,
+html.theme-dark .naval-log-item,
+html.theme-dark .naval-ranking-item,
+html.theme-dark .naval-player-chip,
+html.theme-dark .naval-elimination-item {
+  background: rgba(47, 37, 55, 0.96);
+  color: #f0e7df;
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+html.theme-dark .back-btn,
+html.theme-dark .popup-btn,
+html.theme-dark .sim-info-btn,
+html.theme-dark .sim-arena-zoom-btn,
+html.theme-dark .utility-btn {
+  background: rgba(40, 32, 48, 0.94);
+  color: #f4e9df;
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+}
+
+html.theme-dark .main-btn {
+  background: linear-gradient(135deg, #ff9fc0, #f7b0ff);
+  color: #1a141e;
+  box-shadow: 0 12px 24px rgba(255, 143, 184, 0.2);
+}
+
+html.theme-dark .menu-btn.physical,
+html.theme-dark .menu-btn.luck,
+html.theme-dark .game-item,
+html.theme-dark .game-item.game-launch,
+html.theme-dark .action-btn.secondary,
+html.theme-dark .drawer-toggle-btn {
+  background: linear-gradient(180deg, rgba(46, 37, 55, 0.96) 0%, rgba(36, 29, 44, 0.96) 100%);
+  color: #f3e7dc;
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+html.theme-dark .action-btn.primary {
+  background: linear-gradient(135deg, #ff9fc0, #f0b8ff);
+  color: #1a141e;
+}
+
+html.theme-dark .action-btn.soft {
+  background: linear-gradient(135deg, #f0c35a, #ffdd8d);
+  color: #241d15;
+}
+
+html.theme-dark .game-item:nth-child(2),
+html.theme-dark .game-item:nth-child(3),
+html.theme-dark .game-item:nth-child(4),
+html.theme-dark .game-item:nth-child(5),
+html.theme-dark .game-item:nth-child(6),
+html.theme-dark .game-item:nth-child(7),
+html.theme-dark .game-item:nth-child(8) {
+  background: linear-gradient(180deg, rgba(46, 37, 55, 0.96) 0%, rgba(36, 29, 44, 0.96) 100%);
+}
+
+html.theme-dark .sub-text,
+html.theme-dark .helper-text,
+html.theme-dark .status-text,
+html.theme-dark #totalInfo,
+html.theme-dark .game-item p,
+html.theme-dark .popup-message,
+html.theme-dark .horse-status,
+html.theme-dark .battle-rank-formula,
+html.theme-dark .battle-player-sub,
+html.theme-dark .sim-player-sub,
+html.theme-dark .game-board-head span,
+html.theme-dark .orientation-lock-card p,
+html.theme-dark .race-ranking-item div {
+  color: rgba(240, 231, 223, 0.72) !important;
+}
+
+html.theme-dark .game-num,
+html.theme-dark .battle-rank-num {
+  background: linear-gradient(135deg, rgba(131, 190, 254, 0.94), rgba(181, 162, 255, 0.94));
+  color: #130f17;
+}
+
+html.theme-dark .slot-name,
+html.theme-dark .slot-meta,
+html.theme-dark .horse-name,
+html.theme-dark .battle-player-name,
+html.theme-dark .sim-player-name,
+html.theme-dark .battle-rank-name,
+html.theme-dark .race-lane-label {
+  color: #f5ebe2;
+}
+
+html.theme-dark .input-card input,
+html.theme-dark input:disabled {
+  background: rgba(19, 15, 24, 0.9);
+  color: #f2e7df;
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+html.theme-dark .input-card input:focus {
+  border-color: rgba(131, 190, 254, 0.75);
+  box-shadow: 0 0 0 5px rgba(131, 190, 254, 0.14);
+}
+
+html.theme-dark .game-canvas-wrap,
+html.theme-dark .race-track-wrap,
+html.theme-dark .sim-arena-wrap,
+html.theme-dark .sim-arena-zoom-stage,
+html.theme-dark .naval-board-wrap,
+html.theme-dark .battle-table-card {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.05), transparent 24%),
+    linear-gradient(180deg, #261e2d 0%, #19151f 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 16px 28px rgba(0, 0, 0, 0.25);
+}
+
+html.theme-dark .race-lane {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.06) 0px,
+      rgba(255, 255, 255, 0.06) 28px,
+      rgba(255, 255, 255, 0.02) 28px,
+      rgba(255, 255, 255, 0.02) 56px
+    ),
+    linear-gradient(180deg, #4c3a43 0%, #362832 100%);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+html.theme-dark .race-horse,
+html.theme-dark .battle-row,
+html.theme-dark .sim-player-row,
+html.theme-dark .battle-slot,
+html.theme-dark .battle-card-front,
+html.theme-dark .sim-stat-card-front {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.22);
+}
+
+html.theme-dark .popup-overlay {
+  background: rgba(5, 3, 8, 0.6);
+}
+
+html.theme-dark .orientation-lock-overlay {
+  background: rgba(12, 9, 16, 0.9);
+}
+
+html.theme-dark .slot-box {
+  box-shadow: inset 0 -10px 25px rgba(0, 0, 0, 0.16);
+}
+
+html.theme-dark .drawer-backdrop,
+html.theme-dark #simArenaZoomBackdrop {
+  background: rgba(7, 5, 10, 0.58);
+}
+
+@media (max-width: 1024px) {
+  .utility-controls {
+    top: 18px;
+    right: 18px;
+  }
+
+  .utility-btn {
+    min-width: 124px;
+    min-height: 50px;
+    padding-inline: 14px;
+  }
+}
+
+@media (max-width: 767px) {
+  .utility-controls {
+    top: auto;
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    gap: 10px;
+  }
+
+  .utility-btn {
+    min-width: 52px;
+    width: 52px;
+    min-height: 52px;
+    padding: 0;
+    border-radius: 18px;
+  }
+
+  .utility-btn-label {
+    display: none;
+  }
+
+  .utility-btn-icon {
+    font-size: 1.15rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1180px) and (pointer: coarse) {
+  .utility-controls {
+    top: auto;
+    right: 18px;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+  }
+}
+
+
+/* =========================
+   game4 : stronger night-mode contrast fixes
+========================= */
+
+html.theme-dark .popup.sim-map-popup {
+  max-width: 760px;
+}
+
+html.theme-dark .sim-map-note {
+  color: var(--night-text-2) !important;
+}
+
+html.theme-dark .sim-map-option {
+  background:
+    linear-gradient(180deg, rgba(26, 39, 63, 0.98) 0%, rgba(13, 21, 37, 1) 100%) !important;
+  border-color: rgba(125, 211, 252, 0.22) !important;
+  box-shadow:
+    0 18px 28px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+html.theme-dark .sim-map-option:hover {
+  border-color: rgba(125, 211, 252, 0.48) !important;
+  box-shadow:
+    0 22px 34px rgba(0, 0, 0, 0.40),
+    0 0 0 1px rgba(125, 211, 252, 0.12) !important;
+}
+
+html.theme-dark .sim-map-option strong {
+  color: var(--night-text) !important;
+}
+
+html.theme-dark .sim-map-option span {
+  color: var(--night-text-3) !important;
+}
+
+html.theme-dark .sim-map-preview i {
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 6px 12px rgba(0,0,0,0.22);
+}
+
+html.theme-dark .sim-arena-wrap {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(125, 211, 252, 0.10), transparent 36%),
+    radial-gradient(circle at 20% 18%, rgba(182, 156, 255, 0.08), transparent 28%),
+    linear-gradient(180deg, #0b1322 0%, #08101c 100%) !important;
+  border-color: rgba(125, 211, 252, 0.18) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.04),
+    0 18px 34px rgba(0, 0, 0, 0.34) !important;
+}
+
+html.theme-dark .sim-arena-wrap::before {
+  color: rgba(220, 234, 255, 0.42);
+}
+
+html.theme-dark .sim-ball-label {
+  background:
+    linear-gradient(180deg, rgba(19, 29, 48, 0.96) 0%, rgba(10, 17, 30, 0.98) 100%) !important;
+  border-color: rgba(125, 211, 252, 0.30) !important;
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+
+html.theme-dark .sim-ball-name,
+html.theme-dark .sim-ball-hptext {
+  color: var(--night-text) !important;
+}
+
+html.theme-dark .sim-ball-place {
+  background: linear-gradient(180deg, rgba(255, 215, 110, 0.98) 0%, rgba(255, 168, 76, 0.98) 100%) !important;
+  color: #241404 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.32), 0 3px 8px rgba(0,0,0,0.24) !important;
+}
+
+html.theme-dark .sim-ball-hpbar {
+  background: linear-gradient(180deg, rgba(130, 152, 187, 0.16) 0%, rgba(48, 63, 89, 0.48) 100%) !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.34) !important;
+}
+
+html.theme-dark .sim-ball-hpbar::after {
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+html.theme-dark .sim-ball-hpbar span {
+  background: linear-gradient(90deg, #ff6b8a 0%, #ffbf69 42%, #5eead4 100%) !important;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.20), 0 0 12px rgba(94, 234, 212, 0.18) !important;
+}
+
+html.theme-dark .sim-ball-label.is-dead {
+  background: linear-gradient(180deg, rgba(24, 30, 40, 0.62) 0%, rgba(10, 14, 22, 0.72) 100%) !important;
+  border-color: rgba(125, 211, 252, 0.08) !important;
+  opacity: 0.4;
+}
+
+html.theme-dark .sim-ball-label.is-dead .sim-ball-name,
+html.theme-dark .sim-ball-label.is-dead .sim-ball-hptext {
+  color: rgba(190, 204, 224, 0.62) !important;
+}
+
+html.theme-dark .sim-ball-label.is-hit {
+  box-shadow:
+    0 0 0 3px rgba(255, 132, 150, 0.42),
+    0 0 26px rgba(255, 120, 144, 0.26),
+    0 10px 24px rgba(0, 0, 0, 0.32) !important;
+}
+
+html.theme-dark .sim-shrink-zone.is-danger {
+  border-color: rgba(255, 112, 146, 0.92);
+  box-shadow: 0 0 0 1px rgba(255, 112, 146, 0.12), 0 0 26px rgba(255, 112, 146, 0.16);
+}
+
+html.theme-dark .sim-summary-table {
+  background:
+    linear-gradient(180deg, rgba(14, 23, 40, 0.98) 0%, rgba(9, 16, 30, 1) 100%) !important;
+  border-color: rgba(125, 211, 252, 0.18) !important;
+}
+
+html.theme-dark .sim-summary-table th,
+html.theme-dark .sim-summary-table td {
+  color: var(--night-text) !important;
+  border-bottom-color: rgba(125, 211, 252, 0.10) !important;
+}
+
+html.theme-dark .sim-summary-table th {
+  background:
+    linear-gradient(180deg, rgba(39, 56, 86, 0.98) 0%, rgba(24, 36, 57, 0.98) 100%) !important;
+  color: #f8d4e4 !important;
+}
+
+html.theme-dark .sim-summary-table tbody tr:nth-child(odd) td {
+  background: rgba(12, 22, 38, 0.28) !important;
+}
+
+html.theme-dark .sim-summary-table tbody tr:nth-child(even) td {
+  background: rgba(32, 45, 71, 0.42) !important;
+}
+
+html.theme-dark .sim-summary-name {
+  color: var(--night-text) !important;
+}
+
+html.theme-dark .sim-stat-card.type-health .sim-stat-card-front {
+  background: linear-gradient(180deg, rgba(90, 38, 66, 0.98) 0%, rgba(47, 19, 35, 0.98) 100%) !important;
+}
+
+html.theme-dark .sim-stat-card.type-attack .sim-stat-card-front {
+  background: linear-gradient(180deg, rgba(105, 62, 29, 0.98) 0%, rgba(57, 31, 11, 0.98) 100%) !important;
+}
+
+html.theme-dark .sim-stat-card.type-accuracy .sim-stat-card-front {
+  background: linear-gradient(180deg, rgba(33, 68, 109, 0.98) 0%, rgba(16, 35, 61, 0.98) 100%) !important;
+}
+
+html.theme-dark .sim-stat-card.type-defense .sim-stat-card-front {
+  background: linear-gradient(180deg, rgba(27, 87, 76, 0.98) 0%, rgba(12, 43, 39, 0.98) 100%) !important;
+}
+
+html.theme-dark .sim-stat-card-front small,
+html.theme-dark .sim-stat-card-front strong {
+  color: var(--night-text) !important;
+}
+
+
+/* =========================
+   game4 : night mode readability refresh v2
+========================= */
+html.theme-dark .popup.sim-map-popup {
+  background:
+    radial-gradient(circle at top center, rgba(139, 194, 255, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(17, 28, 48, 0.98) 0%, rgba(9, 16, 30, 0.99) 100%) !important;
+  border-color: rgba(122, 188, 255, 0.22) !important;
+  box-shadow:
+    0 24px 54px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 0 1px rgba(88, 135, 201, 0.16) !important;
+}
+
+html.theme-dark .popup.sim-map-popup h3 {
+  color: #f7d7e6 !important;
+}
+
+html.theme-dark .popup.sim-map-popup .popup-message {
+  color: var(--night-text-2) !important;
+}
+
+html.theme-dark .popup.sim-map-popup .popup-icon {
+  filter: drop-shadow(0 8px 16px rgba(107, 163, 255, 0.22));
+}
+
+html.theme-dark .sim-map-note {
+  color: var(--night-text-2) !important;
+}
+
+html.theme-dark .sim-map-picker {
+  gap: 14px;
+}
+
+html.theme-dark .sim-map-option {
+  background:
+    linear-gradient(180deg, rgba(28, 42, 67, 0.98) 0%, rgba(15, 24, 41, 1) 100%) !important;
+  border: 2px solid rgba(132, 195, 255, 0.24) !important;
+  box-shadow:
+    0 16px 28px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28) !important;
+}
+
+html.theme-dark .sim-map-option::before {
+  opacity: 1 !important;
+}
+
+html.theme-dark .sim-map-option:hover {
+  border-color: rgba(132, 195, 255, 0.52) !important;
+  transform: translateY(-3px);
+  box-shadow:
+    0 22px 34px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(132, 195, 255, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+html.theme-dark .sim-map-option strong {
+  color: var(--night-text) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.24);
+}
+
+html.theme-dark .sim-map-option span {
+  color: var(--night-text-2) !important;
+}
+
+html.theme-dark .sim-map-preview i {
+  opacity: 1 !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08),
+    0 6px 12px rgba(0,0,0,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.14);
+}
+
+html.theme-dark #game4Screen .sim-setup-card {
+  background:
+    radial-gradient(circle at top center, rgba(170, 132, 255, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(21, 18, 33, 0.98) 0%, rgba(14, 12, 23, 0.99) 100%) !important;
+  border-color: rgba(145, 121, 219, 0.16) !important;
+}
+
+html.theme-dark #game4Screen .sim-deck {
+  filter: drop-shadow(0 14px 26px rgba(91, 74, 155, 0.24));
+}
+
+html.theme-dark #game4Screen .sim-player-row {
+  background:
+    linear-gradient(180deg, rgba(28, 26, 38, 0.96) 0%, rgba(19, 18, 29, 0.98) 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+html.theme-dark #game4Screen .sim-player-name {
+  color: #f6f2ee !important;
+}
+
+html.theme-dark #game4Screen .sim-player-sub {
+  color: rgba(229, 222, 240, 0.84) !important;
+}
+
+html.theme-dark #game4Screen .sim-player-total {
+  background: linear-gradient(180deg, rgba(255, 233, 178, 0.98) 0%, rgba(243, 205, 118, 0.98) 100%) !important;
+  color: #3e2a07 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.40),
+    0 8px 16px rgba(0,0,0,0.22) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card-face {
+  border-color: rgba(255,255,255,0.11) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card-back {
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.22), transparent 24%),
+    linear-gradient(145deg, #7759ef 0%, #5689f0 52%, #51d8c4 100%) !important;
+  box-shadow:
+    0 14px 28px rgba(31, 20, 64, 0.36),
+    inset 0 1px 0 rgba(255,255,255,0.22) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card.type-health .sim-stat-card-front {
+  background: linear-gradient(180deg, #6e2e56 0%, #3e1931 100%) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card.type-attack .sim-stat-card-front {
+  background: linear-gradient(180deg, #7b4b1f 0%, #43250d 100%) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card.type-accuracy .sim-stat-card-front {
+  background: linear-gradient(180deg, #26598a 0%, #16304e 100%) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card.type-defense .sim-stat-card-front {
+  background: linear-gradient(180deg, #1f6b5f 0%, #12392f 100%) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card-front small {
+  color: rgba(236, 244, 255, 0.86) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card-front strong {
+  color: #ffffff !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.22);
+}
+
+html.theme-dark #game4Screen .sim-summary-table {
+  background:
+    linear-gradient(180deg, rgba(18, 28, 45, 0.98) 0%, rgba(10, 18, 32, 1) 100%) !important;
+  border: 1px solid rgba(132, 195, 255, 0.16) !important;
+}
+
+html.theme-dark #game4Screen .sim-summary-table th {
+  background:
+    linear-gradient(180deg, rgba(45, 64, 96, 0.98) 0%, rgba(27, 40, 64, 0.98) 100%) !important;
+  color: #ffd7e6 !important;
+}
+
+html.theme-dark #game4Screen .sim-summary-table td {
+  color: var(--night-text) !important;
+  border-bottom-color: rgba(132, 195, 255, 0.10) !important;
+}
+
+html.theme-dark #game4Screen .sim-summary-table tbody tr:nth-child(odd) td {
+  background: rgba(12, 22, 38, 0.36) !important;
+}
+
+html.theme-dark #game4Screen .sim-summary-table tbody tr:nth-child(even) td {
+  background: rgba(30, 46, 73, 0.56) !important;
+}
+
+html.theme-dark #game4Screen .sim-summary-name,
+html.theme-dark #game4Screen .sim-panel-head h3,
+html.theme-dark #game4Screen .sim-panel-head .sub-text,
+html.theme-dark #game4Screen .sim-setup-head,
+html.theme-dark #game4Screen .sim-phase-badge,
+html.theme-dark #game4Screen .sim-main-header .sub-text {
+  color: var(--night-text) !important;
+}
+
+/* =========================
+   final night-theme palette review
+   layout preserved, color system only refined
+========================= */
+html.theme-dark {
+  --night-bg-0: #07111f;
+  --night-bg-1: #0b1627;
+  --night-surface-a: rgba(12, 22, 38, 0.96);
+  --night-surface-b: rgba(17, 29, 48, 0.98);
+  --night-surface-c: rgba(24, 39, 63, 0.98);
+  --night-surface-d: rgba(32, 52, 82, 0.98);
+  --night-line-soft: rgba(147, 203, 255, 0.14);
+  --night-line-mid: rgba(147, 203, 255, 0.22);
+  --night-line-strong: rgba(157, 213, 255, 0.38);
+  --night-title: #f7d6e5;
+  --night-copy: #eef5ff;
+  --night-copy-soft: #cad8ea;
+  --night-copy-muted: #9fb3cb;
+  --night-chip: rgba(20, 33, 54, 0.95);
+  --night-chip-2: rgba(31, 48, 74, 0.95);
+  --night-gold-1: #ffe08a;
+  --night-gold-2: #f4bf57;
+  --night-pink-1: #ff8fb6;
+  --night-pink-2: #ffc7db;
+  --night-blue-1: #78cbff;
+  --night-blue-2: #bfe6ff;
+  --night-teal-1: #64e9d3;
+  --night-purple-1: #c9b9ff;
+}
+
+html.theme-dark body {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(120, 170, 255, 0.14), transparent 26%),
+    radial-gradient(circle at 100% 100%, rgba(255, 133, 182, 0.12), transparent 24%),
+    linear-gradient(180deg, var(--night-bg-1) 0%, var(--night-bg-0) 100%) !important;
+  color: var(--night-copy) !important;
+}
+
+html.theme-dark .main-card h1,
+html.theme-dark .menu-card h2,
+html.theme-dark .luck-card h2,
+html.theme-dark .game-card h2,
+html.theme-dark .popup h3,
+html.theme-dark .sidebar-title,
+html.theme-dark .game-item h3,
+html.theme-dark .scoreboard-head h3,
+html.theme-dark .game-board-head h3,
+html.theme-dark .race-panel-head h3,
+html.theme-dark .battle-panel-head h3,
+html.theme-dark .sim-panel-head h3,
+html.theme-dark .naval-panel-head h3,
+html.theme-dark .orientation-lock-card h3 {
+  color: var(--night-title) !important;
+}
+
+html.theme-dark .sub-text,
+html.theme-dark .helper-text,
+html.theme-dark .status-text,
+html.theme-dark #totalInfo,
+html.theme-dark .game-item p,
+html.theme-dark .popup-message,
+html.theme-dark .horse-status,
+html.theme-dark .battle-rank-formula,
+html.theme-dark .battle-player-sub,
+html.theme-dark .sim-player-sub,
+html.theme-dark .game-board-head span,
+html.theme-dark .orientation-lock-card p,
+html.theme-dark .race-ranking-item div,
+html.theme-dark .naval-board-meta,
+html.theme-dark .naval-board-meta span,
+html.theme-dark .battle-final-result-box small,
+html.theme-dark .sim-map-note,
+html.theme-dark .popup .popup-message {
+  color: var(--night-copy-soft) !important;
+}
+
+html.theme-dark .card,
+html.theme-dark .controls-wrap,
+html.theme-dark .scoreboard-card,
+html.theme-dark .game-board-card,
+html.theme-dark .race-panel,
+html.theme-dark .battle-table-card,
+html.theme-dark .battle-panel,
+html.theme-dark .sim-setup-card,
+html.theme-dark .sim-arena-card,
+html.theme-dark .sim-battle-summary-card,
+html.theme-dark .naval-board-card,
+html.theme-dark .popup,
+html.theme-dark .orientation-lock-card,
+html.theme-dark .game-sidebar,
+html.theme-dark .race-sidebar,
+html.theme-dark .battle-sidebar,
+html.theme-dark .sim-sidebar,
+html.theme-dark .naval-sidebar,
+html.theme-dark #game3Screen .battle-main-header,
+html.theme-dark #game5Screen .naval-main-header,
+html.theme-dark body.game1-mode.game1-mobile-layout .game-main-header {
+  background:
+    radial-gradient(circle at top center, rgba(124, 186, 255, 0.08), transparent 28%),
+    linear-gradient(180deg, var(--night-surface-b) 0%, var(--night-surface-a) 100%) !important;
+  border-color: var(--night-line-soft) !important;
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(110, 160, 225, 0.08) !important;
+}
+
+html.theme-dark .small-badge,
+html.theme-dark .battle-deck-label,
+html.theme-dark .sim-phase-badge,
+html.theme-dark .battle-result-pill,
+html.theme-dark .battle-final-rank,
+html.theme-dark .battle-final-result-box,
+html.theme-dark .legend-chip,
+html.theme-dark .race-ranking-item,
+html.theme-dark .battle-ranking-item,
+html.theme-dark .battle-ranking-empty,
+html.theme-dark .sim-empty-state,
+html.theme-dark .naval-log-item,
+html.theme-dark .naval-ranking-item,
+html.theme-dark .naval-player-chip,
+html.theme-dark .naval-elimination-item,
+html.theme-dark .sim-player-total,
+html.theme-dark .battle-rank-score,
+html.theme-dark .race-lane-label,
+html.theme-dark .battle-final-result-box,
+html.theme-dark .battle-final-rank {
+  background: linear-gradient(180deg, var(--night-chip) 0%, rgba(14, 25, 42, 0.98) 100%) !important;
+  color: var(--night-copy) !important;
+  border-color: var(--night-line-soft) !important;
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
+html.theme-dark .small-badge,
+html.theme-dark .sim-phase-badge,
+html.theme-dark .battle-deck-label {
+  color: var(--night-pink-2) !important;
+}
+
+html.theme-dark .back-btn,
+html.theme-dark .popup-btn,
+html.theme-dark .sim-info-btn,
+html.theme-dark .sim-arena-zoom-btn,
+html.theme-dark .utility-btn,
+html.theme-dark .mobile-back-btn,
+html.theme-dark .mobile-race-back-btn,
+html.theme-dark .battle-mobile-back-btn,
+html.theme-dark .sim-mobile-back-btn,
+html.theme-dark .naval-mobile-back-btn {
+  background: linear-gradient(180deg, rgba(26, 42, 66, 0.98) 0%, rgba(16, 28, 46, 0.98) 100%) !important;
+  color: var(--night-copy) !important;
+  border: 2px solid var(--night-line-soft) !important;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+html.theme-dark .back-btn:hover,
+html.theme-dark .popup-btn:hover,
+html.theme-dark .sim-info-btn:hover,
+html.theme-dark .sim-arena-zoom-btn:hover,
+html.theme-dark .utility-btn:hover,
+html.theme-dark .drawer-toggle-btn:hover {
+  border-color: var(--night-line-mid) !important;
+}
+
+html.theme-dark .main-btn,
+html.theme-dark .action-btn.primary {
+  background: linear-gradient(135deg, var(--night-pink-1), #d7a9ff 100%) !important;
+  color: #140d18 !important;
+  border: none !important;
+  box-shadow: 0 14px 28px rgba(255, 125, 182, 0.24) !important;
+}
+
+html.theme-dark .action-btn.secondary,
+html.theme-dark .menu-btn.physical,
+html.theme-dark .menu-btn.luck,
+html.theme-dark .game-item,
+html.theme-dark .game-item.game-launch,
+html.theme-dark .drawer-toggle-btn {
+  background: linear-gradient(180deg, var(--night-surface-c) 0%, var(--night-surface-b) 100%) !important;
+  color: var(--night-copy) !important;
+  border: 2px solid var(--night-line-soft) !important;
+}
+
+html.theme-dark .action-btn.soft {
+  background: linear-gradient(135deg, var(--night-gold-1), var(--night-gold-2)) !important;
+  color: #23170a !important;
+  border: none !important;
+}
+
+html.theme-dark .menu-btn .emoji,
+html.theme-dark .popup-icon,
+html.theme-dark .orientation-lock-icon {
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
+}
+
+html.theme-dark .game-num,
+html.theme-dark .battle-rank-num {
+  background: linear-gradient(135deg, var(--night-blue-1), var(--night-purple-1)) !important;
+  color: #0d1018 !important;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.26) !important;
+}
+
+html.theme-dark .input-card label,
+html.theme-dark .scoreboard-head h3,
+html.theme-dark .scoreboard-head span,
+html.theme-dark .slot-name,
+html.theme-dark .slot-meta,
+html.theme-dark .horse-name,
+html.theme-dark .battle-player-name,
+html.theme-dark .sim-player-name,
+html.theme-dark .battle-rank-name,
+html.theme-dark .naval-cell-label,
+html.theme-dark .naval-cell-mark,
+html.theme-dark .popup h3,
+html.theme-dark .popup strong {
+  color: var(--night-copy) !important;
+}
+
+html.theme-dark .input-card input,
+html.theme-dark input:disabled {
+  background: linear-gradient(180deg, rgba(7, 14, 26, 0.98) 0%, rgba(12, 20, 35, 0.98) 100%) !important;
+  color: var(--night-copy) !important;
+  border: 2px solid var(--night-line-soft) !important;
+}
+
+html.theme-dark .input-card input::placeholder {
+  color: rgba(191, 208, 229, 0.56);
+}
+
+html.theme-dark .input-card input:focus {
+  border-color: var(--night-line-strong) !important;
+  box-shadow: 0 0 0 5px rgba(120, 203, 255, 0.12) !important;
+}
+
+html.theme-dark .game-canvas-wrap,
+html.theme-dark .race-track-wrap,
+html.theme-dark .sim-arena-wrap,
+html.theme-dark .sim-arena-zoom-stage,
+html.theme-dark .naval-board-wrap,
+html.theme-dark .battle-table-card,
+html.theme-dark .battle-table-card,
+html.theme-dark .battle-panel,
+html.theme-dark .game-board-card,
+html.theme-dark .race-panel,
+html.theme-dark .sim-arena-card,
+html.theme-dark .naval-board-card {
+  background:
+    radial-gradient(circle at top center, rgba(124, 186, 255, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(10, 18, 33, 0.98) 0%, rgba(7, 13, 24, 1) 100%) !important;
+  border-color: var(--night-line-soft) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 18px 34px rgba(0, 0, 0, 0.32) !important;
+}
+
+html.theme-dark .slot-box {
+  border-color: rgba(241, 248, 255, 0.10) !important;
+  box-shadow: inset 0 -12px 22px rgba(0, 0, 0, 0.22) !important;
+}
+
+html.theme-dark .race-lane {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.05) 28px,
+      rgba(255, 255, 255, 0.015) 28px,
+      rgba(255, 255, 255, 0.015) 56px
+    ),
+    linear-gradient(180deg, rgba(37, 54, 84, 0.98) 0%, rgba(21, 33, 54, 0.98) 100%) !important;
+  border-color: var(--night-line-soft) !important;
+}
+
+html.theme-dark .race-start-line {
+  background: repeating-linear-gradient(180deg, #f8fbff 0 8px, #84c7ff 8px 16px) !important;
+}
+
+html.theme-dark .race-finish-line {
+  background: repeating-linear-gradient(180deg, #f8fbff 0 8px, #19263b 8px 16px) !important;
+}
+
+html.theme-dark .race-horse,
+html.theme-dark .battle-row,
+html.theme-dark .battle-slot,
+html.theme-dark .battle-card-front,
+html.theme-dark .sim-player-row,
+html.theme-dark .sim-stat-card-front,
+html.theme-dark .naval-cell,
+html.theme-dark .naval-log-item,
+html.theme-dark .naval-ranking-item,
+html.theme-dark .naval-player-chip {
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
+html.theme-dark .battle-row,
+html.theme-dark .sim-player-row,
+html.theme-dark .battle-slot,
+html.theme-dark .naval-cell,
+html.theme-dark .naval-player-chip,
+html.theme-dark .naval-log-item,
+html.theme-dark .naval-ranking-item {
+  background: linear-gradient(180deg, rgba(21, 32, 52, 0.98) 0%, rgba(13, 22, 37, 0.98) 100%) !important;
+  border-color: var(--night-line-soft) !important;
+}
+
+html.theme-dark .battle-card-front {
+  background: linear-gradient(180deg, rgba(16, 28, 47, 0.98) 0%, rgba(11, 20, 34, 0.98) 100%) !important;
+  border-color: var(--night-line-soft) !important;
+  color: var(--night-copy) !important;
+}
+
+html.theme-dark .battle-card.type-operator .battle-card-front {
+  background: linear-gradient(180deg, rgba(33, 66, 112, 0.98) 0%, rgba(20, 37, 68, 0.98) 100%) !important;
+}
+
+html.theme-dark .battle-card.type-result .battle-card-front {
+  background: linear-gradient(180deg, rgba(101, 76, 23, 0.98) 0%, rgba(57, 39, 10, 0.98) 100%) !important;
+}
+
+html.theme-dark .battle-card-back {
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.22), transparent 23%),
+    linear-gradient(145deg, #8161ff 0%, #5d8ef7 48%, #5ae0cc 100%) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html.theme-dark .battle-result-pill,
+html.theme-dark .battle-final-rank {
+  background: linear-gradient(180deg, rgba(41, 56, 88, 0.98) 0%, rgba(23, 37, 61, 0.98) 100%) !important;
+}
+
+html.theme-dark .battle-final-result-box,
+html.theme-dark .battle-rank-score,
+html.theme-dark .sim-player-total,
+html.theme-dark .battle-result-pill,
+html.theme-dark .battle-final-rank {
+  border-color: rgba(255, 221, 150, 0.24) !important;
+}
+
+html.theme-dark .battle-final-result-box strong,
+html.theme-dark .battle-result-pill span,
+html.theme-dark .battle-result-pill strong,
+html.theme-dark .battle-final-rank strong,
+html.theme-dark .battle-rank-score {
+  color: var(--night-gold-1) !important;
+}
+
+html.theme-dark .sim-panel-head h3,
+html.theme-dark .sim-panel-head .sub-text,
+html.theme-dark .sim-main-header .sub-text,
+html.theme-dark .sim-summary-name,
+html.theme-dark .sim-setup-head,
+html.theme-dark .sim-player-name,
+html.theme-dark .sim-player-sub,
+html.theme-dark .sim-stat-card-front small,
+html.theme-dark .sim-stat-card-front strong,
+html.theme-dark .sim-summary-table th,
+html.theme-dark .sim-summary-table td,
+html.theme-dark .sim-map-option strong,
+html.theme-dark .sim-map-option span,
+html.theme-dark .sim-ball-name,
+html.theme-dark .sim-ball-hptext {
+  color: var(--night-copy) !important;
+}
+
+html.theme-dark .popup.sim-map-popup {
+  background:
+    radial-gradient(circle at top center, rgba(124, 186, 255, 0.15), transparent 26%),
+    linear-gradient(180deg, rgba(14, 24, 41, 0.99) 0%, rgba(8, 14, 25, 1) 100%) !important;
+  border-color: var(--night-line-mid) !important;
+}
+
+html.theme-dark .sim-map-picker {
+  gap: 14px;
+}
+
+html.theme-dark .sim-map-option {
+  background: linear-gradient(180deg, rgba(24, 39, 63, 0.98) 0%, rgba(14, 24, 41, 1) 100%) !important;
+  border: 2px solid var(--night-line-soft) !important;
+  box-shadow:
+    0 16px 28px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+html.theme-dark .sim-map-option:hover {
+  border-color: var(--night-line-strong) !important;
+  box-shadow:
+    0 20px 34px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(124, 186, 255, 0.12) !important;
+}
+
+html.theme-dark .sim-map-option strong {
+  color: var(--night-title) !important;
+}
+
+html.theme-dark .sim-map-option span {
+  color: var(--night-copy-soft) !important;
+}
+
+html.theme-dark .sim-map-preview i {
+  opacity: 1 !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 6px 12px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+html.theme-dark #game4Screen .sim-setup-card {
+  background:
+    radial-gradient(circle at top center, rgba(201, 185, 255, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(15, 20, 35, 0.99) 0%, rgba(9, 12, 24, 1) 100%) !important;
+  border-color: var(--night-line-soft) !important;
+}
+
+html.theme-dark #game4Screen .sim-player-row {
+  background: linear-gradient(180deg, rgba(18, 29, 48, 0.98) 0%, rgba(12, 20, 34, 1) 100%) !important;
+  border: 2px solid var(--night-line-soft) !important;
+}
+
+html.theme-dark #game4Screen .sim-player-total {
+  background: linear-gradient(180deg, rgba(255, 229, 164, 0.98) 0%, rgba(246, 193, 88, 0.98) 100%) !important;
+  color: #352309 !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card-face {
+  border-color: rgba(255, 255, 255, 0.11) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card-back {
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.22), transparent 24%),
+    linear-gradient(145deg, #7f60ff 0%, #5e93fb 52%, #5ce3ce 100%) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card.type-health .sim-stat-card-front {
+  background: linear-gradient(180deg, #6b2f57 0%, #381628 100%) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card.type-attack .sim-stat-card-front {
+  background: linear-gradient(180deg, #7b4e22 0%, #42240b 100%) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card.type-accuracy .sim-stat-card-front {
+  background: linear-gradient(180deg, #285e91 0%, #16324d 100%) !important;
+}
+
+html.theme-dark #game4Screen .sim-stat-card.type-defense .sim-stat-card-front {
+  background: linear-gradient(180deg, #1f6e64 0%, #103a33 100%) !important;
+}
+
+html.theme-dark .sim-ball-label {
+  background: linear-gradient(180deg, rgba(18, 30, 49, 0.97) 0%, rgba(10, 18, 31, 0.99) 100%) !important;
+  border-color: var(--night-line-mid) !important;
+}
+
+html.theme-dark .sim-ball-place {
+  background: linear-gradient(180deg, #ffe08a 0%, #f4bf57 100%) !important;
+  color: #281804 !important;
+}
+
+html.theme-dark .sim-ball-hpbar {
+  background: linear-gradient(180deg, rgba(92, 111, 145, 0.22) 0%, rgba(37, 52, 78, 0.48) 100%) !important;
+}
+
+html.theme-dark .sim-ball-hpbar span {
+  background: linear-gradient(90deg, #ff7092 0%, #ffc56e 42%, #5de6d3 100%) !important;
+}
+
+html.theme-dark .sim-summary-table {
+  background: linear-gradient(180deg, rgba(15, 26, 43, 0.98) 0%, rgba(8, 15, 27, 1) 100%) !important;
+  border: 1px solid var(--night-line-soft) !important;
+}
+
+html.theme-dark .sim-summary-table th {
+  background: linear-gradient(180deg, rgba(38, 56, 87, 0.98) 0%, rgba(22, 35, 58, 0.98) 100%) !important;
+  color: var(--night-title) !important;
+}
+
+html.theme-dark .sim-summary-table tbody tr:nth-child(odd) td {
+  background: rgba(10, 20, 35, 0.42) !important;
+}
+
+html.theme-dark .sim-summary-table tbody tr:nth-child(even) td {
+  background: rgba(26, 41, 67, 0.56) !important;
+}
+
+html.theme-dark .naval-board-wrap {
+  background:
+    radial-gradient(circle at top center, rgba(123, 203, 255, 0.09), transparent 28%),
+    linear-gradient(180deg, rgba(7, 17, 31, 0.99) 0%, rgba(6, 12, 23, 1) 100%) !important;
+}
+
+html.theme-dark .naval-cell {
+  background: linear-gradient(180deg, rgba(17, 34, 58, 0.98) 0%, rgba(10, 23, 42, 0.98) 100%) !important;
+  border-color: rgba(142, 203, 255, 0.14) !important;
+}
+
+html.theme-dark .naval-cell.is-miss {
+  background: linear-gradient(180deg, rgba(44, 57, 78, 0.98) 0%, rgba(29, 39, 55, 0.98) 100%) !important;
+}
+
+html.theme-dark .naval-cell.is-hit {
+  background: linear-gradient(180deg, rgba(102, 49, 58, 0.98) 0%, rgba(64, 27, 36, 0.98) 100%) !important;
+  border-color: rgba(255, 153, 176, 0.36) !important;
+}
+
+html.theme-dark .naval-cell.is-hit .naval-cell-label,
+html.theme-dark .naval-cell.is-hit .naval-cell-mark {
+  color: #ffeaf1 !important;
+}
+
+html.theme-dark .naval-log-item.type-hit,
+html.theme-dark .naval-log-item.type-out,
+html.theme-dark .naval-log-item.type-final,
+html.theme-dark .naval-ranking-item.top {
+  border-color: var(--night-line-mid) !important;
+}
+
+html.theme-dark .popup-overlay {
+  background: rgba(3, 8, 16, 0.72) !important;
+}
+
+html.theme-dark .orientation-lock-overlay,
+html.theme-dark .drawer-backdrop,
+html.theme-dark #simArenaZoomBackdrop {
+  background: rgba(3, 8, 16, 0.78) !important;
+}
+
+html.theme-dark .utility-btn,
+html.theme-dark .utility-btn-label,
+html.theme-dark .utility-btn-icon {
+  color: var(--night-copy) !important;
+}
+
+html.theme-dark .action-btn:disabled,
+html.theme-dark .utility-btn.is-unsupported,
+html.theme-dark button:disabled {
+  opacity: 0.58;
 }
