@@ -455,6 +455,17 @@ const FAST_FORWARD_HOLD_MS = 260
 const FAST_FORWARD_MULTIPLIER = 3
 const FAST_FORWARD_BLOCKED_MESSAGE = '빨리감기 불가능 게임'
 
+const FAST_FORWARD_CARD_CONFIG = {
+  1: { title: '담아라!', state: 'blocked', badgeText: '없음' },
+  2: { title: '경마', state: 'supported', badgeText: '가능' },
+  3: { title: '카드 연산 배틀', state: 'none', badgeText: '없음' },
+  4: { title: '볼 배틀', state: 'supported', badgeText: '가능' },
+  5: { title: '폭격 해전', state: 'supported', badgeText: '가능' },
+  6: { title: '게임 6', state: 'pending', badgeText: '미정' },
+  7: { title: '게임 7', state: 'pending', badgeText: '미정' },
+  8: { title: '게임 8', state: 'pending', badgeText: '미정' }
+}
+
 const fastForwardStates = {
   game1: { target: gameCanvasWrap, active: false, timer: null, pointerId: null, blockedNotice: false },
   game2: { target: raceTrackWrap, active: false, timer: null, pointerId: null, blockedNotice: false },
@@ -594,6 +605,250 @@ function setRaceShuffleLock(isLocked) {
   shuffleRaceBtn.disabled = isLocked
   shuffleRaceBtn.style.opacity = isLocked ? '0.55' : '1'
   shuffleRaceBtn.style.cursor = isLocked ? 'not-allowed' : ''
+}
+
+
+function getFastForwardCardConfig(gameNumber) {
+  return FAST_FORWARD_CARD_CONFIG[gameNumber] || {
+    title: `게임 ${gameNumber}`,
+    state: 'pending',
+    badgeText: '미정'
+  }
+}
+
+function getFastForwardStateLabel(state) {
+  switch (state) {
+    case 'supported':
+      return '지원'
+    case 'blocked':
+      return '제한'
+    case 'none':
+      return '미지원'
+    case 'pending':
+    default:
+      return '추후 결정'
+  }
+}
+
+function getFastForwardGuideMessage(config) {
+  switch (config.state) {
+    case 'supported':
+      return `${config.title}에서는 게임 진행 화면을 길게 꾹 누르면 빨리감기 x${FAST_FORWARD_MULTIPLIER}가 켜지고, 손을 떼면 원래 속도로 돌아가.`
+    case 'blocked':
+      return `${config.title}는 계산 안정성을 위해 빨리감기 기능을 지원하지 않아. 길게 눌러도 사용할 수 없다는 안내만 표시돼.`
+    case 'none':
+      return `${config.title}는 현재 빨리감기 기능이 없는 게임이야. 일반 속도로만 진행돼.`
+    case 'pending':
+    default:
+      return `${config.title}의 빨리감기 지원 여부는 아직 정해지지 않았어. 게임이 추가되면 함께 안내될 예정이야.`
+  }
+}
+
+function getFastForwardGuideDemoHtml(gameNumber, config, badgeLabel) {
+  const stateClass = `is-${config.state}`
+
+  if (gameNumber === 2 && config.state === 'supported') {
+    const runners = [
+      { lane: '1레인', name: '홍길동', colorClass: 'is-pink' },
+      { lane: '2레인', name: '김아무개', colorClass: 'is-mint' },
+      { lane: '3레인', name: '박철수', colorClass: 'is-sky' }
+    ]
+
+    const laneHtml = runners
+      .map((runner, index) => {
+        return `
+          <div class="ff-race-lane">
+            <div class="ff-race-lane-track"></div>
+            <span class="ff-race-lane-label">${runner.lane}</span>
+            <span class="ff-race-start-line"></span>
+            <span class="ff-race-finish-line"></span>
+            <div class="ff-race-runner ${runner.colorClass} is-runner-${index + 1}">
+              <span class="ff-race-runner-emoji">🏇</span>
+              <span class="ff-race-runner-info">
+                <strong>${runner.name}</strong>
+                <span>다그닥</span>
+              </span>
+            </div>
+          </div>
+        `
+      })
+      .join('')
+
+    return `
+      <div class="ff-guide-screen ff-guide-screen-race ${stateClass}">
+        <div class="ff-race-demo-shell">
+          <div class="ff-race-demo-topbar">
+            <span class="ff-race-demo-chip">🏇 실제 게임 느낌 예시</span>
+            <span class="ff-race-demo-badge">${escapeHtml(badgeLabel)}</span>
+          </div>
+          <div class="ff-race-demo-stage">
+            ${laneHtml}
+            <div class="ff-race-touch-area"></div>
+            <div class="ff-guide-ripple ff-guide-ripple-1 ff-guide-ripple-race"></div>
+            <div class="ff-guide-ripple ff-guide-ripple-2 ff-guide-ripple-race"></div>
+            <div class="ff-guide-finger ff-guide-finger-race">👆</div>
+            <div class="ff-guide-hold-badge ff-guide-hold-badge-race">게임 화면 길게 꾹</div>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  if (gameNumber === 4 && config.state === 'supported') {
+    const fighters = [
+      { name: '홍길동', hp: '93/93', colorClass: 'is-pink', labelClass: 'is-hong', ballClass: 'is-ball-1' },
+      { name: '김아무개', hp: '76/76', colorClass: 'is-mint', labelClass: 'is-kim', ballClass: 'is-ball-2' },
+      { name: '박철수', hp: '59/59', colorClass: 'is-sky', labelClass: 'is-park', ballClass: 'is-ball-3' },
+      { name: '최영희', hp: '82/82', colorClass: 'is-gold', labelClass: 'is-choi', ballClass: 'is-ball-4' }
+    ]
+
+    const fighterHtml = fighters
+      .map((fighter) => {
+        return `
+          <div class="ff-sim-fighter ${fighter.ballClass}">
+            <div class="ff-sim-ball ${fighter.colorClass}"></div>
+            <div class="ff-sim-label ${fighter.labelClass}">
+              <strong>${fighter.name}</strong>
+              <span>${fighter.hp}</span>
+              <i class="ff-sim-health-bar"></i>
+            </div>
+          </div>
+        `
+      })
+      .join('')
+
+    return `
+      <div class="ff-guide-screen ff-guide-screen-sim ${stateClass}">
+        <div class="ff-sim-demo-shell">
+          <div class="ff-sim-demo-topbar">
+            <span class="ff-race-demo-chip">⚔️ 실제 게임 느낌 예시</span>
+            <span class="ff-race-demo-badge ff-sim-demo-badge">${escapeHtml(badgeLabel)}</span>
+          </div>
+          <div class="ff-sim-demo-stage">
+            <div class="ff-sim-arena-grid"></div>
+            <div class="ff-sim-arena-glow"></div>
+            ${fighterHtml}
+            <div class="ff-sim-touch-area"></div>
+            <div class="ff-guide-ripple ff-guide-ripple-1 ff-guide-ripple-sim"></div>
+            <div class="ff-guide-ripple ff-guide-ripple-2 ff-guide-ripple-sim"></div>
+            <div class="ff-guide-finger ff-guide-finger-sim">👆</div>
+            <div class="ff-guide-hold-badge ff-guide-hold-badge-sim">전투 경기장 길게 꾹</div>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  return `
+    <div class="ff-guide-screen ${stateClass}">
+      <div class="ff-guide-overlay-badge ${config.state}">${escapeHtml(badgeLabel)}</div>
+      <div class="ff-guide-progress-row">
+        <span class="ff-guide-progress ff-guide-progress-a"></span>
+        <span class="ff-guide-progress ff-guide-progress-b"></span>
+        <span class="ff-guide-progress ff-guide-progress-c"></span>
+      </div>
+      <div class="ff-guide-ripple ff-guide-ripple-1"></div>
+      <div class="ff-guide-ripple ff-guide-ripple-2"></div>
+      <div class="ff-guide-finger">👆</div>
+      <div class="ff-guide-hold-badge">길게 꾹</div>
+    </div>
+  `
+}
+
+function getFastForwardGuideHtml(gameNumber) {
+  const config = getFastForwardCardConfig(gameNumber)
+  const stateClass = `is-${config.state}`
+  const badgeLabel = config.state === 'supported'
+    ? `⏩ 빨리감기 x${FAST_FORWARD_MULTIPLIER}`
+    : config.state === 'blocked'
+      ? FAST_FORWARD_BLOCKED_MESSAGE
+      : config.state === 'pending'
+        ? '추후 결정'
+        : '빨리감기 미지원'
+
+  const guideSummary = config.state === 'supported'
+    ? `<div class="ff-guide-steps"><span>1. 게임 진행 화면 위에서</span><strong>길게 꾹 누르기</strong><span>2. 상단에 ⏩ x${FAST_FORWARD_MULTIPLIER} 표시 확인</span><span>3. 손을 떼면 원래 속도로 복귀</span></div>`
+    : `<div class="ff-guide-steps"><span>현재 상태</span><strong>${getFastForwardStateLabel(config.state)}</strong><span>${config.state === 'pending' ? '추가 개발 후 반영 예정' : '일반 속도로만 플레이 가능'}</span></div>`
+
+  return `
+    <div class="ff-guide-content ${stateClass}">
+      <div class="ff-guide-topline">
+        <span class="ff-guide-chip ${stateClass}">⏩ ${config.badgeText}</span>
+        <span class="ff-guide-chip is-subtle">${getFastForwardStateLabel(config.state)}</span>
+      </div>
+      <p class="ff-guide-copy">${escapeHtml(getFastForwardGuideMessage(config))}</p>
+      <div class="ff-guide-demo ${stateClass}" aria-hidden="true">
+        ${getFastForwardGuideDemoHtml(gameNumber, config, badgeLabel)}
+        <p class="ff-guide-caption">GIF처럼 반복되는 예시야. 실제 게임 화면을 길게 눌렀을 때 어떤 느낌으로 빨라지는지 시각적으로 보여줘.</p>
+      </div>
+      ${guideSummary}
+    </div>
+  `
+}
+
+function openFastForwardGuide(gameNumber) {
+  const config = getFastForwardCardConfig(gameNumber)
+
+  if (config.state !== 'supported') {
+    showPopup('안내', '빨리감기가 불가능한 게임입니다.', { icon: '⚠️' })
+    return
+  }
+
+  showPopup(
+    `${config.title} · 빨리감기 안내`,
+    getFastForwardGuideHtml(gameNumber),
+    { icon: '⏩', allowHtml: true, popupClass: 'fast-forward-guide-popup' }
+  )
+}
+
+function decorateLuckGameFastForwardBadges() {
+  const items = document.querySelectorAll('.game-item')
+
+  items.forEach((item) => {
+    const gameNumber = Number(item.dataset.game || item.querySelector('.game-num')?.textContent?.trim())
+    if (!Number.isFinite(gameNumber)) return
+
+    const config = getFastForwardCardConfig(gameNumber)
+    item.dataset.ffGame = String(gameNumber)
+    item.dataset.ffState = config.state
+
+    if (item.querySelector('.game-ff-badge')) return
+
+    const badge = document.createElement('span')
+    badge.className = `game-ff-badge is-${config.state}`
+    badge.innerHTML = `<span class="game-ff-badge-icon">⏩</span><span class="game-ff-badge-text">${escapeHtml(config.badgeText)}</span>`
+    badge.setAttribute('aria-hidden', 'true')
+    item.appendChild(badge)
+  })
+}
+
+function isFastForwardBadgeClick(item, event) {
+  if (!item || !(event instanceof MouseEvent)) return false
+
+  const target = event.target
+  if (target instanceof Element && target.closest('.game-ff-badge')) {
+    return true
+  }
+
+  const badge = item.querySelector('.game-ff-badge')
+  if (!badge) return false
+
+  const rect = badge.getBoundingClientRect()
+  return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom
+}
+
+function handleLuckFastForwardBadgeClick(event) {
+  const item = event.target instanceof Element ? event.target.closest('.game-item') : null
+  if (!item) return
+  if (!isFastForwardBadgeClick(item, event)) return
+
+  event.preventDefault()
+  event.stopPropagation()
+
+  const gameNumber = Number(item.dataset.ffGame || item.dataset.game || item.querySelector('.game-num')?.textContent?.trim())
+  if (!Number.isFinite(gameNumber)) return
+
+  openFastForwardGuide(gameNumber)
 }
 
 function escapeHtml(text) {
@@ -7730,6 +7985,11 @@ if (popupOverlay) {
   })
 }
 
+
+if (luckGameGrid) {
+  luckGameGrid.addEventListener('click', handleLuckFastForwardBadgeClick, true)
+}
+
 backButtons.forEach((button) => {
   button.addEventListener('click', () => {
     goToPreviousStep(button.dataset.target)
@@ -8090,6 +8350,7 @@ updateFullscreenToggleButton()
 updatePrevStepButtons()
 
 updateGame1BallCountText()
+decorateLuckGameFastForwardBadges()
 syncGame1MobileLayout()
 syncRaceMobileLayout()
 syncSimResponsiveLayout()

@@ -237,6 +237,7 @@ input {
 }
 
 .game-item {
+  position: relative;
   width: 100%;
   min-height: 198px;
   background: #fffaf5;
@@ -251,6 +252,58 @@ input {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+}
+
+
+.game-ff-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  box-shadow: 0 8px 16px rgba(120, 90, 70, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(6px);
+}
+
+.game-ff-badge-icon {
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.game-ff-badge-text {
+  line-height: 1;
+}
+
+.game-ff-badge.is-supported {
+  background: linear-gradient(180deg, rgba(237, 255, 247, 0.98) 0%, rgba(214, 248, 229, 0.96) 100%);
+  color: #44745a;
+}
+
+.game-ff-badge.is-blocked,
+.game-ff-badge.is-none {
+  background: linear-gradient(180deg, rgba(255, 246, 240, 0.98) 0%, rgba(255, 231, 221, 0.96) 100%);
+  color: #9a6257;
+}
+
+.game-ff-badge.is-pending {
+  background: linear-gradient(180deg, rgba(245, 241, 255, 0.98) 0%, rgba(232, 225, 255, 0.96) 100%);
+  color: #6b609d;
+}
+
+.game-item[data-ff-state] {
+  padding-top: 58px;
+}
+
+.game-item[data-ff-state] .game-num {
+  margin-top: 2px;
 }
 
 .game-item.game-launch {
@@ -699,6 +752,322 @@ input:disabled {
   padding: 12px 22px;
   border-radius: 999px;
   font-weight: 700;
+}
+
+
+.popup.fast-forward-guide-popup {
+  max-width: 760px;
+  padding: 28px 24px;
+  text-align: left;
+}
+
+.popup.fast-forward-guide-popup .popup-message {
+  max-height: min(68vh, 640px);
+  overflow-y: auto;
+  padding-right: 6px;
+  margin-bottom: 20px;
+}
+
+.ff-guide-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ff-guide-topline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ff-guide-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 16px rgba(120, 90, 70, 0.08);
+}
+
+.ff-guide-chip.is-supported {
+  background: linear-gradient(180deg, rgba(237, 255, 247, 0.98) 0%, rgba(214, 248, 229, 0.96) 100%);
+  color: #44745a;
+}
+
+.ff-guide-chip.is-blocked,
+.ff-guide-chip.is-none {
+  background: linear-gradient(180deg, rgba(255, 246, 240, 0.98) 0%, rgba(255, 231, 221, 0.96) 100%);
+  color: #9a6257;
+}
+
+.ff-guide-chip.is-pending {
+  background: linear-gradient(180deg, rgba(245, 241, 255, 0.98) 0%, rgba(232, 225, 255, 0.96) 100%);
+  color: #6b609d;
+}
+
+.ff-guide-chip.is-subtle {
+  background: rgba(255, 255, 255, 0.78);
+  color: #8d735f;
+}
+
+.ff-guide-copy {
+  color: #866b5c;
+  line-height: 1.7;
+}
+
+.ff-guide-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 248, 241, 0.82);
+  border: 2px solid rgba(255, 255, 255, 0.84);
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.05);
+}
+
+.ff-guide-screen {
+  position: relative;
+  overflow: hidden;
+  min-height: 230px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.54), transparent 24%),
+    linear-gradient(180deg, #fff6ef 0%, #fff1ea 100%);
+  border: 3px solid rgba(255, 255, 255, 0.84);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 12px 22px rgba(120, 90, 70, 0.08);
+}
+
+.ff-guide-screen.is-supported::before,
+.ff-guide-screen.is-blocked::before,
+.ff-guide-screen.is-none::before,
+.ff-guide-screen.is-pending::before {
+  content: '';
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  bottom: 42px;
+  height: 70px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.18) 100%);
+  border: 2px dashed rgba(255,255,255,0.75);
+}
+
+.ff-guide-overlay-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.92);
+  color: #8b6a37;
+  font-size: 0.86rem;
+  font-weight: 900;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.92);
+  animation: ffGuideBadgePulse 2.2s ease-in-out infinite;
+}
+
+.ff-guide-overlay-badge.is-supported {
+  background: rgba(255, 248, 222, 0.96);
+  color: #8b6a37;
+}
+
+.ff-guide-overlay-badge.is-blocked,
+.ff-guide-overlay-badge.is-none {
+  background: rgba(255, 239, 233, 0.96);
+  color: #995e54;
+}
+
+.ff-guide-overlay-badge.is-pending {
+  background: rgba(240, 236, 255, 0.96);
+  color: #6a5ca0;
+}
+
+.ff-guide-progress-row {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 68px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.ff-guide-progress {
+  display: block;
+  flex: 1 1 0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(191, 232, 216, 0.95) 0%, rgba(216, 236, 255, 0.95) 100%);
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 10px 20px rgba(120, 90, 70, 0.08);
+  animation: ffGuideProgressMove 2.2s ease-in-out infinite;
+}
+
+.ff-guide-progress-a { height: 52px; animation-delay: 0s; }
+.ff-guide-progress-b { height: 78px; animation-delay: 0.22s; }
+.ff-guide-progress-c { height: 62px; animation-delay: 0.44s; }
+
+.ff-guide-finger {
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  z-index: 4;
+  font-size: 3rem;
+  transform: translateX(-50%);
+  animation: ffGuideFingerPress 2.2s ease-in-out infinite;
+  filter: drop-shadow(0 10px 16px rgba(120, 90, 70, 0.16));
+}
+
+.ff-guide-ripple {
+  position: absolute;
+  left: 50%;
+  bottom: 78px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  transform: translateX(-50%) scale(0.4);
+  opacity: 0;
+  border: 3px solid rgba(255, 214, 126, 0.7);
+  animation: ffGuideRipple 2.2s ease-out infinite;
+}
+
+.ff-guide-ripple-2 {
+  animation-delay: 0.18s;
+}
+
+.ff-guide-demo.is-blocked .ff-guide-ripple,
+.ff-guide-demo.is-none .ff-guide-ripple {
+  border-color: rgba(255, 164, 140, 0.7);
+}
+
+.ff-guide-demo.is-pending .ff-guide-ripple {
+  border-color: rgba(183, 161, 255, 0.72);
+}
+
+.ff-guide-hold-badge {
+  position: absolute;
+  left: 50%;
+  bottom: 144px;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.9);
+  color: #8d735f;
+  border: 2px solid rgba(255,255,255,0.88);
+  font-size: 0.82rem;
+  font-weight: 800;
+  animation: ffGuideHoldPulse 2.2s ease-in-out infinite;
+}
+
+.ff-guide-caption {
+  color: #8c7262;
+  line-height: 1.6;
+  font-size: 0.92rem;
+}
+
+.ff-guide-steps {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 251, 246, 0.84);
+  border: 2px solid rgba(255, 255, 255, 0.84);
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.05);
+  color: #8a7161;
+  line-height: 1.6;
+}
+
+.ff-guide-steps strong {
+  color: var(--soft-brown);
+  font-size: 1rem;
+}
+
+@keyframes ffGuideFingerPress {
+  0%, 24% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  34%, 84% {
+    transform: translateX(-50%) translateY(10px) scale(0.97);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes ffGuideRipple {
+  0%, 24% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.4);
+  }
+  34% {
+    opacity: 0.72;
+    transform: translateX(-50%) scale(0.58);
+  }
+  48% {
+    opacity: 0.28;
+    transform: translateX(-50%) scale(1.32);
+  }
+  84%, 100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.86);
+  }
+}
+
+@keyframes ffGuideBadgePulse {
+  0%, 26% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.92);
+  }
+  36%, 84% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.98);
+  }
+}
+
+@keyframes ffGuideHoldPulse {
+  0%, 24% {
+    opacity: 0.78;
+    transform: translateX(-50%) translateY(0);
+  }
+  34%, 84% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-2px);
+  }
+  100% {
+    opacity: 0.7;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes ffGuideProgressMove {
+  0%, 20% {
+    transform: translateY(0) scaleY(1);
+  }
+  38%, 60% {
+    transform: translateY(-8px) scaleY(1.03);
+  }
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
 }
 
 .popup.game-info-popup {
@@ -1377,6 +1746,13 @@ body.orientation-blocked .orientation-lock-overlay {
     min-height: 180px;
   }
 
+  .game-ff-badge {
+    top: 10px;
+    right: 10px;
+    padding: 6px 9px;
+    font-size: 0.72rem;
+  }
+
   .menu-btn {
     width: 100%;
     max-width: 280px;
@@ -1428,7 +1804,20 @@ body.orientation-blocked .orientation-lock-overlay {
   .game-grid {
     grid-template-columns: 1fr;
   }
+
+  .game-item[data-ff-state] {
+    padding-top: 54px;
+  }
+
+  .popup.fast-forward-guide-popup {
+    padding: 22px 16px;
+  }
+
+  .ff-guide-screen {
+    min-height: 210px;
+  }
 }
+
 
 /* 모바일/태블릿: game1 이미지 같은 세로 스택 레이아웃 */
 @media (max-width: 1400px) and (pointer: coarse) {
@@ -7763,4 +8152,1079 @@ html.theme-dark .luck-carousel-dot {
 
 html.theme-dark .luck-carousel-dot.is-active {
   background: linear-gradient(135deg, rgba(255, 159, 192, 0.95), rgba(131, 190, 254, 0.95));
+}
+
+/* =========================
+   fast-forward guide : real race demo + dark mode refinements
+========================= */
+.ff-guide-screen-race {
+  min-height: 286px;
+  padding: 14px;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(111, 171, 255, 0.18), transparent 22%),
+    radial-gradient(circle at 85% 18%, rgba(255, 167, 205, 0.14), transparent 20%),
+    linear-gradient(180deg, #081224 0%, #0b1830 52%, #091120 100%);
+  border-color: rgba(139, 196, 255, 0.22);
+  box-shadow:
+    inset 0 0 0 1px rgba(149, 214, 255, 0.08),
+    0 18px 32px rgba(5, 11, 24, 0.34);
+}
+
+.ff-race-demo-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ff-race-demo-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ff-race-demo-chip,
+.ff-race-demo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  border: 1px solid rgba(173, 223, 255, 0.16);
+  box-shadow: 0 10px 18px rgba(3, 8, 19, 0.24);
+  backdrop-filter: blur(10px);
+}
+
+.ff-race-demo-chip {
+  background: rgba(14, 34, 60, 0.88);
+  color: #d9ebff;
+}
+
+.ff-race-demo-badge {
+  background: rgba(255, 235, 157, 0.14);
+  color: #fff0ad;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.94);
+  animation: ffRaceBadgeReveal 4.8s ease-in-out infinite;
+}
+
+.ff-race-demo-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 0 44px;
+}
+
+.ff-race-demo-stage::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 10px;
+  height: 50px;
+  border-radius: 20px;
+  border: 1px dashed rgba(151, 205, 255, 0.14);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(117, 162, 228, 0.03) 100%);
+}
+
+.ff-race-lane {
+  position: relative;
+  min-height: 58px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(149, 211, 255, 0.18);
+  background: linear-gradient(180deg, rgba(18, 34, 61, 0.95) 0%, rgba(12, 25, 45, 0.95) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 18px rgba(4, 10, 22, 0.22);
+}
+
+.ff-race-lane-track {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.03) 0 5%, transparent 5% 10%, rgba(255,255,255,0.05) 10% 15%, transparent 15% 20%),
+    linear-gradient(180deg, rgba(124, 172, 255, 0.08), rgba(255,255,255,0));
+  background-size: 120px 100%, 100% 100%;
+  animation: ffRaceTrackShift 2.3s linear infinite;
+}
+
+.ff-race-lane-label {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(10, 23, 43, 0.86);
+  border: 1px solid rgba(163, 219, 255, 0.16);
+  color: #ecf6ff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.ff-race-start-line,
+.ff-race-finish-line {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  width: 9px;
+  z-index: 2;
+  border-radius: 4px;
+}
+
+.ff-race-start-line {
+  left: 62px;
+  background: repeating-linear-gradient(180deg, #fefefe 0 6px, #9bc9ff 6px 12px);
+  box-shadow: 0 0 12px rgba(130, 190, 254, 0.28);
+}
+
+.ff-race-finish-line {
+  right: 14px;
+  background: repeating-linear-gradient(180deg, #ffffff 0 6px, #23324b 6px 12px);
+}
+
+.ff-race-runner {
+  position: absolute;
+  left: 76px;
+  top: 50%;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 116px;
+  min-height: 44px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.74);
+  box-shadow: 0 8px 18px rgba(8, 14, 28, 0.24);
+  transform: translate(0, -50%);
+}
+
+.ff-race-runner.is-pink {
+  background: linear-gradient(135deg, #ff93b5 0%, #ef7fb0 100%);
+  color: #21121e;
+}
+
+.ff-race-runner.is-mint {
+  background: linear-gradient(135deg, #8eead8 0%, #5fddca 100%);
+  color: #112328;
+}
+
+.ff-race-runner.is-sky {
+  background: linear-gradient(135deg, #9bd9ff 0%, #7dcfff 100%);
+  color: #102036;
+}
+
+.ff-race-runner-emoji {
+  font-size: 1rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.ff-race-runner-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.ff-race-runner-info strong {
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.ff-race-runner-info span {
+  margin-top: 3px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.88;
+}
+
+.ff-race-runner.is-runner-1 {
+  animation: ffRaceRunner1 4.8s linear infinite;
+}
+
+.ff-race-runner.is-runner-2 {
+  animation: ffRaceRunner2 4.8s linear infinite;
+}
+
+.ff-race-runner.is-runner-3 {
+  animation: ffRaceRunner3 4.8s linear infinite;
+}
+
+.ff-race-touch-area {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  width: 160px;
+  height: 42px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(123,173,255,0.08) 100%);
+  border: 1px solid rgba(173, 223, 255, 0.14);
+}
+
+.ff-guide-ripple-race {
+  left: 50%;
+  bottom: 6px;
+  border-color: rgba(135, 196, 255, 0.52);
+}
+
+.ff-guide-finger-race {
+  bottom: -10px;
+  font-size: 2.9rem;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.28));
+}
+
+.ff-guide-hold-badge-race {
+  bottom: 52px;
+  background: rgba(13, 29, 52, 0.92);
+  color: #dcecff;
+  border-color: rgba(173, 223, 255, 0.16);
+}
+
+
+html.theme-dark .game-ff-badge {
+  background: linear-gradient(180deg, rgba(17, 29, 48, 0.92) 0%, rgba(12, 22, 38, 0.94) 100%) !important;
+  color: var(--night-copy-soft) !important;
+  border: 1.5px solid var(--night-line-soft) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 8px 14px rgba(0, 0, 0, 0.22) !important;
+  backdrop-filter: blur(10px);
+}
+
+html.theme-dark .game-ff-badge.is-supported {
+  background: linear-gradient(180deg, rgba(20, 47, 44, 0.92) 0%, rgba(14, 33, 31, 0.94) 100%) !important;
+  color: #b6eadb !important;
+  border-color: rgba(116, 219, 186, 0.18) !important;
+}
+
+html.theme-dark .game-ff-badge.is-blocked,
+html.theme-dark .game-ff-badge.is-none {
+  background: linear-gradient(180deg, rgba(58, 33, 36, 0.92) 0%, rgba(36, 23, 26, 0.94) 100%) !important;
+  color: #e9bbb3 !important;
+  border-color: rgba(255, 165, 153, 0.14) !important;
+}
+
+html.theme-dark .game-ff-badge.is-pending {
+  background: linear-gradient(180deg, rgba(38, 33, 64, 0.92) 0%, rgba(25, 22, 44, 0.94) 100%) !important;
+  color: #d8cdfd !important;
+  border-color: rgba(186, 171, 255, 0.16) !important;
+}
+
+html.theme-dark .game-ff-badge-icon {
+  opacity: 0.82;
+}
+
+html.theme-dark .ff-guide-copy {
+  color: #b9cdea;
+}
+
+html.theme-dark .ff-guide-chip {
+  border-color: rgba(173, 223, 255, 0.14);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.24);
+}
+
+html.theme-dark .ff-guide-chip.is-supported {
+  background: linear-gradient(180deg, rgba(16, 57, 47, 0.96) 0%, rgba(14, 43, 37, 0.96) 100%);
+  color: #9ff0da;
+}
+
+html.theme-dark .ff-guide-chip.is-blocked,
+html.theme-dark .ff-guide-chip.is-none {
+  background: linear-gradient(180deg, rgba(67, 31, 34, 0.96) 0%, rgba(51, 23, 25, 0.96) 100%);
+  color: #ffb7b2;
+}
+
+html.theme-dark .ff-guide-chip.is-pending {
+  background: linear-gradient(180deg, rgba(44, 35, 74, 0.96) 0%, rgba(33, 26, 57, 0.96) 100%);
+  color: #cec4ff;
+}
+
+html.theme-dark .ff-guide-chip.is-subtle {
+  background: rgba(18, 31, 50, 0.9);
+  color: #d8e7fb;
+}
+
+html.theme-dark .ff-guide-demo {
+  background: linear-gradient(180deg, rgba(14, 20, 34, 0.94) 0%, rgba(12, 18, 30, 0.94) 100%);
+  border-color: rgba(149, 211, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 14px 24px rgba(0,0,0,0.24);
+}
+
+html.theme-dark .ff-guide-screen:not(.ff-guide-screen-race) {
+  background:
+    radial-gradient(circle at top left, rgba(125, 180, 255, 0.14), transparent 26%),
+    linear-gradient(180deg, #0d1729 0%, #101a2f 100%);
+  border-color: rgba(149, 211, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 12px 22px rgba(0,0,0,0.24);
+}
+
+html.theme-dark .ff-guide-screen.is-supported::before,
+html.theme-dark .ff-guide-screen.is-blocked::before,
+html.theme-dark .ff-guide-screen.is-none::before,
+html.theme-dark .ff-guide-screen.is-pending::before {
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(125,180,255,0.02) 100%);
+  border-color: rgba(149, 211, 255, 0.12);
+}
+
+html.theme-dark .ff-guide-overlay-badge {
+  border-color: rgba(173, 223, 255, 0.14);
+  background: rgba(18, 31, 50, 0.94);
+  color: #e4f1ff;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.24);
+}
+
+html.theme-dark .ff-guide-overlay-badge.is-supported {
+  background: rgba(58, 48, 12, 0.9);
+  color: #ffe689;
+}
+
+html.theme-dark .ff-guide-overlay-badge.is-blocked,
+html.theme-dark .ff-guide-overlay-badge.is-none {
+  background: rgba(59, 24, 28, 0.9);
+  color: #ffb4aa;
+}
+
+html.theme-dark .ff-guide-overlay-badge.is-pending {
+  background: rgba(40, 31, 70, 0.9);
+  color: #cfc4ff;
+}
+
+html.theme-dark .ff-guide-progress {
+  background: linear-gradient(180deg, rgba(68, 117, 171, 0.94) 0%, rgba(95, 213, 195, 0.88) 100%);
+  border-color: rgba(173, 223, 255, 0.16);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+html.theme-dark .ff-guide-hold-badge {
+  background: rgba(18, 31, 50, 0.94);
+  color: #dbeaff;
+  border-color: rgba(173, 223, 255, 0.14);
+}
+
+html.theme-dark .ff-guide-caption {
+  color: #aabedc;
+}
+
+html.theme-dark .ff-guide-steps {
+  background: linear-gradient(180deg, rgba(15, 22, 37, 0.94) 0%, rgba(13, 19, 31, 0.94) 100%);
+  border-color: rgba(149, 211, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 12px 20px rgba(0,0,0,0.2);
+  color: #b8cde9;
+}
+
+html.theme-dark .ff-guide-steps strong {
+  color: #f3e9ff;
+}
+
+@keyframes ffRaceTrackShift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: -120px 0, 0 0;
+  }
+}
+
+@keyframes ffRaceBadgeReveal {
+  0%, 24% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.94);
+  }
+  36%, 84% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.98);
+  }
+}
+
+@keyframes ffRaceRunner1 {
+  0% { transform: translate(0, -50%); }
+  24% { transform: translate(30px, -50%); }
+  34% { transform: translate(54px, -50%); }
+  42% { transform: translate(142px, -50%); }
+  56% { transform: translate(250px, -50%); }
+  70% { transform: translate(390px, -50%); }
+  84% { transform: translate(490px, -50%); }
+  100% { transform: translate(0, -50%); }
+}
+
+@keyframes ffRaceRunner2 {
+  0% { transform: translate(0, -50%); }
+  24% { transform: translate(24px, -50%); }
+  34% { transform: translate(48px, -50%); }
+  42% { transform: translate(130px, -50%); }
+  56% { transform: translate(228px, -50%); }
+  70% { transform: translate(338px, -50%); }
+  84% { transform: translate(438px, -50%); }
+  100% { transform: translate(0, -50%); }
+}
+
+@keyframes ffRaceRunner3 {
+  0% { transform: translate(0, -50%); }
+  24% { transform: translate(18px, -50%); }
+  34% { transform: translate(42px, -50%); }
+  42% { transform: translate(118px, -50%); }
+  56% { transform: translate(212px, -50%); }
+  70% { transform: translate(308px, -50%); }
+  84% { transform: translate(404px, -50%); }
+  100% { transform: translate(0, -50%); }
+}
+
+@media (max-width: 640px) {
+  .ff-guide-screen-race {
+    min-height: 270px;
+    padding: 12px;
+  }
+
+  .ff-race-demo-stage {
+    padding-bottom: 48px;
+  }
+
+  .ff-race-lane {
+    min-height: 54px;
+  }
+
+  .ff-race-runner {
+    min-width: 96px;
+    padding: 6px 10px;
+  }
+
+  .ff-race-runner-info strong {
+    font-size: 0.8rem;
+  }
+
+  .ff-race-runner-info span {
+    font-size: 0.68rem;
+  }
+
+  .ff-race-lane-label {
+    min-width: 46px;
+    font-size: 0.72rem;
+  }
+
+  @keyframes ffRaceRunner1 {
+    0% { transform: translate(0, -50%); }
+    24% { transform: translate(20px, -50%); }
+    34% { transform: translate(36px, -50%); }
+    42% { transform: translate(98px, -50%); }
+    56% { transform: translate(176px, -50%); }
+    70% { transform: translate(250px, -50%); }
+    84% { transform: translate(322px, -50%); }
+    100% { transform: translate(0, -50%); }
+  }
+
+  @keyframes ffRaceRunner2 {
+    0% { transform: translate(0, -50%); }
+    24% { transform: translate(16px, -50%); }
+    34% { transform: translate(30px, -50%); }
+    42% { transform: translate(86px, -50%); }
+    56% { transform: translate(154px, -50%); }
+    70% { transform: translate(220px, -50%); }
+    84% { transform: translate(286px, -50%); }
+    100% { transform: translate(0, -50%); }
+  }
+
+  @keyframes ffRaceRunner3 {
+    0% { transform: translate(0, -50%); }
+    24% { transform: translate(12px, -50%); }
+    34% { transform: translate(26px, -50%); }
+    42% { transform: translate(74px, -50%); }
+    56% { transform: translate(138px, -50%); }
+    70% { transform: translate(196px, -50%); }
+    84% { transform: translate(252px, -50%); }
+    100% { transform: translate(0, -50%); }
+  }
+}
+
+
+.ff-guide-screen-sim {
+  min-height: 300px;
+  padding: 14px;
+  background:
+    radial-gradient(circle at 18% 14%, rgba(110, 163, 255, 0.18), transparent 26%),
+    radial-gradient(circle at 82% 18%, rgba(115, 255, 219, 0.12), transparent 24%),
+    linear-gradient(180deg, #081427 0%, #09182d 48%, #07111f 100%);
+  border-color: rgba(140, 202, 255, 0.18);
+  box-shadow:
+    inset 0 0 0 1px rgba(149, 214, 255, 0.07),
+    0 18px 34px rgba(4, 9, 19, 0.36);
+}
+
+.ff-sim-demo-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ff-sim-demo-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ff-sim-demo-stage {
+  position: relative;
+  min-height: 230px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 2px solid rgba(129, 197, 255, 0.28);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(120, 165, 255, 0.14), transparent 32%),
+    linear-gradient(180deg, #071631 0%, #06132a 42%, #051024 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(179, 222, 255, 0.08),
+    0 16px 26px rgba(3, 8, 18, 0.26);
+}
+
+.ff-sim-arena-grid,
+.ff-sim-arena-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ff-sim-arena-grid {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.04) 0 4%, transparent 4% 8%),
+    linear-gradient(180deg, rgba(125, 177, 255, 0.08), rgba(255,255,255,0));
+  background-size: 128px 100%, 100% 100%;
+  animation: ffSimArenaShift 2.8s linear infinite;
+  opacity: 0.55;
+}
+
+.ff-sim-arena-glow {
+  border-radius: 24px;
+  box-shadow: inset 0 -18px 26px rgba(104, 176, 255, 0.12);
+}
+
+.ff-sim-fighter {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  animation-duration: 4.8s;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+.ff-sim-ball {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.86);
+  box-shadow: 0 10px 16px rgba(4, 8, 18, 0.3);
+  transform: translate(-50%, -50%);
+}
+
+.ff-sim-ball.is-pink {
+  background: linear-gradient(180deg, #ff98bc 0%, #ef779f 100%);
+}
+
+.ff-sim-ball.is-mint {
+  background: linear-gradient(180deg, #8bead8 0%, #67d8c9 100%);
+}
+
+.ff-sim-ball.is-sky {
+  background: linear-gradient(180deg, #98d9ff 0%, #73c6fb 100%);
+}
+
+.ff-sim-ball.is-gold {
+  background: linear-gradient(180deg, #f6d36f 0%, #e4b54a 100%);
+}
+
+.ff-sim-label {
+  position: absolute;
+  min-width: 74px;
+  padding: 8px 10px 9px;
+  border-radius: 14px;
+  background: rgba(9, 24, 45, 0.92);
+  border: 1px solid rgba(145, 206, 255, 0.18);
+  box-shadow: 0 10px 20px rgba(3, 8, 18, 0.26);
+  color: #ebf5ff;
+}
+
+.ff-sim-label strong,
+.ff-sim-label span {
+  display: block;
+  line-height: 1.05;
+}
+
+.ff-sim-label strong {
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.ff-sim-label span {
+  margin-top: 6px;
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.ff-sim-health-bar {
+  display: block;
+  width: 50px;
+  height: 5px;
+  margin-top: 7px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8eead7 0%, #fae890 100%);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.ff-sim-label.is-hong {
+  left: 56px;
+  top: 44px;
+}
+
+.ff-sim-label.is-kim {
+  right: -4px;
+  top: -6px;
+}
+
+.ff-sim-label.is-park {
+  left: -8px;
+  top: -2px;
+}
+
+.ff-sim-label.is-choi {
+  right: 0;
+  top: 2px;
+}
+
+.ff-sim-fighter.is-ball-1 {
+  left: 46%;
+  top: 64%;
+  animation-name: ffSimBall1;
+}
+
+.ff-sim-fighter.is-ball-2 {
+  left: 75%;
+  top: 28%;
+  animation-name: ffSimBall2;
+}
+
+.ff-sim-fighter.is-ball-3 {
+  left: 12%;
+  top: 52%;
+  animation-name: ffSimBall3;
+}
+
+.ff-sim-fighter.is-ball-4 {
+  left: 35%;
+  top: 8%;
+  animation-name: ffSimBall4;
+}
+
+.ff-sim-touch-area {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  width: 170px;
+  height: 46px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(104,176,255,0.08) 100%);
+  border: 1px solid rgba(165, 217, 255, 0.14);
+}
+
+.ff-guide-ripple-sim {
+  left: 50%;
+  bottom: 8px;
+  border-color: rgba(135, 196, 255, 0.5);
+}
+
+.ff-guide-finger-sim {
+  bottom: -10px;
+  font-size: 2.9rem;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.32));
+}
+
+.ff-guide-hold-badge-sim {
+  bottom: 54px;
+  background: rgba(10, 27, 50, 0.94);
+  color: #dbecff;
+  border-color: rgba(173, 223, 255, 0.16);
+}
+
+@keyframes ffSimArenaShift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: -128px 0, 0 0;
+  }
+}
+
+@keyframes ffSimBall1 {
+  0% { transform: translate(0, 0); }
+  24% { transform: translate(-6px, -8px); }
+  34% { transform: translate(10px, -18px); }
+  42% { transform: translate(32px, -44px); }
+  56% { transform: translate(-24px, -92px); }
+  70% { transform: translate(44px, -126px); }
+  84% { transform: translate(-12px, -58px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes ffSimBall2 {
+  0% { transform: translate(0, 0); }
+  24% { transform: translate(-10px, 10px); }
+  34% { transform: translate(-22px, 18px); }
+  42% { transform: translate(-74px, 68px); }
+  56% { transform: translate(-134px, 98px); }
+  70% { transform: translate(-182px, 16px); }
+  84% { transform: translate(-92px, 44px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes ffSimBall3 {
+  0% { transform: translate(0, 0); }
+  24% { transform: translate(12px, -8px); }
+  34% { transform: translate(20px, -16px); }
+  42% { transform: translate(54px, 4px); }
+  56% { transform: translate(126px, 34px); }
+  70% { transform: translate(152px, -48px); }
+  84% { transform: translate(74px, 12px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes ffSimBall4 {
+  0% { transform: translate(0, 0); }
+  24% { transform: translate(8px, 8px); }
+  34% { transform: translate(16px, 20px); }
+  42% { transform: translate(38px, 72px); }
+  56% { transform: translate(92px, 132px); }
+  70% { transform: translate(148px, 84px); }
+  84% { transform: translate(54px, 36px); }
+  100% { transform: translate(0, 0); }
+}
+
+@media (max-width: 640px) {
+  .ff-guide-screen-sim {
+    min-height: 286px;
+    padding: 12px;
+  }
+
+  .ff-sim-demo-stage {
+    min-height: 214px;
+  }
+
+  .ff-sim-fighter {
+    width: 86px;
+    height: 86px;
+  }
+
+  .ff-sim-ball {
+    width: 32px;
+    height: 32px;
+  }
+
+  .ff-sim-label {
+    min-width: 66px;
+    padding: 7px 8px 8px;
+  }
+
+  .ff-sim-label strong {
+    font-size: 0.66rem;
+  }
+
+  .ff-sim-label span {
+    font-size: 0.8rem;
+  }
+
+  .ff-sim-health-bar {
+    width: 44px;
+  }
+}
+
+/* =========================
+   fast-forward guide sync refinement
+   손가락 꾹 누름 / 해제 타이밍과 예시 속도 싱크 맞춤
+========================= */
+.ff-race-demo-badge,
+.ff-sim-demo-badge {
+  animation: ffGuideBadgeHoldSync 4.8s linear infinite;
+}
+
+.ff-guide-ripple-race,
+.ff-guide-ripple-sim {
+  animation: ffGuideRippleHoldSync 4.8s linear infinite;
+}
+
+.ff-guide-ripple-race.ff-guide-ripple-2,
+.ff-guide-ripple-sim.ff-guide-ripple-2 {
+  animation-delay: 0.16s;
+}
+
+.ff-guide-finger-race,
+.ff-guide-finger-sim {
+  animation: ffGuideFingerHoldSync 4.8s linear infinite;
+}
+
+.ff-guide-hold-badge-race,
+.ff-guide-hold-badge-sim {
+  animation: ffGuideHoldLabelSync 4.8s linear infinite;
+}
+
+.ff-race-lane-track {
+  animation: ffRaceTrackShiftSync 4.8s linear infinite;
+}
+
+.ff-race-runner.is-runner-1 {
+  animation: ffRaceRunner1Sync 4.8s linear infinite;
+}
+
+.ff-race-runner.is-runner-2 {
+  animation: ffRaceRunner2Sync 4.8s linear infinite;
+}
+
+.ff-race-runner.is-runner-3 {
+  animation: ffRaceRunner3Sync 4.8s linear infinite;
+}
+
+.ff-sim-fighter.is-ball-1 {
+  animation-name: ffSimBall1Sync;
+}
+
+.ff-sim-fighter.is-ball-2 {
+  animation-name: ffSimBall2Sync;
+}
+
+.ff-sim-fighter.is-ball-3 {
+  animation-name: ffSimBall3Sync;
+}
+
+.ff-sim-fighter.is-ball-4 {
+  animation-name: ffSimBall4Sync;
+}
+
+@keyframes ffGuideFingerHoldSync {
+  0%, 16% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  24%, 30% {
+    transform: translateX(-50%) translateY(10px) scale(0.97);
+  }
+  30%, 68% {
+    transform: translateX(-50%) translateY(12px) scale(0.95);
+  }
+  76%, 100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes ffGuideBadgeHoldSync {
+  0%, 24% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.94);
+  }
+  30%, 68% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  76%, 100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+}
+
+@keyframes ffGuideHoldLabelSync {
+  0%, 20% {
+    opacity: 0.72;
+    transform: translateX(-50%) translateY(0);
+  }
+  30%, 68% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-2px);
+  }
+  76%, 100% {
+    opacity: 0.76;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes ffGuideRippleHoldSync {
+  0%, 24% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.35);
+  }
+  30% {
+    opacity: 0.72;
+    transform: translateX(-50%) scale(0.52);
+  }
+  42% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.8);
+  }
+}
+
+@keyframes ffRaceTrackShiftSync {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+  24% {
+    background-position: -34px 0, 0 0;
+  }
+  30% {
+    background-position: -42px 0, 0 0;
+  }
+  68% {
+    background-position: -268px 0, 0 0;
+  }
+  76% {
+    background-position: -282px 0, 0 0;
+  }
+  100% {
+    background-position: -332px 0, 0 0;
+  }
+}
+
+@keyframes ffRaceRunner1Sync {
+  0% { transform: translate(0, -50%); }
+  24% { transform: translate(26px, -50%); }
+  30% { transform: translate(34px, -50%); }
+  40% { transform: translate(132px, -50%); }
+  52% { transform: translate(268px, -50%); }
+  68% { transform: translate(486px, -50%); }
+  76% { transform: translate(502px, -50%); }
+  100% { transform: translate(546px, -50%); }
+}
+
+@keyframes ffRaceRunner2Sync {
+  0% { transform: translate(0, -50%); }
+  24% { transform: translate(22px, -50%); }
+  30% { transform: translate(30px, -50%); }
+  40% { transform: translate(116px, -50%); }
+  52% { transform: translate(236px, -50%); }
+  68% { transform: translate(430px, -50%); }
+  76% { transform: translate(444px, -50%); }
+  100% { transform: translate(484px, -50%); }
+}
+
+@keyframes ffRaceRunner3Sync {
+  0% { transform: translate(0, -50%); }
+  24% { transform: translate(18px, -50%); }
+  30% { transform: translate(24px, -50%); }
+  40% { transform: translate(104px, -50%); }
+  52% { transform: translate(212px, -50%); }
+  68% { transform: translate(394px, -50%); }
+  76% { transform: translate(406px, -50%); }
+  100% { transform: translate(440px, -50%); }
+}
+
+@keyframes ffSimBall1Sync {
+  0% { transform: translate(0, 0); }
+  24% { transform: translate(-8px, -10px); }
+  30% { transform: translate(4px, -16px); }
+  42% { transform: translate(42px, -52px); }
+  54% { transform: translate(-28px, -104px); }
+  68% { transform: translate(54px, -138px); }
+  76% { transform: translate(44px, -130px); }
+  100% { transform: translate(18px, -118px); }
+}
+
+@keyframes ffSimBall2Sync {
+  0% { transform: translate(0, 0); }
+  24% { transform: translate(-12px, 12px); }
+  30% { transform: translate(-18px, 20px); }
+  42% { transform: translate(-82px, 76px); }
+  54% { transform: translate(-148px, 104px); }
+  68% { transform: translate(-198px, 18px); }
+  76% { transform: translate(-184px, 22px); }
+  100% { transform: translate(-150px, 40px); }
+}
+
+@keyframes ffSimBall3Sync {
+  0% { transform: translate(0, 0); }
+  24% { transform: translate(14px, -10px); }
+  30% { transform: translate(18px, -14px); }
+  42% { transform: translate(60px, 8px); }
+  54% { transform: translate(136px, 40px); }
+  68% { transform: translate(164px, -52px); }
+  76% { transform: translate(154px, -46px); }
+  100% { transform: translate(130px, -30px); }
+}
+
+@keyframes ffSimBall4Sync {
+  0% { transform: translate(0, 0); }
+  24% { transform: translate(10px, 10px); }
+  30% { transform: translate(16px, 18px); }
+  42% { transform: translate(44px, 78px); }
+  54% { transform: translate(102px, 142px); }
+  68% { transform: translate(156px, 88px); }
+  76% { transform: translate(146px, 84px); }
+  100% { transform: translate(122px, 68px); }
+}
+
+@media (max-width: 640px) {
+  .ff-race-runner.is-runner-1 {
+    animation: ffRaceRunner1SyncMobile 4.8s linear infinite;
+  }
+
+  .ff-race-runner.is-runner-2 {
+    animation: ffRaceRunner2SyncMobile 4.8s linear infinite;
+  }
+
+  .ff-race-runner.is-runner-3 {
+    animation: ffRaceRunner3SyncMobile 4.8s linear infinite;
+  }
+
+  @keyframes ffRaceRunner1SyncMobile {
+    0% { transform: translate(0, -50%); }
+    24% { transform: translate(16px, -50%); }
+    30% { transform: translate(22px, -50%); }
+    42% { transform: translate(82px, -50%); }
+    54% { transform: translate(176px, -50%); }
+    68% { transform: translate(326px, -50%); }
+    76% { transform: translate(336px, -50%); }
+    100% { transform: translate(366px, -50%); }
+  }
+
+  @keyframes ffRaceRunner2SyncMobile {
+    0% { transform: translate(0, -50%); }
+    24% { transform: translate(14px, -50%); }
+    30% { transform: translate(20px, -50%); }
+    42% { transform: translate(74px, -50%); }
+    54% { transform: translate(156px, -50%); }
+    68% { transform: translate(292px, -50%); }
+    76% { transform: translate(300px, -50%); }
+    100% { transform: translate(326px, -50%); }
+  }
+
+  @keyframes ffRaceRunner3SyncMobile {
+    0% { transform: translate(0, -50%); }
+    24% { transform: translate(12px, -50%); }
+    30% { transform: translate(16px, -50%); }
+    42% { transform: translate(64px, -50%); }
+    54% { transform: translate(138px, -50%); }
+    68% { transform: translate(258px, -50%); }
+    76% { transform: translate(266px, -50%); }
+    100% { transform: translate(288px, -50%); }
+  }
 }
