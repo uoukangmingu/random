@@ -1125,6 +1125,7 @@ function syncResponsiveAfterViewportModeChange() {
   syncRaceMobileLayout()
   syncSimResponsiveLayout()
   updateOrientationGate()
+  initCustomCursor()
 
   if (screens.game1?.classList.contains('active')) {
     fitGameCanvasViewport()
@@ -8532,6 +8533,86 @@ window.addEventListener('popstate', (event) => {
   showScreen(state.screen, { historyMode: 'skip' })
 })
 
+
+
+let customCursorEl = null
+let customCursorRaf = null
+let customCursorX = 0
+let customCursorY = 0
+
+function canUseCustomCursor() {
+  return window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(pointer: coarse)').matches
+}
+
+function updateCustomCursorPosition(x, y) {
+  if (!customCursorEl) return
+  customCursorX = x
+  customCursorY = y
+
+  if (customCursorRaf) return
+
+  customCursorRaf = requestAnimationFrame(() => {
+    customCursorRaf = null
+    if (!customCursorEl) return
+    customCursorEl.style.left = `${customCursorX}px`
+    customCursorEl.style.top = `${customCursorY}px`
+  })
+}
+
+function syncCustomCursorState(target) {
+  if (!customCursorEl) return
+
+  const element = target instanceof Element ? target : null
+  const interactive = element?.closest('button, a, input, textarea, select, summary, label, [role="button"], .game-item, .luck-carousel-dot, .utility-btn, .action-btn, .back-btn, .popup-btn, .sim-info-btn, .sim-arena-zoom-btn')
+  const textEditable = element?.closest('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"]')
+
+  customCursorEl.classList.toggle('is-hover', Boolean(interactive))
+  customCursorEl.classList.toggle('is-text', Boolean(textEditable))
+}
+
+function initCustomCursor() {
+  if (!canUseCustomCursor() || document.getElementById('appCursor')) return
+
+  customCursorEl = document.createElement('div')
+  customCursorEl.id = 'appCursor'
+  customCursorEl.className = 'app-cursor'
+  customCursorEl.setAttribute('aria-hidden', 'true')
+  document.body.appendChild(customCursorEl)
+
+  document.addEventListener('pointermove', (event) => {
+    if (event.pointerType && event.pointerType !== 'mouse') return
+    if (!customCursorEl) return
+    customCursorEl.classList.add('is-visible')
+    updateCustomCursorPosition(event.clientX, event.clientY)
+    syncCustomCursorState(event.target)
+  }, true)
+
+  document.addEventListener('pointerdown', (event) => {
+    if (!customCursorEl) return
+    if (event.pointerType && event.pointerType !== 'mouse') return
+    customCursorEl.classList.add('is-press')
+    syncCustomCursorState(event.target)
+  }, true)
+
+  document.addEventListener('pointerup', () => {
+    customCursorEl?.classList.remove('is-press')
+  }, true)
+
+  document.addEventListener('pointerover', (event) => {
+    syncCustomCursorState(event.target)
+  }, true)
+
+  document.addEventListener('pointerout', (event) => {
+    if (!event.relatedTarget) {
+      customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
+    }
+  }, true)
+
+  window.addEventListener('blur', () => {
+    customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
+  })
+}
+
 applyThemePreference(getSavedThemePreference(), { persist: false })
 updateFullscreenToggleButton()
 updatePrevStepButtons()
@@ -8544,6 +8625,7 @@ syncSimResponsiveLayout()
 syncLuckCarousel()
 updateSimArenaZoomButton()
 updateOrientationGate()
+initCustomCursor()
 
 setGame1InputLock(false)
 setGame1ShuffleLock(false)
