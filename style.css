@@ -7581,3 +7581,22 @@ html.theme-dark .popup.game-info-popup .popup-message::-webkit-scrollbar-thumb {
     outline: none !important;
   }
 }
+
+/* =========================
+   remove all in-game "목록으로" buttons
+========================= */
+#game1Screen .game-header-actions .back-btn,
+#game1Screen .mobile-back-btn,
+#game2Screen .game-header-actions .back-btn,
+#game2Screen .mobile-race-back-btn,
+#game3Screen .game-header-actions .back-btn,
+#game3Screen .battle-mobile-back-wrap,
+#game3Screen .battle-mobile-back-btn,
+#game4Screen .game-header-actions .back-btn,
+#game4Screen .sim-mobile-back-wrap,
+#game4Screen .sim-mobile-back-btn,
+#game5Screen .game-header-actions .back-btn,
+#game5Screen .naval-mobile-back-wrap,
+#game5Screen .naval-mobile-back-btn {
+  display: none !important;
+}
