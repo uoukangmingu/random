@@ -7419,3 +7419,123 @@ html.theme-dark .battle-card.type-result .battle-card-value small,
 html.theme-dark .battle-card.is-flipped .battle-card-value small {
   color: rgba(111, 85, 51, 0.88) !important;
 }
+
+/* game4 모바일 게임 설명 버튼 진짜 중앙 정렬 보정 */
+@media (max-width: 1024px) and (pointer: coarse) {
+  #game4Screen .sim-main-header {
+    grid-template-columns: minmax(0, 1fr) !important;
+    column-gap: 0 !important;
+  }
+
+  #game4Screen .sim-main-header > div:first-child {
+    width: 100%;
+  }
+
+  #game4Screen .sim-header-inline-actions {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #game4Screen .sim-info-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 640px) and (pointer: coarse) {
+  #game4Screen .sim-main-header {
+    grid-template-columns: minmax(0, 1fr) !important;
+    column-gap: 0 !important;
+  }
+
+  #game4Screen .sim-main-header > div:first-child {
+    width: 100%;
+  }
+
+  #game4Screen .sim-header-inline-actions {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #game4Screen .sim-info-btn {
+    width: min(100%, 290px) !important;
+    margin-inline: auto !important;
+  }
+}
+
+html.theme-dark #game4Screen .sim-main-header {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* =========================
+   game4 : game info popup dark mode fix
+========================= */
+html.theme-dark .popup.game-info-popup {
+  background:
+    radial-gradient(circle at top center, rgba(124, 186, 255, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(16, 24, 40, 0.98) 0%, rgba(8, 14, 25, 1) 100%) !important;
+  border-color: rgba(124, 186, 255, 0.22) !important;
+  box-shadow:
+    0 26px 58px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(88, 135, 201, 0.14) !important;
+}
+
+html.theme-dark .popup.game-info-popup h3,
+html.theme-dark .popup.game-info-popup .popup-icon {
+  color: #eef6ff !important;
+}
+
+html.theme-dark .popup.game-info-popup .popup-message,
+html.theme-dark .popup.game-info-popup .game-info-lead {
+  color: #d7e5f5 !important;
+}
+
+html.theme-dark .popup.game-info-popup .game-info-section {
+  background: linear-gradient(180deg, rgba(31, 43, 66, 0.92) 0%, rgba(20, 30, 46, 0.94) 100%) !important;
+  border: 1px solid rgba(132, 184, 255, 0.18) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 22px rgba(0, 0, 0, 0.22) !important;
+}
+
+html.theme-dark .popup.game-info-popup .game-info-section h4 {
+  color: #ffbfd6 !important;
+}
+
+html.theme-dark .popup.game-info-popup .game-info-section ul,
+html.theme-dark .popup.game-info-popup .game-info-section li,
+html.theme-dark .popup.game-info-popup .game-info-section p {
+  color: #d6e2ee !important;
+}
+
+html.theme-dark .popup.game-info-popup strong {
+  color: #ffffff !important;
+}
+
+html.theme-dark .popup.game-info-popup .popup-btn {
+  background: linear-gradient(180deg, rgba(43, 57, 84, 0.98) 0%, rgba(30, 41, 62, 0.98) 100%) !important;
+  color: #eef6ff !important;
+  border: 1px solid rgba(132, 184, 255, 0.2);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28) !important;
+}
+
+html.theme-dark .popup.game-info-popup .popup-message::-webkit-scrollbar {
+  width: 10px;
+}
+
+html.theme-dark .popup.game-info-popup .popup-message::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+}
+
+html.theme-dark .popup.game-info-popup .popup-message::-webkit-scrollbar-thumb {
+  background: rgba(132, 184, 255, 0.26);
+  border-radius: 999px;
+}
