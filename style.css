@@ -5738,6 +5738,17 @@ input,
   opacity: 0.82;
 }
 
+.utility-mobile-only {
+  display: none;
+}
+
+.utility-prevstep-btn:disabled,
+.utility-prevstep-btn[aria-disabled="true"] {
+  opacity: 0.42;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
 body.orientation-blocked .utility-controls {
   opacity: 0;
   pointer-events: none;
@@ -5974,6 +5985,10 @@ html.theme-dark #simArenaZoomBackdrop {
     min-height: 52px;
     padding: 0;
     border-radius: 18px;
+  }
+
+  .utility-mobile-only {
+    display: inline-flex;
   }
 
   .utility-btn-label {

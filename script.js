@@ -30,6 +30,7 @@ const themeToggleLabel = themeToggleBtn?.querySelector('.utility-btn-label') || 
 const fullscreenToggleBtn = document.getElementById('fullscreenToggleBtn')
 const fullscreenToggleIcon = fullscreenToggleBtn?.querySelector('.utility-btn-icon') || null
 const fullscreenToggleLabel = fullscreenToggleBtn?.querySelector('.utility-btn-label') || null
+const mobilePrevStepBtn = document.getElementById('mobilePrevStepBtn')
 
 const THEME_STORAGE_KEY = 'roulette-theme-preference'
 
@@ -1241,6 +1242,39 @@ function goToPreviousStep(fallbackTarget = 'home') {
   showScreen(fallbackTarget, { historyMode: 'replace' })
 }
 
+function getPreviousStepFallbackTarget(screenKey = getActiveScreenKey()) {
+  switch (screenKey) {
+    case 'menu':
+      return 'home'
+    case 'luck':
+      return 'menu'
+    case 'game1':
+    case 'game2':
+    case 'game3':
+    case 'game4':
+    case 'game5':
+      return 'luck'
+    case 'home':
+    default:
+      return 'home'
+  }
+}
+
+function updateMobilePrevStepButton() {
+  if (!mobilePrevStepBtn) return
+
+  const activeScreen = getActiveScreenKey()
+  const isHomeScreen = activeScreen === 'home'
+  const fallbackTarget = getPreviousStepFallbackTarget(activeScreen)
+  const buttonLabel = isHomeScreen ? '처음 화면' : '이전으로'
+
+  mobilePrevStepBtn.disabled = isHomeScreen
+  mobilePrevStepBtn.setAttribute('aria-disabled', isHomeScreen ? 'true' : 'false')
+  mobilePrevStepBtn.setAttribute('aria-label', buttonLabel)
+  mobilePrevStepBtn.title = buttonLabel
+  mobilePrevStepBtn.dataset.fallbackTarget = fallbackTarget
+}
+
 function showScreen(target, options = {}) {
   if (!screens[target]) return
 
@@ -1317,6 +1351,7 @@ function showScreen(target, options = {}) {
   updateOrientationGate()
 
   currentScreenKey = target
+  updateMobilePrevStepButton()
 
   if (historyMode === 'replace') {
     commitScreenHistory(target, 'replace')
@@ -7522,6 +7557,13 @@ if (fullscreenToggleBtn) {
   })
 }
 
+if (mobilePrevStepBtn) {
+  mobilePrevStepBtn.addEventListener('click', () => {
+    if (mobilePrevStepBtn.disabled) return
+    goToPreviousStep(mobilePrevStepBtn.dataset.fallbackTarget || getPreviousStepFallbackTarget())
+  })
+}
+
 document.addEventListener('fullscreenchange', () => {
   updateFullscreenToggleButton()
   syncResponsiveAfterViewportModeChange()
@@ -7673,6 +7715,7 @@ window.addEventListener('popstate', (event) => {
 
 applyThemePreference(getSavedThemePreference(), { persist: false })
 updateFullscreenToggleButton()
+updateMobilePrevStepButton()
 
 updateGame1BallCountText()
 syncGame1MobileLayout()
