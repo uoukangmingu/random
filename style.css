@@ -10394,3 +10394,449 @@ body,
     border-radius: 3px;
   }
 }
+
+/* =========================
+   game4 : ball battle info popup responsive cleanup
+========================= */
+.popup.game-info-popup.game-info-popup-sim {
+  width: min(96vw, 1020px);
+  max-width: 1020px;
+  max-height: min(88vh, 900px);
+  display: flex;
+  flex-direction: column;
+  padding: 30px 28px;
+}
+
+.popup.game-info-popup.game-info-popup-sim h3 {
+  line-height: 1.06;
+}
+
+.popup.game-info-popup.game-info-popup-sim .popup-message {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 10px;
+  margin-bottom: 18px;
+}
+
+.game-info-content-sim {
+  min-width: 0;
+  gap: 18px;
+}
+
+.game-info-content-sim .game-info-lead {
+  font-size: 1rem;
+  line-height: 1.78;
+}
+
+.game-info-tabbar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  align-self: flex-start;
+}
+
+.game-info-content-sim .game-info-panel[data-info-panel="visual"].is-active {
+  display: block;
+}
+
+.game-info-content-sim .game-info-panel[data-info-panel="text"].is-active {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.game-info-content-sim .game-info-panel[data-info-panel="text"].is-active .game-info-section {
+  height: 100%;
+}
+
+.sim-info-hero-note {
+  padding: 18px 20px;
+}
+
+.sim-info-visual-grid {
+  align-items: stretch;
+  gap: 16px;
+}
+
+.sim-info-visual-card {
+  min-width: 0;
+  padding: 18px;
+}
+
+.sim-info-card-head {
+  gap: 14px;
+}
+
+.sim-info-card-head p {
+  font-size: 0.95rem;
+}
+
+.sim-info-scene-cards,
+.sim-info-scene-duel,
+.sim-info-scene-finale,
+.sim-info-scene-stats {
+  min-width: 0;
+}
+
+.sim-info-stat-meaning-card,
+.sim-info-stat-card-mini,
+.sim-info-health-label,
+.sim-info-defense-formula,
+.sim-info-mini-formula {
+  word-break: keep-all;
+}
+
+@media (min-width: 1025px) {
+  .popup.game-info-popup.game-info-popup-sim {
+    width: min(95vw, 1040px);
+    max-width: 1040px;
+    padding: 32px 30px;
+  }
+
+  .popup.game-info-popup.game-info-popup-sim .popup-message {
+    padding-right: 12px;
+  }
+
+  .game-info-tabbar {
+    gap: 10px;
+  }
+
+  .game-info-tab-btn {
+    min-height: 42px;
+    padding: 10px 16px;
+  }
+
+  .sim-info-visual-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .sim-info-card-deck-mini {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1024px) {
+  .popup-overlay:has(.popup.game-info-popup.game-info-popup-sim) {
+    padding: 18px;
+  }
+
+  .popup.game-info-popup.game-info-popup-sim {
+    width: min(94vw, 860px);
+    max-width: 860px;
+    max-height: min(90vh, 920px);
+    padding: 24px 22px;
+    border-radius: 26px;
+  }
+
+  .popup.game-info-popup.game-info-popup-sim .popup-message {
+    padding-right: 8px;
+  }
+
+  .game-info-content-sim {
+    gap: 16px;
+  }
+
+  .game-info-content-sim .game-info-lead {
+    font-size: 0.96rem;
+    line-height: 1.72;
+  }
+
+  .game-info-tabbar {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .game-info-tab-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .game-info-content-sim .game-info-panel[data-info-panel="text"].is-active {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-info-visual-grid,
+  .sim-info-stat-meaning-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-info-visual-card,
+  .sim-info-visual-card.is-wide,
+  .sim-info-visual-card-step1 {
+    grid-column: 1 / -1;
+  }
+
+  .sim-info-card-deck-mini {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .sim-info-scene-cards {
+    min-height: 246px;
+  }
+
+  .sim-info-scene-duel,
+  .sim-info-scene-finale {
+    min-height: 238px;
+  }
+
+  .sim-info-scene-stats {
+    min-height: 272px;
+  }
+}
+
+@media (max-width: 760px) {
+  .popup-overlay:has(.popup.game-info-popup.game-info-popup-sim) {
+    align-items: flex-start;
+    padding: 10px;
+    overflow-y: auto;
+  }
+
+  .popup.game-info-popup.game-info-popup-sim {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    min-height: calc(100vh - 20px);
+    padding: 20px 16px 18px;
+    border-radius: 24px;
+  }
+
+  .popup.game-info-popup.game-info-popup-sim .popup-icon {
+    font-size: 2.5rem;
+    margin-bottom: 6px;
+  }
+
+  .popup.game-info-popup.game-info-popup-sim h3 {
+    font-size: clamp(1.7rem, 7vw, 2.1rem);
+    margin-bottom: 12px;
+  }
+
+  .popup.game-info-popup.game-info-popup-sim .popup-message {
+    padding-right: 4px;
+    margin-bottom: 16px;
+  }
+
+  .game-info-content-sim {
+    gap: 14px;
+  }
+
+  .game-info-content-sim .game-info-lead {
+    font-size: 0.93rem;
+    line-height: 1.68;
+  }
+
+  .game-info-tabbar {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .game-info-tab-btn {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 10px;
+    font-size: 0.9rem;
+  }
+
+  .game-info-content-sim .game-info-panel[data-info-panel="text"].is-active {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .sim-info-hero-note,
+  .sim-info-visual-card,
+  .game-info-content-sim .game-info-section {
+    border-radius: 18px;
+  }
+
+  .sim-info-hero-note {
+    padding: 14px 14px;
+  }
+
+  .sim-info-hero-badge {
+    width: 100%;
+    text-align: center;
+    line-height: 1.35;
+  }
+
+  .sim-info-visual-grid,
+  .sim-info-stat-meaning-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .sim-info-visual-card,
+  .sim-info-visual-card.is-wide,
+  .sim-info-visual-card-step1 {
+    grid-column: 1 / -1;
+    padding: 14px;
+  }
+
+  .sim-info-card-head {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .sim-info-step {
+    width: 30px;
+    height: 30px;
+  }
+
+  .sim-info-card-head h4 {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .sim-info-card-head p,
+  .sim-info-mini-note,
+  .sim-info-mini-formula {
+    font-size: 0.87rem;
+    line-height: 1.55;
+  }
+
+  .sim-info-card-deck-mini {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .sim-info-stat-card-mini {
+    min-height: 100px;
+    padding: 10px;
+  }
+
+  .sim-info-stat-card-mini strong {
+    font-size: 0.8rem;
+  }
+
+  .sim-info-stat-card-mini span:last-child {
+    font-size: 1.24rem;
+  }
+
+  .sim-info-scene-cards {
+    min-height: 238px;
+    padding: 14px;
+  }
+
+  .sim-info-scene-duel,
+  .sim-info-scene-finale,
+  .sim-info-scene-stats {
+    padding: 12px;
+  }
+
+  .sim-info-scene-duel,
+  .sim-info-scene-finale {
+    min-height: 220px;
+  }
+
+  .sim-info-scene-stats {
+    min-height: 252px;
+  }
+
+  .sim-info-health-label {
+    min-width: 96px;
+    max-width: 108px;
+    padding: 7px 8px;
+  }
+
+  .sim-info-health-label strong {
+    font-size: 0.74rem;
+  }
+
+  .sim-info-health-values {
+    font-size: 0.69rem;
+  }
+
+  .sim-info-demo-ball.duel-left {
+    left: 24%;
+  }
+
+  .sim-info-demo-ball.duel-right {
+    left: 64%;
+  }
+}
+
+@media (max-width: 430px) {
+  .popup-overlay:has(.popup.game-info-popup.game-info-popup-sim) {
+    padding: 8px;
+  }
+
+  .popup.game-info-popup.game-info-popup-sim {
+    min-height: calc(100vh - 16px);
+    padding: 18px 13px 16px;
+    border-radius: 22px;
+  }
+
+  .popup.game-info-popup.game-info-popup-sim .popup-message {
+    padding-right: 2px;
+  }
+
+  .game-info-content-sim .game-info-lead {
+    font-size: 0.9rem;
+  }
+
+  .game-info-tab-btn {
+    min-height: 40px;
+    font-size: 0.86rem;
+    padding: 9px 8px;
+  }
+
+  .sim-info-card-deck-mini {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-info-scene-cards {
+    min-height: 356px;
+  }
+
+  .sim-info-stat-card-mini {
+    min-height: 88px;
+  }
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .game-info-tabbar {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .game-info-tab-btn {
+  border: 1px solid rgba(96, 143, 219, 0.22);
+  background: rgba(15, 24, 40, 0.6);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .game-info-tab-btn.is-active {
+  background: linear-gradient(180deg, rgba(39, 61, 100, 0.98) 0%, rgba(24, 40, 72, 0.98) 100%);
+}
+
+/* ===== game4 info popup mobile tab layout hotfix ===== */
+@media (max-width: 760px) and (pointer: coarse) {
+  .popup.game-info-popup.game-info-popup-sim .game-info-tabbar {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .popup.game-info-popup.game-info-popup-sim .game-info-tab-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    width: calc(50% - 4px);
+    white-space: nowrap;
+  }
+}
