@@ -55,6 +55,7 @@
             <span class="emoji">🍀</span>
             <span>운</span>
           </button>
+          </div>
         </div>
 
       </div>
@@ -70,7 +71,8 @@
           </div>
         </div>
 
-        <div class="game-grid">
+        <div class="luck-carousel-shell">
+          <div id="luckGameGrid" class="game-grid">
           <button class="game-item game-launch" data-game="1" type="button">
             <div class="game-num">1</div>
             <h3>담아라!</h3>
@@ -146,6 +148,12 @@
               <div class="game-meta-row"><span class="game-meta-label">난이도</span><span class="game-meta-value">미정</span></div>
             </div>
           </button>
+          </div>
+        </div>
+
+        <div id="luckCarouselHud" class="luck-carousel-hud" aria-hidden="true">
+          <p class="luck-carousel-hint">좌우로 넘겨서 게임을 선택해줘</p>
+          <div id="luckCarouselDots" class="luck-carousel-dots" aria-label="운 게임 페이지 표시"></div>
         </div>
 
       </div>

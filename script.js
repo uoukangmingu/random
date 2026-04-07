@@ -15,6 +15,9 @@ const luckBtn = document.getElementById('luckBtn')
 const backButtons = document.querySelectorAll('.back-btn')
 const gameLaunchButtons = document.querySelectorAll('.game-launch')
 const comingSoonButtons = document.querySelectorAll('.game-coming-soon')
+const luckGameGrid = document.getElementById('luckGameGrid')
+const luckCarouselHud = document.getElementById('luckCarouselHud')
+const luckCarouselDots = document.getElementById('luckCarouselDots')
 
 const popupOverlay = document.getElementById('popupOverlay')
 const popupTitle = document.getElementById('popupTitle')
@@ -440,6 +443,10 @@ let lastViewportWidth = window.innerWidth
 let lastViewportHeight = window.innerHeight
 let mobileLayoutApplied = false
 let raceMobileLayoutApplied = false
+let luckCarouselActiveIndex = 0
+let luckCarouselScrollTicking = false
+let luckCarouselLoopReady = false
+let luckCarouselLoopJumping = false
 
 const RACE_MAX_COUNT = 8
 const RACE_DISTANCE = 2400
@@ -1070,6 +1077,327 @@ function updateOrientationGate() {
   }
 }
 
+
+
+function isLuckCarouselMode() {
+  return Boolean(luckGameGrid) && isTouchDevice() && window.innerWidth <= 820
+}
+
+function handleLuckGameSelection(button) {
+  if (!button) return
+
+  if (button.classList.contains('game-launch')) {
+    if (button.dataset.game === '1') showScreen('game1')
+    if (button.dataset.game === '2') showScreen('game2')
+    if (button.dataset.game === '3') showScreen('game3')
+    if (button.dataset.game === '4') showScreen('game4')
+    if (button.dataset.game === '5') showScreen('game5')
+    return
+  }
+
+  if (button.classList.contains('game-coming-soon')) {
+    showPopup('개발중', '이 게임은 아직 준비중이야!')
+  }
+}
+
+function bindLuckGameItemInteraction(button) {
+  if (!button || button.dataset.luckGameBound === 'true') return
+
+  button.dataset.luckGameBound = 'true'
+  button.addEventListener('click', () => {
+    handleLuckGameSelection(button)
+  })
+}
+
+function getLuckCarouselOriginalItems() {
+  return luckGameGrid ? [...luckGameGrid.querySelectorAll('.game-item:not([data-clone])')] : []
+}
+
+function getLuckCarouselTrackItems() {
+  return luckGameGrid ? [...luckGameGrid.querySelectorAll('.game-item')] : []
+}
+
+function ensureLuckCarouselLoop() {
+  if (!luckGameGrid) return
+
+  const existingClones = [...luckGameGrid.querySelectorAll('.game-item[data-clone]')]
+  if (existingClones.length) {
+    existingClones.forEach((item) => item.remove())
+  }
+
+  const originalItems = getLuckCarouselOriginalItems()
+  originalItems.forEach((item, index) => {
+    item.dataset.carouselIndex = String(index)
+    item.dataset.loopSet = 'center'
+    bindLuckGameItemInteraction(item)
+  })
+
+  luckCarouselLoopReady = false
+
+  if (originalItems.length <= 1) {
+    luckCarouselLoopReady = true
+    return
+  }
+
+  const prependFragment = document.createDocumentFragment()
+  const appendFragment = document.createDocumentFragment()
+
+  originalItems.forEach((item) => {
+    const prependClone = item.cloneNode(true)
+    prependClone.dataset.clone = 'prepend'
+    prependClone.dataset.loopSet = 'prepend'
+    prependClone.dataset.carouselIndex = item.dataset.carouselIndex
+    prependClone.removeAttribute('id')
+    bindLuckGameItemInteraction(prependClone)
+    prependFragment.appendChild(prependClone)
+
+    const appendClone = item.cloneNode(true)
+    appendClone.dataset.clone = 'append'
+    appendClone.dataset.loopSet = 'append'
+    appendClone.dataset.carouselIndex = item.dataset.carouselIndex
+    appendClone.removeAttribute('id')
+    bindLuckGameItemInteraction(appendClone)
+    appendFragment.appendChild(appendClone)
+  })
+
+  luckGameGrid.prepend(prependFragment)
+  luckGameGrid.append(appendFragment)
+  luckCarouselLoopReady = true
+}
+
+function updateLuckCarouselDots(activeIndex = 0) {
+  if (!luckCarouselDots) return
+
+  const dots = [...luckCarouselDots.querySelectorAll('.luck-carousel-dot')]
+  dots.forEach((dot, index) => {
+    const isActive = index === activeIndex
+    dot.classList.toggle('is-active', isActive)
+    dot.setAttribute('aria-pressed', isActive ? 'true' : 'false')
+    dot.setAttribute('aria-current', isActive ? 'true' : 'false')
+  })
+}
+
+function buildLuckCarouselDots() {
+  if (!luckCarouselDots) return
+
+  const items = getLuckCarouselOriginalItems()
+  luckCarouselDots.innerHTML = ''
+
+  items.forEach((item, index) => {
+    const dot = document.createElement('button')
+    dot.type = 'button'
+    dot.className = 'luck-carousel-dot'
+    dot.setAttribute('aria-label', `${index + 1}번 게임으로 이동`)
+    dot.addEventListener('click', () => {
+      scrollToLuckCarouselIndex(index)
+    })
+    luckCarouselDots.appendChild(dot)
+  })
+
+  updateLuckCarouselDots(luckCarouselActiveIndex)
+}
+
+function getLuckCarouselClosestItem() {
+  const items = getLuckCarouselTrackItems()
+
+  if (!luckGameGrid || !items.length) {
+    return null
+  }
+
+  const viewportCenter = luckGameGrid.scrollLeft + luckGameGrid.clientWidth / 2
+  let closestItem = null
+  let closestDistance = Number.POSITIVE_INFINITY
+
+  items.forEach((item) => {
+    const itemCenter = item.offsetLeft + item.offsetWidth / 2
+    const distance = Math.abs(itemCenter - viewportCenter)
+    if (distance < closestDistance) {
+      closestDistance = distance
+      closestItem = item
+    }
+  })
+
+  return closestItem
+}
+
+function getLuckCarouselClosestIndex() {
+  const closestItem = getLuckCarouselClosestItem()
+  if (!closestItem) return 0
+
+  const rawIndex = Number.parseInt(closestItem.dataset.carouselIndex || '0', 10)
+  const itemCount = getLuckCarouselOriginalItems().length
+  if (!itemCount) return 0
+
+  if (Number.isNaN(rawIndex)) return 0
+  return clampValue(rawIndex, 0, itemCount - 1)
+}
+
+function updateLuckCarouselActiveIndex(index, closestItem = null) {
+  const originalItems = getLuckCarouselOriginalItems()
+  const trackItems = getLuckCarouselTrackItems()
+  const safeIndex = clampValue(index, 0, Math.max(0, originalItems.length - 1))
+  const activeItem = closestItem && trackItems.includes(closestItem)
+    ? closestItem
+    : trackItems.find((item) => Number.parseInt(item.dataset.carouselIndex || '-1', 10) === safeIndex) || null
+
+  luckCarouselActiveIndex = safeIndex
+  updateLuckCarouselDots(safeIndex)
+
+  const activeTrackIndex = activeItem ? trackItems.indexOf(activeItem) : -1
+
+  trackItems.forEach((item, itemTrackIndex) => {
+    const isActive = item === activeItem
+    const isNeighbor = activeTrackIndex !== -1 && Math.abs(itemTrackIndex - activeTrackIndex) === 1
+    item.classList.toggle('is-carousel-active', isActive)
+    item.classList.toggle('is-carousel-neighbor', isNeighbor)
+  })
+}
+
+function scrollLuckCarouselToItem(targetItem, behavior = 'smooth') {
+  if (!luckGameGrid || !targetItem) return
+
+  const targetLeft = targetItem.offsetLeft - (luckGameGrid.clientWidth - targetItem.offsetWidth) / 2
+  const maxLeft = Math.max(0, luckGameGrid.scrollWidth - luckGameGrid.clientWidth)
+
+  luckGameGrid.scrollTo({
+    left: clampValue(targetLeft, 0, maxLeft),
+    behavior
+  })
+}
+
+function scrollToLuckCarouselIndex(index, behavior = 'smooth') {
+  if (!luckGameGrid) return
+
+  const items = getLuckCarouselOriginalItems()
+  const safeIndex = clampValue(index, 0, Math.max(0, items.length - 1))
+  const targetItem = items[safeIndex]
+
+  if (!targetItem) return
+
+  updateLuckCarouselActiveIndex(safeIndex, targetItem)
+  scrollLuckCarouselToItem(targetItem, behavior)
+}
+
+function getLuckCarouselLoopMetrics() {
+  if (!luckGameGrid) return null
+
+  const prependItems = [...luckGameGrid.querySelectorAll('.game-item[data-loop-set="prepend"]')]
+  const centerItems = [...luckGameGrid.querySelectorAll('.game-item[data-loop-set="center"]')]
+  const appendItems = [...luckGameGrid.querySelectorAll('.game-item[data-loop-set="append"]')]
+
+  if (!prependItems.length || !centerItems.length || !appendItems.length) {
+    return null
+  }
+
+  const prependFirst = prependItems[0]
+  const centerFirst = centerItems[0]
+  const appendFirst = appendItems[0]
+  const setWidth = appendFirst.offsetLeft - centerFirst.offsetLeft
+
+  if (!Number.isFinite(setWidth) || setWidth <= 0) {
+    return null
+  }
+
+  return {
+    prependItems,
+    centerItems,
+    appendItems,
+    prependFirst,
+    centerFirst,
+    appendFirst,
+    setWidth
+  }
+}
+
+function normalizeLuckCarouselLoop(closestItem) {
+  if (!isLuckCarouselMode() || !luckGameGrid || !closestItem || luckCarouselLoopJumping) {
+    return
+  }
+
+  const loopSet = closestItem.dataset.loopSet || 'center'
+  if (loopSet === 'center') return
+
+  const metrics = getLuckCarouselLoopMetrics()
+  if (!metrics) return
+
+  const targetIndex = Number.parseInt(closestItem.dataset.carouselIndex || '-1', 10)
+  const targetItem = metrics.centerItems[targetIndex]
+
+  if (!targetItem) return
+
+  const centeredLeft = closestItem.offsetLeft - (luckGameGrid.clientWidth - closestItem.offsetWidth) / 2
+  if (Math.abs(luckGameGrid.scrollLeft - centeredLeft) > Math.max(18, closestItem.offsetWidth * 0.12)) {
+    return
+  }
+
+  const shift = loopSet === 'prepend' ? metrics.setWidth : -metrics.setWidth
+  const nextLeft = luckGameGrid.scrollLeft + shift
+
+  luckCarouselLoopJumping = true
+  luckGameGrid.classList.add('is-loop-resetting')
+  luckGameGrid.scrollLeft = nextLeft
+  updateLuckCarouselActiveIndex(targetIndex, targetItem)
+
+  requestAnimationFrame(() => {
+    luckGameGrid.classList.remove('is-loop-resetting')
+    luckCarouselLoopJumping = false
+  })
+}
+
+function handleLuckCarouselScroll() {
+  if (!isLuckCarouselMode() || !luckGameGrid) return
+  if (luckCarouselScrollTicking) return
+
+  luckCarouselScrollTicking = true
+
+  requestAnimationFrame(() => {
+    const closestItem = getLuckCarouselClosestItem()
+    const closestIndex = getLuckCarouselClosestIndex()
+    updateLuckCarouselActiveIndex(closestIndex, closestItem)
+    normalizeLuckCarouselLoop(closestItem)
+    luckCarouselScrollTicking = false
+  })
+}
+
+function syncLuckCarousel(options = {}) {
+  if (!luckGameGrid) return
+
+  const { align = false } = options
+  const shouldUseCarousel = isLuckCarouselMode()
+
+  ensureLuckCarouselLoop()
+
+  const originalItems = getLuckCarouselOriginalItems()
+
+  document.body.classList.toggle('luck-carousel-mode', shouldUseCarousel)
+
+  if (luckCarouselHud) {
+    luckCarouselHud.setAttribute('aria-hidden', shouldUseCarousel ? 'false' : 'true')
+  }
+
+  if (!originalItems.length) return
+
+  if (!luckCarouselDots || luckCarouselDots.children.length !== originalItems.length) {
+    buildLuckCarouselDots()
+  }
+
+  const safeIndex = Math.min(luckCarouselActiveIndex, originalItems.length - 1)
+  updateLuckCarouselActiveIndex(safeIndex, originalItems[safeIndex] || null)
+
+  if (shouldUseCarousel) {
+    if (align || screens.luck?.classList.contains('active')) {
+      requestAnimationFrame(() => {
+        scrollToLuckCarouselIndex(safeIndex, 'auto')
+      })
+    }
+    return
+  }
+
+  if (luckGameGrid.scrollLeft !== 0) {
+    luckGameGrid.scrollLeft = 0
+  }
+}
+
 function syncGame1MobileLayout() {
   if (
     !gameCardFull ||
@@ -1326,6 +1654,10 @@ function showScreen(target, options = {}) {
   if (target !== 'game5') {
     stopNavalGame({ preserveBoard: false })
     setNavalInputLock(false)
+  }
+
+  if (target === 'luck') {
+    syncLuckCarousel({ align: true })
   }
 
   if (target === 'game1') {
@@ -7353,33 +7685,11 @@ backButtons.forEach((button) => {
 })
 
 gameLaunchButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    if (button.dataset.game === '1') {
-      showScreen('game1')
-    }
-
-    if (button.dataset.game === '2') {
-      showScreen('game2')
-    }
-
-    if (button.dataset.game === '3') {
-      showScreen('game3')
-    }
-
-    if (button.dataset.game === '4') {
-      showScreen('game4')
-    }
-
-    if (button.dataset.game === '5') {
-      showScreen('game5')
-    }
-  })
+  bindLuckGameItemInteraction(button)
 })
 
 comingSoonButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    showPopup('개발중', '이 게임은 아직 준비중이야!')
-  })
+  bindLuckGameItemInteraction(button)
 })
 
 if (shuffleBtn) {
@@ -7644,6 +7954,8 @@ window.addEventListener('resize', () => {
     syncGame1MobileLayout()
     syncRaceMobileLayout()
     syncSimResponsiveLayout()
+    syncLuckCarousel({ align: screens.luck?.classList.contains('active') })
+    syncLuckCarousel({ align: screens.luck?.classList.contains('active') })
     updateOrientationGate()
 
     if (screens.game1?.classList.contains('active')) {
@@ -7707,6 +8019,10 @@ document.addEventListener('visibilitychange', () => {
   }
 })
 
+if (luckGameGrid) {
+  luckGameGrid.addEventListener('scroll', handleLuckCarouselScroll, { passive: true })
+}
+
 window.addEventListener('popstate', (event) => {
   const state = event.state
 
@@ -7726,6 +8042,7 @@ updateGame1BallCountText()
 syncGame1MobileLayout()
 syncRaceMobileLayout()
 syncSimResponsiveLayout()
+syncLuckCarousel()
 updateSimArenaZoomButton()
 updateOrientationGate()
 
@@ -7763,3 +8080,5 @@ if (screens.home) {
 }
 
 syncSimResponsiveLayout()
+
+syncLuckCarousel()
