@@ -7693,6 +7693,7 @@ html.theme-dark .popup.game-info-popup .popup-message::-webkit-scrollbar-thumb {
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
     scrollbar-width: none;
     padding: 4px var(--luck-carousel-peek) 14px;
     scroll-padding-inline: var(--luck-carousel-peek);

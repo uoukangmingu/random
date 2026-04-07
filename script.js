@@ -447,6 +447,7 @@ let luckCarouselActiveIndex = 0
 let luckCarouselScrollTicking = false
 let luckCarouselLoopReady = false
 let luckCarouselLoopJumping = false
+let luckCarouselLoopSettleTimer = null
 
 const RACE_MAX_COUNT = 8
 const RACE_DISTANCE = 2400
@@ -1253,14 +1254,19 @@ function updateLuckCarouselActiveIndex(index, closestItem = null) {
   })
 }
 
-function scrollLuckCarouselToItem(targetItem, behavior = 'smooth') {
-  if (!luckGameGrid || !targetItem) return
+function getLuckCarouselCenteredLeft(targetItem) {
+  if (!luckGameGrid || !targetItem) return 0
 
   const targetLeft = targetItem.offsetLeft - (luckGameGrid.clientWidth - targetItem.offsetWidth) / 2
   const maxLeft = Math.max(0, luckGameGrid.scrollWidth - luckGameGrid.clientWidth)
+  return clampValue(targetLeft, 0, maxLeft)
+}
+
+function scrollLuckCarouselToItem(targetItem, behavior = 'smooth') {
+  if (!luckGameGrid || !targetItem) return
 
   luckGameGrid.scrollTo({
-    left: clampValue(targetLeft, 0, maxLeft),
+    left: getLuckCarouselCenteredLeft(targetItem),
     behavior
   })
 }
@@ -1309,6 +1315,46 @@ function getLuckCarouselLoopMetrics() {
   }
 }
 
+function clearLuckCarouselLoopSettleTimer() {
+  if (!luckCarouselLoopSettleTimer) return
+  clearTimeout(luckCarouselLoopSettleTimer)
+  luckCarouselLoopSettleTimer = null
+}
+
+function scheduleLuckCarouselLoopNormalize(closestItem) {
+  clearLuckCarouselLoopSettleTimer()
+
+  if (!isLuckCarouselMode() || !luckGameGrid || !closestItem || luckCarouselLoopJumping) {
+    return
+  }
+
+  const loopSet = closestItem.dataset.loopSet || 'center'
+  if (loopSet === 'center') return
+
+  const snapshotKey = `${loopSet}:${closestItem.dataset.carouselIndex || ''}`
+
+  luckCarouselLoopSettleTimer = setTimeout(() => {
+    luckCarouselLoopSettleTimer = null
+
+    if (luckCarouselLoopJumping) return
+
+    const settledItem = getLuckCarouselClosestItem()
+    if (!settledItem) return
+
+    const settledLoopSet = settledItem.dataset.loopSet || 'center'
+    const settledKey = `${settledLoopSet}:${settledItem.dataset.carouselIndex || ''}`
+
+    if (settledKey !== snapshotKey) {
+      if (settledLoopSet !== 'center') {
+        scheduleLuckCarouselLoopNormalize(settledItem)
+      }
+      return
+    }
+
+    normalizeLuckCarouselLoop(settledItem)
+  }, 96)
+}
+
 function normalizeLuckCarouselLoop(closestItem) {
   if (!isLuckCarouselMode() || !luckGameGrid || !closestItem || luckCarouselLoopJumping) {
     return
@@ -1325,22 +1371,24 @@ function normalizeLuckCarouselLoop(closestItem) {
 
   if (!targetItem) return
 
-  const centeredLeft = closestItem.offsetLeft - (luckGameGrid.clientWidth - closestItem.offsetWidth) / 2
-  if (Math.abs(luckGameGrid.scrollLeft - centeredLeft) > Math.max(18, closestItem.offsetWidth * 0.12)) {
+  const centeredLeft = getLuckCarouselCenteredLeft(closestItem)
+  if (Math.abs(luckGameGrid.scrollLeft - centeredLeft) > Math.max(12, closestItem.offsetWidth * 0.08)) {
     return
   }
 
-  const shift = loopSet === 'prepend' ? metrics.setWidth : -metrics.setWidth
-  const nextLeft = luckGameGrid.scrollLeft + shift
-
+  clearLuckCarouselLoopSettleTimer()
   luckCarouselLoopJumping = true
   luckGameGrid.classList.add('is-loop-resetting')
-  luckGameGrid.scrollLeft = nextLeft
+  luckGameGrid.scrollLeft = getLuckCarouselCenteredLeft(targetItem)
   updateLuckCarouselActiveIndex(targetIndex, targetItem)
 
   requestAnimationFrame(() => {
-    luckGameGrid.classList.remove('is-loop-resetting')
-    luckCarouselLoopJumping = false
+    requestAnimationFrame(() => {
+      luckGameGrid.classList.remove('is-loop-resetting')
+      setTimeout(() => {
+        luckCarouselLoopJumping = false
+      }, 40)
+    })
   })
 }
 
@@ -1354,7 +1402,7 @@ function handleLuckCarouselScroll() {
     const closestItem = getLuckCarouselClosestItem()
     const closestIndex = getLuckCarouselClosestIndex()
     updateLuckCarouselActiveIndex(closestIndex, closestItem)
-    normalizeLuckCarouselLoop(closestItem)
+    scheduleLuckCarouselLoopNormalize(closestItem)
     luckCarouselScrollTicking = false
   })
 }
@@ -1364,6 +1412,10 @@ function syncLuckCarousel(options = {}) {
 
   const { align = false } = options
   const shouldUseCarousel = isLuckCarouselMode()
+
+  clearLuckCarouselLoopSettleTimer()
+  luckCarouselLoopJumping = false
+  luckGameGrid.classList.remove('is-loop-resetting')
 
   ensureLuckCarouselLoop()
 
@@ -7954,7 +8006,6 @@ window.addEventListener('resize', () => {
     syncGame1MobileLayout()
     syncRaceMobileLayout()
     syncSimResponsiveLayout()
-    syncLuckCarousel({ align: screens.luck?.classList.contains('active') })
     syncLuckCarousel({ align: screens.luck?.classList.contains('active') })
     updateOrientationGate()
 
