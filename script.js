@@ -291,6 +291,10 @@ const SIM_DARK_PLAYER_PALETTE = [
 const nameColorMap = new Map()
 const raceNameColorMap = new Map()
 
+const APP_HISTORY_ID = 'roulette-app-screen-history'
+let currentScreenKey = 'home'
+let currentHistoryIndex = 0
+
 function getSlotPaletteByTheme() {
   return isDarkThemeEnabled() ? DARK_SLOT_PALETTE : slotPalette
 }
@@ -1199,8 +1203,49 @@ function forceGame4EntryScrollTop() {
   }, 120)
 }
 
-function showScreen(target) {
+function getActiveScreenKey() {
+  return Object.entries(screens).find(([, screen]) => screen?.classList.contains('active'))?.[0] || 'home'
+}
+
+function getAppHistoryState(screenKey, index = currentHistoryIndex) {
+  return {
+    appId: APP_HISTORY_ID,
+    screen: screenKey,
+    index
+  }
+}
+
+function commitScreenHistory(screenKey, mode = 'push') {
+  if (!window.history || typeof window.history.pushState !== 'function') return
+
+  if (mode === 'replace') {
+    window.history.replaceState(getAppHistoryState(screenKey, currentHistoryIndex), '')
+    return
+  }
+
+  if (mode === 'push') {
+    currentHistoryIndex += 1
+    window.history.pushState(getAppHistoryState(screenKey, currentHistoryIndex), '')
+  }
+}
+
+function goToPreviousStep(fallbackTarget = 'home') {
+  const state = window.history?.state
+  const hasAppHistory = state?.appId === APP_HISTORY_ID && Number.isFinite(state.index) && state.index > 0
+
+  if (hasAppHistory) {
+    window.history.back()
+    return
+  }
+
+  showScreen(fallbackTarget, { historyMode: 'replace' })
+}
+
+function showScreen(target, options = {}) {
   if (!screens[target]) return
+
+  const { historyMode = 'push' } = options
+  const previousScreenKey = currentScreenKey
 
   releaseAllFastForward()
 
@@ -1270,6 +1315,14 @@ function showScreen(target) {
   }
 
   updateOrientationGate()
+
+  currentScreenKey = target
+
+  if (historyMode === 'replace') {
+    commitScreenHistory(target, 'replace')
+  } else if (historyMode === 'push' && target !== previousScreenKey) {
+    commitScreenHistory(target, 'push')
+  }
 }
 
 function shuffleArray(arr) {
@@ -7257,7 +7310,7 @@ if (popupOverlay) {
 
 backButtons.forEach((button) => {
   button.addEventListener('click', () => {
-    showScreen(button.dataset.target)
+    goToPreviousStep(button.dataset.target)
   })
 })
 
@@ -7607,6 +7660,17 @@ document.addEventListener('visibilitychange', () => {
   }
 })
 
+window.addEventListener('popstate', (event) => {
+  const state = event.state
+
+  if (state?.appId !== APP_HISTORY_ID || !screens[state.screen]) {
+    return
+  }
+
+  currentHistoryIndex = Number.isFinite(state.index) ? state.index : 0
+  showScreen(state.screen, { historyMode: 'skip' })
+})
+
 applyThemePreference(getSavedThemePreference(), { persist: false })
 updateFullscreenToggleButton()
 
@@ -7646,7 +7710,8 @@ if (navalConfigInput) {
 }
 
 if (screens.home) {
-  showScreen('home')
+  currentScreenKey = getActiveScreenKey()
+  showScreen('home', { historyMode: 'replace' })
 }
 
 syncSimResponsiveLayout()
