@@ -5121,57 +5121,242 @@ function updateSimDescription() {
   simDesc.textContent = `최대 ${SIM_MAX_PLAYERS}명의 참가자가 각자 4가지 스탯 총합 100의 카드를 배정받은 뒤, 공끼리 충돌하는 순간 즉시 전투 판정이 반영되는 관찰형 시뮬레이션 게임이다.`
 }
 
-function getSimGameInfoHtml() {
+function getSimInfoTabButtonsHtml() {
   return `
-    <div class="game-info-content">
-      <p class="game-info-lead">볼 배틀은 참가자마다 총합 100의 스탯을 랜덤 배정한 뒤, 공끼리 충돌할 때마다 즉시 전투 판정이 일어나는 관찰형 생존 게임이다.</p>
-
-      <section class="game-info-section">
-        <h4>게임 진행 방식</h4>
-        <ul>
-          <li>참가자 이름을 쉼표로 입력하고 <strong>시작</strong>을 누르면 각 참가자에게 4장의 스탯 카드가 랜덤 배정된다.</li>
-          <li>카드가 순차적으로 공개되면 <strong>전투시작</strong> 버튼이 활성화된다.</li>
-          <li>전투가 시작되면 설정 화면은 정리되고, 경기장과 최종 스탯 요약표 중심의 관전 화면으로 바뀐다.</li>
-          <li>마지막까지 살아남은 1명이 우승하며, 탈락 순서를 기준으로 최종 순위가 정해진다.</li>
-        </ul>
-      </section>
-
-      <section class="game-info-section">
-        <h4>스탯 설명</h4>
-        <ul>
-          <li><strong>추가 체력</strong>: 기본 체력 50에 더해지는 값이다. 최종 체력은 <strong>50 + 추가 체력</strong>으로 계산된다.</li>
-          <li><strong>공격력</strong>: 충돌 시 상대에게 줄 수 있는 기본 피해량에 영향을 준다.</li>
-          <li><strong>공격 성공률</strong>: 충돌 순간 공격 판정이 실제로 들어갈 확률이다. 수치가 높을수록 공격이 더 잘 맞는다.</li>
-          <li><strong>방어력</strong>: 상대와의 전투에서 상대의 공격 성공률을 방어력 수치만큼 확률적으로 감소시키는 능력치이다.</li>
-        </ul>
-      </section>
-
-      <section class="game-info-section">
-        <h4>전투에서 보이는 것</h4>
-        <ul>
-          <li>각 공 위 라벨에서 이름과 현재 체력을 바로 볼 수 있다.</li>
-          <li>아래 요약표에서는 전투 시작 시 확정된 최종 스탯을 한눈에 비교할 수 있다.</li>
-          <li>맵에 따라 폭탄, 회전 막대, 범퍼 등 전투를 흔드는 요소가 등장할 수 있다.</li>
-        </ul>
-      </section>
-
-      <section class="game-info-section">
-        <h4>알아두면 좋은 점</h4>
-        <ul>
-          <li>셔플은 참가자 순서만 바꾸고, 실제 스탯은 시작할 때 다시 랜덤 배정된다.</li>
-          <li>리셋하면 전투 상태와 카드 배정이 모두 초기화되어 새 판처럼 다시 시작할 수 있다.</li>
-          <li>같은 이름은 중복 등록할 수 없고, 최대 ${SIM_MAX_PLAYERS}명까지 참가할 수 있다.</li>
-        </ul>
-      </section>
+    <div class="game-info-tabbar" role="tablist" aria-label="볼 배틀 설명 보기 방식">
+      <button class="game-info-tab-btn is-active" type="button" role="tab" aria-selected="true" data-info-tab="visual">👀 시각 설명</button>
+      <button class="game-info-tab-btn" type="button" role="tab" aria-selected="false" data-info-tab="text">📝 글 설명</button>
     </div>
   `
 }
 
+function getSimGameInfoVisualHtml() {
+  return `
+    <div class="sim-info-visual-wrap">
+      <section class="sim-info-hero-note">
+        <div class="sim-info-hero-badge">처음 보는 사람도 바로 이해하는 핵심 흐름</div>
+        <p><strong>카드 공개 → 충돌 판정 → 체력 감소 → 최후의 1인 우승</strong> 순서만 먼저 짧게 보여준다.</p>
+      </section>
+
+      <div class="sim-info-visual-grid">
+        <section class="sim-info-visual-card sim-info-visual-card-step1">
+          <div class="sim-info-card-head">
+            <span class="sim-info-step">1</span>
+            <div>
+              <h4>시작하면 스탯 카드 4장이 공개된다</h4>
+              <p>참가자마다 추가 체력, 공격력, 공격 성공률, 방어력이 랜덤으로 배정된다.</p>
+            </div>
+          </div>
+          <div class="sim-info-scene sim-info-scene-cards" aria-hidden="true">
+            <div class="sim-info-player-chip is-pink">홍길동</div>
+            <div class="sim-info-card-deck-mini">
+              <div class="sim-info-stat-card-mini is-health">
+                <span class="sim-info-stat-card-icon">${SIM_STAT_META.health.icon}</span>
+                <strong>${SIM_STAT_META.health.short}</strong>
+                <span>+43</span>
+              </div>
+              <div class="sim-info-stat-card-mini is-attack delay-1">
+                <span class="sim-info-stat-card-icon">${SIM_STAT_META.attack.icon}</span>
+                <strong>${SIM_STAT_META.attack.short}</strong>
+                <span>18</span>
+              </div>
+              <div class="sim-info-stat-card-mini is-accuracy delay-2">
+                <span class="sim-info-stat-card-icon">${SIM_STAT_META.accuracy.icon}</span>
+                <strong>${SIM_STAT_META.accuracy.short}</strong>
+                <span>79%</span>
+              </div>
+              <div class="sim-info-stat-card-mini is-defense delay-3">
+                <span class="sim-info-stat-card-icon">${SIM_STAT_META.defense.icon}</span>
+                <strong>${SIM_STAT_META.defense.short}</strong>
+                <span>50%</span>
+              </div>
+            </div>
+            <div class="sim-info-ready-pill">전투시작 가능</div>
+          </div>
+        </section>
+
+        <section class="sim-info-visual-card">
+          <div class="sim-info-card-head">
+            <span class="sim-info-step">2</span>
+            <div>
+              <h4>공끼리 부딪히면 바로 전투 판정</h4>
+              <p>맞으면 체력이 줄고, 체력바와 숫자가 즉시 바뀐다.</p>
+            </div>
+          </div>
+          <div class="sim-info-scene sim-info-scene-duel" aria-hidden="true">
+            <div class="sim-info-arena-shell">
+              <div class="sim-info-arena-grid"></div>
+              <div class="sim-info-demo-ball is-pink duel-left"></div>
+              <div class="sim-info-demo-ball is-mint duel-right"></div>
+              <div class="sim-info-hit-spark"></div>
+              <div class="sim-info-hit-badge">충돌!</div>
+              <div class="sim-info-health-label duel-label-left">
+                <strong>홍길동</strong>
+                <span class="sim-info-health-values">93/93</span>
+                <i class="sim-info-health-track"><b class="sim-info-health-fill is-full"></b></i>
+              </div>
+              <div class="sim-info-health-label duel-label-right">
+                <strong>김아무개</strong>
+                <span class="sim-info-health-values"><em class="hp-before">76/76</em><em class="hp-after">61/76</em></span>
+                <i class="sim-info-health-track"><b class="sim-info-health-fill is-drop"></b></i>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sim-info-visual-card is-wide">
+          <div class="sim-info-card-head">
+            <span class="sim-info-step">3</span>
+            <div>
+              <h4>스탯 4개 의미를 한 번에 이해하기</h4>
+              <p>특히 <strong>방어력은 피해량 감소가 아니라 상대 공격 성공률 자체를 낮추는 스탯</strong>이다.</p>
+            </div>
+          </div>
+          <div class="sim-info-scene sim-info-scene-stats" aria-hidden="true">
+            <div class="sim-info-stat-meaning-grid">
+              <article class="sim-info-stat-meaning-card is-health">
+                <header><span>${SIM_STAT_META.health.icon}</span><strong>${SIM_STAT_META.health.label}</strong></header>
+                <div class="sim-info-mini-note">기본 체력 50에 더해져 오래 버틴다</div>
+                <div class="sim-info-big-hp-track"><b class="sim-info-big-hp-base"></b><b class="sim-info-big-hp-bonus"></b></div>
+                <div class="sim-info-mini-formula">50 → 93</div>
+              </article>
+              <article class="sim-info-stat-meaning-card is-attack">
+                <header><span>${SIM_STAT_META.attack.icon}</span><strong>${SIM_STAT_META.attack.label}</strong></header>
+                <div class="sim-info-mini-note">공격이 맞았을 때 더 크게 깎는다</div>
+                <div class="sim-info-attack-demo"><span class="sim-info-attack-hit">-18</span></div>
+                <div class="sim-info-mini-formula">명중 시 피해량 강화</div>
+              </article>
+              <article class="sim-info-stat-meaning-card is-accuracy">
+                <header><span>${SIM_STAT_META.accuracy.icon}</span><strong>${SIM_STAT_META.accuracy.label}</strong></header>
+                <div class="sim-info-mini-note">공격이 실제로 들어갈 확률이다</div>
+                <div class="sim-info-accuracy-demo"><span class="is-hit">명중!</span><span class="is-miss">빗나감</span></div>
+                <div class="sim-info-mini-formula">수치가 높을수록 더 잘 맞음</div>
+              </article>
+              <article class="sim-info-stat-meaning-card is-defense">
+                <header><span>${SIM_STAT_META.defense.icon}</span><strong>${SIM_STAT_META.defense.label}</strong></header>
+                <div class="sim-info-mini-note">예: A공의 공격 성공률이 50%, B공의 방어력이 50%라면</div>
+                <div class="sim-info-defense-formula">A공 최종 공격 성공률 = 25%</div>
+                <div class="sim-info-mini-formula">50% × (1 - 0.50) = 25% · 피해량 감소가 아니라 상대 명중률 감소</div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="sim-info-visual-card is-wide">
+          <div class="sim-info-card-head">
+            <span class="sim-info-step">4</span>
+            <div>
+              <h4>마지막까지 남은 1명이 우승</h4>
+              <p>체력이 0이 되면 탈락하고, 끝까지 남은 참가자가 최종 1위가 된다.</p>
+            </div>
+          </div>
+          <div class="sim-info-scene sim-info-scene-finale" aria-hidden="true">
+            <div class="sim-info-arena-shell is-finale">
+              <div class="sim-info-demo-ball is-pink finale-ball-1"></div>
+              <div class="sim-info-demo-ball is-mint finale-ball-2 is-faded"></div>
+              <div class="sim-info-demo-ball is-sky finale-ball-3 is-faded"></div>
+              <div class="sim-info-health-label finale-label is-winner">
+                <strong>홍길동</strong>
+                <span class="sim-info-health-values">37/93</span>
+                <i class="sim-info-health-track"><b class="sim-info-health-fill is-winner"></b></i>
+              </div>
+              <div class="sim-info-health-label finale-label is-eliminated">김아무개 탈락</div>
+              <div class="sim-info-winner-crown">👑 1위</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  `
+}
+
+function getSimGameInfoTextHtml() {
+  return `
+    <section class="game-info-section">
+      <h4>게임 진행 방식</h4>
+      <ul>
+        <li>참가자 이름을 쉼표로 입력하고 <strong>시작</strong>을 누르면 각 참가자에게 4장의 스탯 카드가 랜덤 배정된다.</li>
+        <li>카드가 순차적으로 공개되면 <strong>전투시작</strong> 버튼이 활성화된다.</li>
+        <li>전투가 시작되면 설정 화면은 정리되고, 경기장과 최종 스탯 요약표 중심의 관전 화면으로 바뀐다.</li>
+        <li>마지막까지 살아남은 1명이 우승하며, 탈락 순서를 기준으로 최종 순위가 정해진다.</li>
+      </ul>
+    </section>
+
+    <section class="game-info-section">
+      <h4>스탯 설명</h4>
+      <ul>
+        <li><strong>${SIM_STAT_META.health.icon} ${SIM_STAT_META.health.label}</strong>: 기본 체력 50에 더해지는 값이다. 최종 체력은 <strong>50 + 추가 체력</strong>으로 계산된다.</li>
+        <li><strong>${SIM_STAT_META.attack.icon} ${SIM_STAT_META.attack.label}</strong>: 충돌 시 상대에게 줄 수 있는 기본 피해량에 영향을 준다.</li>
+        <li><strong>${SIM_STAT_META.accuracy.icon} ${SIM_STAT_META.accuracy.label}</strong>: 충돌 순간 공격 판정이 실제로 들어갈 확률이다. 수치가 높을수록 공격이 더 잘 맞는다.</li>
+        <li><strong>${SIM_STAT_META.defense.icon} ${SIM_STAT_META.defense.label}</strong>: 상대의 <strong>공격 성공률 자체를 낮추는</strong> 능력치이다. 피해량을 깎는 스탯이 아니라 상대 명중 확률에 곱연산으로 적용된다.</li>
+        <li><strong>예시</strong>: 상대 공격 성공률이 <strong>50%</strong>이고 내 방어력이 <strong>50%</strong>면, 상대의 실제 공격 성공률은 <strong>25%</strong>가 된다.</li>
+      </ul>
+    </section>
+
+    <section class="game-info-section">
+      <h4>전투에서 보이는 것</h4>
+      <ul>
+        <li>각 공 위 라벨에서 이름과 현재 체력을 바로 볼 수 있다.</li>
+        <li>아래 요약표에서는 전투 시작 시 확정된 최종 스탯을 한눈에 비교할 수 있다.</li>
+        <li>맵에 따라 폭탄, 회전 막대, 범퍼 등 전투를 흔드는 요소가 등장할 수 있다.</li>
+      </ul>
+    </section>
+
+    <section class="game-info-section">
+      <h4>알아두면 좋은 점</h4>
+      <ul>
+        <li>셔플은 참가자 순서만 바꾸고, 실제 스탯은 시작할 때 다시 랜덤 배정된다.</li>
+        <li>리셋하면 전투 상태와 카드 배정이 모두 초기화되어 새 판처럼 다시 시작할 수 있다.</li>
+        <li>같은 이름은 중복 등록할 수 없고, 최대 ${SIM_MAX_PLAYERS}명까지 참가할 수 있다.</li>
+      </ul>
+    </section>
+  `
+}
+
+function getSimGameInfoHtml() {
+  return `
+    <div class="game-info-content game-info-content-sim">
+      <p class="game-info-lead">볼 배틀은 참가자마다 총합 100의 스탯을 랜덤 배정한 뒤, 공끼리 충돌할 때마다 즉시 전투 판정이 일어나는 관찰형 생존 게임이다. <strong>시각 설명으로 흐름을 먼저 보고</strong>, 헷갈리는 부분만 글 설명에서 확인하면 된다.</p>
+      ${getSimInfoTabButtonsHtml()}
+      <div class="game-info-panels">
+        <div class="game-info-panel is-active" data-info-panel="visual">${getSimGameInfoVisualHtml()}</div>
+        <div class="game-info-panel" data-info-panel="text" hidden>${getSimGameInfoTextHtml()}</div>
+      </div>
+    </div>
+  `
+}
+
+function setGameInfoPanel(root, nextTab) {
+  if (!root) return
+
+  root.querySelectorAll('.game-info-tab-btn[data-info-tab]').forEach((button) => {
+    const isActive = button.dataset.infoTab === nextTab
+    button.classList.toggle('is-active', isActive)
+    button.setAttribute('aria-selected', isActive ? 'true' : 'false')
+  })
+
+  root.querySelectorAll('.game-info-panel[data-info-panel]').forEach((panel) => {
+    const isActive = panel.dataset.infoPanel === nextTab
+    panel.classList.toggle('is-active', isActive)
+    panel.hidden = !isActive
+  })
+}
+
+function handleGameInfoTabClick(event) {
+  const button = event.target instanceof Element ? event.target.closest('.game-info-tab-btn[data-info-tab]') : null
+  if (!button) return
+
+  const root = button.closest('.game-info-content')
+  if (!root) return
+
+  setGameInfoPanel(root, button.dataset.infoTab || 'visual')
+}
+
 function openSimGameInfo() {
-  showPopup('게임 설명', getSimGameInfoHtml(), {
+  showPopup('볼 배틀 설명', getSimGameInfoHtml(), {
     icon: '📖',
     allowHtml: true,
-    popupClass: 'game-info-popup'
+    popupClass: 'game-info-popup game-info-popup-sim'
   })
 }
 
@@ -8083,6 +8268,8 @@ document.addEventListener('keydown', (event) => {
     closePopup()
   }
 })
+
+document.addEventListener('click', handleGameInfoTabClick)
 
 if (configInput) {
   configInput.addEventListener('input', () => {

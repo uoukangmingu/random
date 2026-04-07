@@ -9228,3 +9228,1000 @@ html.theme-dark .ff-guide-steps strong {
     100% { transform: translate(288px, -50%); }
   }
 }
+
+/* =========================
+   game4 : ball battle info popup
+========================= */
+.popup.game-info-popup.game-info-popup-sim {
+  max-width: 860px;
+}
+
+.game-info-content-sim {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.game-info-content-sim .game-info-lead {
+  color: #7f6556;
+  line-height: 1.75;
+}
+
+.game-info-tabbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.game-info-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 2px solid rgba(255, 255, 255, 0.96);
+  color: #8b6f60;
+  font-weight: 800;
+  box-shadow: 0 8px 16px rgba(120, 90, 70, 0.08);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.game-info-tab-btn:hover {
+  transform: translateY(-1px);
+}
+
+.game-info-tab-btn.is-active {
+  background: linear-gradient(180deg, #fff2e8 0%, #ffe4cf 100%);
+  color: #7c5540;
+  box-shadow: 0 10px 20px rgba(120, 90, 70, 0.12);
+}
+
+.game-info-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.game-info-panel {
+  display: none;
+}
+
+.game-info-panel.is-active {
+  display: block;
+}
+
+.sim-info-visual-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sim-info-hero-note,
+.sim-info-visual-card,
+.game-info-content-sim .game-info-section {
+  background: rgba(255, 248, 241, 0.84);
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  border-radius: 20px;
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.05);
+}
+
+.sim-info-hero-note {
+  padding: 16px 18px;
+}
+
+.sim-info-hero-note p {
+  color: #866b5c;
+  line-height: 1.7;
+}
+
+.sim-info-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff6dd 0%, #ffeac0 100%);
+  color: #8b6a37;
+  font-size: 0.84rem;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.sim-info-visual-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.sim-info-visual-card {
+  padding: 16px;
+}
+
+.sim-info-visual-card.is-wide {
+  grid-column: span 2;
+}
+
+.sim-info-card-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.sim-info-step {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffd7c2, #ffeabf);
+  color: #815942;
+  font-family: 'Gaegu', cursive;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.sim-info-card-head h4 {
+  margin: 0 0 6px;
+  color: var(--soft-brown);
+  font-size: 1.05rem;
+}
+
+.sim-info-card-head p {
+  color: #8c7262;
+  line-height: 1.6;
+}
+
+.sim-info-scene {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top left, rgba(255,255,255,0.56), transparent 24%),
+    linear-gradient(180deg, #fff6ef 0%, #fff1ea 100%);
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.32);
+}
+
+.sim-info-scene-cards {
+  min-height: 200px;
+  padding: 16px;
+}
+
+.sim-info-player-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  color: #815942;
+  font-weight: 800;
+  box-shadow: 0 8px 14px rgba(120, 90, 70, 0.08);
+}
+
+.sim-info-player-chip.is-pink {
+  background: linear-gradient(180deg, #fff5f8 0%, #ffe5ec 100%);
+}
+
+.sim-info-card-deck-mini {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.sim-info-stat-card-mini {
+  min-height: 118px;
+  border-radius: 18px;
+  border: 2px solid rgba(255,255,255,0.94);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  color: #765848;
+  box-shadow: 0 10px 18px rgba(114, 86, 68, 0.1);
+  animation: simInfoCardFloat 2.8s ease-in-out infinite;
+}
+
+.sim-info-stat-card-mini.delay-1 { animation-delay: 0.12s; }
+.sim-info-stat-card-mini.delay-2 { animation-delay: 0.24s; }
+.sim-info-stat-card-mini.delay-3 { animation-delay: 0.36s; }
+
+.sim-info-stat-card-mini strong {
+  font-size: 0.9rem;
+}
+
+.sim-info-stat-card-mini span:last-child {
+  align-self: flex-end;
+  font-family: 'Gaegu', cursive;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.sim-info-stat-card-icon {
+  font-size: 1.2rem;
+}
+
+.sim-info-stat-card-mini.is-health { background: linear-gradient(180deg, #fff1f5 0%, #ffdfe9 100%); }
+.sim-info-stat-card-mini.is-attack { background: linear-gradient(180deg, #fff5e9 0%, #ffe1c1 100%); }
+.sim-info-stat-card-mini.is-accuracy { background: linear-gradient(180deg, #eef7ff 0%, #dff0ff 100%); }
+.sim-info-stat-card-mini.is-defense { background: linear-gradient(180deg, #eefaf6 0%, #d6f1e8 100%); }
+
+.sim-info-ready-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 14px;
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe5ef 0%, #ffd6e6 100%);
+  color: #946378;
+  font-weight: 900;
+}
+
+.sim-info-scene-duel,
+.sim-info-scene-finale {
+  min-height: 228px;
+  padding: 16px;
+}
+
+.sim-info-arena-shell {
+  position: relative;
+  min-height: 194px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.22);
+  overflow: hidden;
+}
+
+.sim-info-arena-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.45) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.45) 1px, transparent 1px);
+  background-size: 36px 36px;
+  opacity: 0.6;
+}
+
+.sim-info-demo-ball {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.94);
+  box-shadow: 0 8px 14px rgba(120, 90, 70, 0.14);
+}
+
+.sim-info-demo-ball.is-pink { background: #f8b8c9; }
+.sim-info-demo-ball.is-mint { background: #bfe8d8; }
+.sim-info-demo-ball.is-sky { background: #c6def8; }
+
+.sim-info-demo-ball.duel-left {
+  left: 30%;
+  top: 46%;
+  animation: simInfoBallLeft 1.8s ease-in-out infinite;
+}
+
+.sim-info-demo-ball.duel-right {
+  left: 62%;
+  top: 46%;
+  animation: simInfoBallRight 1.8s ease-in-out infinite;
+}
+
+.sim-info-hit-spark {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,214,138,0.92) 42%, rgba(255,142,123,0) 100%);
+  animation: simInfoSpark 1.8s ease-in-out infinite;
+}
+
+.sim-info-hit-badge {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translateX(-50%);
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  color: #8d5a4b;
+  font-weight: 900;
+  animation: simInfoSparkBadge 1.8s ease-in-out infinite;
+}
+
+.sim-info-health-label {
+  position: absolute;
+  min-width: 112px;
+  max-width: 130px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(255,255,255,0.94);
+  box-shadow: 0 6px 14px rgba(114, 86, 68, 0.1);
+}
+
+.duel-label-left {
+  left: 12px;
+  top: 12px;
+}
+
+.duel-label-right {
+  right: 12px;
+  top: 12px;
+}
+
+.sim-info-health-label strong,
+.sim-info-health-label span,
+.sim-info-health-label em {
+  display: block;
+  font-style: normal;
+}
+
+.sim-info-health-label strong {
+  color: #795f50;
+  font-size: 0.84rem;
+  margin-bottom: 4px;
+}
+
+.sim-info-health-values {
+  color: #8d7466;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.sim-info-health-values .hp-before {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.sim-info-health-values .hp-after {
+  color: #c35e72;
+  font-weight: 800;
+}
+
+.sim-info-health-track {
+  position: relative;
+  display: block;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(119, 95, 81, 0.16);
+}
+
+.sim-info-health-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff7c98 0%, #ffb86a 45%, #86e29f 100%);
+}
+
+.sim-info-health-fill.is-full { width: 100%; }
+.sim-info-health-fill.is-drop { width: 78%; animation: simInfoHpDrop 1.8s ease-in-out infinite; }
+.sim-info-health-fill.is-winner { width: 42%; }
+
+.sim-info-scene-stats {
+  min-height: 252px;
+  padding: 14px;
+}
+
+.sim-info-stat-meaning-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sim-info-stat-meaning-card {
+  min-height: 104px;
+  border-radius: 18px;
+  border: 2px solid rgba(255,255,255,0.92);
+  padding: 12px;
+  box-shadow: 0 8px 16px rgba(114, 86, 68, 0.08);
+}
+
+.sim-info-stat-meaning-card header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #755949;
+  margin-bottom: 8px;
+}
+
+.sim-info-stat-meaning-card header span {
+  font-size: 1.1rem;
+}
+
+.sim-info-stat-meaning-card.is-health { background: linear-gradient(180deg, #fff1f5 0%, #ffdfe9 100%); }
+.sim-info-stat-meaning-card.is-attack { background: linear-gradient(180deg, #fff5e9 0%, #ffe1c1 100%); }
+.sim-info-stat-meaning-card.is-accuracy { background: linear-gradient(180deg, #eef7ff 0%, #dff0ff 100%); }
+.sim-info-stat-meaning-card.is-defense { background: linear-gradient(180deg, #eefaf6 0%, #d6f1e8 100%); }
+
+.sim-info-mini-note,
+.sim-info-mini-formula {
+  color: #8b7061;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.sim-info-mini-formula {
+  margin-top: 8px;
+  font-weight: 800;
+}
+
+.sim-info-big-hp-track {
+  position: relative;
+  height: 10px;
+  margin-top: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(119, 95, 81, 0.16);
+}
+
+.sim-info-big-hp-base,
+.sim-info-big-hp-bonus {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+}
+
+.sim-info-big-hp-base {
+  width: 54%;
+  background: rgba(255, 145, 170, 0.55);
+}
+
+.sim-info-big-hp-bonus {
+  width: 100%;
+  background: linear-gradient(90deg, #ff7c98 0%, #ffb86a 45%, #86e29f 100%);
+  clip-path: inset(0 0 0 54%);
+}
+
+.sim-info-attack-demo {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sim-info-attack-hit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  min-height: 32px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  color: #c15e4f;
+  font-weight: 900;
+  animation: simInfoDamagePulse 1.6s ease-in-out infinite;
+}
+
+.sim-info-accuracy-demo {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sim-info-accuracy-demo span,
+.sim-info-defense-formula {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  font-weight: 900;
+}
+
+.sim-info-accuracy-demo .is-hit {
+  color: #4e8d68;
+}
+
+.sim-info-accuracy-demo .is-miss {
+  color: #8c7183;
+}
+
+.sim-info-defense-formula {
+  margin-top: 10px;
+  color: #4d896f;
+}
+
+.sim-info-arena-shell.is-finale {
+  min-height: 194px;
+}
+
+.finale-ball-1 {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 38px;
+  height: 38px;
+}
+
+.finale-ball-2 {
+  left: 24%;
+  top: 66%;
+}
+
+.finale-ball-3 {
+  right: 18%;
+  top: 62%;
+}
+
+.sim-info-demo-ball.is-faded {
+  opacity: 0.28;
+  filter: grayscale(0.4);
+}
+
+.finale-label {
+  left: 16px;
+  top: 16px;
+}
+
+.finale-label.is-eliminated {
+  left: auto;
+  right: 16px;
+  top: auto;
+  bottom: 16px;
+  min-width: 96px;
+  text-align: center;
+  color: #8f7667;
+}
+
+.finale-label.is-winner {
+  max-width: 120px;
+}
+
+.sim-info-winner-crown {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff6dd 0%, #ffe6aa 100%);
+  color: #8a6a30;
+  font-weight: 900;
+  box-shadow: 0 8px 14px rgba(120, 90, 70, 0.1);
+}
+
+@keyframes simInfoCardFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes simInfoBallLeft {
+  0%, 100% { transform: translate(0, 0); }
+  42%, 58% { transform: translate(52px, 0); }
+}
+
+@keyframes simInfoBallRight {
+  0%, 100% { transform: translate(0, 0); }
+  42%, 58% { transform: translate(-52px, 0); }
+}
+
+@keyframes simInfoSpark {
+  0%, 28%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  45%, 58% { opacity: 1; transform: translate(-50%, -50%) scale(1.25); }
+}
+
+@keyframes simInfoSparkBadge {
+  0%, 28%, 100% { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  45%, 58% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes simInfoHpDrop {
+  0%, 25% { width: 100%; }
+  45%, 100% { width: 78%; }
+}
+
+@keyframes simInfoDamagePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+
+.theme-dark .popup.game-info-popup.game-info-popup-sim {
+  background: #241c1d;
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 20px 44px rgba(0,0,0,0.42);
+}
+
+.theme-dark .game-info-content-sim .game-info-lead,
+.theme-dark .sim-info-hero-note p,
+.theme-dark .sim-info-card-head p,
+.theme-dark .sim-info-mini-note,
+.theme-dark .sim-info-mini-formula,
+.theme-dark .game-info-content-sim .game-info-section ul {
+  color: #d4c0b8;
+}
+
+.theme-dark .game-info-tab-btn,
+.theme-dark .sim-info-hero-note,
+.theme-dark .sim-info-visual-card,
+.theme-dark .game-info-content-sim .game-info-section,
+.theme-dark .sim-info-health-label,
+.theme-dark .sim-info-player-chip,
+.theme-dark .sim-info-ready-pill,
+.theme-dark .sim-info-attack-hit,
+.theme-dark .sim-info-accuracy-demo span,
+.theme-dark .sim-info-defense-formula,
+.theme-dark .sim-info-winner-crown {
+  border-color: rgba(255,255,255,0.08);
+}
+
+.theme-dark .game-info-tab-btn,
+.theme-dark .sim-info-hero-note,
+.theme-dark .sim-info-visual-card,
+.theme-dark .game-info-content-sim .game-info-section {
+  background: rgba(255,255,255,0.04);
+}
+
+.theme-dark .game-info-tab-btn {
+  color: #ead6cd;
+}
+
+.theme-dark .game-info-tab-btn.is-active {
+  background: linear-gradient(180deg, rgba(255,197,164,0.24) 0%, rgba(255,154,140,0.18) 100%);
+  color: #fff0e8;
+}
+
+.theme-dark .sim-info-scene,
+.theme-dark .sim-info-arena-shell {
+  background:
+    radial-gradient(circle at top left, rgba(255,255,255,0.06), transparent 24%),
+    linear-gradient(180deg, #2a2224 0%, #221b1d 100%);
+  border-color: rgba(255,255,255,0.08);
+}
+
+.theme-dark .sim-info-health-track,
+.theme-dark .sim-info-big-hp-track {
+  background: rgba(255,255,255,0.12);
+}
+
+.theme-dark .sim-info-card-head h4,
+.theme-dark .game-info-content-sim .game-info-section h4,
+.theme-dark .sim-info-stat-meaning-card header,
+.theme-dark .sim-info-health-label strong {
+  color: #fff0e8;
+}
+
+.theme-dark .sim-info-health-values,
+.theme-dark .sim-info-player-chip,
+.theme-dark .sim-info-ready-pill,
+.theme-dark .sim-info-attack-hit,
+.theme-dark .sim-info-accuracy-demo span,
+.theme-dark .sim-info-defense-formula,
+.theme-dark .finale-label.is-eliminated {
+  color: #f0dbd1;
+}
+
+@media (max-width: 760px) {
+  .popup.game-info-popup.game-info-popup-sim {
+    padding: 22px 16px;
+  }
+
+  .sim-info-visual-grid,
+  .sim-info-stat-meaning-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-info-visual-card.is-wide {
+    grid-column: span 1;
+  }
+
+  .sim-info-card-deck-mini {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .game-info-tabbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .game-info-tab-btn {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .sim-info-card-head {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-info-scene-cards,
+  .sim-info-scene-duel,
+  .sim-info-scene-finale,
+  .sim-info-scene-stats {
+    padding: 12px;
+  }
+
+  .sim-info-health-label {
+    min-width: 96px;
+    max-width: 108px;
+    padding: 7px 8px;
+  }
+
+  .sim-info-health-label strong {
+    font-size: 0.76rem;
+  }
+
+  .sim-info-health-values {
+    font-size: 0.7rem;
+  }
+
+  .sim-info-demo-ball.duel-left {
+    left: 24%;
+  }
+
+  .sim-info-demo-ball.duel-right {
+    left: 64%;
+  }
+}
+
+
+/* =========================
+   game4 : info popup refinements
+========================= */
+.sim-info-visual-grid {
+  align-items: stretch;
+}
+
+.sim-info-visual-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.sim-info-visual-card-step1 {
+  grid-column: auto;
+}
+
+.sim-info-scene-cards {
+  min-height: 228px;
+}
+
+.sim-info-card-deck-mini {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sim-info-stat-card-mini {
+  min-height: 92px;
+  padding: 10px 10px;
+}
+
+.sim-info-stat-card-mini strong {
+  font-size: 0.82rem;
+}
+
+.sim-info-stat-card-mini span:last-child {
+  font-size: 1.28rem;
+}
+
+.sim-info-ready-pill {
+  margin-top: 12px;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim {
+  background:
+    radial-gradient(circle at top center, rgba(75, 124, 214, 0.18) 0%, transparent 28%),
+    linear-gradient(180deg, rgba(10, 19, 36, 0.985) 0%, rgba(4, 11, 24, 1) 100%);
+  border-color: rgba(92, 143, 231, 0.34);
+  box-shadow:
+    0 28px 60px rgba(0, 0, 0, 0.54),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .popup-icon {
+  filter: drop-shadow(0 6px 14px rgba(90, 160, 255, 0.22));
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim h3 {
+  color: #f2f7ff;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .popup-message,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .game-info-lead,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .game-info-section ul,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .game-info-section li,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-hero-note p,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-card-head p,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-mini-note,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-mini-formula,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-health-values,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .finale-label.is-eliminated {
+  color: #c9d9ee !important;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .game-info-tabbar {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(10, 19, 36, 0.7);
+  border: 1px solid rgba(92, 143, 231, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .game-info-tab-btn {
+  background: transparent;
+  border-color: transparent;
+  color: #90abcb;
+  box-shadow: none;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .game-info-tab-btn.is-active {
+  background: linear-gradient(180deg, rgba(39, 61, 100, 0.98) 0%, rgba(24, 40, 72, 0.98) 100%);
+  border-color: rgba(116, 172, 255, 0.18);
+  color: #eef6ff;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-hero-note,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-visual-card,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .game-info-content-sim .game-info-section {
+  background:
+    radial-gradient(circle at top left, rgba(88, 146, 240, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(15, 27, 47, 0.96) 0%, rgba(10, 18, 33, 0.98) 100%) !important;
+  border-color: rgba(92, 143, 231, 0.18) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 16px 28px rgba(0, 0, 0, 0.22) !important;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-card-head h4,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .game-info-section h4,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-health-label strong,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-stat-meaning-card header {
+  color: #f2f7ff !important;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-step {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.22), rgba(196, 181, 253, 0.32));
+  color: #eef6ff;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-hero-badge {
+  background: linear-gradient(180deg, rgba(42, 70, 114, 0.98) 0%, rgba(29, 50, 88, 0.98) 100%);
+  color: #dff0ff;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-scene,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-arena-shell {
+  background:
+    radial-gradient(circle at top center, rgba(106, 164, 255, 0.14), transparent 30%),
+    linear-gradient(180deg, rgba(17, 30, 53, 0.98) 0%, rgba(7, 15, 30, 1) 100%);
+  border-color: rgba(112, 167, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-arena-grid {
+  background-image:
+    linear-gradient(rgba(157, 197, 255, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(157, 197, 255, 0.16) 1px, transparent 1px);
+  opacity: 0.58;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-player-chip,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-ready-pill,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-hit-badge,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-health-label,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-attack-hit,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-accuracy-demo span,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-defense-formula,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-winner-crown {
+  background: linear-gradient(180deg, rgba(29, 44, 72, 0.96) 0%, rgba(18, 30, 52, 0.98) 100%);
+  border-color: rgba(112, 167, 255, 0.16);
+  color: #eef6ff;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-player-chip.is-pink {
+  background: linear-gradient(180deg, rgba(57, 71, 113, 0.96) 0%, rgba(37, 51, 85, 0.98) 100%);
+  color: #f4f7ff;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-stat-card-mini {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.22);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-stat-card-mini.is-health {
+  background: linear-gradient(180deg, rgba(118, 72, 104, 0.9) 0%, rgba(85, 48, 75, 0.96) 100%);
+  color: #ffe8f3;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-stat-card-mini.is-attack {
+  background: linear-gradient(180deg, rgba(124, 92, 58, 0.92) 0%, rgba(92, 64, 39, 0.98) 100%);
+  color: #fff0dd;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-stat-card-mini.is-accuracy {
+  background: linear-gradient(180deg, rgba(69, 93, 129, 0.92) 0%, rgba(48, 68, 99, 0.98) 100%);
+  color: #e5f2ff;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-stat-card-mini.is-defense {
+  background: linear-gradient(180deg, rgba(55, 102, 95, 0.92) 0%, rgba(35, 73, 66, 0.98) 100%);
+  color: #e4fff7;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-stat-meaning-card {
+  border-color: rgba(112, 167, 255, 0.12);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.2);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-stat-meaning-card.is-health {
+  background: linear-gradient(180deg, rgba(66, 45, 68, 0.94) 0%, rgba(44, 29, 48, 0.98) 100%);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-stat-meaning-card.is-attack {
+  background: linear-gradient(180deg, rgba(75, 55, 38, 0.94) 0%, rgba(53, 37, 24, 0.98) 100%);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-stat-meaning-card.is-accuracy {
+  background: linear-gradient(180deg, rgba(38, 53, 76, 0.94) 0%, rgba(24, 35, 53, 0.98) 100%);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-stat-meaning-card.is-defense {
+  background: linear-gradient(180deg, rgba(33, 63, 59, 0.94) 0%, rgba(21, 43, 40, 0.98) 100%);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-health-track,
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .sim-info-big-hp-track {
+  background: rgba(255,255,255,0.14);
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .popup-message::-webkit-scrollbar {
+  width: 10px;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .popup-message::-webkit-scrollbar-thumb {
+  background: rgba(103, 148, 224, 0.5);
+  border-radius: 999px;
+}
+
+html.theme-dark .popup.game-info-popup.game-info-popup-sim .popup-message::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+}
+
+@media (max-width: 760px) {
+  .sim-info-visual-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-info-visual-card-step1,
+  .sim-info-visual-card.is-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .sim-info-card-deck-mini {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-info-scene-cards {
+    min-height: 380px;
+  }
+}
