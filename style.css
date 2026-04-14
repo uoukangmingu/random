@@ -1097,6 +1097,85 @@ input:disabled {
   justify-content: center;
 }
 
+
+.popup.battle-final-popup {
+  max-width: 620px;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.popup.battle-final-popup .popup-icon {
+  margin-bottom: 8px;
+}
+
+.popup.battle-final-popup h3 {
+  margin-bottom: 12px;
+}
+
+.popup.battle-final-popup .popup-message {
+  max-height: min(66vh, 640px);
+  overflow-y: auto;
+  padding-right: 0;
+  margin-bottom: 16px;
+}
+
+.battle-final-popup-list {
+  width: min(100%, 500px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.battle-final-popup-item,
+.battle-final-popup-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(251, 244, 238, 0.96) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 22px rgba(120, 90, 70, 0.08);
+}
+
+.battle-final-popup-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff8df 0%, #fff0be 100%);
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 16px rgba(120, 90, 70, 0.08);
+  color: #8a6b41;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.battle-final-popup-name {
+  margin-top: 10px;
+  font-size: 1.12rem;
+  font-weight: 900;
+  color: var(--soft-brown);
+  line-height: 1.3;
+}
+
+.battle-final-popup-formula {
+  margin-top: 6px;
+  color: #8f7363;
+  line-height: 1.55;
+  font-weight: 600;
+}
+
+.battle-final-popup-empty {
+  color: #8f7363;
+}
+
 .game-info-content {
   display: flex;
   flex-direction: column;
@@ -1478,8 +1557,12 @@ body.game1-mode .game-play-area {
 }
 
 .horse-emoji {
+  display: inline-block;
   font-size: 1.2rem;
+  line-height: 1;
   flex: 0 0 auto;
+  transform: scaleX(-1);
+  transform-origin: center;
 }
 
 .horse-info {
@@ -1809,8 +1892,30 @@ body.orientation-blocked .orientation-lock-overlay {
     padding-top: 54px;
   }
 
-  .popup.fast-forward-guide-popup {
+  .popup.fast-forward-guide-popup,
+  .popup.battle-final-popup {
     padding: 22px 16px;
+  }
+
+  .battle-final-popup-item,
+  .battle-final-popup-empty {
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+
+  .battle-final-popup-rank-badge {
+    min-width: 66px;
+    min-height: 32px;
+    padding: 6px 10px;
+    font-size: 0.92rem;
+  }
+
+  .battle-final-popup-name {
+    font-size: 1rem;
+  }
+
+  .battle-final-popup-formula {
+    font-size: 0.94rem;
   }
 
   .ff-guide-screen {
@@ -2175,6 +2280,28 @@ body.orientation-blocked .orientation-lock-overlay {
     height: calc(100vh - 16px);
     padding: 14px;
     gap: 12px;
+  }
+}
+
+@media (max-width: 1024px) and (pointer: coarse) and (orientation: portrait) {
+  body.game2-mobile-layout #game2Screen .race-horse {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    max-width: 52px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-horse .horse-info {
+    display: none;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-horse .horse-emoji {
+    font-size: 1.45rem;
+    line-height: 1;
   }
 }
 
@@ -6351,6 +6478,36 @@ html.theme-dark .sim-stat-card-front {
 
 html.theme-dark .popup-overlay {
   background: rgba(5, 3, 8, 0.6);
+}
+
+html.theme-dark .popup.battle-final-popup .popup-message {
+  color: var(--night-text-2) !important;
+}
+
+html.theme-dark .battle-final-popup-item,
+html.theme-dark .battle-final-popup-empty {
+  background:
+    linear-gradient(180deg, rgba(26, 39, 63, 0.98) 0%, rgba(13, 21, 37, 1) 100%);
+  border-color: rgba(125, 211, 252, 0.22);
+  box-shadow:
+    0 18px 28px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+html.theme-dark .battle-final-popup-rank-badge {
+  background: linear-gradient(180deg, rgba(39, 61, 100, 0.98) 0%, rgba(24, 40, 72, 0.98) 100%);
+  border-color: rgba(116, 172, 255, 0.18);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255,255,255,0.06);
+  color: #ffd76f;
+}
+
+html.theme-dark .battle-final-popup-name {
+  color: var(--night-text);
+}
+
+html.theme-dark .battle-final-popup-formula,
+html.theme-dark .battle-final-popup-empty {
+  color: var(--night-text-2);
 }
 
 html.theme-dark .orientation-lock-overlay {

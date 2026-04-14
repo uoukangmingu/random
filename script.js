@@ -4852,25 +4852,43 @@ function getBattleRanking(roundPlayers) {
 }
 
 function buildBattleFinalPopupHtml(ranking) {
-  return ranking
-    .map((player, index) => {
-      return `
-        <span style="display:block;margin:10px 0;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.72);">
-          <strong>${index + 1}위. ${escapeHtml(player.label)}</strong><br>
-          <span style="display:block;margin-top:4px;color:#8f7363;">1차: ${escapeHtml(getBattlePhase1FormulaText(player))}</span>
-          <span style="display:block;margin-top:4px;color:#8f7363;">최종: ${escapeHtml(getBattleFinalFormulaText(player))}</span>
-        </span>
-      `
-    })
-    .join('')
+  if (!ranking.length) {
+    return '<div class="battle-final-popup-empty">결과가 없습니다.</div>'
+  }
+
+  return `
+    <div class="battle-final-popup-list">
+      ${ranking.map((player, index) => {
+        return `
+          <div class="battle-final-popup-item">
+            <div class="battle-final-popup-rank-badge">${index + 1}위</div>
+            <div class="battle-final-popup-name">${escapeHtml(player.label)}</div>
+            <div class="battle-final-popup-formula">1차: ${escapeHtml(getBattlePhase1FormulaText(player))}</div>
+            <div class="battle-final-popup-formula">최종: ${escapeHtml(getBattleFinalFormulaText(player))}</div>
+          </div>
+        `
+      }).join('')}
+    </div>
+  `
 }
 
+function reorderBattleRowsByRanking(ranking) {
+  if (!battleTable || !Array.isArray(ranking) || !ranking.length) return
+
+  ranking.forEach((player) => {
+    const row = getBattleRowElement(player.id)
+    if (!row) return
+    battleTable.appendChild(row)
+  })
+}
 
 function applyBattleFinalCardsToRows(roundPlayers) {
   roundPlayers.forEach((player, index) => {
     player.finalRank = index + 1
     applyBattleFinalRow(player)
   })
+
+  reorderBattleRowsByRanking(roundPlayers)
 }
 
 async function finalizeBattleIfReady(token) {
@@ -4892,7 +4910,7 @@ async function finalizeBattleIfReady(token) {
   await showPopupAndWait(
     '최종결과 확인',
     buildBattleFinalPopupHtml(ranking) || '<span>결과가 없습니다.</span>',
-    { icon: '🏆', allowHtml: true }
+    { icon: '🏆', allowHtml: true, popupClass: 'battle-final-popup' }
   )
 
   if (!isBattleFlowActive(token)) return
