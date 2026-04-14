@@ -6,7 +6,8 @@ const screens = {
   game2: document.getElementById('game2Screen'),
   game3: document.getElementById('game3Screen'),
   game4: document.getElementById('game4Screen'),
-  game5: document.getElementById('game5Screen')
+  game5: document.getElementById('game5Screen'),
+  game6: document.getElementById('game6Screen')
 }
 
 const startBtn = document.getElementById('startBtn')
@@ -146,6 +147,28 @@ const navalBoardCard = document.querySelector('#game5Screen .naval-board-card')
 const navalLogList = document.getElementById('navalLogList')
 const navalRankingList = document.getElementById('navalRankingList')
 const navalDesc = document.querySelector('#game5Screen .naval-main-header .sub-text')
+
+const stockConfigInput = document.getElementById('stockConfigInput')
+const stockDurationInput = document.getElementById('stockDurationInput')
+const stockDurationValue = document.getElementById('stockDurationValue')
+const shuffleStockBtn = document.getElementById('shuffleStockBtn')
+const startStockBtn = document.getElementById('startStockBtn')
+const resetStockBtn = document.getElementById('resetStockBtn')
+const stockStatusText = document.getElementById('stockStatusText')
+const stockTotalInfo = document.getElementById('stockTotalInfo')
+const stockPlayerSummary = document.getElementById('stockPlayerSummary')
+const stockDesc = document.getElementById('stockDesc')
+const stockReadyBadge = document.getElementById('stockReadyBadge')
+const stockPlayerTabs = document.getElementById('stockPlayerTabs')
+const stockRoster = document.getElementById('stockRoster')
+const stockActivePlayerTitle = document.getElementById('stockActivePlayerTitle')
+const stockAllocationEditor = document.getElementById('stockAllocationEditor')
+const stockAllocationSummary = document.getElementById('stockAllocationSummary')
+const stockTimerBadge = document.getElementById('stockTimerBadge')
+const stockBoard = document.getElementById('stockBoard')
+const stockPortfolioList = document.getElementById('stockPortfolioList')
+const stockRankingList = document.getElementById('stockRankingList')
+const stockCardScreen = document.querySelector('#game6Screen .stock-card-screen')
 
 
 const {
@@ -461,7 +484,7 @@ const FAST_FORWARD_CARD_CONFIG = {
   3: { title: '카드 연산 배틀', state: 'none', badgeText: '없음' },
   4: { title: '볼 배틀', state: 'supported', badgeText: '가능' },
   5: { title: '폭격 해전', state: 'supported', badgeText: '가능' },
-  6: { title: '게임 6', state: 'pending', badgeText: '미정' },
+  6: { title: '주식게임', state: 'none', badgeText: '없음' },
   7: { title: '게임 7', state: 'pending', badgeText: '미정' },
   8: { title: '게임 8', state: 'pending', badgeText: '미정' }
 }
@@ -1349,6 +1372,7 @@ function handleLuckGameSelection(button) {
     if (button.dataset.game === '3') showScreen('game3')
     if (button.dataset.game === '4') showScreen('game4')
     if (button.dataset.game === '5') showScreen('game5')
+    if (button.dataset.game === '6') showScreen('game6')
     return
   }
 
@@ -1890,6 +1914,7 @@ function getPreviousStepFallbackTarget(screenKey = getActiveScreenKey()) {
     case 'game3':
     case 'game4':
     case 'game5':
+    case 'game6':
       return 'luck'
     case 'home':
     default:
@@ -1964,6 +1989,12 @@ function showScreen(target, options = {}) {
     setNavalInputLock(false)
   }
 
+  if (target !== 'game6') {
+    stopStockGame({ preserveSetup: true })
+    setStockInputLock(false)
+    setStockSetupLock(false)
+  }
+
   if (target === 'luck') {
     syncLuckCarousel({ align: true })
   }
@@ -1989,6 +2020,10 @@ function showScreen(target, options = {}) {
 
   if (target === 'game5') {
     ensureNavalReady()
+  }
+
+  if (target === 'game6') {
+    ensureStockReady()
   }
 
   updateOrientationGate()
@@ -2074,7 +2109,8 @@ function parseConfigToSlots(text) {
 
 function setCurrentSlots(slots) {
   currentSlots = slots
-  if (configInput) {
+  
+if (configInput) {
     lastValidConfigText = configInput.value
     lastAppliedRawText = configInput.value
   }
@@ -8122,6 +8158,1136 @@ function resetNavalGame() {
   updateNavalStatus('리셋 완료. 시작 버튼을 누르면 다시 시작된다.')
 }
 
+
+const STOCK_MAX_PLAYERS = 4
+const STOCK_SEED_MONEY = 1000000
+const STOCK_MIN_DURATION = 10
+const STOCK_MAX_DURATION = 60
+const STOCK_DURATION_STEP = 5
+const STOCK_TICK_MS = 250
+const STOCK_HISTORY_LENGTH = 44
+const STOCK_MAX_HOLDINGS = 4
+
+const stockCurrencyFormatter = new Intl.NumberFormat('ko-KR')
+
+const STOCK_MARKET_META = [
+  {
+    id: 'medical',
+    sector: '의료',
+    name: '메디코어',
+    emoji: '🩺',
+    trait: '방어형 · 안정적 상승',
+    description: '실적이 비교적 안정적이고 낙폭이 작아 방어적인 흐름을 보이는 의료주.',
+    basePriceRange: [52000, 98000],
+    drift: 0.0016,
+    volatility: 0.007,
+    shockChance: 0.07,
+    shockScale: 0.012,
+    cycleStrength: 0.003
+  },
+  {
+    id: 'tech',
+    sector: '기술',
+    name: '넥스트테크',
+    emoji: '💻',
+    trait: '성장형 · 변동성 큼',
+    description: '테마를 타면 강하게 치솟지만 조정도 큰 전형적인 기술 성장주.',
+    basePriceRange: [48000, 138000],
+    drift: 0.0024,
+    volatility: 0.012,
+    shockChance: 0.12,
+    shockScale: 0.023,
+    cycleStrength: 0.004
+  },
+  {
+    id: 'food',
+    sector: '식료품',
+    name: '데일리푸드',
+    emoji: '🍞',
+    trait: '필수소비재 · 완만한 움직임',
+    description: '큰 폭의 급등락은 드물지만 꾸준히 버텨주는 생활밀착형 식료품주.',
+    basePriceRange: [26000, 64000],
+    drift: 0.0013,
+    volatility: 0.0055,
+    shockChance: 0.05,
+    shockScale: 0.009,
+    cycleStrength: 0.0025
+  },
+  {
+    id: 'beauty',
+    sector: '뷰티',
+    name: '글로우뷰티',
+    emoji: '💄',
+    trait: '트렌드형 · 뉴스 민감',
+    description: '입소문과 유행에 민감해서 한 번 분위기를 타면 빠르게 튀는 뷰티주.',
+    basePriceRange: [24000, 82000],
+    drift: 0.0018,
+    volatility: 0.0095,
+    shockChance: 0.1,
+    shockScale: 0.018,
+    cycleStrength: 0.0037
+  },
+  {
+    id: 'leisure',
+    sector: '여가',
+    name: '플레이웨이브',
+    emoji: '🎡',
+    trait: '경기민감형 · 파동 큼',
+    description: '수요가 몰릴 때는 강하지만 분위기가 식으면 흔들리기 쉬운 여가주.',
+    basePriceRange: [32000, 76000],
+    drift: 0.0015,
+    volatility: 0.0105,
+    shockChance: 0.09,
+    shockScale: 0.017,
+    cycleStrength: 0.0055
+  },
+  {
+    id: 'coin',
+    sector: '코인',
+    name: '코스모코인',
+    emoji: '🪙',
+    trait: '초고변동 · 한순간 급등락',
+    description: '짧은 시간에도 방향이 크게 뒤집힐 수 있는 고위험 고변동 코인.',
+    basePriceRange: [9000, 42000],
+    drift: 0.002,
+    volatility: 0.02,
+    shockChance: 0.16,
+    shockScale: 0.042,
+    cycleStrength: 0.0075
+  }
+]
+
+let stockPlayers = []
+let stockDrafts = new Map()
+let stockGameRunning = false
+let stockGameFinished = false
+let stockElapsedMs = 0
+let stockDurationSeconds = 30
+let stockGameInterval = null
+let stockSetupTurnIndex = 0
+let stockMarket = []
+
+function formatStockMoney(value) {
+  return `${stockCurrencyFormatter.format(Math.round(value || 0))}원`
+}
+
+function formatStockSignedMoney(value) {
+  const safe = Math.round(value || 0)
+  const sign = safe > 0 ? '+' : safe < 0 ? '−' : '±'
+  return `${sign}${stockCurrencyFormatter.format(Math.abs(safe))}원`
+}
+
+function formatStockPercent(value) {
+  const safe = Number.isFinite(value) ? value : 0
+  const sign = safe > 0 ? '+' : safe < 0 ? '−' : '±'
+  return `${sign}${Math.abs(safe).toFixed(1)}%`
+}
+
+function clampStockDuration(value) {
+  const normalized = Number(value)
+  if (!Number.isFinite(normalized)) return 30
+  const stepped = Math.round(normalized / STOCK_DURATION_STEP) * STOCK_DURATION_STEP
+  return clampValue(stepped, STOCK_MIN_DURATION, STOCK_MAX_DURATION)
+}
+
+function createEmptyStockDraftSlots() {
+  return Array.from({ length: STOCK_MAX_HOLDINGS }, () => ({ stockId: '', amount: 0 }))
+}
+
+function buildStockDraftEntry(label, slots = null) {
+  return {
+    label,
+    slots: (slots || createEmptyStockDraftSlots()).map((slot) => ({
+      stockId: slot?.stockId || '',
+      amount: Number(slot?.amount) || 0
+    }))
+  }
+}
+
+function createStockMarket() {
+  return STOCK_MARKET_META.map((meta, index) => {
+    const [minPrice, maxPrice] = meta.basePriceRange
+    const price = Math.round(rand(minPrice, maxPrice))
+    return {
+      ...meta,
+      colorClass: `sector-${meta.id}`,
+      price,
+      openPrice: price,
+      lastChangePct: 0,
+      lastChangeValue: 0,
+      eventText: '개장 대기',
+      history: Array.from({ length: STOCK_HISTORY_LENGTH }, () => price),
+      momentum: rand(-meta.volatility, meta.volatility),
+      cycleSeed: rand(0, Math.PI * 2),
+      pulseSeed: rand(0, Math.PI * 2),
+      eventCooldown: 0,
+      sortOrder: index
+    }
+  })
+}
+
+function ensureStockMarket() {
+  if (!stockMarket.length) {
+    stockMarket = createStockMarket()
+  }
+}
+
+function regenerateStockMarket() {
+  stockMarket = createStockMarket()
+}
+
+function getStockMeta(stockId) {
+  return stockMarket.find((stock) => stock.id === stockId) || STOCK_MARKET_META.find((stock) => stock.id === stockId) || null
+}
+
+function parseStockConfigToPlayers(text) {
+  const rawItems = text
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (!rawItems.length) {
+    return { status: 'EMPTY' }
+  }
+
+  if (rawItems.length > STOCK_MAX_PLAYERS) {
+    return { status: 'TOO_MANY', count: rawItems.length }
+  }
+
+  const seen = new Set()
+  const players = []
+
+  for (const raw of rawItems) {
+    if (!raw || raw.includes('*')) {
+      return { status: 'INVALID' }
+    }
+
+    const normalized = raw.replace(/\u0000/g, '').trim()
+    if (!normalized) {
+      return { status: 'INVALID' }
+    }
+
+    if (seen.has(normalized)) {
+      return { status: 'DUPLICATE' }
+    }
+
+    seen.add(normalized)
+    players.push({
+      id: `stock-player-${players.length + 1}`,
+      label: normalized,
+      cash: 0,
+      holdings: [],
+      totalAsset: STOCK_SEED_MONEY,
+      liveProfit: 0
+    })
+  }
+
+  return { status: 'OK', players }
+}
+
+function handleStockParseFailure(parsed, { showPopupOnInvalid = false } = {}) {
+  if (!stockStatusText) return false
+
+  if (parsed.status === 'EMPTY') {
+    stockStatusText.textContent = '참가자를 먼저 입력해줘. 예: 홍길동, 김아무개'
+    return false
+  }
+
+  if (parsed.status === 'TOO_MANY') {
+    stockStatusText.textContent = `참가자는 최대 ${STOCK_MAX_PLAYERS}명까지 가능하다.`
+    if (showPopupOnInvalid) {
+      showPopup('참가자 수 초과', `주식게임은 최대 ${STOCK_MAX_PLAYERS}명까지 참가할 수 있어.`)
+    }
+    return false
+  }
+
+  if (parsed.status === 'DUPLICATE') {
+    stockStatusText.textContent = '같은 이름은 2번 이상 입력할 수 없다.'
+    if (showPopupOnInvalid) {
+      showPopup('중복 이름 불가', '주식게임은 같은 이름을 중복 등록할 수 없어.')
+    }
+    return false
+  }
+
+  stockStatusText.textContent = '입력 형식을 확인해줘. 예: 홍길동, 김아무개'
+  if (showPopupOnInvalid) {
+    showPopup('입력 확인', '이름만 쉼표로 구분해 적어줘. 예: 홍길동, 김아무개')
+  }
+  return false
+}
+
+function setStockPlayers(players) {
+  const previous = new Map()
+  stockDrafts.forEach((entry) => {
+    previous.set(entry.label, buildStockDraftEntry(entry.label, entry.slots))
+  })
+
+  stockPlayers = players
+  const nextDrafts = new Map()
+
+  stockPlayers.forEach((player) => {
+    const reused = previous.get(player.label)
+    nextDrafts.set(player.id, reused ? buildStockDraftEntry(player.label, reused.slots) : buildStockDraftEntry(player.label))
+  })
+
+  stockDrafts = nextDrafts
+  stockSetupTurnIndex = clampValue(stockSetupTurnIndex, 0, Math.max(0, stockPlayers.length - 1))
+  updateStockDescription()
+}
+
+function resetStockDrafts() {
+  const next = new Map()
+  stockPlayers.forEach((player) => {
+    next.set(player.id, buildStockDraftEntry(player.label))
+  })
+  stockDrafts = next
+  stockSetupTurnIndex = 0
+}
+
+function updateStockDescription() {
+  if (!stockDesc) return
+  stockDesc.textContent = `총 ${stockPlayers.length || 0}명이 분야별 주식에 투자하고, ${stockDurationSeconds}초 동안 매도 타이밍을 겨루는 게임이다.`
+}
+
+function setStockInputLock(isLocked) {
+  if (stockConfigInput) {
+    stockConfigInput.disabled = isLocked
+    stockConfigInput.style.opacity = isLocked ? '0.65' : '1'
+    stockConfigInput.style.cursor = isLocked ? 'not-allowed' : ''
+  }
+
+  if (stockDurationInput) {
+    stockDurationInput.disabled = isLocked
+    stockDurationInput.style.opacity = isLocked ? '0.65' : '1'
+    stockDurationInput.style.cursor = isLocked ? 'not-allowed' : ''
+  }
+}
+
+function setStockSetupLock(isLocked) {
+  if (shuffleStockBtn) {
+    shuffleStockBtn.disabled = isLocked
+    shuffleStockBtn.style.opacity = isLocked ? '0.55' : '1'
+    shuffleStockBtn.style.cursor = isLocked ? 'not-allowed' : ''
+  }
+
+  if (startStockBtn) {
+    startStockBtn.disabled = false
+  }
+
+  if (stockCardScreen) {
+    stockCardScreen.classList.toggle('stock-setup-locked', isLocked)
+  }
+}
+
+function getStockDraftValidation(playerId) {
+  const draft = stockDrafts.get(playerId)
+  const slots = draft?.slots || []
+  const positions = []
+  const seen = new Set()
+  let total = 0
+  let hasIncomplete = false
+  let hasDuplicate = false
+  let hasInvalidAmount = false
+
+  slots.forEach((slot) => {
+    const stockId = slot?.stockId || ''
+    const amount = Number(slot?.amount) || 0
+    const hasStock = Boolean(stockId)
+    const hasAmount = amount > 0
+
+    if (hasStock !== hasAmount) {
+      hasIncomplete = true
+    }
+
+    if (hasStock && hasAmount) {
+      if (seen.has(stockId)) {
+        hasDuplicate = true
+      }
+      seen.add(stockId)
+
+      if (amount % 10000 !== 0 || amount < 10000 || amount > STOCK_SEED_MONEY) {
+        hasInvalidAmount = true
+      }
+
+      total += amount
+      positions.push({ stockId, amount })
+    }
+  })
+
+  const count = positions.length
+  const remaining = STOCK_SEED_MONEY - total
+  const valid = !hasIncomplete && !hasDuplicate && !hasInvalidAmount && count >= 1 && count <= STOCK_MAX_HOLDINGS && remaining === 0
+
+  let issue = ''
+  if (hasDuplicate) {
+    issue = '같은 종목은 한 번만 담을 수 있어.'
+  } else if (hasIncomplete) {
+    issue = '종목과 투자금은 한 줄씩 함께 입력해줘.'
+  } else if (hasInvalidAmount) {
+    issue = '투자금은 1만원 단위, 최소 1만원부터 가능해.'
+  } else if (remaining > 0) {
+    issue = `남은 시드머니 ${formatStockMoney(remaining)}을 모두 투자해야 해.`
+  } else if (remaining < 0) {
+    issue = `투자금이 ${formatStockMoney(Math.abs(remaining))} 초과됐어.`
+  } else if (count === 0) {
+    issue = '최소 1개 종목은 골라야 해.'
+  }
+
+  return {
+    valid,
+    total,
+    remaining,
+    positions,
+    count,
+    issue
+  }
+}
+
+function getStockReadyCount() {
+  return stockPlayers.filter((player) => getStockDraftValidation(player.id).valid).length
+}
+
+function updateStockDurationText() {
+  if (!stockDurationValue) return
+  stockDurationValue.textContent = `${stockDurationSeconds}초`
+}
+
+function updateStockStatus(text) {
+  if (!stockStatusText) return
+  stockStatusText.textContent = text
+}
+
+function renderStockPlayerSummary() {
+  if (!stockPlayerSummary || !stockTotalInfo) return
+
+  stockPlayerSummary.innerHTML = ''
+
+  if (!stockPlayers.length) {
+    stockPlayerSummary.innerHTML = '<div class="stock-empty-state">참가자를 입력하면 준비 현황이 여기에 표시된다.</div>'
+    stockTotalInfo.textContent = '총 0명'
+    return
+  }
+
+  stockPlayers.forEach((player, index) => {
+    const validation = getStockDraftValidation(player.id)
+    const item = document.createElement('div')
+    item.className = `stock-player-summary-item${validation.valid ? ' is-ready' : ''}${index === stockSetupTurnIndex ? ' is-active' : ''}`
+    item.innerHTML = `
+      <div class="stock-player-summary-top">
+        <strong>${escapeHtml(player.label)}</strong>
+        <span class="stock-player-summary-badge ${validation.valid ? 'is-ready' : 'is-pending'}">${validation.valid ? '투자 완료' : '준비중'}</span>
+      </div>
+      <div class="stock-player-summary-sub">${validation.valid ? `${validation.count}개 종목 배분 완료` : (validation.issue || '아직 투자 구성이 끝나지 않았어.')}</div>
+    `
+    stockPlayerSummary.appendChild(item)
+  })
+
+  stockTotalInfo.textContent = `총 ${stockPlayers.length}명`
+}
+
+function renderStockPlayerTabs() {
+  if (!stockPlayerTabs) return
+
+  stockPlayerTabs.innerHTML = ''
+
+  stockPlayers.forEach((player, index) => {
+    const validation = getStockDraftValidation(player.id)
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = `stock-player-tab${index === stockSetupTurnIndex ? ' is-active' : ''}${validation.valid ? ' is-ready' : ''}`
+    button.dataset.playerId = player.id
+    button.innerHTML = `
+      <strong>${escapeHtml(player.label)}</strong>
+      <span>${validation.valid ? '완료' : '배분 중'}</span>
+    `
+    stockPlayerTabs.appendChild(button)
+  })
+}
+
+function buildStockSelectOptions(selectedStockId = '') {
+  const options = ['<option value="">종목 선택</option>']
+  stockMarket.forEach((stock) => {
+    const selected = stock.id === selectedStockId ? ' selected' : ''
+    options.push(`<option value="${stock.id}"${selected}>${stock.sector} · ${stock.name}</option>`)
+  })
+  return options.join('')
+}
+
+function renderStockAllocationEditor() {
+  if (!stockAllocationEditor || !stockAllocationSummary || !stockActivePlayerTitle) return
+
+  if (!stockPlayers.length) {
+    stockActivePlayerTitle.textContent = '현재 투자 차례'
+    stockAllocationEditor.innerHTML = '<div class="stock-empty-state">참가자를 입력하면 투자 슬롯이 열린다.</div>'
+    stockAllocationSummary.innerHTML = ''
+    return
+  }
+
+  const activePlayer = stockPlayers[stockSetupTurnIndex] || stockPlayers[0]
+  const draft = stockDrafts.get(activePlayer.id) || buildStockDraftEntry(activePlayer.label)
+  const validation = getStockDraftValidation(activePlayer.id)
+  const isLocked = stockGameRunning
+
+  stockActivePlayerTitle.textContent = `${activePlayer.label} 투자 구성`
+
+  stockAllocationEditor.innerHTML = draft.slots
+    .map((slot, index) => {
+      return `
+        <div class="stock-allocation-row${slot.stockId && slot.amount > 0 ? ' is-filled' : ''}">
+          <div class="stock-allocation-slot-label">${index + 1}번 선택</div>
+          <div class="stock-allocation-controls">
+            <select class="stock-select" data-player-id="${activePlayer.id}" data-slot-index="${index}" data-field="stockId" ${isLocked ? 'disabled' : ''}>
+              ${buildStockSelectOptions(slot.stockId)}
+            </select>
+            <div class="stock-amount-wrap">
+              <input class="stock-amount-input" data-player-id="${activePlayer.id}" data-slot-index="${index}" data-field="amount" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="금액 입력" value="${slot.amount || ''}" ${isLocked ? 'disabled' : ''} />
+              <span>원</span>
+            </div>
+          </div>
+        </div>
+      `
+    })
+    .join('')
+
+  stockAllocationSummary.innerHTML = `
+    <div class="stock-allocation-total is-total ${validation.valid ? 'is-ready' : ''}">
+      <span>총 투자금</span>
+      <strong>${formatStockMoney(validation.total)}</strong>
+    </div>
+    <div class="stock-allocation-total is-remaining ${validation.remaining === 0 ? 'is-ready' : validation.remaining < 0 ? 'is-danger' : ''}">
+      <span>남은 금액</span>
+      <strong>${formatStockMoney(Math.max(validation.remaining, 0))}</strong>
+    </div>
+    <div class="stock-allocation-note${validation.valid ? ' is-ready' : ''}">${validation.valid ? '준비 완료. 다음 참가자로 넘어가도 돼.' : escapeHtml(validation.issue || '시드머니 100만원을 모두 채워야 준비 완료돼.')}</div>
+    <div class="stock-turn-actions">
+      <button class="stock-turn-btn" type="button" data-stock-turn="prev" ${stockSetupTurnIndex === 0 || isLocked ? 'disabled' : ''}>← 이전 참가자</button>
+      <button class="stock-turn-btn" type="button" data-stock-turn="next" ${stockSetupTurnIndex >= stockPlayers.length - 1 || isLocked ? 'disabled' : ''}>다음 참가자 →</button>
+    </div>
+  `
+}
+
+function renderStockReadyBadge() {
+  if (!stockReadyBadge) return
+  const readyCount = getStockReadyCount()
+  stockReadyBadge.textContent = `${readyCount}/${stockPlayers.length || 0}명 준비`
+  stockReadyBadge.classList.toggle('is-ready', stockPlayers.length > 0 && readyCount === stockPlayers.length)
+}
+
+function renderStockRoster() {
+  if (!stockRoster) return
+
+  ensureStockMarket()
+
+  stockRoster.innerHTML = stockMarket
+    .map((stock) => {
+      return `
+        <article class="stock-roster-card ${stock.colorClass}">
+          <div class="stock-roster-head">
+            <span class="stock-roster-badge">${stock.emoji} ${stock.sector}</span>
+            <strong>${stock.name}</strong>
+          </div>
+          <div class="stock-roster-price">${formatStockMoney(stock.price)}</div>
+          <div class="stock-roster-trait">${stock.trait}</div>
+          <p class="stock-roster-desc">${stock.description}</p>
+        </article>
+      `
+    })
+    .join('')
+}
+
+function getStockHistoryPoints(history) {
+  const values = history.slice(-STOCK_HISTORY_LENGTH)
+  const minValue = Math.min(...values)
+  const maxValue = Math.max(...values)
+  const range = maxValue - minValue || 1
+
+  return values
+    .map((value, index) => {
+      const x = values.length === 1 ? 0 : (index / (values.length - 1)) * 100
+      const y = 52 - ((value - minValue) / range) * 40
+      return `${x.toFixed(2)},${y.toFixed(2)}`
+    })
+    .join(' ')
+}
+
+function getStockHoldingValue(holding) {
+  if (holding.sold) {
+    return holding.realizedValue || 0
+  }
+
+  const stock = getStockMeta(holding.stockId)
+  if (!stock) return 0
+  return holding.shares * stock.price
+}
+
+function getStockHoldingProfit(holding) {
+  return getStockHoldingValue(holding) - holding.amount
+}
+
+function getStockPlayerAsset(player) {
+  const cash = Number(player.cash) || 0
+  const holdingsValue = (player.holdings || []).reduce((sum, holding) => sum + getStockHoldingValue(holding), 0)
+  return cash + holdingsValue
+}
+
+function getStockPlayerProfit(player) {
+  return getStockPlayerAsset(player) - STOCK_SEED_MONEY
+}
+
+function getStockChartHolders(stockId) {
+  return stockPlayers
+    .map((player) => {
+      const holding = (player.holdings || []).find((item) => item.stockId === stockId)
+      if (!holding) return null
+      return { player, holding }
+    })
+    .filter(Boolean)
+}
+
+function renderStockBoard() {
+  if (!stockBoard) return
+
+  ensureStockMarket()
+
+  stockBoard.innerHTML = stockMarket
+    .map((stock) => {
+      const holders = getStockChartHolders(stock.id)
+      const priceDiff = stock.price - stock.openPrice
+      const percentDiff = stock.openPrice ? (priceDiff / stock.openPrice) * 100 : 0
+      const points = getStockHistoryPoints(stock.history)
+
+      const holderHtml = holders.length
+        ? holders
+            .map(({ player, holding }) => {
+              const profit = getStockHoldingProfit(holding)
+              const value = getStockHoldingValue(holding)
+              const percent = holding.amount ? (profit / holding.amount) * 100 : 0
+              return `
+                <div class="stock-holder-row ${profit >= 0 ? 'is-profit' : 'is-loss'}${holding.sold ? ' is-sold' : ''}">
+                  <strong>${escapeHtml(player.label)}</strong>
+                  <span>${holding.sold ? '매도완료' : '보유중'}</span>
+                  <em>${formatStockSignedMoney(profit)} · ${formatStockPercent(percent)}</em>
+                  <small>평가금액 ${formatStockMoney(value)}</small>
+                </div>
+              `
+            })
+            .join('')
+        : '<div class="stock-holder-empty">현재 이 종목을 보유한 참가자가 없어.</div>'
+
+      return `
+        <article class="stock-chart-card ${stock.colorClass}">
+          <div class="stock-chart-head">
+            <div>
+              <span class="stock-sector-chip">${stock.emoji} ${stock.sector}</span>
+              <h4>${stock.name}</h4>
+            </div>
+            <div class="stock-chart-price-block ${priceDiff >= 0 ? 'is-up' : 'is-down'}">
+              <strong>${formatStockMoney(stock.price)}</strong>
+              <span>${formatStockSignedMoney(priceDiff)} · ${formatStockPercent(percentDiff)}</span>
+            </div>
+          </div>
+          <div class="stock-chart-shell">
+            <svg viewBox="0 0 100 56" preserveAspectRatio="none" aria-hidden="true">
+              <polyline class="stock-chart-line" points="${points}"></polyline>
+            </svg>
+          </div>
+          <div class="stock-chart-note">${stock.trait} · ${stock.eventText}</div>
+          <div class="stock-chart-holders">
+            ${holderHtml}
+          </div>
+        </article>
+      `
+    })
+    .join('')
+}
+
+function renderStockPortfolio() {
+  if (!stockPortfolioList) return
+
+  if (!stockPlayers.length) {
+    stockPortfolioList.innerHTML = '<div class="stock-empty-state">게임을 시작하면 각 참가자의 포트폴리오가 여기에 표시된다.</div>'
+    return
+  }
+
+  stockPortfolioList.innerHTML = stockPlayers
+    .map((player) => {
+      const totalAsset = getStockPlayerAsset(player)
+      const profit = getStockPlayerProfit(player)
+      const holdings = player.holdings || []
+      const holdingsHtml = holdings.length
+        ? holdings
+            .map((holding) => {
+              const stock = getStockMeta(holding.stockId)
+              const value = getStockHoldingValue(holding)
+              const pnl = value - holding.amount
+              return `
+                <div class="stock-holding-chip ${holding.sold ? 'is-sold' : ''}">
+                  <div class="stock-holding-meta">
+                    <strong>${escapeHtml(stock?.name || holding.stockId)}</strong>
+                    <span>${formatStockMoney(holding.amount)} → ${formatStockMoney(value)}</span>
+                    <em>${formatStockSignedMoney(pnl)}</em>
+                  </div>
+                  <button class="stock-sell-btn" type="button" data-player-id="${player.id}" data-stock-id="${holding.stockId}" ${!stockGameRunning || holding.sold ? 'disabled' : ''}>${holding.sold ? '매도완료' : '매도'}</button>
+                </div>
+              `
+            })
+            .join('')
+        : '<div class="stock-holder-empty">아직 구성된 종목이 없어.</div>'
+
+      return `
+        <article class="stock-portfolio-card">
+          <div class="stock-portfolio-head">
+            <div>
+              <h4>${escapeHtml(player.label)}</h4>
+              <p>현재 총자산 ${formatStockMoney(totalAsset)}</p>
+            </div>
+            <div class="stock-portfolio-profit ${profit >= 0 ? 'is-profit' : 'is-loss'}">${formatStockSignedMoney(profit)}</div>
+          </div>
+          <div class="stock-portfolio-cash">현금 ${formatStockMoney(player.cash || 0)}</div>
+          <div class="stock-holdings-list">${holdingsHtml}</div>
+        </article>
+      `
+    })
+    .join('')
+}
+
+function getStockRanking() {
+  return [...stockPlayers].sort((a, b) => {
+    const assetDiff = getStockPlayerAsset(b) - getStockPlayerAsset(a)
+    if (assetDiff !== 0) return assetDiff
+    return a.label.localeCompare(b.label, 'ko')
+  })
+}
+
+function renderStockRanking() {
+  if (!stockRankingList) return
+
+  if (!stockPlayers.length) {
+    stockRankingList.innerHTML = '<div class="stock-empty-state">게임이 시작되면 실시간 순위가 여기에 표시된다.</div>'
+    return
+  }
+
+  const ranking = getStockRanking()
+  stockRankingList.innerHTML = ranking
+    .map((player, index) => {
+      const asset = getStockPlayerAsset(player)
+      const profit = getStockPlayerProfit(player)
+      return `
+        <div class="stock-ranking-item${index === 0 ? ' top' : ''}">
+          <div class="stock-ranking-num">${index + 1}</div>
+          <div class="stock-ranking-main">
+            <strong>${escapeHtml(player.label)}</strong>
+            <span>${formatStockMoney(asset)}</span>
+          </div>
+          <div class="stock-ranking-profit ${profit >= 0 ? 'is-profit' : 'is-loss'}">${formatStockSignedMoney(profit)}</div>
+        </div>
+      `
+    })
+    .join('')
+}
+
+function renderStockTimer() {
+  if (!stockTimerBadge) return
+
+  if (stockGameRunning) {
+    const remaining = Math.max(0, stockDurationSeconds - Math.ceil(stockElapsedMs / 1000))
+    stockTimerBadge.textContent = `${remaining}초 남음`
+    stockTimerBadge.classList.add('is-live')
+    return
+  }
+
+  if (stockGameFinished) {
+    stockTimerBadge.textContent = '종료'
+    stockTimerBadge.classList.remove('is-live')
+    return
+  }
+
+  stockTimerBadge.textContent = '준비중'
+  stockTimerBadge.classList.remove('is-live')
+}
+
+function renderStockGame() {
+  renderStockPlayerSummary()
+  renderStockPlayerTabs()
+  renderStockReadyBadge()
+  renderStockRoster()
+  renderStockAllocationEditor()
+  renderStockBoard()
+  renderStockPortfolio()
+  renderStockRanking()
+  renderStockTimer()
+}
+
+function setStockTurnByPlayerId(playerId) {
+  const nextIndex = stockPlayers.findIndex((player) => player.id === playerId)
+  if (nextIndex >= 0) {
+    stockSetupTurnIndex = nextIndex
+    renderStockGame()
+  }
+}
+
+function updateStockFromInput({ render = true, preserveDrafts = true } = {}) {
+  if (!stockConfigInput) return false
+
+  const parsed = parseStockConfigToPlayers(stockConfigInput.value)
+  if (parsed.status !== 'OK') {
+    return handleStockParseFailure(parsed)
+  }
+
+  if (!preserveDrafts) {
+    stockDrafts = new Map()
+  }
+
+  setStockPlayers(parsed.players)
+
+  if (!preserveDrafts) {
+    resetStockDrafts()
+  }
+
+  if (render) {
+    renderStockGame()
+    updateStockStatus(`실시간 반영 완료: 총 ${stockPlayers.length}명`)
+  }
+
+  return true
+}
+
+function ensureStockReady() {
+  ensureStockMarket()
+
+  if (stockDurationInput) {
+    stockDurationSeconds = clampStockDuration(stockDurationInput.value)
+    stockDurationInput.value = String(stockDurationSeconds)
+  }
+  updateStockDurationText()
+
+  if (!stockPlayers.length && stockConfigInput) {
+    const parsed = parseStockConfigToPlayers(stockConfigInput.value)
+    if (parsed.status === 'OK') {
+      setStockPlayers(parsed.players)
+    } else {
+      stockConfigInput.value = '홍길동, 김아무개'
+      const fallbackParsed = parseStockConfigToPlayers(stockConfigInput.value)
+      if (fallbackParsed.status === 'OK') {
+        setStockPlayers(fallbackParsed.players)
+      }
+    }
+  }
+
+  renderStockGame()
+
+  if (!stockGameRunning && !stockGameFinished) {
+    updateStockStatus('투자 준비 완료. 모든 참가자의 시드머니 100만원 배분을 끝내면 시작할 수 있다.')
+  }
+}
+
+function sanitizeStockAmount(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric) || numeric <= 0) return 0
+  return clampValue(Math.round(numeric / 10000) * 10000, 0, STOCK_SEED_MONEY)
+}
+
+function updateStockDraftField(playerId, slotIndex, field, value) {
+  const entry = stockDrafts.get(playerId)
+  if (!entry || !entry.slots[slotIndex]) return
+
+  if (field === 'stockId') {
+    entry.slots[slotIndex].stockId = String(value || '')
+    if (!entry.slots[slotIndex].stockId) {
+      entry.slots[slotIndex].amount = 0
+    }
+  }
+
+  if (field === 'amount') {
+    entry.slots[slotIndex].amount = sanitizeStockAmount(value)
+  }
+
+  stockDrafts.set(playerId, buildStockDraftEntry(entry.label, entry.slots))
+  renderStockGame()
+}
+
+function buildStockRoundPlayers() {
+  return stockPlayers.map((player) => {
+    const validation = getStockDraftValidation(player.id)
+    const holdings = validation.positions.map((position, index) => {
+      const stock = getStockMeta(position.stockId)
+      const buyPrice = stock?.price || 1
+      return {
+        id: `${player.id}-holding-${index + 1}`,
+        stockId: position.stockId,
+        amount: position.amount,
+        buyPrice,
+        shares: position.amount / buyPrice,
+        sold: false,
+        realizedValue: 0,
+        sellPrice: 0
+      }
+    })
+
+    return {
+      id: player.id,
+      label: player.label,
+      cash: 0,
+      holdings
+    }
+  })
+}
+
+function getStockEventText(stock, changePct) {
+  if (stock.id === 'coin') {
+    if (changePct >= 0.03) return '코인 매수세 폭발'
+    if (changePct <= -0.03) return '코인 급락 경보'
+  }
+
+  if (stock.id === 'tech') {
+    if (changePct >= 0.018) return '기술 테마 강세'
+    if (changePct <= -0.018) return '차익 실현 매물 출회'
+  }
+
+  if (stock.id === 'medical') {
+    if (changePct >= 0.012) return '방어주 선호 유입'
+    if (changePct <= -0.012) return '차분한 조정'
+  }
+
+  if (stock.id === 'beauty') {
+    if (changePct >= 0.017) return '뷰티 바이럴 확산'
+    if (changePct <= -0.017) return '유행 식는 중'
+  }
+
+  if (stock.id === 'leisure') {
+    if (changePct >= 0.017) return '여가 수요 급증'
+    if (changePct <= -0.017) return '소비 심리 위축'
+  }
+
+  if (stock.id === 'food') {
+    if (changePct >= 0.01) return '필수소비재 방어력 발동'
+    if (changePct <= -0.01) return '수급 조정 구간'
+  }
+
+  return changePct >= 0 ? '완만한 상승' : '완만한 하락'
+}
+
+function updateSingleStockTick(stock, tickIndex) {
+  const cycleWave = Math.sin(tickIndex * 0.32 + stock.cycleSeed) * stock.cycleStrength
+  const pulse = Math.cos(tickIndex * 0.18 + stock.pulseSeed) * stock.cycleStrength * 0.6
+  const noise = rand(-stock.volatility, stock.volatility)
+  stock.momentum = clampValue(stock.momentum * 0.74 + cycleWave * 0.8 + pulse * 0.4 + noise * 0.45, -0.08, 0.08)
+
+  let shock = 0
+  if (Math.random() < stock.shockChance) {
+    shock = rand(-stock.shockScale, stock.shockScale)
+    stock.eventCooldown = 3
+  } else if (stock.eventCooldown > 0) {
+    stock.eventCooldown -= 1
+  }
+
+  const changePct = stock.drift + stock.momentum + noise + shock
+  const prevPrice = stock.price
+  const nextPrice = Math.max(1000, Math.round(prevPrice * (1 + changePct)))
+  stock.price = nextPrice
+  stock.lastChangeValue = nextPrice - prevPrice
+  stock.lastChangePct = prevPrice ? stock.lastChangeValue / prevPrice : 0
+  stock.eventText = getStockEventText(stock, stock.lastChangePct)
+  stock.history.push(nextPrice)
+  if (stock.history.length > STOCK_HISTORY_LENGTH) {
+    stock.history.shift()
+  }
+}
+
+function finalizeStockAutoSell() {
+  stockPlayers.forEach((player) => {
+    player.holdings.forEach((holding) => {
+      if (holding.sold) return
+      const value = getStockHoldingValue(holding)
+      player.cash += value
+      holding.sold = true
+      holding.realizedValue = value
+      holding.sellPrice = getStockMeta(holding.stockId)?.price || holding.buyPrice
+    })
+  })
+}
+
+function showStockResultsPopup() {
+  const ranking = getStockRanking()
+  const html = `
+    <div class="stock-results-popup-list">
+      ${ranking
+        .map((player, index) => {
+          const asset = getStockPlayerAsset(player)
+          const profit = getStockPlayerProfit(player)
+          return `
+            <div class="stock-results-popup-item">
+              <div class="stock-results-popup-rank">${index + 1}위</div>
+              <strong>${escapeHtml(player.label)}</strong>
+              <span>최종 자산 ${formatStockMoney(asset)}</span>
+              <em class="${profit >= 0 ? 'is-profit' : 'is-loss'}">${formatStockSignedMoney(profit)}</em>
+            </div>
+          `
+        })
+        .join('')}
+    </div>
+  `
+
+  showPopup('주식게임 최종 순위', html, { icon: '🏆', allowHtml: true, popupClass: 'stock-results-popup' })
+}
+
+function finishStockGame() {
+  if (stockGameFinished) return
+  if (stockGameInterval) {
+    clearInterval(stockGameInterval)
+    stockGameInterval = null
+  }
+
+  stockGameRunning = false
+  stockGameFinished = true
+  stockElapsedMs = stockDurationSeconds * 1000
+  finalizeStockAutoSell()
+  setStockInputLock(false)
+  setStockSetupLock(false)
+  updateStockStatus('게임 종료! 자동 매도까지 완료됐어.')
+  renderStockGame()
+  showStockResultsPopup()
+}
+
+function tickStockGame() {
+  if (!stockGameRunning) return
+
+  stockElapsedMs += STOCK_TICK_MS
+  const tickIndex = Math.floor(stockElapsedMs / STOCK_TICK_MS)
+  stockMarket.forEach((stock) => updateSingleStockTick(stock, tickIndex))
+  renderStockBoard()
+  renderStockPortfolio()
+  renderStockRanking()
+  renderStockTimer()
+
+  if (stockElapsedMs >= stockDurationSeconds * 1000) {
+    finishStockGame()
+  }
+}
+
+function startStockGame() {
+  if (stockGameRunning) return
+  if (!stockConfigInput) return
+
+  const parsed = parseStockConfigToPlayers(stockConfigInput.value)
+  if (parsed.status !== 'OK') {
+    handleStockParseFailure(parsed, { showPopupOnInvalid: true })
+    return
+  }
+
+  if (parsed.players.length < 2) {
+    showMinParticipantsPopup(STOCK_MAX_PLAYERS)
+    return
+  }
+
+  setStockPlayers(parsed.players)
+
+  const invalidPlayer = stockPlayers.find((player) => !getStockDraftValidation(player.id).valid)
+  if (invalidPlayer) {
+    setStockTurnByPlayerId(invalidPlayer.id)
+    showPopup('투자 준비 확인', `${invalidPlayer.label}의 투자 구성이 아직 완성되지 않았어. 시드머니 100만원을 모두 배분해줘.`)
+    return
+  }
+
+  stockPlayers = buildStockRoundPlayers()
+  stockGameRunning = true
+  stockGameFinished = false
+  stockElapsedMs = 0
+  setStockInputLock(true)
+  setStockSetupLock(true)
+  updateStockStatus('실시간 거래 시작! 종목 버튼으로 원하는 순간에 매도할 수 있어.')
+  renderStockGame()
+
+  if (stockGameInterval) {
+    clearInterval(stockGameInterval)
+  }
+  stockGameInterval = setInterval(tickStockGame, STOCK_TICK_MS)
+}
+
+function sellStockHolding(playerId, stockId) {
+  if (!stockGameRunning) return
+  const player = stockPlayers.find((item) => item.id === playerId)
+  if (!player) return
+
+  const holding = player.holdings.find((item) => item.stockId === stockId)
+  if (!holding || holding.sold) return
+
+  const value = getStockHoldingValue(holding)
+  player.cash += value
+  holding.sold = true
+  holding.realizedValue = value
+  holding.sellPrice = getStockMeta(holding.stockId)?.price || holding.buyPrice
+
+  updateStockStatus(`${player.label}이(가) ${getStockMeta(stockId)?.name || stockId}을(를) ${formatStockMoney(value)}에 매도했다.`)
+  renderStockBoard()
+  renderStockPortfolio()
+  renderStockRanking()
+}
+
+function stopStockGame(options = {}) {
+  const { preserveSetup = true } = options
+  if (stockGameInterval) {
+    clearInterval(stockGameInterval)
+    stockGameInterval = null
+  }
+
+  stockGameRunning = false
+
+  if (!preserveSetup) {
+    stockGameFinished = false
+    stockElapsedMs = 0
+    stockPlayers = []
+    stockDrafts = new Map()
+    regenerateStockMarket()
+  }
+
+  renderStockTimer()
+}
+
+function shuffleStockParticipants() {
+  if (!stockConfigInput || stockGameRunning) return
+
+  const parsed = parseStockConfigToPlayers(stockConfigInput.value)
+  if (parsed.status !== 'OK') {
+    handleStockParseFailure(parsed, { showPopupOnInvalid: true })
+    return
+  }
+
+  const shuffled = shuffleArray(parsed.players)
+  stockConfigInput.value = shuffled.map((player) => player.label).join(', ')
+  setStockPlayers(shuffled)
+  resetStockDrafts()
+  regenerateStockMarket()
+  renderStockGame()
+  updateStockStatus('참가자 순서와 주식 시세를 새로 셔플했어.')
+}
+
+function resetStockGame() {
+  stopStockGame({ preserveSetup: true })
+  stockGameFinished = false
+  stockElapsedMs = 0
+  setStockInputLock(false)
+  setStockSetupLock(false)
+
+  if (stockConfigInput) {
+    const parsed = parseStockConfigToPlayers(stockConfigInput.value)
+    if (parsed.status === 'OK') {
+      setStockPlayers(parsed.players)
+    } else {
+      stockConfigInput.value = '홍길동, 김아무개'
+      const fallbackParsed = parseStockConfigToPlayers(stockConfigInput.value)
+      if (fallbackParsed.status === 'OK') {
+        setStockPlayers(fallbackParsed.players)
+      }
+    }
+  }
+
+  resetStockDrafts()
+  regenerateStockMarket()
+  renderStockGame()
+  updateStockStatus('리셋 완료. 참가자별 투자 구성을 다시 정해줘.')
+}
+
 function startRace() {
   if (!raceConfigInput) return
 
@@ -8207,6 +9373,107 @@ gameLaunchButtons.forEach((button) => {
 comingSoonButtons.forEach((button) => {
   bindLuckGameItemInteraction(button)
 })
+
+if (stockConfigInput) {
+  stockConfigInput.addEventListener('input', () => {
+    if (!stockGameRunning) {
+      updateStockFromInput({ preserveDrafts: true })
+    }
+  })
+
+  stockConfigInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      startStockGame()
+    }
+  })
+}
+
+if (stockDurationInput) {
+  stockDurationInput.addEventListener('input', () => {
+    stockDurationSeconds = clampStockDuration(stockDurationInput.value)
+    stockDurationInput.value = String(stockDurationSeconds)
+    updateStockDurationText()
+    updateStockDescription()
+    renderStockTimer()
+  })
+}
+
+if (shuffleStockBtn) {
+  shuffleStockBtn.addEventListener('click', shuffleStockParticipants)
+}
+
+if (startStockBtn) {
+  startStockBtn.addEventListener('click', startStockGame)
+}
+
+if (resetStockBtn) {
+  resetStockBtn.addEventListener('click', resetStockGame)
+}
+
+if (stockPlayerTabs) {
+  stockPlayerTabs.addEventListener('click', (event) => {
+    const button = event.target.closest('.stock-player-tab')
+    if (!button || stockGameRunning) return
+    setStockTurnByPlayerId(button.dataset.playerId)
+  })
+}
+
+if (stockAllocationEditor) {
+  stockAllocationEditor.addEventListener('input', (event) => {
+    const target = event.target
+    if (!(target instanceof HTMLElement)) return
+    if (stockGameRunning) return
+
+    if (target.classList.contains('stock-amount-input')) {
+      const digitsOnly = String(target.value || '').replace(/[^\d]/g, '')
+      target.value = digitsOnly
+      return
+    }
+
+    const playerId = target.dataset.playerId
+    const slotIndex = Number(target.dataset.slotIndex)
+    const field = target.dataset.field
+    if (!playerId || !Number.isFinite(slotIndex) || !field) return
+    updateStockDraftField(playerId, slotIndex, field, target.value)
+  })
+
+  stockAllocationEditor.addEventListener('change', (event) => {
+    const target = event.target
+    if (!(target instanceof HTMLElement)) return
+    const playerId = target.dataset.playerId
+    const slotIndex = Number(target.dataset.slotIndex)
+    const field = target.dataset.field
+    if (!playerId || !Number.isFinite(slotIndex) || !field || stockGameRunning) return
+    updateStockDraftField(playerId, slotIndex, field, target.value)
+  })
+}
+
+if (stockAllocationSummary) {
+  stockAllocationSummary.addEventListener('click', (event) => {
+    const button = event.target.closest('.stock-turn-btn')
+    if (!button || stockGameRunning) return
+
+    if (button.dataset.stockTurn === 'prev') {
+      stockSetupTurnIndex = clampValue(stockSetupTurnIndex - 1, 0, Math.max(0, stockPlayers.length - 1))
+      renderStockGame()
+      return
+    }
+
+    if (button.dataset.stockTurn === 'next') {
+      stockSetupTurnIndex = clampValue(stockSetupTurnIndex + 1, 0, Math.max(0, stockPlayers.length - 1))
+      renderStockGame()
+    }
+  })
+}
+
+if (stockPortfolioList) {
+  stockPortfolioList.addEventListener('click', (event) => {
+    const button = event.target.closest('.stock-sell-btn')
+    if (!button) return
+    sellStockHolding(button.dataset.playerId, button.dataset.stockId)
+  })
+}
 
 if (shuffleBtn) {
   shuffleBtn.addEventListener('click', shuffleRound)
@@ -8671,6 +9938,17 @@ if (navalConfigInput) {
   renderNavalBoardState()
   renderNavalLogs()
   renderNavalRanking()
+}
+
+if (stockDurationInput) {
+  stockDurationSeconds = clampStockDuration(stockDurationInput.value)
+  stockDurationInput.value = String(stockDurationSeconds)
+  updateStockDurationText()
+}
+
+if (stockConfigInput) {
+  updateStockFromInput({ render: false, preserveDrafts: true })
+  renderStockGame()
 }
 
 if (screens.home) {

@@ -67,7 +67,7 @@
           <div>
             <p class="small-badge">🎲 luck games 🎲</p>
             <h2>운 게임 목록</h2>
-            <p class="sub-text">총 8개 게임으로 구성되며, 현재는 1번부터 5번까지 플레이 가능하다. 남은 게임도 순차적으로 추가될 예정이다.</p>
+            <p class="sub-text">총 8개 게임으로 구성되며, 현재는 1번부터 6번까지 플레이 가능하다. 남은 게임도 순차적으로 추가될 예정이다.</p>
           </div>
         </div>
 
@@ -121,13 +121,13 @@
               <div class="game-meta-row"><span class="game-meta-label">난이도</span><span class="game-meta-value">★★★</span></div>
             </div>
           </button>
-          <button class="game-item game-coming-soon" type="button">
+          <button class="game-item game-launch" data-game="6" type="button">
             <div class="game-num">6</div>
-            <h3>게임 6</h3>
-            <p>추후 개발 예정</p>
-            <div class="game-meta is-pending">
-              <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">미정</span></div>
-              <div class="game-meta-row"><span class="game-meta-label">난이도</span><span class="game-meta-value">미정</span></div>
+            <h3>주식게임</h3>
+            <p>분야별 종목에 투자하고 실시간 차트를 보며 매도 타이밍을 겨루는 게임</p>
+            <div class="game-meta">
+              <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~4명</span></div>
+              <div class="game-meta-row"><span class="game-meta-label">난이도</span><span class="game-meta-value">★★★</span></div>
             </div>
           </button>
           <button class="game-item game-coming-soon" type="button">
@@ -600,6 +600,144 @@
 
         <div class="naval-mobile-back-wrap">
           <button class="back-btn naval-mobile-back-btn" data-target="luck" type="button">← 목록으로</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="game6Screen" class="screen game-screen">
+      <div class="card game-card stock-card-screen">
+        <div class="stock-layout">
+          <aside class="stock-sidebar">
+            <div class="stock-sidebar-inner">
+              <div class="sidebar-head">
+                <h3 class="sidebar-title">주식게임 설정</h3>
+                <p class="sub-text">
+                  이름을 쉼표로 구분해 참가자를 등록하고, 각 참가자는 최대 4개 종목에 시드머니 100만원 전부를 투자해야 한다.
+                </p>
+              </div>
+
+              <div class="controls-wrap">
+                <div class="input-card">
+                  <label for="stockConfigInput">참가자</label>
+                  <input
+                    id="stockConfigInput"
+                    type="text"
+                    value="홍길동, 김아무개"
+                    autocomplete="off"
+                  />
+                  <p class="helper-text">
+                    쉼표(,)로 구분해 입력. 중복 이름은 불가하며 최대 4명까지 가능.
+                  </p>
+                </div>
+
+                <div class="input-card stock-duration-card">
+                  <label for="stockDurationInput">게임 진행 시간</label>
+                  <div class="stock-duration-row">
+                    <input id="stockDurationInput" type="range" min="10" max="60" step="5" value="30" />
+                    <span id="stockDurationValue" class="stock-duration-value">30초</span>
+                  </div>
+                  <p class="helper-text">
+                    최소 10초, 최대 60초까지 설정할 수 있어.
+                  </p>
+                </div>
+
+                <div class="button-row">
+                  <button id="shuffleStockBtn" class="action-btn secondary" type="button">셔플</button>
+                  <button id="startStockBtn" class="action-btn primary" type="button">시작</button>
+                  <button id="resetStockBtn" class="action-btn soft" type="button">리셋</button>
+                </div>
+
+                <div id="stockStatusText" class="status-text">
+                  참가자와 투자 구성을 완료하면 실시간 주식게임을 시작할 수 있다.
+                </div>
+              </div>
+
+              <div class="scoreboard-card">
+                <div class="scoreboard-head">
+                  <h3>참가자 준비 현황</h3>
+                  <span id="stockTotalInfo">총 0명</span>
+                </div>
+                <div id="stockPlayerSummary" class="stock-player-summary"></div>
+              </div>
+            </div>
+          </aside>
+
+          <div class="stock-main">
+            <div class="stock-main-header">
+              <div>
+                <p class="small-badge game-mini-badge">📈 game 6 📈</p>
+                <h2>주식게임</h2>
+                <p id="stockDesc" class="sub-text">분야별 특징이 다른 6개 종목에 투자하고, 원하는 타이밍에 매도해 최종 자산 순위를 겨루는 게임이다.</p>
+              </div>
+
+              <div class="game-header-actions">
+                <button class="back-btn" data-target="luck" type="button">← 목록으로</button>
+              </div>
+            </div>
+
+            <div class="stock-setup-card">
+              <div class="stock-setup-head">
+                <div>
+                  <h3>투자 준비</h3>
+                  <p class="sub-text">각 참가자는 최대 4개 종목까지 선택할 수 있고, 시드머니 100만원을 반드시 만원 단위로 전부 배분해야 해.</p>
+                </div>
+                <span id="stockReadyBadge" class="stock-ready-badge">준비중</span>
+              </div>
+
+              <div id="stockPlayerTabs" class="stock-player-tabs"></div>
+
+              <div class="stock-setup-grid">
+                <div class="stock-market-preview-card">
+                  <div class="stock-panel-head">
+                    <h3>종목 미리보기</h3>
+                    <p class="sub-text">의료, 기술, 식료품, 뷰티, 여가, 코인 분야의 특성이 각 차트 움직임에 반영된다.</p>
+                  </div>
+                  <div id="stockRoster" class="stock-roster"></div>
+                </div>
+
+                <div class="stock-allocation-card">
+                  <div id="stockActivePlayerTitle" class="stock-active-player-title">현재 투자 차례</div>
+                  <div id="stockAllocationEditor" class="stock-allocation-editor"></div>
+                  <div id="stockAllocationSummary" class="stock-allocation-summary"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="stock-live-card">
+              <div class="stock-live-head">
+                <div>
+                  <h3>실시간 주가 보드</h3>
+                  <p class="sub-text">게임이 시작되면 6개 종목의 그래프가 동시에 움직이고, 종목별 보유자의 손익이 차트 아래에 즉시 반영된다.</p>
+                </div>
+                <div class="stock-live-meta">
+                  <span id="stockTimerBadge" class="stock-timer-badge">준비중</span>
+                </div>
+              </div>
+              <div id="stockBoard" class="stock-board"></div>
+            </div>
+
+            <div class="stock-bottom-grid">
+              <div class="stock-panel stock-portfolio-panel">
+                <div class="stock-panel-head">
+                  <h3>참가자 포트폴리오</h3>
+                  <p class="sub-text">종목 버튼으로 언제든 매도할 수 있지만, 한 번 매도한 종목은 다시 살 수 없다.</p>
+                </div>
+                <div id="stockPortfolioList" class="stock-portfolio-list"></div>
+              </div>
+
+              <div class="stock-panel stock-ranking-panel">
+                <div class="stock-panel-head">
+                  <h3>실시간 순위</h3>
+                  <p class="sub-text">매도 완료 자산과 미실현 평가금액을 합산한 현재 총자산 기준으로 정렬된다.</p>
+                </div>
+                <div id="stockRankingList" class="stock-ranking-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stock-mobile-back-wrap">
+          <button class="back-btn stock-mobile-back-btn" data-target="luck" type="button">← 목록으로</button>
         </div>
       </div>
     </section>
