@@ -10476,20 +10476,21 @@ body,
   }
 
   .app-cursor {
+    --cursor-x: 0px;
+    --cursor-y: 0px;
+    --cursor-scale: 0.8;
     position: fixed;
     top: 0;
     left: 0;
-    width: 28px;
-    height: 28px;
-    margin-left: -14px;
-    margin-top: -14px;
+    width: 24px;
+    height: 24px;
     border-radius: 999px;
     pointer-events: none;
     z-index: 9999;
     opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.86);
-    transition: opacity 0.18s ease, transform 0.16s ease, width 0.18s ease, height 0.18s ease;
-    will-change: left, top, transform, opacity;
+    transform: translate3d(var(--cursor-x), var(--cursor-y), 0) translate3d(-50%, -50%, 0) scale(var(--cursor-scale));
+    transition: opacity 0.1s ease, transform 0.03s linear, width 0.12s ease, height 0.12s ease;
+    will-change: transform, opacity;
     mix-blend-mode: normal;
   }
 
@@ -10504,9 +10505,8 @@ body,
 
   .app-cursor::before {
     border: 1.5px solid var(--cursor-ring);
-    background: var(--cursor-fill);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 0 18px var(--cursor-glow);
-    backdrop-filter: blur(8px);
+    background: color-mix(in srgb, var(--cursor-fill) 88%, transparent 12%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 0 10px var(--cursor-glow);
   }
 
   .app-cursor::after {
@@ -10525,7 +10525,7 @@ body,
   }
 
   .app-cursor.is-hover {
-    transform: translate3d(0, 0, 0) scale(1.18);
+    --cursor-scale: 1.12;
   }
 
   .app-cursor.is-hover::before {
@@ -10533,14 +10533,12 @@ body,
   }
 
   .app-cursor.is-press {
-    transform: translate3d(0, 0, 0) scale(0.92);
+    --cursor-scale: 0.92;
   }
 
   .app-cursor.is-text {
     width: 20px;
     height: 30px;
-    margin-left: -10px;
-    margin-top: -15px;
   }
 
   .app-cursor.is-text::after {
@@ -12054,4 +12052,2601 @@ html.theme-dark .stock-portfolio-profit.is-loss,
 html.theme-dark .stock-ranking-profit.is-loss,
 html.theme-dark .stock-results-popup-item em.is-loss {
   color: #ff9a9a;
+}
+
+
+/* =========================
+   performance tuning
+========================= */
+body.app-active-game .background-deco {
+  animation: none;
+  filter: none;
+  opacity: 0.24;
+}
+
+body.app-active-game .card,
+body.app-active-game .popup,
+body.app-active-game .game-ff-badge,
+body.app-active-game .orientation-lock-overlay {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.race-ranking-list,
+.battle-table,
+.sim-health-overlay,
+#stockBoard,
+#stockPortfolioList,
+#stockRankingList,
+#navalBoardWrap {
+  contain: layout paint;
+}
+
+.sim-ball-label,
+.race-horse,
+.app-cursor {
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .background-deco,
+  .race-horse.horse-finished,
+  .race-horse.horse-finished::after,
+  .game-canvas-wrap.is-fast-forwarding::after,
+  .race-track-wrap.is-fast-forwarding::after,
+  .sim-arena-wrap.is-fast-forwarding::after,
+  .sim-arena-zoom-stage.is-fast-forwarding::after,
+  .game-canvas-wrap.is-fast-forward-blocked::after,
+  .race-track-wrap.is-fast-forward-blocked::after,
+  .sim-arena-wrap.is-fast-forward-blocked::after,
+  .sim-arena-zoom-stage.is-fast-forward-blocked::after {
+    animation: none !important;
+  }
+}
+
+
+/* =========================
+   stock game overhaul
+========================= */
+.stock-card-screen.stock-view-setup .stock-live-card,
+.stock-card-screen.stock-view-setup .stock-bottom-grid {
+  display: none;
+}
+
+.stock-card-screen.stock-view-live .stock-setup-card {
+  display: none;
+}
+
+.stock-roster {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stock-roster-card-btn {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.stock-roster-card-btn:hover {
+  transform: translateY(-2px);
+}
+
+.stock-roster-card-btn.is-selected {
+  border-color: rgba(242, 136, 75, 0.42);
+  box-shadow: 0 12px 24px rgba(242, 136, 75, 0.12);
+}
+
+.stock-roster-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.stock-roster-select-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.78);
+  color: var(--soft-brown);
+  font-size: 0.78rem;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,0.8);
+}
+
+.stock-roster-card-btn.is-selected .stock-roster-select-state {
+  background: linear-gradient(180deg, rgba(255, 243, 233, 0.98) 0%, rgba(255, 232, 215, 0.96) 100%);
+  color: #8d5a42;
+}
+
+.stock-roster-card .stock-roster-head {
+  margin-bottom: 10px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stock-roster-card .stock-roster-price {
+  font-family: 'Pretendard', sans-serif;
+  font-size: 0.98rem;
+  font-weight: 900;
+}
+
+.stock-roster-desc {
+  min-height: 2.9em;
+}
+
+.stock-allocation-editor {
+  gap: 14px;
+}
+
+.stock-empty-state-setup strong {
+  color: var(--soft-brown);
+}
+
+.stock-picked-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 22px rgba(120, 90, 70, 0.06);
+}
+
+.stock-picked-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stock-picked-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.78);
+  color: #8a6b52;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.stock-picked-name {
+  margin-top: 8px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--soft-brown);
+}
+
+.stock-picked-trait {
+  margin-top: 4px;
+  color: #8b7366;
+  font-size: 0.9rem;
+}
+
+.stock-picked-remove-btn,
+.stock-fill-btn,
+.stock-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.88);
+  background: rgba(255,255,255,0.82);
+  color: var(--brown);
+  font-weight: 800;
+  box-shadow: 0 8px 16px rgba(120, 90, 70, 0.06);
+}
+
+.stock-picked-remove-btn {
+  min-width: 64px;
+  background: linear-gradient(180deg, rgba(255,245,241,0.98) 0%, rgba(255,231,221,0.96) 100%);
+  color: #995e54;
+}
+
+.stock-picked-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.72);
+}
+
+.stock-picked-price-row span {
+  color: #8b7366;
+}
+
+.stock-picked-price-row strong {
+  color: var(--soft-brown);
+  font-size: 1.02rem;
+}
+
+.stock-quick-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stock-chip-btn {
+  min-height: 40px;
+  padding: 8px 6px;
+}
+
+.stock-manwon-input-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.stock-manwon-label {
+  font-weight: 900;
+  color: #9b7d6b;
+}
+
+.stock-manwon-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.stock-amount-input-manwon {
+  text-align: right;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.stock-picked-meta {
+  color: #8b7366;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.stock-allocation-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stock-helper-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stock-live-head .sub-text,
+.stock-panel-head .sub-text,
+.stock-setup-head .sub-text {
+  max-width: 560px;
+}
+
+@media (max-width: 1180px) {
+  .stock-roster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stock-allocation-chip-grid,
+  .stock-helper-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .stock-card-screen.stock-view-live .stock-setup-card {
+    display: none;
+  }
+
+  #game6Screen .stock-roster {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stock-roster-card .stock-roster-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stock-quick-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .stock-manwon-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-manwon-control {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 560px) {
+  #game6Screen .stock-roster {
+    grid-template-columns: 1fr;
+  }
+}
+
+html.theme-dark .stock-roster-card-btn.is-selected {
+  border-color: rgba(242, 136, 75, 0.44);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(242, 136, 75, 0.18) inset;
+}
+
+html.theme-dark .stock-roster-select-state,
+html.theme-dark .stock-picked-badge,
+html.theme-dark .stock-picked-price-row,
+html.theme-dark .stock-chip-btn,
+html.theme-dark .stock-picked-remove-btn,
+html.theme-dark .stock-fill-btn,
+html.theme-dark .stock-picked-card {
+  background: rgba(33, 39, 56, 0.94);
+  border-color: rgba(118, 130, 161, 0.34);
+  color: #eef2ff;
+}
+
+html.theme-dark .stock-picked-card,
+html.theme-dark .stock-roster-card-btn {
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+}
+
+html.theme-dark .stock-picked-name,
+html.theme-dark .stock-picked-price-row strong {
+  color: #f6efe6;
+}
+
+html.theme-dark .stock-picked-trait,
+html.theme-dark .stock-picked-meta,
+html.theme-dark .stock-picked-price-row span,
+html.theme-dark .stock-empty-state-setup strong,
+html.theme-dark .stock-manwon-label {
+  color: #c8cde2;
+}
+
+html.theme-dark .stock-roster-card-btn.is-selected .stock-roster-select-state {
+  background: rgba(95, 64, 39, 0.96);
+  color: #ffe8cb;
+  border-color: rgba(226, 190, 95, 0.28);
+}
+
+.stock-picked-card.sector-medical,
+.stock-roster-card-btn.sector-medical {
+  background: linear-gradient(180deg, rgba(242,255,248,0.96) 0%, rgba(227,247,237,0.98) 100%);
+}
+.stock-picked-card.sector-tech,
+.stock-roster-card-btn.sector-tech {
+  background: linear-gradient(180deg, rgba(244,248,255,0.96) 0%, rgba(228,239,255,0.98) 100%);
+}
+.stock-picked-card.sector-food,
+.stock-roster-card-btn.sector-food {
+  background: linear-gradient(180deg, rgba(255,251,240,0.96) 0%, rgba(255,246,224,0.98) 100%);
+}
+.stock-picked-card.sector-beauty,
+.stock-roster-card-btn.sector-beauty {
+  background: linear-gradient(180deg, rgba(255,244,249,0.96) 0%, rgba(255,231,241,0.98) 100%);
+}
+.stock-picked-card.sector-leisure,
+.stock-roster-card-btn.sector-leisure {
+  background: linear-gradient(180deg, rgba(255,245,239,0.96) 0%, rgba(255,234,224,0.98) 100%);
+}
+.stock-picked-card.sector-coin,
+.stock-roster-card-btn.sector-coin {
+  background: linear-gradient(180deg, rgba(246,243,255,0.96) 0%, rgba(234,229,255,0.98) 100%);
+}
+
+html.theme-dark .stock-picked-card.sector-medical,
+html.theme-dark .stock-roster-card-btn.sector-medical {
+  background: linear-gradient(180deg, rgba(23,58,49,0.94) 0%, rgba(20,44,40,0.96) 100%);
+}
+html.theme-dark .stock-picked-card.sector-tech,
+html.theme-dark .stock-roster-card-btn.sector-tech {
+  background: linear-gradient(180deg, rgba(24,39,67,0.94) 0%, rgba(18,29,51,0.96) 100%);
+}
+html.theme-dark .stock-picked-card.sector-food,
+html.theme-dark .stock-roster-card-btn.sector-food {
+  background: linear-gradient(180deg, rgba(63,56,28,0.94) 0%, rgba(48,42,21,0.96) 100%);
+}
+html.theme-dark .stock-picked-card.sector-beauty,
+html.theme-dark .stock-roster-card-btn.sector-beauty {
+  background: linear-gradient(180deg, rgba(69,34,53,0.94) 0%, rgba(52,25,40,0.96) 100%);
+}
+html.theme-dark .stock-picked-card.sector-leisure,
+html.theme-dark .stock-roster-card-btn.sector-leisure {
+  background: linear-gradient(180deg, rgba(73,42,29,0.94) 0%, rgba(56,31,21,0.96) 100%);
+}
+html.theme-dark .stock-picked-card.sector-coin,
+html.theme-dark .stock-roster-card-btn.sector-coin {
+  background: linear-gradient(180deg, rgba(50,38,73,0.94) 0%, rgba(38,29,56,0.96) 100%);
+}
+
+
+/* =========================
+   stock game cleanup 2
+========================= */
+.stock-layout {
+  grid-template-columns: minmax(272px, 300px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.stock-main-header {
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 24px;
+  background: rgba(255, 250, 246, 0.72);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 22px rgba(120, 90, 70, 0.06);
+}
+
+.stock-main-header > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.stock-main-header h2 {
+  margin-bottom: 6px;
+}
+
+.stock-main-header .sub-text {
+  max-width: 760px;
+}
+
+.stock-setup-grid {
+  grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+  align-items: start;
+}
+
+.stock-market-preview-card,
+.stock-allocation-card,
+.stock-live-card,
+.stock-panel,
+.stock-setup-card,
+.stock-sidebar,
+.stock-main-header {
+  backdrop-filter: blur(12px);
+}
+
+.stock-sidebar-inner,
+.stock-setup-card,
+.stock-live-card,
+.stock-panel,
+.stock-market-preview-card,
+.stock-allocation-card {
+  overflow: hidden;
+}
+
+.stock-player-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stock-player-tab {
+  min-width: 0;
+  min-height: 72px;
+  align-items: flex-start;
+  justify-content: center;
+  border-radius: 20px;
+}
+
+.stock-player-tab strong,
+.stock-player-summary-top strong,
+.stock-chart-head h4,
+.stock-portfolio-head h4,
+.stock-ranking-main strong,
+.stock-picked-name,
+.stock-roster-head strong {
+  word-break: keep-all;
+}
+
+.stock-roster {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stock-roster-card {
+  padding: 14px 14px 13px;
+  border-radius: 22px;
+}
+
+.stock-roster-card-btn {
+  min-height: 154px;
+}
+
+.stock-roster-head {
+  gap: 8px;
+}
+
+.stock-roster-card .stock-roster-head {
+  align-items: flex-start;
+}
+
+.stock-roster-head strong {
+  flex: 1 1 auto;
+  font-size: 1.02rem;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+}
+
+.stock-roster-card .stock-roster-price {
+  flex: 0 0 auto;
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.stock-roster-trait {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.stock-roster-desc {
+  min-height: 0;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.stock-roster-select-state {
+  min-width: 56px;
+}
+
+.stock-allocation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stock-active-player-title {
+  font-size: 1.8rem;
+  line-height: 1.1;
+}
+
+.stock-allocation-editor {
+  margin-top: 0;
+}
+
+.stock-picked-card {
+  gap: 10px;
+  padding: 14px;
+  border-radius: 20px;
+}
+
+.stock-picked-head {
+  align-items: center;
+}
+
+.stock-picked-name {
+  font-size: 1.04rem;
+  line-height: 1.28;
+}
+
+.stock-picked-trait,
+.stock-picked-meta {
+  font-size: 0.86rem;
+}
+
+.stock-picked-price-row {
+  padding: 10px 12px;
+}
+
+.stock-quick-row {
+  gap: 6px;
+}
+
+.stock-chip-btn,
+.stock-fill-btn,
+.stock-picked-remove-btn,
+.stock-turn-btn {
+  min-height: 40px;
+}
+
+.stock-chip-btn {
+  font-size: 0.84rem;
+}
+
+.stock-manwon-input-row {
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+}
+
+.stock-manwon-control {
+  min-width: 0;
+}
+
+.stock-allocation-summary {
+  margin-top: 4px;
+}
+
+.stock-allocation-chip-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stock-allocation-total {
+  min-height: 72px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  padding: 12px 14px;
+  gap: 6px;
+}
+
+.stock-allocation-total span {
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.stock-allocation-total strong {
+  font-size: 1.02rem;
+  line-height: 1.15;
+}
+
+.stock-allocation-note {
+  padding: 14px 15px;
+  font-size: 0.92rem;
+}
+
+.stock-helper-actions,
+.stock-turn-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stock-live-head {
+  align-items: center;
+}
+
+.stock-board {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stock-chart-card {
+  padding: 16px;
+}
+
+.stock-chart-head h4,
+.stock-portfolio-head h4 {
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+
+.stock-chart-shell {
+  height: 138px;
+}
+
+.stock-holder-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name state"
+    "value value"
+    "profit profit";
+  gap: 4px 10px;
+  align-items: start;
+}
+
+.stock-holder-row strong { grid-area: name; }
+.stock-holder-row > span { grid-area: state; justify-self: end; }
+.stock-holder-row small { grid-area: value; }
+.stock-holder-row em { grid-area: profit; justify-self: start; }
+
+.stock-bottom-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.86fr);
+}
+
+.stock-portfolio-card,
+.stock-ranking-item {
+  padding: 14px;
+}
+
+.stock-holding-chip {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.stock-holding-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stock-holding-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.66);
+  color: #7d6151;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.stock-ranking-item {
+  min-height: 74px;
+}
+
+.stock-empty-state,
+.stock-holder-empty {
+  border: 2px dashed rgba(255,255,255,0.72);
+}
+
+@media (max-width: 1180px) {
+  .stock-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-setup-grid,
+  .stock-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-player-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .stock-roster {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  #game6Screen .stock-main-header {
+    padding: 18px 16px;
+  }
+
+  #game6Screen .stock-player-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  #game6Screen .stock-roster {
+    grid-template-columns: 1fr;
+  }
+
+  #game6Screen .stock-roster-card-btn {
+    min-height: 132px;
+  }
+
+  #game6Screen .stock-allocation-chip-grid,
+  #game6Screen .stock-helper-actions,
+  #game6Screen .stock-turn-actions {
+    grid-template-columns: 1fr;
+  }
+
+  #game6Screen .stock-manwon-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  #game6Screen .stock-live-head {
+    align-items: flex-start;
+  }
+}
+
+html.theme-dark .stock-main-header,
+html.theme-dark .stock-sidebar,
+html.theme-dark .stock-setup-card,
+html.theme-dark .stock-live-card,
+html.theme-dark .stock-panel,
+html.theme-dark .stock-market-preview-card,
+html.theme-dark .stock-allocation-card,
+html.theme-dark .stock-roster-card,
+html.theme-dark .stock-chart-card,
+html.theme-dark .stock-portfolio-card,
+html.theme-dark .stock-ranking-item,
+html.theme-dark .stock-player-summary-item,
+html.theme-dark .stock-picked-card,
+html.theme-dark .stock-holder-row,
+html.theme-dark .stock-holding-chip,
+html.theme-dark .stock-empty-state,
+html.theme-dark .stock-holder-empty {
+  background: linear-gradient(180deg, rgba(24, 29, 42, 0.96) 0%, rgba(20, 24, 36, 0.96) 100%);
+  border-color: rgba(103, 120, 164, 0.24);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+}
+
+html.theme-dark .stock-player-tab,
+html.theme-dark .stock-ready-badge,
+html.theme-dark .stock-timer-badge,
+html.theme-dark .stock-roster-badge,
+html.theme-dark .stock-sector-chip,
+html.theme-dark .stock-duration-value,
+html.theme-dark .stock-results-popup-rank,
+html.theme-dark .stock-roster-select-state,
+html.theme-dark .stock-chip-btn,
+html.theme-dark .stock-fill-btn,
+html.theme-dark .stock-picked-remove-btn,
+html.theme-dark .stock-holding-state {
+  background: rgba(44, 52, 74, 0.96);
+  border-color: rgba(118, 130, 161, 0.28);
+  color: #f3f6ff;
+}
+
+html.theme-dark .stock-turn-btn {
+  background: linear-gradient(180deg, rgba(54, 66, 97, 0.98) 0%, rgba(44, 55, 84, 0.98) 100%);
+  border-color: rgba(123, 144, 191, 0.32);
+  color: #f5f7ff;
+}
+
+html.theme-dark .stock-turn-btn:hover,
+html.theme-dark .stock-chip-btn:hover,
+html.theme-dark .stock-fill-btn:hover,
+html.theme-dark .stock-picked-remove-btn:hover {
+  box-shadow: 0 10px 20px rgba(0,0,0,0.26), 0 0 0 1px rgba(140, 164, 216, 0.18) inset;
+}
+
+html.theme-dark .stock-select,
+html.theme-dark .stock-amount-input {
+  background: rgba(10, 14, 22, 0.98);
+  border-color: rgba(95, 111, 151, 0.36);
+  color: #f5f7ff;
+}
+
+html.theme-dark .stock-allocation-total {
+  background: linear-gradient(180deg, rgba(35, 42, 61, 0.98) 0%, rgba(28, 35, 52, 0.98) 100%);
+  border-color: rgba(103, 120, 164, 0.24);
+  color: #eef2ff;
+}
+
+html.theme-dark .stock-allocation-total.is-remaining {
+  background: linear-gradient(180deg, rgba(89, 71, 28, 0.98) 0%, rgba(67, 53, 21, 0.98) 100%);
+  border-color: rgba(226, 190, 95, 0.32);
+  color: #fff3c4;
+}
+
+html.theme-dark .stock-allocation-total.is-danger {
+  background: linear-gradient(180deg, rgba(95, 44, 51, 0.98) 0%, rgba(72, 33, 39, 0.98) 100%);
+  border-color: rgba(210, 100, 107, 0.24);
+  color: #ffe4e1;
+}
+
+html.theme-dark .stock-allocation-note {
+  background: linear-gradient(180deg, rgba(27, 34, 51, 0.98) 0%, rgba(22, 28, 42, 0.98) 100%);
+  border: 2px solid rgba(103, 120, 164, 0.24);
+  color: #dce4ff;
+}
+
+html.theme-dark .stock-allocation-note.is-ready {
+  background: linear-gradient(180deg, rgba(28, 77, 59, 0.96) 0%, rgba(22, 59, 46, 0.96) 100%);
+  border-color: rgba(74, 170, 126, 0.26);
+  color: #e6fff1;
+}
+
+html.theme-dark .stock-main-header h2,
+html.theme-dark .stock-panel-head h3,
+html.theme-dark .stock-live-head h3,
+html.theme-dark .stock-setup-head h3,
+html.theme-dark .stock-active-player-title,
+html.theme-dark .stock-roster-head strong,
+html.theme-dark .stock-chart-head h4,
+html.theme-dark .stock-portfolio-head h4,
+html.theme-dark .stock-ranking-main strong,
+html.theme-dark .stock-results-popup-item strong,
+html.theme-dark .stock-picked-name,
+html.theme-dark .stock-picked-price-row strong {
+  color: #f7f1ea;
+}
+
+html.theme-dark .stock-player-summary-sub,
+html.theme-dark .stock-roster-desc,
+html.theme-dark .stock-roster-trait,
+html.theme-dark .stock-chart-note,
+html.theme-dark .stock-chart-price-block span,
+html.theme-dark .stock-portfolio-head p,
+html.theme-dark .stock-portfolio-cash,
+html.theme-dark .stock-holding-meta span,
+html.theme-dark .stock-holder-row small,
+html.theme-dark .stock-empty-state,
+html.theme-dark .stock-holder-empty,
+html.theme-dark .stock-ranking-main span,
+html.theme-dark .stock-results-popup-item span,
+html.theme-dark .stock-player-tab span,
+html.theme-dark .stock-picked-trait,
+html.theme-dark .stock-picked-meta,
+html.theme-dark .stock-picked-price-row span,
+html.theme-dark .stock-holding-state,
+html.theme-dark .stock-main-header .sub-text,
+html.theme-dark .stock-panel .sub-text,
+html.theme-dark .stock-setup-card .sub-text,
+html.theme-dark .stock-live-card .sub-text {
+  color: #cfd7f1;
+}
+
+html.theme-dark .stock-main-header .back-btn {
+  background: linear-gradient(180deg, rgba(20, 48, 88, 0.98) 0%, rgba(17, 40, 74, 0.98) 100%);
+  border: 1px solid rgba(89, 121, 174, 0.24);
+  color: #eef4ff;
+}
+
+html.theme-dark .stock-chart-shell {
+  background:
+    linear-gradient(180deg, rgba(8, 11, 18, 0.88) 0%, rgba(15, 20, 31, 0.96) 100%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(106, 121, 154, 0.18) 0px,
+      rgba(106, 121, 154, 0.18) 1px,
+      transparent 1px,
+      transparent 24px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(106, 121, 154, 0.16) 0px,
+      rgba(106, 121, 154, 0.16) 1px,
+      transparent 1px,
+      transparent 26px
+    );
+}
+
+html.theme-dark .stock-chart-line {
+  stroke: #ffcf76;
+}
+
+html.theme-dark .stock-player-tab.is-active,
+html.theme-dark .stock-player-summary-item.is-active,
+html.theme-dark .stock-roster-card-btn.is-selected {
+  border-color: rgba(255, 165, 112, 0.46);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.26), 0 0 0 1px rgba(255, 165, 112, 0.18) inset;
+}
+
+html.theme-dark .stock-player-tab.is-ready,
+html.theme-dark .stock-player-summary-item.is-ready,
+html.theme-dark .stock-ready-badge.is-ready,
+html.theme-dark .stock-allocation-total.is-ready {
+  background: linear-gradient(180deg, rgba(28, 77, 59, 0.96) 0%, rgba(22, 59, 46, 0.96) 100%);
+  color: #e8fff2;
+}
+
+html.theme-dark .stock-chart-price-block.is-up span,
+html.theme-dark .stock-holder-row.is-profit em,
+html.theme-dark .stock-portfolio-profit.is-profit,
+html.theme-dark .stock-ranking-profit.is-profit,
+html.theme-dark .stock-results-popup-item em.is-profit {
+  color: #78efb8;
+}
+
+html.theme-dark .stock-chart-price-block.is-down span,
+html.theme-dark .stock-holder-row.is-loss em,
+html.theme-dark .stock-portfolio-profit.is-loss,
+html.theme-dark .stock-ranking-profit.is-loss,
+html.theme-dark .stock-results-popup-item em.is-loss {
+  color: #ff999d;
+}
+
+html.theme-dark .stock-picked-card.sector-medical,
+html.theme-dark .stock-roster-card-btn.sector-medical {
+  background: linear-gradient(180deg, rgba(17, 63, 52, 0.96) 0%, rgba(14, 49, 41, 0.98) 100%);
+}
+
+html.theme-dark .stock-picked-card.sector-tech,
+html.theme-dark .stock-roster-card-btn.sector-tech {
+  background: linear-gradient(180deg, rgba(20, 43, 81, 0.96) 0%, rgba(16, 34, 63, 0.98) 100%);
+}
+
+html.theme-dark .stock-picked-card.sector-food,
+html.theme-dark .stock-roster-card-btn.sector-food {
+  background: linear-gradient(180deg, rgba(84, 73, 25, 0.96) 0%, rgba(64, 54, 18, 0.98) 100%);
+}
+
+html.theme-dark .stock-picked-card.sector-beauty,
+html.theme-dark .stock-roster-card-btn.sector-beauty {
+  background: linear-gradient(180deg, rgba(83, 32, 57, 0.96) 0%, rgba(64, 24, 43, 0.98) 100%);
+}
+
+html.theme-dark .stock-picked-card.sector-leisure,
+html.theme-dark .stock-roster-card-btn.sector-leisure {
+  background: linear-gradient(180deg, rgba(87, 45, 26, 0.96) 0%, rgba(66, 33, 18, 0.98) 100%);
+}
+
+html.theme-dark .stock-picked-card.sector-coin,
+html.theme-dark .stock-roster-card-btn.sector-coin {
+  background: linear-gradient(180deg, rgba(59, 40, 87, 0.96) 0%, rgba(44, 30, 65, 0.98) 100%);
+}
+
+/* =========================
+   stock duration slider + compact chart tweak
+========================= */
+.stock-duration-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.stock-duration-row input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  flex: initial;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  height: 28px;
+  --stock-duration-progress: 50%;
+}
+
+.stock-duration-row input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #f4b6c8 0%,
+    #f4b6c8 var(--stock-duration-progress),
+    rgba(125, 97, 81, 0.22) var(--stock-duration-progress),
+    rgba(125, 97, 81, 0.22) 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.stock-duration-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  background: linear-gradient(180deg, #f8cddd 0%, #f2a9c4 100%);
+  box-shadow: 0 6px 14px rgba(120, 90, 70, 0.22);
+}
+
+.stock-duration-row input[type="range"]::-moz-range-track {
+  height: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(125, 97, 81, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.stock-duration-row input[type="range"]::-moz-range-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #f4b6c8;
+}
+
+.stock-duration-row input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #f8cddd 0%, #f2a9c4 100%);
+  box-shadow: 0 6px 14px rgba(120, 90, 70, 0.22);
+}
+
+.stock-duration-row input[type="range"]:focus-visible {
+  outline: none;
+}
+
+.stock-duration-row input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(244, 182, 200, 0.24), 0 6px 14px rgba(120, 90, 70, 0.22);
+}
+
+.stock-duration-row input[type="range"]:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(244, 182, 200, 0.24), 0 6px 14px rgba(120, 90, 70, 0.22);
+}
+
+.stock-chart-card {
+  padding: 13px;
+}
+
+.stock-chart-shell {
+  height: 116px;
+}
+
+@media (max-width: 760px) {
+  .stock-chart-shell {
+    height: 108px;
+  }
+}
+
+html.theme-dark .stock-duration-row input[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    90deg,
+    #f2c978 0%,
+    #f2c978 var(--stock-duration-progress),
+    rgba(116, 131, 171, 0.32) var(--stock-duration-progress),
+    rgba(116, 131, 171, 0.32) 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+html.theme-dark .stock-duration-row input[type="range"]::-webkit-slider-thumb {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: linear-gradient(180deg, #35456a 0%, #29344f 100%);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+}
+
+html.theme-dark .stock-duration-row input[type="range"]::-moz-range-track {
+  background: rgba(116, 131, 171, 0.32);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+html.theme-dark .stock-duration-row input[type="range"]::-moz-range-progress {
+  background: #f2c978;
+}
+
+html.theme-dark .stock-duration-row input[type="range"]::-moz-range-thumb {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: linear-gradient(180deg, #35456a 0%, #29344f 100%);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+}
+
+
+/* =========================
+   stock game fine-tune : cursor / compact board / red-blue trend
+========================= */
+@media (pointer: fine) {
+  .app-cursor {
+    --cursor-scale: 0.8;
+    width: 24px;
+    height: 24px;
+    transition: opacity 0.1s ease, transform 0.03s linear, width 0.12s ease, height 0.12s ease;
+  }
+
+  .app-cursor.is-hover {
+    --cursor-scale: 1.02;
+  }
+
+  .app-cursor.is-press {
+    --cursor-scale: 0.9;
+  }
+}
+
+.stock-live-card {
+  padding: 14px;
+}
+
+.stock-live-head {
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.stock-live-head h3 {
+  font-size: 1.08rem;
+}
+
+.stock-live-head .sub-text {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.stock-board {
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.stock-chart-card {
+  padding: 11px;
+  border-radius: 18px;
+}
+
+.stock-chart-head,
+.stock-portfolio-head,
+.stock-ranking-item {
+  gap: 8px;
+}
+
+.stock-chart-head h4,
+.stock-portfolio-head h4 {
+  font-size: 0.98rem;
+  line-height: 1.2;
+}
+
+.stock-chart-price-block strong {
+  font-size: 1.18rem;
+}
+
+.stock-chart-price-block span,
+.stock-chart-note,
+.stock-holder-row small,
+.stock-ranking-main span,
+.stock-portfolio-head p,
+.stock-portfolio-cash {
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.stock-chart-shell {
+  margin-top: 10px;
+  height: 96px;
+  border-radius: 14px;
+}
+
+.stock-chart-line {
+  stroke-width: 2.5;
+}
+
+.stock-chart-line.is-up {
+  stroke: #dd4b4b;
+}
+
+.stock-chart-line.is-down {
+  stroke: #3d78e0;
+}
+
+.stock-chart-price-block.is-up span,
+.stock-holder-row.is-profit em,
+.stock-portfolio-profit.is-profit,
+.stock-ranking-profit.is-profit,
+.stock-results-popup-item em.is-profit {
+  color: #dd4b4b;
+}
+
+.stock-chart-price-block.is-down span,
+.stock-holder-row.is-loss em,
+.stock-portfolio-profit.is-loss,
+.stock-ranking-profit.is-loss,
+.stock-results-popup-item em.is-loss {
+  color: #3d78e0;
+}
+
+.stock-chart-holders,
+.stock-holdings-list,
+.stock-ranking-list,
+.stock-portfolio-list {
+  gap: 8px;
+}
+
+.stock-holder-row {
+  padding: 8px 10px;
+  gap: 4px 8px;
+  border-radius: 12px;
+}
+
+.stock-panel {
+  padding: 14px;
+}
+
+.stock-bottom-grid {
+  gap: 10px;
+}
+
+.stock-ranking-item {
+  min-height: 66px;
+  padding: 12px;
+}
+
+.stock-portfolio-card {
+  padding: 12px;
+}
+
+.stock-holding-chip {
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+html.theme-dark .stock-chart-line.is-up {
+  stroke: #ff6b6b;
+}
+
+html.theme-dark .stock-chart-line.is-down {
+  stroke: #6aa8ff;
+}
+
+html.theme-dark .stock-chart-price-block.is-up span,
+html.theme-dark .stock-holder-row.is-profit em,
+html.theme-dark .stock-portfolio-profit.is-profit,
+html.theme-dark .stock-ranking-profit.is-profit,
+html.theme-dark .stock-results-popup-item em.is-profit {
+  color: #ff7b7b;
+}
+
+html.theme-dark .stock-chart-price-block.is-down span,
+html.theme-dark .stock-holder-row.is-loss em,
+html.theme-dark .stock-portfolio-profit.is-loss,
+html.theme-dark .stock-ranking-profit.is-loss,
+html.theme-dark .stock-results-popup-item em.is-loss {
+  color: #76adff;
+}
+
+@media (max-width: 760px) {
+  .stock-chart-shell {
+    height: 92px;
+  }
+
+  #game6Screen .stock-live-card,
+  #game6Screen .stock-panel,
+  #game6Screen .stock-market-preview-card,
+  #game6Screen .stock-allocation-card {
+    padding: 14px;
+  }
+}
+
+/* =========================
+   stock game compact roster + horizontal picked slider
+========================= */
+.stock-layout {
+  grid-template-columns: minmax(268px, 292px) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.stock-main {
+  gap: 12px;
+}
+
+.stock-main-header {
+  padding: 12px 14px;
+}
+
+.stock-main-header .sub-text {
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.stock-setup-card,
+.stock-market-preview-card,
+.stock-allocation-card,
+.stock-live-card,
+.stock-panel {
+  padding: 14px;
+}
+
+.stock-setup-grid {
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.stock-player-tabs {
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.stock-player-tab {
+  min-height: 64px;
+  padding: 10px 12px;
+}
+
+.stock-player-tab strong {
+  font-size: 0.92rem;
+}
+
+.stock-player-tab span {
+  font-size: 0.76rem;
+}
+
+.stock-market-preview-card .stock-panel-head .sub-text,
+.stock-setup-head .sub-text {
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.stock-roster {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.stock-roster-card,
+.stock-roster-card-btn {
+  min-height: 118px;
+  padding: 10px 10px 9px;
+  border-radius: 18px;
+}
+
+.stock-roster-topline {
+  margin-bottom: 6px;
+  align-items: flex-start;
+}
+
+.stock-roster-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 3px;
+  min-height: auto;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.stock-roster-emoji {
+  display: block;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.stock-roster-badge-text {
+  font-size: 0.64rem;
+  font-weight: 900;
+  color: #8d735f;
+  letter-spacing: 0.02em;
+}
+
+.stock-roster-select-state {
+  min-width: 44px;
+  min-height: 26px;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+}
+
+.stock-roster-card .stock-roster-head {
+  margin-bottom: 4px;
+  gap: 6px;
+}
+
+.stock-roster-head strong {
+  font-size: 0.88rem;
+  line-height: 1.18;
+}
+
+.stock-roster-card .stock-roster-price {
+  font-size: 0.82rem;
+  line-height: 1.05;
+}
+
+.stock-roster-trait {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.stock-roster-desc {
+  margin-top: 3px;
+  min-height: 0;
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
+.stock-active-player-title {
+  font-size: 1.5rem;
+}
+
+.stock-allocation-editor {
+  margin-top: 0;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.stock-picked-carousel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stock-picked-carousel-hint,
+.stock-picked-carousel-count {
+  color: #8b7366;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.stock-picked-carousel-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stock-carousel-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.86);
+  background: rgba(255,255,255,0.86);
+  color: var(--brown);
+  font-weight: 900;
+  box-shadow: 0 8px 16px rgba(120, 90, 70, 0.06);
+}
+
+.stock-picked-carousel {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 100%);
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.stock-picked-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.stock-picked-slide {
+  scroll-snap-align: start;
+}
+
+.stock-picked-card {
+  gap: 8px;
+  padding: 12px;
+  border-radius: 18px;
+}
+
+.stock-picked-badge {
+  font-size: 0.72rem;
+}
+
+.stock-picked-name {
+  margin-top: 6px;
+  font-size: 0.98rem;
+  line-height: 1.2;
+}
+
+.stock-picked-trait,
+.stock-picked-meta {
+  font-size: 0.8rem;
+  line-height: 1.38;
+}
+
+.stock-picked-remove-btn,
+.stock-fill-btn,
+.stock-chip-btn,
+.stock-turn-btn {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 0.8rem;
+}
+
+.stock-picked-price-row {
+  padding: 10px 12px;
+}
+
+.stock-picked-price-row strong {
+  font-size: 0.92rem;
+}
+
+.stock-quick-row {
+  gap: 6px;
+}
+
+.stock-chip-btn {
+  min-height: 36px;
+  padding: 7px 4px;
+}
+
+.stock-manwon-input-row {
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.stock-manwon-label {
+  font-size: 0.8rem;
+}
+
+.stock-manwon-control {
+  gap: 6px;
+}
+
+.stock-amount-input-manwon {
+  padding: 10px 12px;
+  font-size: 0.92rem;
+}
+
+.stock-allocation-summary {
+  margin-top: 8px;
+}
+
+.stock-allocation-chip-grid {
+  gap: 8px;
+}
+
+.stock-allocation-total {
+  min-height: 64px;
+  padding: 10px 12px;
+}
+
+.stock-allocation-total span {
+  font-size: 0.76rem;
+}
+
+.stock-allocation-total strong {
+  font-size: 0.94rem;
+}
+
+.stock-helper-actions,
+.stock-turn-actions {
+  gap: 8px;
+}
+
+@media (max-width: 1180px) {
+  .stock-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-setup-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .stock-roster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  #game6Screen .stock-sidebar-inner,
+  #game6Screen .stock-setup-card,
+  #game6Screen .stock-market-preview-card,
+  #game6Screen .stock-allocation-card,
+  #game6Screen .stock-live-card,
+  #game6Screen .stock-panel {
+    padding: 12px;
+  }
+
+  #game6Screen .stock-main-header {
+    padding: 16px 14px;
+  }
+
+  #game6Screen .stock-roster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  #game6Screen .stock-roster-card,
+  #game6Screen .stock-roster-card-btn {
+    min-height: 112px;
+  }
+
+  #game6Screen .stock-allocation-chip-grid,
+  #game6Screen .stock-helper-actions,
+  #game6Screen .stock-turn-actions {
+    grid-template-columns: 1fr;
+  }
+
+  #game6Screen .stock-manwon-input-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  #game6Screen .stock-roster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #game6Screen .stock-roster-emoji {
+    font-size: 1.8rem;
+  }
+
+  #game6Screen .stock-roster-head strong {
+    font-size: 0.82rem;
+  }
+}
+
+html.theme-dark .stock-roster-badge {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html.theme-dark .stock-roster-badge-text,
+html.theme-dark .stock-picked-carousel-hint,
+html.theme-dark .stock-picked-carousel-count {
+  color: #c8cde2;
+}
+
+html.theme-dark .stock-carousel-nav-btn {
+  background: rgba(33, 39, 56, 0.94);
+  border-color: rgba(118, 130, 161, 0.34);
+  color: #eef2ff;
+}
+
+
+/* stock game tuning: prevent text overflow and keep one picked stock visible at a time */
+.stock-roster-card,
+.stock-roster-card-btn,
+.stock-picked-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.stock-roster-topline,
+.stock-roster-head,
+.stock-picked-head,
+.stock-picked-head-main,
+.stock-picked-price-row,
+.stock-manwon-control {
+  min-width: 0;
+}
+
+.stock-roster-card .stock-roster-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.stock-roster-head strong,
+.stock-picked-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.stock-roster-trait,
+.stock-roster-desc,
+.stock-picked-trait,
+.stock-picked-meta {
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.stock-roster-trait {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.stock-roster-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.stock-roster-card .stock-roster-price {
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.stock-picked-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.stock-picked-head-main {
+  display: grid;
+  gap: 4px;
+}
+
+.stock-picked-carousel {
+  display: block;
+  overflow: hidden;
+}
+
+.stock-picked-carousel.is-single-view .stock-picked-slide {
+  width: 100%;
+}
+
+.stock-picked-card {
+  width: 100%;
+}
+
+.stock-picked-carousel-toolbar {
+  align-items: flex-start;
+}
+
+.stock-picked-carousel-count {
+  min-width: 64px;
+  text-align: center;
+}
+
+.stock-picked-price-row strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* stock roster layout refinement: 2 columns x 3 rows, fixed text order */
+.stock-roster {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.stock-roster-card,
+.stock-roster-card-btn {
+  min-height: 168px !important;
+  padding: 12px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.stock-roster-topline {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px !important;
+}
+
+.stock-roster-badge,
+.stock-roster-badge-text {
+  display: none !important;
+}
+
+.stock-roster-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem !important;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.stock-roster-select-state {
+  min-width: 50px !important;
+  min-height: 28px !important;
+  padding: 4px 9px !important;
+  font-size: 0.72rem !important;
+  flex: 0 0 auto;
+}
+
+.stock-roster-head {
+  display: none !important;
+}
+
+.stock-roster-name {
+  width: 100%;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--soft-brown);
+  line-height: 1.24;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.stock-roster-info-line {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.stock-roster-info-line > span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #8d735f;
+  line-height: 1.35;
+}
+
+.stock-roster-info-line > strong {
+  min-width: 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--brown);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.stock-roster-price-line > strong {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.stock-roster-trait,
+.stock-roster-price {
+  display: none !important;
+}
+
+.stock-roster-desc {
+  width: 100%;
+  margin-top: auto !important;
+  padding-top: 2px;
+  font-size: 0.73rem !important;
+  font-weight: 900;
+  line-height: 1.3 !important;
+  color: #7d6151;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stock-picked-carousel {
+  display: block !important;
+  overflow: hidden !important;
+}
+
+.stock-picked-carousel.is-single-view .stock-picked-slide {
+  width: 100%;
+}
+
+.stock-picked-card {
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  #game6Screen .stock-roster {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #game6Screen .stock-roster-card,
+  #game6Screen .stock-roster-card-btn {
+    min-height: 160px !important;
+  }
+}
+
+html.theme-dark .stock-roster-name,
+html.theme-dark .stock-roster-info-line > strong,
+html.theme-dark .stock-roster-desc {
+  color: #eef2ff;
+}
+
+html.theme-dark .stock-roster-info-line > span {
+  color: #c8cde2;
+}
+
+/* stock game final sizing tune: cleaner 2x3 roster + tighter single allocation card */
+.stock-setup-grid {
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr) !important;
+  align-items: start;
+}
+
+.stock-market-preview-card,
+.stock-allocation-card {
+  padding: 14px !important;
+}
+
+.stock-roster {
+  gap: 8px !important;
+  margin-top: 12px !important;
+}
+
+.stock-roster-card,
+.stock-roster-card-btn {
+  min-height: 154px !important;
+  padding: 11px !important;
+  gap: 5px !important;
+}
+
+.stock-roster-emoji {
+  font-size: 2.08rem !important;
+}
+
+.stock-roster-name {
+  font-size: 1rem !important;
+  line-height: 1.2 !important;
+  -webkit-line-clamp: 1 !important;
+}
+
+.stock-roster-info-line {
+  grid-template-columns: 52px minmax(0, 1fr) !important;
+  gap: 6px !important;
+}
+
+.stock-roster-info-line > span {
+  font-size: 0.74rem !important;
+  line-height: 1.28 !important;
+}
+
+.stock-roster-info-line > strong {
+  font-size: 0.82rem !important;
+  line-height: 1.28 !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+.stock-roster-price-line > strong {
+  font-size: 0.9rem !important;
+}
+
+.stock-roster-desc {
+  margin-top: auto !important;
+  padding-top: 0 !important;
+  font-size: 0.78rem !important;
+  line-height: 1.28 !important;
+}
+
+.stock-allocation-editor {
+  gap: 8px !important;
+}
+
+.stock-active-player-title {
+  font-size: 1.42rem !important;
+  line-height: 1.1 !important;
+}
+
+.stock-picked-carousel-toolbar {
+  gap: 6px !important;
+  margin-bottom: 2px;
+}
+
+.stock-picked-carousel-hint,
+.stock-picked-carousel-count {
+  font-size: 0.76rem !important;
+  line-height: 1.25 !important;
+}
+
+.stock-carousel-nav-btn {
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+
+.stock-picked-card {
+  padding: 12px !important;
+  gap: 7px !important;
+  border-radius: 18px !important;
+}
+
+.stock-picked-head {
+  gap: 8px !important;
+}
+
+.stock-picked-badge {
+  font-size: 0.7rem !important;
+  padding: 6px 10px !important;
+}
+
+.stock-picked-name {
+  margin-top: 4px !important;
+  font-size: 0.96rem !important;
+  line-height: 1.18 !important;
+  -webkit-line-clamp: 1 !important;
+}
+
+.stock-picked-trait,
+.stock-picked-meta {
+  font-size: 0.76rem !important;
+  line-height: 1.28 !important;
+}
+
+.stock-picked-price-row {
+  padding: 8px 10px !important;
+}
+
+.stock-picked-price-row span {
+  font-size: 0.74rem !important;
+}
+
+.stock-picked-price-row strong {
+  font-size: 0.88rem !important;
+}
+
+.stock-quick-row {
+  gap: 5px !important;
+}
+
+.stock-chip-btn,
+.stock-fill-btn,
+.stock-turn-btn,
+.stock-picked-remove-btn {
+  min-height: 32px !important;
+  padding: 6px 9px !important;
+  font-size: 0.78rem !important;
+}
+
+.stock-manwon-input-row {
+  grid-template-columns: 38px minmax(0, 1fr) auto !important;
+  gap: 6px !important;
+}
+
+.stock-manwon-label {
+  font-size: 0.76rem !important;
+}
+
+.stock-manwon-control {
+  gap: 5px !important;
+}
+
+.stock-amount-input-manwon {
+  padding: 9px 10px !important;
+  font-size: 0.88rem !important;
+}
+
+.stock-allocation-summary {
+  margin-top: 6px !important;
+  gap: 8px !important;
+}
+
+.stock-allocation-chip-grid {
+  gap: 7px !important;
+}
+
+.stock-allocation-total {
+  min-height: 58px !important;
+  padding: 9px 11px !important;
+}
+
+.stock-allocation-total span {
+  font-size: 0.74rem !important;
+}
+
+.stock-allocation-total strong {
+  font-size: 0.9rem !important;
+}
+
+.stock-allocation-note {
+  min-height: 50px;
+  padding: 11px 12px !important;
+  font-size: 0.84rem !important;
+  line-height: 1.34 !important;
+}
+
+.stock-helper-actions,
+.stock-turn-actions {
+  gap: 7px !important;
+}
+
+@media (max-width: 1280px) {
+  .stock-roster-card,
+  .stock-roster-card-btn {
+    min-height: 148px !important;
+  }
+
+  .stock-picked-card {
+    padding: 11px !important;
+  }
+}
+
+
+/* stock ranking multiline cleanup */
+.stock-ranking-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.stock-ranking-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.stock-ranking-main strong,
+.stock-ranking-asset,
+.stock-ranking-profit {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stock-ranking-main strong {
+  font-size: 1.02rem;
+  line-height: 1.1;
+}
+
+.stock-ranking-asset {
+  white-space: nowrap;
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: #d8e1ff;
+  line-height: 1.15;
+}
+
+.stock-ranking-profit {
+  white-space: nowrap;
+  font-style: normal;
+  font-size: 0.98rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+html.theme-dark .stock-ranking-asset {
+  color: #d6def8;
+}
+
+
+/* =========================
+   stock game live ranking + header cleanup
+========================= */
+.stock-layout {
+  min-height: auto !important;
+}
+
+.stock-card-screen {
+  padding-bottom: 16px !important;
+}
+
+.stock-main-header {
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  align-items: flex-start !important;
+}
+
+.stock-main {
+  gap: 14px !important;
+}
+
+.stock-ranking-item {
+  padding: 12px 14px !important;
+}
+
+.stock-player-summary .stock-ranking-item {
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+  align-items: start !important;
+}
+
+.stock-player-summary .stock-ranking-main,
+.stock-ranking-list .stock-ranking-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.stock-player-summary .stock-ranking-main strong,
+.stock-ranking-list .stock-ranking-main strong {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stock-player-summary .stock-ranking-asset,
+.stock-ranking-list .stock-ranking-asset,
+.stock-player-summary .stock-ranking-profit,
+.stock-ranking-list .stock-ranking-profit {
+  display: block;
+  max-width: 100%;
+  line-height: 1.2;
+}
+
+.stock-player-summary .stock-ranking-asset,
+.stock-ranking-list .stock-ranking-asset {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.stock-player-summary .stock-ranking-profit,
+.stock-ranking-list .stock-ranking-profit {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-style: normal;
+}
+
+html.theme-dark .stock-main-header {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+
+/* =========================
+   stock game desktop fit + bottom alignment cleanup
+========================= */
+@media (min-width: 1181px) {
+  #game6Screen .stock-card-screen {
+    padding: 14px 14px 12px !important;
+  }
+
+  #game6Screen .stock-layout {
+    grid-template-columns: minmax(248px, 274px) minmax(0, 1fr);
+    gap: 12px;
+    min-height: auto !important;
+  }
+
+  #game6Screen .stock-sidebar-inner {
+    padding: 14px !important;
+    gap: 10px !important;
+  }
+
+  #game6Screen .stock-sidebar .sidebar-head .sub-text,
+  #game6Screen .stock-sidebar .helper-text,
+  #game6Screen #stockStatusText,
+  #game6Screen .stock-duration-card .helper-text {
+    font-size: 0.82rem;
+    line-height: 1.42;
+  }
+
+  #game6Screen .stock-sidebar .controls-wrap,
+  #game6Screen .stock-sidebar .scoreboard-card {
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  #game6Screen .stock-sidebar .input-card input {
+    padding: 13px 14px;
+    font-size: 0.95rem;
+  }
+
+  #game6Screen .stock-sidebar .button-row {
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  #game6Screen .stock-sidebar .action-btn {
+    min-height: 42px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  #game6Screen .stock-duration-row {
+    gap: 10px;
+  }
+
+  #game6Screen .stock-duration-value {
+    min-width: 64px;
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 0.92rem;
+  }
+
+  #game6Screen .stock-main {
+    gap: 10px !important;
+  }
+
+  #game6Screen .stock-main-header .sub-text,
+  #game6Screen .stock-setup-head .sub-text,
+  #game6Screen .stock-panel-head .sub-text {
+    font-size: 0.84rem;
+    line-height: 1.42;
+  }
+
+  #game6Screen .stock-player-tabs {
+    margin-top: 10px;
+    gap: 6px;
+  }
+
+  #game6Screen .stock-player-tab {
+    min-height: 56px;
+    padding: 8px 10px;
+    border-radius: 16px;
+  }
+
+  #game6Screen .stock-player-tab strong {
+    font-size: 0.88rem;
+    line-height: 1.15;
+  }
+
+  #game6Screen .stock-player-tab span {
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  #game6Screen .stock-setup-card,
+  #game6Screen .stock-market-preview-card,
+  #game6Screen .stock-allocation-card,
+  #game6Screen .stock-live-card,
+  #game6Screen .stock-panel {
+    padding: 12px !important;
+  }
+
+  #game6Screen .stock-setup-grid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(292px, 0.9fr);
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  #game6Screen .stock-player-summary {
+    gap: 6px !important;
+    margin-top: 10px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+
+  #game6Screen .stock-player-summary-item,
+  #game6Screen .stock-player-summary .stock-ranking-item {
+    padding: 8px 10px !important;
+    border-radius: 14px !important;
+  }
+
+  #game6Screen .stock-player-summary-top {
+    gap: 6px;
+  }
+
+  #game6Screen .stock-player-summary-top strong,
+  #game6Screen .stock-player-summary .stock-ranking-main strong {
+    font-size: 0.88rem;
+    line-height: 1.16;
+  }
+
+  #game6Screen .stock-player-summary-sub,
+  #game6Screen .stock-player-summary .stock-ranking-asset,
+  #game6Screen .stock-player-summary .stock-ranking-profit {
+    margin-top: 3px;
+    font-size: 0.74rem;
+    line-height: 1.26;
+  }
+
+  #game6Screen .stock-player-summary-sub {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  #game6Screen .stock-player-summary-badge {
+    min-height: 24px;
+    padding: 2px 8px;
+    font-size: 0.68rem;
+  }
+
+  #game6Screen .stock-player-summary .stock-ranking-item {
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  #game6Screen .stock-player-summary .stock-ranking-num {
+    width: 30px;
+    height: 30px;
+    font-size: 0.92rem;
+  }
+
+  #game6Screen .stock-roster {
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  #game6Screen .stock-roster-card,
+  #game6Screen .stock-roster-card-btn {
+    min-height: 106px;
+    padding: 9px 9px 8px;
+    border-radius: 16px;
+  }
+
+  #game6Screen .stock-roster-topline {
+    margin-bottom: 4px;
+  }
+
+  #game6Screen .stock-roster-emoji {
+    font-size: 1.72rem;
+  }
+
+  #game6Screen .stock-roster-select-state {
+    min-width: 40px;
+    min-height: 24px;
+    padding: 3px 7px;
+    font-size: 0.66rem;
+  }
+
+  #game6Screen .stock-roster-head strong,
+  #game6Screen .stock-roster-name {
+    font-size: 0.84rem;
+    line-height: 1.14;
+  }
+
+  #game6Screen .stock-roster-card .stock-roster-price,
+  #game6Screen .stock-roster-info-line,
+  #game6Screen .stock-roster-trait {
+    font-size: 0.7rem;
+    line-height: 1.24;
+  }
+
+  #game6Screen .stock-roster-desc {
+    margin-top: 2px;
+    font-size: 0.64rem;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  #game6Screen .stock-active-player-title {
+    font-size: 1.34rem;
+    line-height: 1.08;
+  }
+
+  #game6Screen .stock-picked-card {
+    padding: 10px;
+    gap: 7px;
+    border-radius: 16px;
+  }
+
+  #game6Screen .stock-picked-name {
+    margin-top: 4px;
+    font-size: 0.92rem;
+  }
+
+  #game6Screen .stock-picked-trait,
+  #game6Screen .stock-picked-meta,
+  #game6Screen .stock-picked-carousel-hint,
+  #game6Screen .stock-picked-carousel-count {
+    font-size: 0.76rem;
+    line-height: 1.32;
+  }
+
+  #game6Screen .stock-picked-remove-btn,
+  #game6Screen .stock-fill-btn,
+  #game6Screen .stock-chip-btn,
+  #game6Screen .stock-turn-btn {
+    min-height: 32px;
+    padding: 6px 9px;
+    font-size: 0.76rem;
+  }
+
+  #game6Screen .stock-picked-price-row,
+  #game6Screen .stock-allocation-note {
+    padding: 9px 10px;
+  }
+
+  #game6Screen .stock-allocation-note {
+    font-size: 0.78rem;
+    line-height: 1.36;
+  }
+
+  #game6Screen .stock-allocation-chip-grid,
+  #game6Screen .stock-helper-actions,
+  #game6Screen .stock-turn-actions {
+    gap: 7px;
+  }
+
+  #game6Screen .stock-allocation-total {
+    min-height: 54px;
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
+
+  #game6Screen .stock-allocation-total span {
+    font-size: 0.72rem;
+    line-height: 1.15;
+  }
+
+  #game6Screen .stock-allocation-total strong {
+    font-size: 0.88rem;
+    line-height: 1.14;
+  }
+}
+
+@media (min-width: 1181px) and (max-height: 980px) {
+  #game6Screen .stock-card-screen {
+    padding: 12px 12px 10px !important;
+  }
+
+  #game6Screen .stock-layout {
+    grid-template-columns: minmax(242px, 266px) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  #game6Screen .stock-sidebar-inner,
+  #game6Screen .stock-sidebar .controls-wrap,
+  #game6Screen .stock-sidebar .scoreboard-card,
+  #game6Screen .stock-setup-card,
+  #game6Screen .stock-market-preview-card,
+  #game6Screen .stock-allocation-card {
+    padding: 11px !important;
+  }
+
+  #game6Screen .stock-player-tab {
+    min-height: 52px;
+  }
+
+  #game6Screen .stock-roster-card,
+  #game6Screen .stock-roster-card-btn {
+    min-height: 100px;
+  }
+
+  #game6Screen .stock-player-summary-item,
+  #game6Screen .stock-player-summary .stock-ranking-item {
+    padding: 7px 9px !important;
+  }
 }

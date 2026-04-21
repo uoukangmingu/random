@@ -156,6 +156,7 @@ const startStockBtn = document.getElementById('startStockBtn')
 const resetStockBtn = document.getElementById('resetStockBtn')
 const stockStatusText = document.getElementById('stockStatusText')
 const stockTotalInfo = document.getElementById('stockTotalInfo')
+const stockSummaryTitle = document.getElementById('stockSummaryTitle')
 const stockPlayerSummary = document.getElementById('stockPlayerSummary')
 const stockDesc = document.getElementById('stockDesc')
 const stockReadyBadge = document.getElementById('stockReadyBadge')
@@ -189,6 +190,11 @@ const BOARD_SIDE_PADDING = 18
 
 const BASE_BOARD_WIDTH = 1366
 const BASE_BOARD_HEIGHT = 768
+const MAX_CANVAS_PIXEL_RATIO = window.matchMedia('(pointer: coarse)').matches ? 1 : 1.35
+
+function getCanvasPixelRatio() {
+  return Math.min(window.devicePixelRatio || 1, MAX_CANVAS_PIXEL_RATIO)
+}
 
 const slotPalette = [
   '#f9d3df',
@@ -483,7 +489,7 @@ const FAST_FORWARD_CARD_CONFIG = {
   2: { title: '경마', state: 'supported', badgeText: '가능' },
   3: { title: '카드 연산 배틀', state: 'none', badgeText: '없음' },
   4: { title: '볼 배틀', state: 'supported', badgeText: '가능' },
-  5: { title: '폭격 해전', state: 'supported', badgeText: '가능' },
+  5: { title: '게임 5', state: 'pending', badgeText: '미정' },
   6: { title: '주식게임', state: 'none', badgeText: '없음' },
   7: { title: '게임 7', state: 'pending', badgeText: '미정' },
   8: { title: '게임 8', state: 'pending', badgeText: '미정' }
@@ -503,6 +509,7 @@ let raceRunning = false
 let raceFinished = false
 let raceAnimationFrame = null
 let raceLastTimestamp = 0
+let raceLastRankingRenderAt = 0
 let raceEventTimer = null
 let raceCommentaryTimer = null
 let raceFinishOrder = []
@@ -564,6 +571,8 @@ let simArenaMeta = null
 let simSelectedMap = 'classic'
 let simArenaZoomed = false
 let simArenaZoomBaseRect = null
+let simOverlayRaf = null
+let simOverlayLastPaintAt = 0
 let lastSimValidConfigText = simConfigInput ? simConfigInput.value : ''
 let lastSimAppliedRawText = simConfigInput ? simConfigInput.value : ''
 
@@ -1164,7 +1173,7 @@ function syncResponsiveAfterViewportModeChange() {
 
   if (screens.game4?.classList.contains('active')) {
     if (simBattleRunning || simBattleFinished) {
-      updateSimArenaOverlay()
+      updateSimArenaOverlay(true)
     }
     if (simArenaZoomed) {
       updateSimArenaZoomScale()
@@ -1940,6 +1949,11 @@ function updatePrevStepButtons() {
 }
 
 function showScreen(target, options = {}) {
+  if (target === 'game5') {
+    showPopup('개발중', '게임 5는 현재 개발중이야!')
+    return
+  }
+
   if (!screens[target]) return
 
   const { historyMode = 'push' } = options
@@ -2026,6 +2040,7 @@ function showScreen(target, options = {}) {
     ensureStockReady()
   }
 
+  document.body.classList.toggle('app-active-game', /^game\d+$/.test(target))
   updateOrientationGate()
 
   currentScreenKey = target
@@ -2249,7 +2264,7 @@ function initMatterWorld() {
       height: boardHeight,
       wireframes: false,
       background: 'transparent',
-      pixelRatio: window.devicePixelRatio || 1
+      pixelRatio: getCanvasPixelRatio()
     }
   })
 
@@ -3729,9 +3744,14 @@ function updateHorsePosition(horse) {
   if (!horse.runnerEl) return
 
   const percent = Math.min(94, (horse.progress / RACE_DISTANCE) * 94)
-  horse.runnerEl.style.left = `${percent}%`
+  const percentText = `${percent.toFixed(3)}%`
 
-  if (horse.statusEl) {
+  if (horse.runnerEl.dataset.progress !== percentText) {
+    horse.runnerEl.style.left = percentText
+    horse.runnerEl.dataset.progress = percentText
+  }
+
+  if (horse.statusEl && horse.statusEl.textContent !== horse.currentStatus) {
     horse.statusEl.textContent = horse.currentStatus
   }
 }
@@ -3811,6 +3831,7 @@ function stopRaceLoop() {
   releaseFastForward('game2')
   raceRunning = false
   raceLastTimestamp = 0
+  raceLastRankingRenderAt = 0
 
   if (raceAnimationFrame) {
     cancelAnimationFrame(raceAnimationFrame)
@@ -4200,7 +4221,11 @@ function raceFrame(timestamp) {
   })
 
   maybeCommentLeaderChange()
-  renderRaceRanking()
+
+  if (!raceLastRankingRenderAt || timestamp - raceLastRankingRenderAt >= 120) {
+    renderRaceRanking()
+    raceLastRankingRenderAt = timestamp
+  }
 
   if (raceFinishOrder.length === raceHorses.length) {
     raceRunning = false
@@ -6161,6 +6186,12 @@ function resetSimCardsOnly() {
 function clearSimArena() {
   closeSimArenaZoom()
 
+  if (simOverlayRaf) {
+    cancelAnimationFrame(simOverlayRaf)
+    simOverlayRaf = null
+  }
+  simOverlayLastPaintAt = 0
+
   if (simArenaRender) {
     Matter.Render.stop(simArenaRender)
     if (simArenaRender.canvas && simArenaRender.canvas.parentNode) {
@@ -6718,6 +6749,11 @@ function createSimOverlayLabel(player) {
     <div class="sim-ball-hpbar"><span></span></div>
     <div class="sim-ball-hptext">${player.currentHp}/${player.maxHp}</div>
   `
+  label._parts = {
+    bar: label.querySelector('.sim-ball-hpbar span'),
+    text: label.querySelector('.sim-ball-hptext'),
+    place: label.querySelector('.sim-ball-place')
+  }
   simHealthOverlay.appendChild(label)
   simOverlayMap.set(player.id, label)
   return label
@@ -6777,7 +6813,7 @@ function initSimArena() {
       height,
       wireframes: false,
       background: 'transparent',
-      pixelRatio: window.devicePixelRatio || 1
+      pixelRatio: getCanvasPixelRatio()
     }
   })
 
@@ -6874,7 +6910,7 @@ function updateSimMovement() {
   }
 }
 
-function updateSimArenaOverlay() {
+function paintSimArenaOverlay() {
   if (!simArenaRender || !simArenaWrap) return
 
   const displayWidth = simArenaWrap.clientWidth || simArenaRender.options.width
@@ -6888,17 +6924,22 @@ function updateSimArenaOverlay() {
     if (!body || !label) return
 
     const hpRatio = player.maxHp ? Math.max(0, player.currentHp) / player.maxHp : 0
-    const bar = label.querySelector('.sim-ball-hpbar span')
-    const text = label.querySelector('.sim-ball-hptext')
-    const place = label.querySelector('.sim-ball-place')
-    if (bar) {
-      bar.style.width = `${(hpRatio * 100).toFixed(1)}%`
+    const parts = label._parts || {}
+
+    if (parts.bar) {
+      parts.bar.style.width = `${(hpRatio * 100).toFixed(1)}%`
     }
-    if (text) {
-      text.textContent = player.isAlive ? `${Math.max(0, player.currentHp)}/${player.maxHp}` : '탈락'
+    if (parts.text) {
+      const nextText = player.isAlive ? `${Math.max(0, player.currentHp)}/${player.maxHp}` : '탈락'
+      if (parts.text.textContent !== nextText) {
+        parts.text.textContent = nextText
+      }
     }
-    if (place) {
-      place.textContent = player.finalPlace ? `${player.finalPlace}위` : ''
+    if (parts.place) {
+      const nextPlaceText = player.finalPlace ? `${player.finalPlace}위` : ''
+      if (parts.place.textContent !== nextPlaceText) {
+        parts.place.textContent = nextPlaceText
+      }
     }
 
     label.classList.toggle('is-dead', !player.isAlive)
@@ -6908,9 +6949,32 @@ function updateSimArenaOverlay() {
     const y = body.position.y * scaleY
     const offsetY = player.isAlive ? -36 : 16
     const scale = player.isAlive ? 0.96 : 0.8
-    label.style.left = `${x}px`
-    label.style.top = `${y + offsetY}px`
-    label.style.transform = `translate(-50%, -50%) scale(${scale})`
+    label.style.transform = `translate3d(${x}px, ${y + offsetY}px, 0) translate(-50%, -50%) scale(${scale})`
+  })
+}
+
+function updateSimArenaOverlay(force = false) {
+  if (!simArenaRender || !simArenaWrap) return
+
+  const minFrameGap = 1000 / 30
+  const now = performance.now()
+
+  if (force || now - simOverlayLastPaintAt >= minFrameGap) {
+    simOverlayLastPaintAt = now
+    if (simOverlayRaf) {
+      cancelAnimationFrame(simOverlayRaf)
+      simOverlayRaf = null
+    }
+    paintSimArenaOverlay()
+    return
+  }
+
+  if (simOverlayRaf) return
+
+  simOverlayRaf = requestAnimationFrame(() => {
+    simOverlayRaf = null
+    simOverlayLastPaintAt = performance.now()
+    paintSimArenaOverlay()
   })
 }
 
@@ -7266,7 +7330,7 @@ function maybeFinishSimBattle() {
     setSimBattleStartState(false)
     updateSimPhase('종료')
     renderSimRanking(getSimRankingData())
-    updateSimArenaOverlay()
+    updateSimArenaOverlay(true)
     setSimViewMode('battle')
   } catch (error) {
     console.error('[game4] finish UI sync failed:', error)
@@ -8167,6 +8231,8 @@ const STOCK_DURATION_STEP = 5
 const STOCK_TICK_MS = 250
 const STOCK_HISTORY_LENGTH = 44
 const STOCK_MAX_HOLDINGS = 4
+const STOCK_UNIT_WON = 10000
+const STOCK_SEED_MANWON = STOCK_SEED_MONEY / STOCK_UNIT_WON
 
 const stockCurrencyFormatter = new Intl.NumberFormat('ko-KR')
 
@@ -8266,6 +8332,7 @@ let stockDurationSeconds = 30
 let stockGameInterval = null
 let stockSetupTurnIndex = 0
 let stockMarket = []
+let stockFocusedSelectionId = ''
 
 function formatStockMoney(value) {
   return `${stockCurrencyFormatter.format(Math.round(value || 0))}원`
@@ -8283,6 +8350,20 @@ function formatStockPercent(value) {
   return `${sign}${Math.abs(safe).toFixed(1)}%`
 }
 
+function formatStockManwon(value) {
+  return `${stockCurrencyFormatter.format(Math.round((Number(value) || 0) / STOCK_UNIT_WON))}만원`
+}
+
+function wonToManwon(value) {
+  return Math.round((Number(value) || 0) / STOCK_UNIT_WON)
+}
+
+function manwonToWon(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric) || numeric <= 0) return 0
+  return clampValue(Math.round(numeric), 0, STOCK_SEED_MANWON) * STOCK_UNIT_WON
+}
+
 function clampStockDuration(value) {
   const normalized = Number(value)
   if (!Number.isFinite(normalized)) return 30
@@ -8294,13 +8375,20 @@ function createEmptyStockDraftSlots() {
   return Array.from({ length: STOCK_MAX_HOLDINGS }, () => ({ stockId: '', amount: 0 }))
 }
 
+function compactStockDraftSlots(slots = []) {
+  const normalized = (slots || []).map((slot) => ({
+    stockId: slot?.stockId || '',
+    amount: Number(slot?.amount) || 0
+  }))
+  const filled = normalized.filter((slot) => slot.stockId)
+  const empty = Array.from({ length: Math.max(0, STOCK_MAX_HOLDINGS - filled.length) }, () => ({ stockId: '', amount: 0 }))
+  return filled.concat(empty).slice(0, STOCK_MAX_HOLDINGS)
+}
+
 function buildStockDraftEntry(label, slots = null) {
   return {
     label,
-    slots: (slots || createEmptyStockDraftSlots()).map((slot) => ({
-      stockId: slot?.stockId || '',
-      amount: Number(slot?.amount) || 0
-    }))
+    slots: compactStockDraftSlots(slots || createEmptyStockDraftSlots())
   }
 }
 
@@ -8446,7 +8534,7 @@ function resetStockDrafts() {
 
 function updateStockDescription() {
   if (!stockDesc) return
-  stockDesc.textContent = `총 ${stockPlayers.length || 0}명이 분야별 주식에 투자하고, ${stockDurationSeconds}초 동안 매도 타이밍을 겨루는 게임이다.`
+  stockDesc.textContent = `총 ${stockPlayers.length || 0}명이 분야별 주식에 투자하고, ${stockDurationSeconds}초 동안 자동 등락을 지켜보는 관찰형 게임이다.`
 }
 
 function setStockInputLock(isLocked) {
@@ -8562,9 +8650,37 @@ function renderStockPlayerSummary() {
 
   stockPlayerSummary.innerHTML = ''
 
+  const isLiveMode = stockGameRunning || stockGameFinished
+
+  if (stockSummaryTitle) {
+    stockSummaryTitle.textContent = isLiveMode ? '실시간 순위' : '참가자 준비 현황'
+  }
+
   if (!stockPlayers.length) {
-    stockPlayerSummary.innerHTML = '<div class="stock-empty-state">참가자를 입력하면 준비 현황이 여기에 표시된다.</div>'
+    stockPlayerSummary.innerHTML = `<div class="stock-empty-state">${isLiveMode ? '게임이 시작되면 실시간 순위가 여기에 표시된다.' : '참가자를 입력하면 준비 현황이 여기에 표시된다.'}</div>`
     stockTotalInfo.textContent = '총 0명'
+    return
+  }
+
+  if (isLiveMode) {
+    const ranking = getStockRanking()
+    stockPlayerSummary.innerHTML = ranking
+      .map((player, index) => {
+        const asset = getStockPlayerAsset(player)
+        const profit = getStockPlayerProfit(player)
+        return `
+          <div class="stock-ranking-item${index === 0 ? ' top' : ''}">
+            <div class="stock-ranking-num">${index + 1}</div>
+            <div class="stock-ranking-main">
+              <strong>${escapeHtml(player.label)}</strong>
+              <span class="stock-ranking-asset">${formatStockMoney(asset)}</span>
+              <em class="stock-ranking-profit ${profit >= 0 ? 'is-profit' : 'is-loss'}">${formatStockSignedMoney(profit)}</em>
+            </div>
+          </div>
+        `
+      })
+      .join('')
+    stockTotalInfo.textContent = `총 ${ranking.length}명`
     return
   }
 
@@ -8575,9 +8691,9 @@ function renderStockPlayerSummary() {
     item.innerHTML = `
       <div class="stock-player-summary-top">
         <strong>${escapeHtml(player.label)}</strong>
-        <span class="stock-player-summary-badge ${validation.valid ? 'is-ready' : 'is-pending'}">${validation.valid ? '투자 완료' : '준비중'}</span>
+        <span class="stock-player-summary-badge ${validation.valid ? 'is-ready' : 'is-pending'}">${validation.valid ? '투자 완료' : '배분 중'}</span>
       </div>
-      <div class="stock-player-summary-sub">${validation.valid ? `${validation.count}개 종목 배분 완료` : (validation.issue || '아직 투자 구성이 끝나지 않았어.')}</div>
+      <div class="stock-player-summary-sub">${validation.valid ? `${validation.count}종목 · ${formatStockManwon(validation.total)} 배분 완료` : (validation.count ? `${validation.count}종목 선택 · ${validation.remaining > 0 ? `남은 ${formatStockManwon(validation.remaining)}` : escapeHtml(validation.issue || '조정 필요')}` : '아직 종목을 고르지 않았어.')}</div>
     `
     stockPlayerSummary.appendChild(item)
   })
@@ -8598,19 +8714,43 @@ function renderStockPlayerTabs() {
     button.dataset.playerId = player.id
     button.innerHTML = `
       <strong>${escapeHtml(player.label)}</strong>
-      <span>${validation.valid ? '완료' : '배분 중'}</span>
+      <span>${validation.valid ? '완료' : `${validation.count}종목 선택`}</span>
     `
     stockPlayerTabs.appendChild(button)
   })
 }
 
-function buildStockSelectOptions(selectedStockId = '') {
-  const options = ['<option value="">종목 선택</option>']
-  stockMarket.forEach((stock) => {
-    const selected = stock.id === selectedStockId ? ' selected' : ''
-    options.push(`<option value="${stock.id}"${selected}>${stock.sector} · ${stock.name}</option>`)
-  })
-  return options.join('')
+function getStockFocusedSelectionIndex(selectedSlots) {
+  if (!selectedSlots.length) {
+    stockFocusedSelectionId = ''
+    return -1
+  }
+
+  let focusedIndex = selectedSlots.findIndex((slot) => slot.stockId === stockFocusedSelectionId)
+
+  if (focusedIndex < 0) {
+    focusedIndex = 0
+    stockFocusedSelectionId = selectedSlots[0].stockId
+  }
+
+  return focusedIndex
+}
+
+function moveStockFocusedSelection(direction) {
+  const activePlayer = stockPlayers[stockSetupTurnIndex] || stockPlayers[0]
+  if (!activePlayer) return
+
+  const selectedSlots = getStockSelectedSlots(activePlayer.id)
+  if (selectedSlots.length <= 1) return
+
+  const focusedIndex = getStockFocusedSelectionIndex(selectedSlots)
+  const nextIndex = (focusedIndex + direction + selectedSlots.length) % selectedSlots.length
+  stockFocusedSelectionId = selectedSlots[nextIndex].stockId
+  renderStockAllocationEditor()
+}
+
+function syncStockPickedCarouselFocus() {
+  // single-card mode keeps only the focused stock visible, so no scroll sync is needed.
 }
 
 function renderStockAllocationEditor() {
@@ -8624,41 +8764,94 @@ function renderStockAllocationEditor() {
   }
 
   const activePlayer = stockPlayers[stockSetupTurnIndex] || stockPlayers[0]
-  const draft = stockDrafts.get(activePlayer.id) || buildStockDraftEntry(activePlayer.label)
+  const draft = getStockDraftEntryByPlayerId(activePlayer.id)
   const validation = getStockDraftValidation(activePlayer.id)
+  const selectedSlots = draft.slots.filter((slot) => slot.stockId)
   const isLocked = stockGameRunning
 
   stockActivePlayerTitle.textContent = `${activePlayer.label} 투자 구성`
 
-  stockAllocationEditor.innerHTML = draft.slots
-    .map((slot, index) => {
-      return `
-        <div class="stock-allocation-row${slot.stockId && slot.amount > 0 ? ' is-filled' : ''}">
-          <div class="stock-allocation-slot-label">${index + 1}번 선택</div>
-          <div class="stock-allocation-controls">
-            <select class="stock-select" data-player-id="${activePlayer.id}" data-slot-index="${index}" data-field="stockId" ${isLocked ? 'disabled' : ''}>
-              ${buildStockSelectOptions(slot.stockId)}
-            </select>
-            <div class="stock-amount-wrap">
-              <input class="stock-amount-input" data-player-id="${activePlayer.id}" data-slot-index="${index}" data-field="amount" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="금액 입력" value="${slot.amount || ''}" ${isLocked ? 'disabled' : ''} />
-              <span>원</span>
-            </div>
+  if (!selectedSlots.length) {
+    stockAllocationEditor.innerHTML = `
+      <div class="stock-empty-state stock-empty-state-setup">
+        위 종목 카드를 눌러 최대 ${STOCK_MAX_HOLDINGS}개까지 담아줘. 담은 뒤에는 입력칸에 <strong>N만원</strong> 단위로 금액을 넣으면 돼. 중간 매도는 없고, 시작하면 끝까지 결과를 지켜보는 방식이야.
+      </div>
+    `
+  } else {
+    const focusedIndex = getStockFocusedSelectionIndex(selectedSlots)
+    const activeSlot = selectedSlots[focusedIndex]
+    const stock = getStockMeta(activeSlot.stockId)
+    const maxAvailable = STOCK_SEED_MONEY - (validation.total - activeSlot.amount)
+
+    const pickedCardHtml = `
+      <article class="stock-picked-card stock-picked-slide ${stock?.colorClass || ''}" data-stock-id="${activeSlot.stockId}">
+        <div class="stock-picked-head">
+          <div class="stock-picked-head-main">
+            <div class="stock-picked-badge">${stock?.emoji || '📈'} ${escapeHtml(stock?.sector || '종목')}</div>
+            <div class="stock-picked-name">${escapeHtml(stock?.name || activeSlot.stockId)}</div>
+            <div class="stock-picked-trait">${escapeHtml(stock?.trait || '')}</div>
           </div>
+          <button class="stock-picked-remove-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" ${isLocked ? 'disabled' : ''}>삭제</button>
         </div>
-      `
-    })
-    .join('')
+        <div class="stock-picked-price-row">
+          <span>현재가</span>
+          <strong>${formatStockMoney(stock?.price || 0)}</strong>
+        </div>
+        <div class="stock-quick-row">
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-10" ${isLocked ? 'disabled' : ''}>-10</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-5" ${isLocked ? 'disabled' : ''}>-5</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-1" ${isLocked ? 'disabled' : ''}>-1</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="1" ${isLocked ? 'disabled' : ''}>+1</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="5" ${isLocked ? 'disabled' : ''}>+5</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="10" ${isLocked ? 'disabled' : ''}>+10</button>
+        </div>
+        <div class="stock-manwon-input-row">
+          <label class="stock-manwon-label">투자금</label>
+          <div class="stock-manwon-control">
+            <input class="stock-amount-input stock-amount-input-manwon" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-amount-input="true" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="${activeSlot.amount ? wonToManwon(activeSlot.amount) : ''}" ${isLocked ? 'disabled' : ''} />
+            <span>만원</span>
+          </div>
+          <button class="stock-fill-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-fill="remaining" ${isLocked ? 'disabled' : ''}>잔액 전부</button>
+        </div>
+        <div class="stock-picked-meta">현재 ${formatStockManwon(activeSlot.amount)} · 이 종목에 최대 ${formatStockManwon(maxAvailable)}까지 넣을 수 있어.</div>
+      </article>
+    `
+
+    stockAllocationEditor.innerHTML = `
+      <div class="stock-picked-carousel-toolbar">
+        <div class="stock-picked-carousel-hint">선택한 종목을 하나씩 넘기며 투자해줘</div>
+        <div class="stock-picked-carousel-nav">
+          <button class="stock-carousel-nav-btn" type="button" data-stock-carousel-nav="prev" ${selectedSlots.length <= 1 || isLocked ? 'disabled' : ''}>←</button>
+          <span class="stock-picked-carousel-count">${focusedIndex + 1} / ${selectedSlots.length}</span>
+          <button class="stock-carousel-nav-btn" type="button" data-stock-carousel-nav="next" ${selectedSlots.length <= 1 || isLocked ? 'disabled' : ''}>→</button>
+        </div>
+      </div>
+      <div class="stock-picked-carousel is-single-view">${pickedCardHtml}</div>
+    `
+  }
+
+  syncStockPickedCarouselFocus()
 
   stockAllocationSummary.innerHTML = `
-    <div class="stock-allocation-total is-total ${validation.valid ? 'is-ready' : ''}">
-      <span>총 투자금</span>
-      <strong>${formatStockMoney(validation.total)}</strong>
+    <div class="stock-allocation-chip-grid">
+      <div class="stock-allocation-total is-total ${validation.valid ? 'is-ready' : ''}">
+        <span>총 투자금</span>
+        <strong>${formatStockManwon(validation.total)}</strong>
+      </div>
+      <div class="stock-allocation-total is-remaining ${validation.remaining === 0 ? 'is-ready' : validation.remaining < 0 ? 'is-danger' : ''}">
+        <span>남은 금액</span>
+        <strong>${validation.remaining >= 0 ? formatStockManwon(validation.remaining) : `초과 ${formatStockManwon(Math.abs(validation.remaining))}`}</strong>
+      </div>
+      <div class="stock-allocation-total">
+        <span>선택 종목</span>
+        <strong>${validation.count} / ${STOCK_MAX_HOLDINGS}</strong>
+      </div>
     </div>
-    <div class="stock-allocation-total is-remaining ${validation.remaining === 0 ? 'is-ready' : validation.remaining < 0 ? 'is-danger' : ''}">
-      <span>남은 금액</span>
-      <strong>${formatStockMoney(Math.max(validation.remaining, 0))}</strong>
+    <div class="stock-allocation-note${validation.valid ? ' is-ready' : ''}">${validation.valid ? '준비 완료. 다음 참가자로 넘어가거나 바로 관찰형 게임을 시작할 수 있어.' : escapeHtml(validation.issue || '시드머니 100만원을 모두 채워야 준비 완료돼.')}</div>
+    <div class="stock-helper-actions">
+      <button class="stock-turn-btn" type="button" data-stock-action="equalize" ${!selectedSlots.length || isLocked ? 'disabled' : ''}>균등 배분</button>
+      <button class="stock-turn-btn" type="button" data-stock-action="clear-all" ${!selectedSlots.length || isLocked ? 'disabled' : ''}>전체 비우기</button>
     </div>
-    <div class="stock-allocation-note${validation.valid ? ' is-ready' : ''}">${validation.valid ? '준비 완료. 다음 참가자로 넘어가도 돼.' : escapeHtml(validation.issue || '시드머니 100만원을 모두 채워야 준비 완료돼.')}</div>
     <div class="stock-turn-actions">
       <button class="stock-turn-btn" type="button" data-stock-turn="prev" ${stockSetupTurnIndex === 0 || isLocked ? 'disabled' : ''}>← 이전 참가자</button>
       <button class="stock-turn-btn" type="button" data-stock-turn="next" ${stockSetupTurnIndex >= stockPlayers.length - 1 || isLocked ? 'disabled' : ''}>다음 참가자 →</button>
@@ -8678,18 +8871,34 @@ function renderStockRoster() {
 
   ensureStockMarket()
 
+  const activePlayer = stockPlayers[stockSetupTurnIndex] || stockPlayers[0] || null
+  const selectedSlots = activePlayer ? getStockSelectedSlots(activePlayer.id) : []
+  const selectedMap = new Map(selectedSlots.map((slot) => [slot.stockId, slot]))
+  const selectedCount = selectedSlots.length
+  const isLocked = stockGameRunning
+
   stockRoster.innerHTML = stockMarket
     .map((stock) => {
+      const selected = selectedMap.has(stock.id)
+      const selectedSlot = selectedMap.get(stock.id)
+      const disabled = isLocked || (!selected && selectedCount >= STOCK_MAX_HOLDINGS)
       return `
-        <article class="stock-roster-card ${stock.colorClass}">
-          <div class="stock-roster-head">
-            <span class="stock-roster-badge">${stock.emoji} ${stock.sector}</span>
-            <strong>${stock.name}</strong>
+        <button class="stock-roster-card stock-roster-card-btn ${stock.colorClass}${selected ? ' is-selected' : ''}" type="button" data-player-id="${activePlayer?.id || ''}" data-stock-id="${stock.id}" ${disabled ? 'disabled' : ''}>
+          <div class="stock-roster-topline">
+            <span class="stock-roster-emoji" aria-hidden="true">${stock.emoji}</span>
+            <span class="stock-roster-select-state">${selected ? `${formatStockManwon(selectedSlot.amount)}` : '담기'}</span>
           </div>
-          <div class="stock-roster-price">${formatStockMoney(stock.price)}</div>
-          <div class="stock-roster-trait">${stock.trait}</div>
-          <p class="stock-roster-desc">${stock.description}</p>
-        </article>
+          <div class="stock-roster-name">${stock.name}</div>
+          <div class="stock-roster-info-line stock-roster-price-line">
+            <span>현재 시세</span>
+            <strong>${formatStockMoney(stock.price)}</strong>
+          </div>
+          <div class="stock-roster-info-line stock-roster-trait-line">
+            <span>특징</span>
+            <strong>${stock.trait}</strong>
+          </div>
+          <p class="stock-roster-desc">${selected ? '선택됨 · 아래에서 투자금 입력' : '카드 눌러서 담기'}</p>
+        </button>
       `
     })
     .join('')
@@ -8765,7 +8974,7 @@ function renderStockBoard() {
               return `
                 <div class="stock-holder-row ${profit >= 0 ? 'is-profit' : 'is-loss'}${holding.sold ? ' is-sold' : ''}">
                   <strong>${escapeHtml(player.label)}</strong>
-                  <span>${holding.sold ? '매도완료' : '보유중'}</span>
+                  <span>${stockGameFinished || holding.sold ? '종료 정산' : '보유중'}</span>
                   <em>${formatStockSignedMoney(profit)} · ${formatStockPercent(percent)}</em>
                   <small>평가금액 ${formatStockMoney(value)}</small>
                 </div>
@@ -8788,7 +8997,7 @@ function renderStockBoard() {
           </div>
           <div class="stock-chart-shell">
             <svg viewBox="0 0 100 56" preserveAspectRatio="none" aria-hidden="true">
-              <polyline class="stock-chart-line" points="${points}"></polyline>
+              <polyline class="stock-chart-line ${priceDiff >= 0 ? 'is-up' : 'is-down'}" points="${points}"></polyline>
             </svg>
           </div>
           <div class="stock-chart-note">${stock.trait} · ${stock.eventText}</div>
@@ -8805,7 +9014,7 @@ function renderStockPortfolio() {
   if (!stockPortfolioList) return
 
   if (!stockPlayers.length) {
-    stockPortfolioList.innerHTML = '<div class="stock-empty-state">게임을 시작하면 각 참가자의 포트폴리오가 여기에 표시된다.</div>'
+    stockPortfolioList.innerHTML = '<div class="stock-empty-state">게임이 시작되면 각 참가자의 보유 현황이 여기에 표시된다.</div>'
     return
   }
 
@@ -8820,14 +9029,17 @@ function renderStockPortfolio() {
               const stock = getStockMeta(holding.stockId)
               const value = getStockHoldingValue(holding)
               const pnl = value - holding.amount
+              const stateText = stockGameFinished || holding.sold ? '종료 정산' : '보유중'
               return `
                 <div class="stock-holding-chip ${holding.sold ? 'is-sold' : ''}">
                   <div class="stock-holding-meta">
-                    <strong>${escapeHtml(stock?.name || holding.stockId)}</strong>
+                    <div class="stock-holding-topline">
+                      <strong>${escapeHtml(stock?.name || holding.stockId)}</strong>
+                      <span class="stock-holding-state">${stateText}</span>
+                    </div>
                     <span>${formatStockMoney(holding.amount)} → ${formatStockMoney(value)}</span>
                     <em>${formatStockSignedMoney(pnl)}</em>
                   </div>
-                  <button class="stock-sell-btn" type="button" data-player-id="${player.id}" data-stock-id="${holding.stockId}" ${!stockGameRunning || holding.sold ? 'disabled' : ''}>${holding.sold ? '매도완료' : '매도'}</button>
                 </div>
               `
             })
@@ -8877,9 +9089,9 @@ function renderStockRanking() {
           <div class="stock-ranking-num">${index + 1}</div>
           <div class="stock-ranking-main">
             <strong>${escapeHtml(player.label)}</strong>
-            <span>${formatStockMoney(asset)}</span>
+            <span class="stock-ranking-asset">${formatStockMoney(asset)}</span>
+            <em class="stock-ranking-profit ${profit >= 0 ? 'is-profit' : 'is-loss'}">${formatStockSignedMoney(profit)}</em>
           </div>
-          <div class="stock-ranking-profit ${profit >= 0 ? 'is-profit' : 'is-loss'}">${formatStockSignedMoney(profit)}</div>
         </div>
       `
     })
@@ -8907,6 +9119,7 @@ function renderStockTimer() {
 }
 
 function renderStockGame() {
+  updateStockViewMode()
   renderStockPlayerSummary()
   renderStockPlayerTabs()
   renderStockReadyBadge()
@@ -8977,19 +9190,176 @@ function ensureStockReady() {
   renderStockGame()
 
   if (!stockGameRunning && !stockGameFinished) {
-    updateStockStatus('투자 준비 완료. 모든 참가자의 시드머니 100만원 배분을 끝내면 시작할 수 있다.')
+    updateStockStatus('종목 카드를 눌러 담고, 입력칸에 N만원 단위로 배분을 끝내면 바로 관찰형 게임을 시작할 수 있다.')
   }
 }
 
 function sanitizeStockAmount(value) {
   const numeric = Number(value)
   if (!Number.isFinite(numeric) || numeric <= 0) return 0
-  return clampValue(Math.round(numeric / 10000) * 10000, 0, STOCK_SEED_MONEY)
+  return clampValue(Math.round(numeric / STOCK_UNIT_WON) * STOCK_UNIT_WON, 0, STOCK_SEED_MONEY)
+}
+
+function getStockDraftEntryByPlayerId(playerId) {
+  const player = stockPlayers.find((item) => item.id === playerId)
+  const existing = stockDrafts.get(playerId)
+  if (existing) {
+    return buildStockDraftEntry(existing.label || player?.label || '', existing.slots)
+  }
+  return buildStockDraftEntry(player?.label || '')
+}
+
+function saveStockDraftEntry(playerId, entry) {
+  const player = stockPlayers.find((item) => item.id === playerId)
+  stockDrafts.set(playerId, buildStockDraftEntry(entry?.label || player?.label || '', entry?.slots || []))
+}
+
+function getStockSelectedSlots(playerId) {
+  return getStockDraftEntryByPlayerId(playerId).slots.filter((slot) => slot.stockId)
+}
+
+function getStockDraftSlotIndex(playerId, stockId) {
+  return getStockDraftEntryByPlayerId(playerId).slots.findIndex((slot) => slot.stockId === stockId)
+}
+
+function toggleStockDraftSelection(playerId, stockId) {
+  if (stockGameRunning) return
+
+  const entry = getStockDraftEntryByPlayerId(playerId)
+  const slots = entry.slots.map((slot) => ({ ...slot }))
+  const currentIndex = slots.findIndex((slot) => slot.stockId === stockId)
+
+  if (currentIndex >= 0) {
+    slots[currentIndex] = { stockId: '', amount: 0 }
+    saveStockDraftEntry(playerId, { ...entry, slots })
+    renderStockGame()
+    return
+  }
+
+  const filledCount = slots.filter((slot) => slot.stockId).length
+  if (filledCount >= STOCK_MAX_HOLDINGS) {
+    showPopup('종목 선택 제한', `한 참가자는 최대 ${STOCK_MAX_HOLDINGS}개 종목까지 선택할 수 있어.`)
+    return
+  }
+
+  const emptyIndex = slots.findIndex((slot) => !slot.stockId)
+  if (emptyIndex < 0) return
+
+  slots[emptyIndex] = { stockId, amount: 0 }
+  saveStockDraftEntry(playerId, { ...entry, slots })
+  renderStockGame()
+}
+
+function setStockDraftAmountByStock(playerId, stockId, amountWon) {
+  const entry = getStockDraftEntryByPlayerId(playerId)
+  const slots = entry.slots.map((slot) => ({ ...slot }))
+  const currentIndex = slots.findIndex((slot) => slot.stockId === stockId)
+  if (currentIndex < 0) return
+  slots[currentIndex].amount = sanitizeStockAmount(amountWon)
+  saveStockDraftEntry(playerId, { ...entry, slots })
+  renderStockGame()
+}
+
+function adjustStockDraftAmountByStock(playerId, stockId, deltaManwon) {
+  const entry = getStockDraftEntryByPlayerId(playerId)
+  const slot = entry.slots.find((item) => item.stockId === stockId)
+  if (!slot) return
+  setStockDraftAmountByStock(playerId, stockId, slot.amount + deltaManwon * STOCK_UNIT_WON)
+}
+
+function clearStockDraftStock(playerId, stockId) {
+  const entry = getStockDraftEntryByPlayerId(playerId)
+  const slots = entry.slots.map((slot) => ({ ...slot }))
+  const currentIndex = slots.findIndex((slot) => slot.stockId === stockId)
+  if (currentIndex < 0) return
+  slots[currentIndex] = { stockId: '', amount: 0 }
+  saveStockDraftEntry(playerId, { ...entry, slots })
+  renderStockGame()
+}
+
+function fillRemainingStockDraftAmount(playerId, stockId) {
+  const validation = getStockDraftValidation(playerId)
+  if (validation.remaining <= 0) return
+  const entry = getStockDraftEntryByPlayerId(playerId)
+  const slot = entry.slots.find((item) => item.stockId === stockId)
+  if (!slot) return
+  setStockDraftAmountByStock(playerId, stockId, slot.amount + validation.remaining)
+}
+
+function equalizeStockDraftAmounts(playerId) {
+  const entry = getStockDraftEntryByPlayerId(playerId)
+  const selectedSlots = entry.slots.filter((slot) => slot.stockId)
+  if (!selectedSlots.length) {
+    showPopup('균등 배분 안내', '먼저 종목 카드를 눌러 최소 1개 종목을 선택해줘.')
+    return
+  }
+
+  const base = Math.floor(STOCK_SEED_MANWON / selectedSlots.length)
+  let remainder = STOCK_SEED_MANWON - base * selectedSlots.length
+  const nextSlots = entry.slots.map((slot) => {
+    if (!slot.stockId) return { stockId: '', amount: 0 }
+    const bonus = remainder > 0 ? 1 : 0
+    if (remainder > 0) remainder -= 1
+    return {
+      stockId: slot.stockId,
+      amount: (base + bonus) * STOCK_UNIT_WON
+    }
+  })
+
+  saveStockDraftEntry(playerId, { ...entry, slots: nextSlots })
+  renderStockGame()
+}
+
+function clearAllStockDraftAmounts(playerId) {
+  const entry = getStockDraftEntryByPlayerId(playerId)
+  const nextSlots = entry.slots.map(() => ({ stockId: '', amount: 0 }))
+  saveStockDraftEntry(playerId, { ...entry, slots: nextSlots })
+  renderStockGame()
+}
+
+function commitStockAmountInput(target, options = {}) {
+  if (!(target instanceof HTMLInputElement)) return
+
+  const { restoreFocus = false } = options
+  const playerId = target.dataset.playerId
+  const stockId = target.dataset.stockId
+
+  if (!playerId || !stockId) return
+
+  const digitsOnly = String(target.value || '').replace(/[^\d]/g, '')
+  const cursorPosition = digitsOnly.length
+
+  if (target.value !== digitsOnly) {
+    target.value = digitsOnly
+  }
+
+  stockFocusedSelectionId = stockId
+  setStockDraftAmountByStock(playerId, stockId, manwonToWon(digitsOnly))
+
+  if (!restoreFocus) return
+
+  requestAnimationFrame(() => {
+    const refreshedInput = stockAllocationEditor?.querySelector(
+      `.stock-amount-input[data-player-id="${playerId}"][data-stock-id="${stockId}"]`
+    )
+
+    if (!(refreshedInput instanceof HTMLInputElement)) return
+
+    refreshedInput.focus({ preventScroll: true })
+    refreshedInput.setSelectionRange(cursorPosition, cursorPosition)
+  })
+}
+
+function updateStockViewMode() {
+  if (!stockCardScreen) return
+  const isLiveMode = stockGameRunning || stockGameFinished
+  stockCardScreen.classList.toggle('stock-view-setup', !isLiveMode)
+  stockCardScreen.classList.toggle('stock-view-live', isLiveMode)
 }
 
 function updateStockDraftField(playerId, slotIndex, field, value) {
-  const entry = stockDrafts.get(playerId)
-  if (!entry || !entry.slots[slotIndex]) return
+  const entry = getStockDraftEntryByPlayerId(playerId)
+  if (!entry.slots[slotIndex]) return
 
   if (field === 'stockId') {
     entry.slots[slotIndex].stockId = String(value || '')
@@ -8999,10 +9369,10 @@ function updateStockDraftField(playerId, slotIndex, field, value) {
   }
 
   if (field === 'amount') {
-    entry.slots[slotIndex].amount = sanitizeStockAmount(value)
+    entry.slots[slotIndex].amount = manwonToWon(value)
   }
 
-  stockDrafts.set(playerId, buildStockDraftEntry(entry.label, entry.slots))
+  saveStockDraftEntry(playerId, entry)
   renderStockGame()
 }
 
@@ -9144,7 +9514,7 @@ function finishStockGame() {
   finalizeStockAutoSell()
   setStockInputLock(false)
   setStockSetupLock(false)
-  updateStockStatus('게임 종료! 자동 매도까지 완료됐어.')
+  updateStockStatus('게임 종료! 최종 자산이 자동으로 정산됐어.')
   renderStockGame()
   showStockResultsPopup()
 }
@@ -9156,6 +9526,7 @@ function tickStockGame() {
   const tickIndex = Math.floor(stockElapsedMs / STOCK_TICK_MS)
   stockMarket.forEach((stock) => updateSingleStockTick(stock, tickIndex))
   renderStockBoard()
+  renderStockPlayerSummary()
   renderStockPortfolio()
   renderStockRanking()
   renderStockTimer()
@@ -9185,7 +9556,7 @@ function startStockGame() {
   const invalidPlayer = stockPlayers.find((player) => !getStockDraftValidation(player.id).valid)
   if (invalidPlayer) {
     setStockTurnByPlayerId(invalidPlayer.id)
-    showPopup('투자 준비 확인', `${invalidPlayer.label}의 투자 구성이 아직 완성되지 않았어. 시드머니 100만원을 모두 배분해줘.`)
+    showPopup('투자 준비 확인', `${invalidPlayer.label}의 투자 구성이 아직 완성되지 않았어. 종목 카드를 고르고 N만원 단위로 시드머니 100만원을 모두 채워줘.`)
     return
   }
 
@@ -9195,7 +9566,7 @@ function startStockGame() {
   stockElapsedMs = 0
   setStockInputLock(true)
   setStockSetupLock(true)
-  updateStockStatus('실시간 거래 시작! 종목 버튼으로 원하는 순간에 매도할 수 있어.')
+  updateStockStatus('실시간 변동 시작! 중간 매도 없이 끝까지 지켜보는 관찰형 주식게임이야.')
   renderStockGame()
 
   if (stockGameInterval) {
@@ -9285,7 +9656,7 @@ function resetStockGame() {
   resetStockDrafts()
   regenerateStockMarket()
   renderStockGame()
-  updateStockStatus('리셋 완료. 참가자별 투자 구성을 다시 정해줘.')
+  updateStockStatus('리셋 완료. 종목 카드를 다시 고르고 N만원 단위로 새롭게 배분해줘.')
 }
 
 function startRace() {
@@ -9415,6 +9786,7 @@ if (stockPlayerTabs) {
   stockPlayerTabs.addEventListener('click', (event) => {
     const button = event.target.closest('.stock-player-tab')
     if (!button || stockGameRunning) return
+    stockFocusedSelectionId = ''
     setStockTurnByPlayerId(button.dataset.playerId)
   })
 }
@@ -9422,30 +9794,51 @@ if (stockPlayerTabs) {
 if (stockAllocationEditor) {
   stockAllocationEditor.addEventListener('input', (event) => {
     const target = event.target
-    if (!(target instanceof HTMLElement)) return
+    if (!(target instanceof HTMLInputElement)) return
     if (stockGameRunning) return
 
     if (target.classList.contains('stock-amount-input')) {
-      const digitsOnly = String(target.value || '').replace(/[^\d]/g, '')
-      target.value = digitsOnly
-      return
+      commitStockAmountInput(target, { restoreFocus: true })
     }
-
-    const playerId = target.dataset.playerId
-    const slotIndex = Number(target.dataset.slotIndex)
-    const field = target.dataset.field
-    if (!playerId || !Number.isFinite(slotIndex) || !field) return
-    updateStockDraftField(playerId, slotIndex, field, target.value)
   })
 
   stockAllocationEditor.addEventListener('change', (event) => {
     const target = event.target
-    if (!(target instanceof HTMLElement)) return
-    const playerId = target.dataset.playerId
-    const slotIndex = Number(target.dataset.slotIndex)
-    const field = target.dataset.field
-    if (!playerId || !Number.isFinite(slotIndex) || !field || stockGameRunning) return
-    updateStockDraftField(playerId, slotIndex, field, target.value)
+    if (!(target instanceof HTMLInputElement) || stockGameRunning) return
+
+    if (target.classList.contains('stock-amount-input')) {
+      commitStockAmountInput(target)
+    }
+  })
+
+  stockAllocationEditor.addEventListener('click', (event) => {
+    const button = event.target.closest('button')
+    if (!button || stockGameRunning) return
+
+    const playerId = button.dataset.playerId
+    const stockId = button.dataset.stockId
+
+    if (button.dataset.stockCarouselNav) {
+      moveStockFocusedSelection(button.dataset.stockCarouselNav === 'next' ? 1 : -1)
+      return
+    }
+
+    if (button.dataset.stockStep && playerId && stockId) {
+      stockFocusedSelectionId = stockId
+      adjustStockDraftAmountByStock(playerId, stockId, Number(button.dataset.stockStep))
+      return
+    }
+
+    if (button.dataset.stockFill === 'remaining' && playerId && stockId) {
+      stockFocusedSelectionId = stockId
+      fillRemainingStockDraftAmount(playerId, stockId)
+      return
+    }
+
+    if (button.classList.contains('stock-picked-remove-btn') && playerId && stockId) {
+      stockFocusedSelectionId = ''
+      clearStockDraftStock(playerId, stockId)
+    }
   })
 }
 
@@ -9454,24 +9847,46 @@ if (stockAllocationSummary) {
     const button = event.target.closest('.stock-turn-btn')
     if (!button || stockGameRunning) return
 
+    if (button.dataset.stockAction === 'equalize') {
+      const activePlayer = stockPlayers[stockSetupTurnIndex] || stockPlayers[0]
+      if (activePlayer) {
+        equalizeStockDraftAmounts(activePlayer.id)
+      }
+      return
+    }
+
+    if (button.dataset.stockAction === 'clear-all') {
+      const activePlayer = stockPlayers[stockSetupTurnIndex] || stockPlayers[0]
+      if (activePlayer) {
+        clearAllStockDraftAmounts(activePlayer.id)
+      }
+      return
+    }
+
     if (button.dataset.stockTurn === 'prev') {
+      stockFocusedSelectionId = ''
       stockSetupTurnIndex = clampValue(stockSetupTurnIndex - 1, 0, Math.max(0, stockPlayers.length - 1))
       renderStockGame()
       return
     }
 
     if (button.dataset.stockTurn === 'next') {
+      stockFocusedSelectionId = ''
       stockSetupTurnIndex = clampValue(stockSetupTurnIndex + 1, 0, Math.max(0, stockPlayers.length - 1))
       renderStockGame()
     }
   })
 }
 
-if (stockPortfolioList) {
-  stockPortfolioList.addEventListener('click', (event) => {
-    const button = event.target.closest('.stock-sell-btn')
-    if (!button) return
-    sellStockHolding(button.dataset.playerId, button.dataset.stockId)
+if (stockRoster) {
+  stockRoster.addEventListener('click', (event) => {
+    const button = event.target.closest('.stock-roster-card-btn')
+    if (!button || stockGameRunning) return
+    const playerId = button.dataset.playerId
+    const stockId = button.dataset.stockId
+    if (!playerId || !stockId) return
+    stockFocusedSelectionId = stockId
+    toggleStockDraftSelection(playerId, stockId)
   })
 }
 
@@ -9756,7 +10171,7 @@ window.addEventListener('resize', () => {
 
     if (screens.game4?.classList.contains('active')) {
       if (simBattleRunning || simBattleFinished) {
-        updateSimArenaOverlay()
+        updateSimArenaOverlay(true)
       }
       if (simArenaZoomed) {
         updateSimArenaZoomScale()
@@ -9786,7 +10201,7 @@ window.addEventListener('orientationchange', () => {
 
     if (screens.game4?.classList.contains('active')) {
       if (simBattleRunning || simBattleFinished) {
-        updateSimArenaOverlay()
+        updateSimArenaOverlay(true)
       }
       if (simArenaZoomed) {
         updateSimArenaZoomScale()
@@ -9824,6 +10239,7 @@ let customCursorEl = null
 let customCursorRaf = null
 let customCursorX = 0
 let customCursorY = 0
+let customCursorHoverState = ''
 
 function canUseCustomCursor() {
   return window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(pointer: coarse)').matches
@@ -9839,8 +10255,8 @@ function updateCustomCursorPosition(x, y) {
   customCursorRaf = requestAnimationFrame(() => {
     customCursorRaf = null
     if (!customCursorEl) return
-    customCursorEl.style.left = `${customCursorX}px`
-    customCursorEl.style.top = `${customCursorY}px`
+    customCursorEl.style.setProperty('--cursor-x', `${customCursorX}px`)
+    customCursorEl.style.setProperty('--cursor-y', `${customCursorY}px`)
   })
 }
 
@@ -9850,6 +10266,10 @@ function syncCustomCursorState(target) {
   const element = target instanceof Element ? target : null
   const interactive = element?.closest('button, a, input, textarea, select, summary, label, [role="button"], .game-item, .luck-carousel-dot, .utility-btn, .action-btn, .back-btn, .popup-btn, .sim-info-btn, .sim-arena-zoom-btn')
   const textEditable = element?.closest('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"]')
+  const nextState = `${Boolean(interactive)}:${Boolean(textEditable)}`
+
+  if (customCursorHoverState === nextState) return
+  customCursorHoverState = nextState
 
   customCursorEl.classList.toggle('is-hover', Boolean(interactive))
   customCursorEl.classList.toggle('is-text', Boolean(textEditable))
@@ -9883,17 +10303,15 @@ function initCustomCursor() {
     customCursorEl?.classList.remove('is-press')
   }, true)
 
-  document.addEventListener('pointerover', (event) => {
-    syncCustomCursorState(event.target)
-  }, true)
-
   document.addEventListener('pointerout', (event) => {
     if (!event.relatedTarget) {
+      customCursorHoverState = ''
       customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
     }
   }, true)
 
   window.addEventListener('blur', () => {
+    customCursorHoverState = ''
     customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
   })
 }
@@ -9956,6 +10374,21 @@ if (screens.home) {
   showScreen('home', { historyMode: 'replace' })
 }
 
-syncSimResponsiveLayout()
 
-syncLuckCarousel()
+function updateStockDurationSliderVisual() {
+  if (!stockDurationInput) return
+
+  const min = Number(stockDurationInput.min || 0)
+  const max = Number(stockDurationInput.max || 100)
+  const value = Number(stockDurationInput.value || min)
+  const percent = max > min ? ((value - min) / (max - min)) * 100 : 0
+
+  stockDurationInput.style.setProperty('--stock-duration-progress', `${percent}%`)
+}
+
+if (stockDurationInput) {
+  const syncStockDurationSliderVisual = () => updateStockDurationSliderVisual()
+  stockDurationInput.addEventListener('input', syncStockDurationSliderVisual)
+  stockDurationInput.addEventListener('change', syncStockDurationSliderVisual)
+  updateStockDurationSliderVisual()
+}
