@@ -7,7 +7,8 @@ const screens = {
   game3: document.getElementById('game3Screen'),
   game4: document.getElementById('game4Screen'),
   game5: document.getElementById('game5Screen'),
-  game6: document.getElementById('game6Screen')
+  game6: document.getElementById('game6Screen'),
+  game7: document.getElementById('game7Screen')
 }
 
 const startBtn = document.getElementById('startBtn')
@@ -81,6 +82,9 @@ const raceMain = document.querySelector('#game2Screen .race-main')
 const raceMainHeader = document.querySelector('#game2Screen .race-main-header')
 const raceHeaderActions = document.querySelector('#game2Screen .race-main-header .game-header-actions')
 const raceBackBtn = document.querySelector('#game2Screen .race-main-header .back-btn[data-target="luck"]')
+const raceCardScreen = document.querySelector('#game2Screen .race-card')
+const raceTrackZoomBtn = document.getElementById('raceTrackZoomBtn')
+const raceTrackZoomBackdrop = document.getElementById('raceTrackZoomBackdrop')
 
 const battleConfigInput = document.getElementById('battleConfigInput')
 const shuffleBattleBtn = document.getElementById('shuffleBattleBtn')
@@ -143,7 +147,10 @@ const navalBoard = document.getElementById('navalBoard')
 const navalBoardWrap = document.getElementById('navalBoardWrap')
 const navalBombLayer = document.getElementById('navalBombLayer')
 const navalBoardMeta = document.getElementById('navalBoardMeta')
-const navalBoardCard = document.querySelector('#game5Screen .naval-board-card')
+const navalBoardCard = document.querySelector('#game5Screen .roulette-stage-card') || document.querySelector('#game5Screen .naval-board-card')
+const rouletteCardScreen = document.querySelector('#game5Screen .roulette-card-screen')
+const rouletteStageZoomBtn = document.getElementById('rouletteStageZoomBtn')
+const rouletteStageZoomBackdrop = document.getElementById('rouletteStageZoomBackdrop')
 const navalLogList = document.getElementById('navalLogList')
 const navalRankingList = document.getElementById('navalRankingList')
 const navalDesc = document.querySelector('#game5Screen .naval-main-header .sub-text')
@@ -170,6 +177,18 @@ const stockBoard = document.getElementById('stockBoard')
 const stockPortfolioList = document.getElementById('stockPortfolioList')
 const stockRankingList = document.getElementById('stockRankingList')
 const stockCardScreen = document.querySelector('#game6Screen .stock-card-screen')
+
+const ladderConfigInput = document.getElementById('ladderConfigInput')
+const shuffleLadderBtn = document.getElementById('shuffleLadderBtn')
+const startLadderBtn = document.getElementById('startLadderBtn')
+const resetLadderBtn = document.getElementById('resetLadderBtn')
+const ladderStatusText = document.getElementById('ladderStatusText')
+const ladderTotalInfo = document.getElementById('ladderTotalInfo')
+const ladderHelperText = document.getElementById('ladderHelperText')
+const ladderCheckList = document.getElementById('ladderCheckList')
+const ladderBoard = document.getElementById('ladderBoard')
+const ladderRevealBadge = document.getElementById('ladderRevealBadge')
+const ladderCardScreen = document.querySelector('#game7Screen .ladder-card-screen')
 
 
 const {
@@ -472,6 +491,8 @@ let lastViewportWidth = window.innerWidth
 let lastViewportHeight = window.innerHeight
 let mobileLayoutApplied = false
 let raceMobileLayoutApplied = false
+let raceTrackZoomed = false
+let rouletteStageZoomed = false
 let luckCarouselActiveIndex = 0
 let luckCarouselScrollTicking = false
 let luckCarouselLoopReady = false
@@ -489,9 +510,9 @@ const FAST_FORWARD_CARD_CONFIG = {
   2: { title: '경마', state: 'supported', badgeText: '가능' },
   3: { title: '카드 연산 배틀', state: 'none', badgeText: '없음' },
   4: { title: '볼 배틀', state: 'supported', badgeText: '가능' },
-  5: { title: '게임 5', state: 'pending', badgeText: '미정' },
+  5: { title: '러시안 룰렛', state: 'none', badgeText: '없음' },
   6: { title: '주식게임', state: 'none', badgeText: '없음' },
-  7: { title: '게임 7', state: 'pending', badgeText: '미정' },
+  7: { title: '투명 사다리 타기', state: 'none', badgeText: '없음' },
   8: { title: '게임 8', state: 'pending', badgeText: '미정' }
 }
 
@@ -1169,6 +1190,9 @@ function syncResponsiveAfterViewportModeChange() {
 
   if (screens.game2?.classList.contains('active') && raceHorses.length) {
     renderRacePreview()
+    if (raceTrackZoomed) {
+      updateRaceTrackZoomLayout()
+    }
   }
 
   if (screens.game4?.classList.contains('active')) {
@@ -1181,7 +1205,15 @@ function syncResponsiveAfterViewportModeChange() {
   }
 
   if (screens.game5?.classList.contains('active')) {
-    renderNavalBoardState()
+    if (rouletteStageZoomed) {
+      updateRouletteStageZoomLayout()
+    } else {
+      renderNavalBoardState()
+    }
+  }
+
+  if (screens.game7?.classList.contains('active')) {
+    renderLadderGame()
   }
 }
 
@@ -1382,6 +1414,7 @@ function handleLuckGameSelection(button) {
     if (button.dataset.game === '4') showScreen('game4')
     if (button.dataset.game === '5') showScreen('game5')
     if (button.dataset.game === '6') showScreen('game6')
+    if (button.dataset.game === '7') showScreen('game7')
     return
   }
 
@@ -1838,6 +1871,134 @@ function syncRaceMobileLayout() {
   }
 }
 
+function updateRaceTrackZoomButton() {
+  if (!raceTrackZoomBtn) return
+
+  raceTrackZoomBtn.setAttribute('aria-pressed', raceTrackZoomed ? 'true' : 'false')
+  raceTrackZoomBtn.textContent = raceTrackZoomed ? '원래 크기로' : '크게 보기'
+}
+
+function updateRaceTrackZoomLayout() {
+  if (!raceTrackWrap) return
+
+  if (raceTrackZoomed) {
+    raceTrackWrap.style.setProperty('--race-track-zoom-lane-count', String(Math.max(1, raceHorses.length || 1)))
+  } else {
+    raceTrackWrap.style.removeProperty('--race-track-zoom-lane-count')
+  }
+
+  raceHorses.forEach((horse) => updateHorsePosition(horse))
+}
+
+function closeRaceTrackZoom() {
+  if (!raceCardScreen) return
+
+  raceTrackZoomed = false
+  raceCardScreen.classList.remove('race-track-zoomed')
+  document.body.classList.remove('race-track-zoom-lock')
+  raceTrackZoomBackdrop?.classList.remove('is-active')
+  if (raceTrackZoomBackdrop) {
+    raceTrackZoomBackdrop.setAttribute('aria-hidden', 'true')
+  }
+
+  updateRaceTrackZoomLayout()
+  updateRaceTrackZoomButton()
+}
+
+function openRaceTrackZoom() {
+  if (!raceCardScreen || !raceTrackWrap) return
+
+  raceTrackZoomed = true
+  raceCardScreen.classList.add('race-track-zoomed')
+  document.body.classList.add('race-track-zoom-lock')
+  raceTrackZoomBackdrop?.classList.add('is-active')
+  if (raceTrackZoomBackdrop) {
+    raceTrackZoomBackdrop.setAttribute('aria-hidden', 'false')
+  }
+
+  requestAnimationFrame(() => {
+    updateRaceTrackZoomLayout()
+  })
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      updateRaceTrackZoomLayout()
+    })
+  })
+
+  updateRaceTrackZoomButton()
+}
+
+function toggleRaceTrackZoom() {
+  if (raceTrackZoomed) {
+    closeRaceTrackZoom()
+    return
+  }
+  openRaceTrackZoom()
+}
+
+function updateRouletteStageZoomButton() {
+  if (!rouletteStageZoomBtn) return
+
+  rouletteStageZoomBtn.setAttribute('aria-pressed', rouletteStageZoomed ? 'true' : 'false')
+  rouletteStageZoomBtn.textContent = rouletteStageZoomed ? '원래 크기로' : '크게 보기'
+}
+
+function updateRouletteStageZoomLayout() {
+  if (!navalBoard || !navalBoardWrap) return
+
+  syncRouletteMapLayoutVars()
+}
+
+function closeRouletteStageZoom() {
+  if (!rouletteCardScreen) return
+
+  rouletteStageZoomed = false
+  rouletteCardScreen.classList.remove('roulette-stage-zoomed')
+  document.body.classList.remove('roulette-stage-zoom-lock')
+  rouletteStageZoomBackdrop?.classList.remove('is-active')
+  if (rouletteStageZoomBackdrop) {
+    rouletteStageZoomBackdrop.setAttribute('aria-hidden', 'true')
+  }
+
+  requestAnimationFrame(() => {
+    updateRouletteStageZoomLayout()
+  })
+  updateRouletteStageZoomButton()
+}
+
+function openRouletteStageZoom() {
+  if (!rouletteCardScreen || !navalBoardCard || !navalBoardWrap) return
+
+  rouletteStageZoomed = true
+  rouletteCardScreen.classList.add('roulette-stage-zoomed')
+  document.body.classList.add('roulette-stage-zoom-lock')
+  rouletteStageZoomBackdrop?.classList.add('is-active')
+  if (rouletteStageZoomBackdrop) {
+    rouletteStageZoomBackdrop.setAttribute('aria-hidden', 'false')
+  }
+
+  requestAnimationFrame(() => {
+    updateRouletteStageZoomLayout()
+  })
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      updateRouletteStageZoomLayout()
+    })
+  })
+
+  updateRouletteStageZoomButton()
+}
+
+function toggleRouletteStageZoom() {
+  if (rouletteStageZoomed) {
+    closeRouletteStageZoom()
+    return
+  }
+  openRouletteStageZoom()
+}
+
 function forceScrollToTop() {
   const scrollingElement = document.scrollingElement || document.documentElement || document.body
 
@@ -1857,6 +2018,42 @@ function forceScrollToTop() {
 }
 
 function forceGame4EntryScrollTop() {
+  if (!isMobileOrTabletLike()) return
+
+  forceScrollToTop()
+
+  requestAnimationFrame(() => {
+    forceScrollToTop()
+
+    requestAnimationFrame(() => {
+      forceScrollToTop()
+    })
+  })
+
+  setTimeout(() => {
+    forceScrollToTop()
+  }, 120)
+}
+
+function forceGame6EntryScrollTop() {
+  if (!isMobileOrTabletLike()) return
+
+  forceScrollToTop()
+
+  requestAnimationFrame(() => {
+    forceScrollToTop()
+
+    requestAnimationFrame(() => {
+      forceScrollToTop()
+    })
+  })
+
+  setTimeout(() => {
+    forceScrollToTop()
+  }, 120)
+}
+
+function forceLadderEntryScrollTop() {
   if (!isMobileOrTabletLike()) return
 
   forceScrollToTop()
@@ -1924,6 +2121,7 @@ function getPreviousStepFallbackTarget(screenKey = getActiveScreenKey()) {
     case 'game4':
     case 'game5':
     case 'game6':
+    case 'game7':
       return 'luck'
     case 'home':
     default:
@@ -1949,11 +2147,6 @@ function updatePrevStepButtons() {
 }
 
 function showScreen(target, options = {}) {
-  if (target === 'game5') {
-    showPopup('개발중', '게임 5는 현재 개발중이야!')
-    return
-  }
-
   if (!screens[target]) return
 
   const { historyMode = 'push' } = options
@@ -1977,6 +2170,7 @@ function showScreen(target, options = {}) {
   }
 
   if (target !== 'game2') {
+    closeRaceTrackZoom()
     stopRaceLoop()
     raceFinished = false
     resetRaceHorseStates()
@@ -1999,6 +2193,7 @@ function showScreen(target, options = {}) {
   }
 
   if (target !== 'game5') {
+    closeRouletteStageZoom()
     stopNavalGame({ preserveBoard: false })
     setNavalInputLock(false)
   }
@@ -2007,6 +2202,14 @@ function showScreen(target, options = {}) {
     stopStockGame({ preserveSetup: true })
     setStockInputLock(false)
     setStockSetupLock(false)
+  }
+
+  if (target !== 'game7') {
+    ladderRunToken += 1
+    stopLadderProgressAnimation()
+    ladderAutoRunning = false
+    ladderActivePlayerId = ''
+    setLadderInputLock(false)
   }
 
   if (target === 'luck') {
@@ -2020,6 +2223,7 @@ function showScreen(target, options = {}) {
   if (target === 'game2') {
     syncRaceMobileLayout()
     ensureRaceReady()
+    updateRaceTrackZoomButton()
   }
 
   if (target === 'game3') {
@@ -2034,10 +2238,17 @@ function showScreen(target, options = {}) {
 
   if (target === 'game5') {
     ensureNavalReady()
+    updateRouletteStageZoomButton()
   }
 
   if (target === 'game6') {
     ensureStockReady()
+    forceGame6EntryScrollTop()
+  }
+
+  if (target === 'game7') {
+    ensureLadderReady()
+    forceLadderEntryScrollTop()
   }
 
   document.body.classList.toggle('app-active-game', /^game\d+$/.test(target))
@@ -2251,6 +2462,7 @@ function initMatterWorld() {
 
   boardWidth = gameCanvasWrap.clientWidth
   boardHeight = gameCanvasWrap.clientHeight
+  const initialCanvasPixelRatio = getCanvasPixelRatio()
 
   engine = Engine.create()
   world = engine.world
@@ -2264,7 +2476,7 @@ function initMatterWorld() {
       height: boardHeight,
       wireframes: false,
       background: 'transparent',
-      pixelRatio: getCanvasPixelRatio()
+      pixelRatio: initialCanvasPixelRatio
     }
   })
 
@@ -2703,14 +2915,27 @@ function buildBoard() {
   currentBoardPadding = Math.round(S(18))
   slotAreaHeight = clampValue(boardHeight * 0.18, S(86), S(118))
 
-  render.canvas.width = boardWidth * (window.devicePixelRatio || 1)
-  render.canvas.height = boardHeight * (window.devicePixelRatio || 1)
-  render.options.width = boardWidth
-  render.options.height = boardHeight
-  render.bounds.max.x = boardWidth
-  render.bounds.max.y = boardHeight
-  render.context.setTransform(1, 0, 0, 1, 0, 0)
-  render.context.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1)
+  const canvasPixelRatio = getCanvasPixelRatio()
+
+  render.options.pixelRatio = canvasPixelRatio
+
+  if (typeof Render.setPixelRatio === 'function') {
+    Render.setPixelRatio(render, canvasPixelRatio)
+  }
+
+  if (typeof Render.setSize === 'function') {
+    Render.setSize(render, boardWidth, boardHeight)
+  } else {
+    render.canvas.width = boardWidth * canvasPixelRatio
+    render.canvas.height = boardHeight * canvasPixelRatio
+    render.canvas.style.width = `${boardWidth}px`
+    render.canvas.style.height = `${boardHeight}px`
+    render.options.width = boardWidth
+    render.options.height = boardHeight
+    render.bounds.max.x = boardWidth
+    render.bounds.max.y = boardHeight
+    render.context.setTransform(canvasPixelRatio, 0, 0, canvasPixelRatio, 0, 0)
+  }
 
   slotOverlay.style.left = `${currentBoardPadding}px`
   slotOverlay.style.right = `${currentBoardPadding}px`
@@ -3456,6 +3681,21 @@ function releaseAllFastForward() {
   releaseFastForward('game5')
 }
 
+function shouldIgnoreFastForwardPointerEvent(event) {
+  const target = event?.target
+  if (!(target instanceof Element)) return false
+
+  return Boolean(
+    target.closest(
+      'button, input, textarea, select, a, [role="button"], .race-track-zoom-btn, .roulette-stage-zoom-btn, .sim-arena-zoom-btn, .back-btn, .action-btn, .utility-btn'
+    )
+  )
+}
+
+function stopZoomControlEvent(event) {
+  event.stopPropagation()
+}
+
 function bindFastForwardTarget(gameKey) {
   const state = fastForwardStates[gameKey]
   const target = state?.target
@@ -3478,6 +3718,8 @@ function bindFastForwardTarget(gameKey) {
   }
 
   target.addEventListener('pointerdown', (event) => {
+    if (shouldIgnoreFastForwardPointerEvent(event)) return
+
     const blockedGame = isFastForwardBlockedGame(gameKey)
     if (!blockedGame && !isFastForwardEligible(gameKey)) return
 
@@ -3708,6 +3950,27 @@ function renderRaceTracks() {
 
   raceTrackWrap.innerHTML = ''
 
+  const stageHead = document.createElement('div')
+  stageHead.className = 'race-track-stage-head'
+  stageHead.innerHTML = `
+    <div class="race-track-stage-copy">
+      <h3 class="race-track-stage-title">경주 트랙</h3>
+      <p class="race-track-stage-desc">경주가 시작되면 각 말이 자동으로 달리고, 결승 통과 순서대로 순위가 확정된다.</p>
+    </div>
+  `
+
+  const stageActions = document.createElement('div')
+  stageActions.className = 'race-track-stage-actions'
+  if (raceTrackZoomBtn) {
+    stageActions.appendChild(raceTrackZoomBtn)
+  }
+  stageHead.appendChild(stageActions)
+  raceTrackWrap.appendChild(stageHead)
+
+  const laneStack = document.createElement('div')
+  laneStack.className = 'race-track-lanes'
+  raceTrackWrap.appendChild(laneStack)
+
   raceHorses.forEach((horse, index) => {
     const lane = document.createElement('div')
     lane.className = 'race-lane'
@@ -3735,7 +3998,7 @@ function renderRaceTracks() {
       horse.runnerEl.style.setProperty('--horse-color', horse.color)
     }
 
-    raceTrackWrap.appendChild(lane)
+    laneStack.appendChild(lane)
     updateHorsePosition(horse)
   })
 }
@@ -3780,6 +4043,7 @@ function renderRacePreview() {
   renderRaceLegend()
   renderRaceTracks()
   renderRaceRanking()
+  updateRaceTrackZoomLayout()
 }
 
 function updateRaceFromInput({ render = true } = {}) {
@@ -8223,6 +8487,775 @@ function resetNavalGame() {
 }
 
 
+/* =========================
+   game5 : russian roulette
+   기존 폭격 해전 함수명을 재사용해 화면 전환/초기화 흐름과 연결한다.
+========================= */
+
+const ROULETTE_MAX_PLAYERS = 10
+const ROULETTE_CHAMBER_CAPACITY = 30
+const ROULETTE_SHOT_DELAY_MS = 1120
+const ROULETTE_FIRST_SHOT_DELAY_MS = 720
+const ROULETTE_ANIMATION_MS = 720
+
+let rouletteTurnIndex = 0
+let rouletteChamber = []
+let rouletteRoundNumber = 1
+let rouletteShotNumber = 0
+let rouletteShotInProgress = false
+
+function getRouletteChamberCountEl() {
+  return document.getElementById('rouletteChamberCount')
+}
+
+function getRouletteBulletTrackEl() {
+  return document.getElementById('rouletteBulletTrack')
+}
+
+function getRouletteCurrentAlivePlayers() {
+  return navalPlayers.filter((player) => player.isAlive)
+}
+
+function setNavalInputLock(isLocked) {
+  if (!navalConfigInput) return
+  navalConfigInput.disabled = isLocked
+  navalConfigInput.style.opacity = isLocked ? '0.65' : '1'
+  navalConfigInput.style.cursor = isLocked ? 'not-allowed' : ''
+}
+
+function updateNavalDescription() {
+  if (!navalDesc) return
+  const playerCount = navalPlayers.length || 0
+  navalDesc.textContent = `중앙의 총 이모지가 MAP 위 참가자 ${playerCount}명을 향해 자동으로 발사된다. 실탄 여부는 숨긴 채, 불발과 폭죽 연출을 섞어 끝까지 긴장감을 만든다.`
+}
+
+function parseNavalConfigToPlayers(text) {
+  const rawItems = text
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (!rawItems.length) {
+    return { status: 'EMPTY' }
+  }
+
+  if (rawItems.length > ROULETTE_MAX_PLAYERS) {
+    return { status: 'TOO_MANY', count: rawItems.length }
+  }
+
+  const seen = new Set()
+  const players = []
+  const palette = getNavalPlayerPaletteByTheme()
+
+  for (const raw of rawItems) {
+    if (!raw || raw.includes('*')) {
+      return { status: 'INVALID' }
+    }
+
+    if (seen.has(raw)) {
+      return { status: 'DUPLICATE' }
+    }
+
+    seen.add(raw)
+    players.push({
+      id: `roulette-player-${players.length + 1}`,
+      label: raw,
+      color: palette[players.length % palette.length],
+      isAlive: true,
+      eliminatedOrder: null,
+      finalPlace: null
+    })
+  }
+
+  return { status: 'OK', players }
+}
+
+function handleNavalParseFailure(parsed, { showPopupOnInvalid = false } = {}) {
+  if (!navalStatusText) return false
+
+  if (parsed.status === 'EMPTY') {
+    navalStatusText.textContent = '참가자를 먼저 입력해줘. 예: 홍길동, 김아무개, 박철수'
+  } else if (parsed.status === 'TOO_MANY') {
+    navalStatusText.textContent = `러시안 룰렛은 최대 ${ROULETTE_MAX_PLAYERS}명까지 가능해.`
+    if (showPopupOnInvalid) {
+      showPopup('참가자 수 초과', `러시안 룰렛은 최대 ${ROULETTE_MAX_PLAYERS}명까지 참가할 수 있어.`, { icon: '⚠️' })
+    }
+  } else if (parsed.status === 'DUPLICATE') {
+    navalStatusText.textContent = '같은 이름은 2번 이상 입력할 수 없어.'
+    if (showPopupOnInvalid) {
+      showPopup('중복 이름 불가', '러시안 룰렛은 같은 이름을 중복 등록할 수 없어.', { icon: '⚠️' })
+    }
+  } else {
+    navalStatusText.textContent = '입력 형식을 확인해줘. 예: 홍길동, 김아무개, 박철수'
+    if (showPopupOnInvalid) {
+      showPopup('입력 확인', '이름만 쉼표로 구분해 적어줘. 예: 홍길동, 김아무개, 박철수', { icon: '⚠️' })
+    }
+  }
+
+  return false
+}
+
+function setNavalPlayers(players) {
+  const palette = getNavalPlayerPaletteByTheme()
+  navalPlayers = players.map((player, index) => ({
+    ...player,
+    color: palette[index % palette.length],
+    isAlive: player.isAlive !== false,
+    eliminatedOrder: player.eliminatedOrder || null,
+    finalPlace: player.finalPlace || null
+  }))
+
+  if (navalConfigInput) {
+    lastNavalValidConfigText = navalConfigInput.value
+    lastNavalAppliedRawText = navalConfigInput.value
+  }
+
+  updateNavalDescription()
+}
+
+function buildRouletteChamber(aliveCount) {
+  const liveBulletCount = clampValue(aliveCount - 1, 0, ROULETTE_CHAMBER_CAPACITY)
+  const blankCount = ROULETTE_CHAMBER_CAPACITY - liveBulletCount
+  rouletteChamber = shuffleArray([
+    ...Array.from({ length: liveBulletCount }, () => 'live'),
+    ...Array.from({ length: blankCount }, () => 'blank')
+  ])
+  rouletteRoundNumber += 1
+}
+
+function getRouletteRemainingShots() {
+  return rouletteChamber.length
+}
+
+function renderRouletteBulletTrack() {
+  const track = getRouletteBulletTrackEl()
+  if (!track) return
+
+  const remaining = getRouletteRemainingShots()
+  track.innerHTML = ''
+
+  for (let index = 0; index < ROULETTE_CHAMBER_CAPACITY; index += 1) {
+    const dot = document.createElement('span')
+    dot.className = `roulette-bullet-dot${index >= remaining ? ' is-spent' : ''}`
+    track.appendChild(dot)
+  }
+}
+
+function renderNavalBoardBase() {
+  renderNavalBoardState()
+}
+
+function getRouletteCurrentTarget() {
+  const alive = getRouletteCurrentAlivePlayers()
+  if (!alive.length) return null
+  return alive[clampValue(rouletteTurnIndex, 0, alive.length - 1) % alive.length]
+}
+
+function getRouletteAngleForPlayer(player) {
+  const total = Math.max(1, navalPlayers.length)
+  const index = Math.max(0, navalPlayers.findIndex((item) => item.id === player?.id))
+  return -90 + (360 / total) * index
+}
+
+function syncRouletteMapLayoutVars() {
+  if (!navalBoard) return
+
+  const total = Math.max(1, navalPlayers.length)
+  const rect = navalBoardWrap?.getBoundingClientRect?.() || navalBoard.getBoundingClientRect?.() || { width: 620, height: 500 }
+  const wrapWidth = rect.width || navalBoardWrap?.clientWidth || 620
+  const wrapHeight = rect.height || navalBoardWrap?.clientHeight || 500
+  const isMobileViewport = window.innerWidth <= 760
+
+  let nodeWidth = isMobileViewport ? 76 : 118
+  let nodeHeight = isMobileViewport ? 74 : 102
+  let avatarSize = isMobileViewport ? 24 : 30
+
+  if (total > 4) {
+    nodeWidth = isMobileViewport ? 72 : 110
+    nodeHeight = isMobileViewport ? 70 : 96
+    avatarSize = isMobileViewport ? 22 : 28
+  }
+  if (total > 6) {
+    nodeWidth = isMobileViewport ? 68 : 104
+    nodeHeight = isMobileViewport ? 66 : 90
+    avatarSize = isMobileViewport ? 20 : 26
+  }
+  if (total > 8) {
+    nodeWidth = isMobileViewport ? 64 : 98
+    nodeHeight = isMobileViewport ? 62 : 84
+    avatarSize = isMobileViewport ? 19 : 24
+  }
+
+  const edgePadding = isMobileViewport ? 12 : 20
+  const minRadius = isMobileViewport ? 96 : 70
+  const maxRadius = Math.max(minRadius, Math.min(
+    (wrapWidth - nodeWidth) / 2 - edgePadding,
+    (wrapHeight - nodeHeight) / 2 - edgePadding
+  ))
+  const preferredRadius = Math.min(wrapWidth, wrapHeight) * (isMobileViewport ? (total > 6 ? 0.43 : 0.4) : (total > 10 ? 0.41 : 0.38))
+  const radius = clampValue(Math.min(preferredRadius, maxRadius), minRadius, maxRadius)
+
+  navalBoard.style.setProperty('--roulette-radius', `${Math.floor(radius)}px`)
+  navalBoard.style.setProperty('--roulette-node-width', `${nodeWidth}px`)
+  navalBoard.style.setProperty('--roulette-node-min-height', `${nodeHeight}px`)
+  navalBoard.style.setProperty('--roulette-avatar-size', `${avatarSize}px`)
+  navalBoard.classList.toggle('is-compact', total > (isMobileViewport ? 6 : 8))
+  navalBoard.classList.toggle('is-tiny', total > (isMobileViewport ? 8 : 10))
+}
+
+function renderNavalBoardState() {
+  if (!navalBoard) return
+
+  const activeTarget = navalRunning && !navalFinished ? getRouletteCurrentTarget() : null
+  const activeAngle = activeTarget ? getRouletteAngleForPlayer(activeTarget) : -90
+  const aliveCount = getRouletteCurrentAlivePlayers().length
+  const remaining = getRouletteRemainingShots()
+
+  navalBoard.innerHTML = ''
+  navalBoard.style.setProperty('--roulette-player-count', String(Math.max(1, navalPlayers.length)))
+  syncRouletteMapLayoutVars()
+
+  const gun = document.createElement('div')
+  gun.className = `roulette-gun-core${navalRunning && !navalFinished ? ' is-live' : ''}`
+  gun.style.setProperty('--gun-angle', `${activeAngle + 90}deg`)
+  gun.innerHTML = `
+    <span class="roulette-gun-emoji" aria-hidden="true">🔫</span>
+  `
+  navalBoard.appendChild(gun)
+
+  navalPlayers.forEach((player, index) => {
+    const angle = -90 + (360 / Math.max(1, navalPlayers.length)) * index
+    const node = document.createElement('div')
+    node.className = `roulette-player-node${player.isAlive ? '' : ' is-dead'}${activeTarget?.id === player.id ? ' is-active' : ''}`
+    node.dataset.playerId = player.id
+    node.style.setProperty('--player-angle', `${angle}deg`)
+    node.style.setProperty('--player-color', player.color)
+    node.innerHTML = `
+      <span class="roulette-player-avatar">${player.isAlive ? (activeTarget?.id === player.id ? '😨' : '🙂') : '💀'}</span>
+      <span class="roulette-player-name">${escapeHtml(player.label)}</span>
+      <span class="roulette-player-state">${player.isAlive ? (activeTarget?.id === player.id ? '타깃' : '생존') : '사망'}</span>
+    `
+    navalBoard.appendChild(node)
+  })
+
+  if (navalBoardMeta) {
+    navalBoardMeta.textContent = `${remaining}/${ROULETTE_CHAMBER_CAPACITY}`
+  }
+
+  const chamberCount = getRouletteChamberCountEl()
+  if (chamberCount) {
+    chamberCount.textContent = `${remaining}/${ROULETTE_CHAMBER_CAPACITY}`
+  }
+
+  renderRouletteBulletTrack()
+}
+
+function renderNavalLegend() {
+  if (!navalLegend || !navalTotalInfo) return
+
+  navalLegend.innerHTML = ''
+
+  const ranking = navalPlayers.length
+    ? (navalFinished ? getNavalFinalRanking() : getNavalProvisionalRanking())
+    : []
+
+  ranking.forEach((player, index) => {
+    const chip = document.createElement('div')
+    chip.className = `legend-chip roulette-sidebar-rank-chip${index === 0 ? ' top' : ''}${!player.isAlive ? ' is-eliminated' : ''}`
+    chip.innerHTML = `
+      <span class="legend-dot" style="background:${player.color};"></span>
+      <span class="roulette-sidebar-rank-num">${index + 1}</span>
+      <span class="roulette-sidebar-rank-meta">
+        <strong>${escapeHtml(player.label)}</strong>
+        <small>${player.isAlive ? '생존' : '사망'}</small>
+      </span>
+    `
+    navalLegend.appendChild(chip)
+  })
+
+  const aliveCount = getRouletteCurrentAlivePlayers().length
+  navalTotalInfo.textContent = `생존 ${aliveCount}명 / 총 ${navalPlayers.length}명`
+}
+
+function renderNavalLogs() {
+  if (!navalLogList) return
+
+  if (!navalLogs.length) {
+    navalLogList.innerHTML = '<div class="roulette-log-empty">게임이 시작되면 발사 기록이 여기에 쌓인다.</div>'
+    return
+  }
+
+  navalLogList.innerHTML = ''
+  navalLogs.forEach((item) => {
+    const row = document.createElement('div')
+    row.className = `roulette-log-item ${item.type ? `type-${item.type}` : ''}`
+    row.textContent = item.text
+    navalLogList.appendChild(row)
+  })
+}
+
+function getNavalAlivePlayers() {
+  return getRouletteCurrentAlivePlayers()
+}
+
+function getNavalProvisionalRanking() {
+  const alive = navalPlayers.filter((player) => player.isAlive)
+  const eliminated = [...navalEliminationOrder].reverse()
+  return [...alive, ...eliminated]
+}
+
+function getNavalFinalRanking() {
+  const alive = navalPlayers.filter((player) => player.isAlive)
+  const eliminated = [...navalEliminationOrder].reverse()
+  return [...alive, ...eliminated]
+}
+
+function renderNavalRanking() {
+  if (!navalRankingList) return
+
+  const ranking = navalFinished ? getNavalFinalRanking() : getNavalProvisionalRanking()
+
+  if (!ranking.length) {
+    navalRankingList.innerHTML = '<div class="roulette-ranking-empty">참가자를 입력한 뒤 시작 버튼을 누르면 생존 순위가 표시된다.</div>'
+    return
+  }
+
+  navalRankingList.innerHTML = ''
+
+  ranking.forEach((player, index) => {
+    const item = document.createElement('div')
+    item.className = `roulette-ranking-item${index === 0 ? ' top' : ''}${!player.isAlive ? ' is-eliminated' : ''}`
+    const subText = player.isAlive
+      ? (navalFinished ? '최후의 1인 생존' : '아직 MAP에 남아 있음')
+      : `${player.eliminatedOrder || '-'}번째 사망`
+    item.innerHTML = `
+      <div class="roulette-rank-num">${index + 1}</div>
+      <div class="roulette-rank-main">
+        <div class="roulette-rank-name"><span class="roulette-rank-color" style="--roulette-player-color:${player.color};"></span>${escapeHtml(player.label)}</div>
+        <div class="roulette-rank-sub">${subText}</div>
+      </div>
+      <div class="roulette-rank-state ${player.isAlive ? '' : 'is-out'}">${player.isAlive ? '생존' : '사망'}</div>
+    `
+    navalRankingList.appendChild(item)
+  })
+}
+
+function addNavalLog(text, type = '') {
+  navalLogs.unshift({ text, type })
+  navalLogs = navalLogs.slice(0, 40)
+}
+
+function updateNavalStatus(text) {
+  if (!navalStatusText) return
+  navalStatusText.textContent = text
+}
+
+function clearNavalBombTimer() {
+  if (navalBombTimer) {
+    clearTimeout(navalBombTimer)
+    navalBombTimer = null
+  }
+}
+
+function resetNavalBoardState() {
+  releaseFastForward('game5')
+  clearNavalBombTimer()
+  rouletteTurnIndex = 0
+  rouletteChamber = []
+  rouletteRoundNumber = 1
+  rouletteShotNumber = 0
+  rouletteShotInProgress = false
+  navalRunning = false
+  navalFinished = false
+  navalEliminationOrder = []
+  navalLogs = []
+  navalLastBombIndex = null
+  if (navalBombLayer) {
+    navalBombLayer.innerHTML = ''
+  }
+}
+
+function stopNavalGame(options = {}) {
+  const { preserveBoard = false } = options
+  clearNavalBombTimer()
+  rouletteShotInProgress = false
+  navalRunning = false
+
+  if (!preserveBoard) {
+    resetNavalBoardState()
+    navalPlayers = []
+    renderNavalBoardBase()
+    renderNavalLegend()
+    renderNavalLogs()
+    renderNavalRanking()
+  }
+}
+
+function updateNavalFromInput({ render = true } = {}) {
+  if (!navalConfigInput) return false
+
+  const parsed = parseNavalConfigToPlayers(navalConfigInput.value)
+
+  if (parsed.status !== 'OK') {
+    handleNavalParseFailure(parsed)
+    return false
+  }
+
+  setNavalPlayers(parsed.players)
+
+  if (!rouletteChamber.length) {
+    rouletteChamber = Array.from({ length: ROULETTE_CHAMBER_CAPACITY }, () => 'blank')
+  }
+
+  if (render) {
+    renderNavalBoardBase()
+    renderNavalLegend()
+    renderNavalLogs()
+    renderNavalRanking()
+  }
+
+  updateNavalStatus(`실시간 반영 완료: 총 ${parsed.players.length}명 · 시작하면 실탄 여부를 숨긴 채 자동 발사된다.`)
+  return true
+}
+
+function ensureNavalReady() {
+  if (!navalConfigInput) return
+
+  if (!navalPlayers.length) {
+    const parsed = parseNavalConfigToPlayers(navalConfigInput.value)
+    if (parsed.status === 'OK') {
+      setNavalPlayers(parsed.players)
+    } else {
+      navalConfigInput.value = lastNavalValidConfigText || '홍길동, 김아무개, 박철수, 최영희'
+      const fallbackParsed = parseNavalConfigToPlayers(navalConfigInput.value)
+      if (fallbackParsed.status === 'OK') {
+        setNavalPlayers(fallbackParsed.players)
+      }
+    }
+  }
+
+  if (!rouletteChamber.length) {
+    rouletteChamber = Array.from({ length: ROULETTE_CHAMBER_CAPACITY }, () => 'blank')
+  }
+
+  renderNavalBoardBase()
+  renderNavalLegend()
+  renderNavalLogs()
+  renderNavalRanking()
+  updateNavalDescription()
+}
+
+function getRandomNavalTargetIndex() {
+  return -1
+}
+
+function animateNavalBombDrop() {
+  return Promise.resolve()
+}
+
+function applyNavalBombResult() {
+  return { type: 'noop' }
+}
+
+function sleepRoulette(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function createRouletteEffectNode(className, x, y, text = '') {
+  if (!navalBombLayer) return null
+  const node = document.createElement('div')
+  node.className = className
+  node.style.left = `${x}px`
+  node.style.top = `${y}px`
+  if (text) node.textContent = text
+  navalBombLayer.appendChild(node)
+  return node
+}
+
+function createRouletteFireworkParticles(x, y) {
+  if (!navalBombLayer) return []
+  return Array.from({ length: 14 }, (_, index) => {
+    const particle = document.createElement('span')
+    particle.className = 'roulette-firework-particle'
+    particle.style.left = `${x}px`
+    particle.style.top = `${y}px`
+    const angle = (index * Math.PI * 2) / 14
+    const distance = 28 + (index % 4) * 8
+    const fx = Math.cos(angle) * distance
+    const fy = Math.sin(angle) * distance
+    particle.style.setProperty('--fx', `${fx}px`)
+    particle.style.setProperty('--fy', `${fy}px`)
+    particle.style.setProperty('--fx2', `${fx * 1.42}px`)
+    particle.style.setProperty('--fy2', `${fy * 1.42}px`)
+    navalBombLayer.appendChild(particle)
+    return particle
+  })
+}
+
+async function animateRouletteShot(targetPlayer, shotType) {
+  const targetNode = navalBoard?.querySelector(`.roulette-player-node[data-player-id="${targetPlayer.id}"]`)
+  const gun = navalBoard?.querySelector('.roulette-gun-core')
+
+  if (!targetNode || !gun || !navalBoardWrap || !navalBombLayer) {
+    return sleepRoulette(Math.max(300, ROULETTE_ANIMATION_MS / getFastForwardMultiplier('game5')))
+  }
+
+  const speedMultiplier = getFastForwardMultiplier('game5')
+  const aimDuration = Math.max(160, (ROULETTE_ANIMATION_MS * 0.28) / speedMultiplier)
+  const shotDuration = Math.max(210, (ROULETTE_ANIMATION_MS * 0.46) / speedMultiplier)
+  const resultDuration = Math.max(300, (ROULETTE_ANIMATION_MS * 0.62) / speedMultiplier)
+
+  const wrapRect = navalBoardWrap.getBoundingClientRect()
+  const gunRect = gun.getBoundingClientRect()
+  const targetRect = targetNode.getBoundingClientRect()
+  const startX = gunRect.left - wrapRect.left + gunRect.width / 2
+  const startY = gunRect.top - wrapRect.top + gunRect.height / 2
+  const endX = targetRect.left - wrapRect.left + targetRect.width / 2
+  const endY = targetRect.top - wrapRect.top + targetRect.height / 2
+  const deltaX = endX - startX
+  const deltaY = endY - startY
+  const distance = Math.max(20, Math.hypot(deltaX, deltaY))
+  const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI
+
+  navalBombLayer.innerHTML = ''
+  targetNode.classList.add('is-targeted')
+  gun.classList.add('is-firing')
+
+  const flash = createRouletteEffectNode('roulette-muzzle-flash', startX, startY)
+  await sleepRoulette(aimDuration)
+
+  const beam = document.createElement('div')
+  beam.className = `roulette-shot-beam is-${shotType}`
+  beam.style.left = `${startX}px`
+  beam.style.top = `${startY}px`
+  beam.style.width = `${distance}px`
+  beam.style.transform = `rotate(${angle}deg)`
+  beam.style.setProperty('--shot-distance', `${distance}px`)
+  navalBombLayer.appendChild(beam)
+
+  const bolt = document.createElement('div')
+  bolt.className = `roulette-shot-bolt is-${shotType}`
+  bolt.style.left = `${startX}px`
+  bolt.style.top = `${startY}px`
+  navalBombLayer.appendChild(bolt)
+  bolt.animate(
+    [
+      { transform: `translate(-50%, -50%) rotate(${angle}deg) translateX(0px) scale(0.8)`, opacity: 0 },
+      { transform: `translate(-50%, -50%) rotate(${angle}deg) translateX(${distance * 0.18}px) scale(1)`, opacity: 1, offset: 0.18 },
+      { transform: `translate(-50%, -50%) rotate(${angle}deg) translateX(${distance}px) scale(0.88)`, opacity: 1 }
+    ],
+    { duration: shotDuration, easing: 'cubic-bezier(0.12, 0.82, 0.18, 1)', fill: 'forwards' }
+  )
+
+  await sleepRoulette(shotDuration)
+
+  beam.remove()
+  bolt.remove()
+  flash?.remove()
+
+  if (shotType === 'hit') {
+    targetNode.classList.add('is-hit')
+    createRouletteEffectNode('roulette-hit-burst', endX, endY)
+  } else if (shotType === 'firework') {
+    targetNode.classList.add('is-firework')
+    createRouletteEffectNode('roulette-firework-burst', endX, endY, '🎆')
+    createRouletteFireworkParticles(endX, endY)
+  } else {
+    targetNode.classList.add('is-blank')
+    createRouletteEffectNode('roulette-blank-spark', endX, endY, '✨')
+  }
+
+  await sleepRoulette(resultDuration)
+
+  targetNode.classList.remove('is-targeted', 'is-hit', 'is-blank', 'is-firework')
+  gun.classList.remove('is-firing')
+
+  if (navalBombLayer) {
+    navalBombLayer.innerHTML = ''
+  }
+}
+
+function reloadRouletteChamberForAlive() {
+  const aliveCount = getRouletteCurrentAlivePlayers().length
+  buildRouletteChamber(aliveCount)
+  addNavalLog(`탄창 리셋 · ${ROULETTE_CHAMBER_CAPACITY}/${ROULETTE_CHAMBER_CAPACITY}`, 'reload')
+}
+
+function maybeFinishNavalGame() {
+  if (navalFinished) return true
+
+  const alivePlayers = getRouletteCurrentAlivePlayers()
+  if (alivePlayers.length > 1) return false
+
+  navalRunning = false
+  navalFinished = true
+  clearNavalBombTimer()
+  setNavalInputLock(false)
+
+  const ranking = getNavalFinalRanking()
+  ranking.forEach((player, index) => {
+    player.finalPlace = index + 1
+  })
+
+  if (ranking[0]) {
+    addNavalLog(`${ranking[0].label} 최후의 1인 생존`, 'final')
+    updateNavalStatus(`${ranking[0].label} 최후의 1인 생존! 최종 결과를 확인해줘.`)
+  } else {
+    updateNavalStatus('게임이 종료되었다.')
+  }
+
+  renderNavalBoardState()
+  renderNavalLegend()
+  renderNavalLogs()
+  renderNavalRanking()
+
+  const html = `
+    <div class="roulette-final-list">
+      ${ranking.map((player, index) => `
+        <div class="roulette-final-item${index === 0 ? ' top' : ''}">
+          <span class="roulette-final-rank">${index + 1}위</span>
+          <strong>${escapeHtml(player.label)}</strong>
+          <small>${index === 0 ? '최후의 1인 생존' : `${player.eliminatedOrder || '-'}번째 사망`}</small>
+        </div>
+      `).join('')}
+    </div>
+  `
+
+  showPopup('러시안 룰렛 결과', html || '<span>결과가 없습니다.</span>', {
+    icon: '🏆',
+    allowHtml: true,
+    popupClass: 'roulette-final-popup'
+  })
+
+  return true
+}
+
+async function executeNavalBombTurn() {
+  await fireRouletteTurn()
+}
+
+async function fireRouletteTurn() {
+  if (!navalRunning || navalFinished || rouletteShotInProgress) return
+
+  const alivePlayers = getRouletteCurrentAlivePlayers()
+  if (alivePlayers.length <= 1) {
+    maybeFinishNavalGame()
+    return
+  }
+
+  if (!rouletteChamber.length) {
+    reloadRouletteChamberForAlive()
+  }
+
+  rouletteTurnIndex = rouletteTurnIndex % alivePlayers.length
+  const targetPlayer = alivePlayers[rouletteTurnIndex]
+  if (!targetPlayer) return
+
+  const bullet = rouletteChamber.shift() || 'blank'
+  const isHit = bullet === 'live'
+  rouletteShotNumber += 1
+  rouletteShotInProgress = true
+
+  renderNavalBoardState()
+  updateNavalStatus(`${targetPlayer.label} 차례 · 총구가 타깃을 향했다.`)
+
+  const shotType = isHit ? 'hit' : (Math.random() < 0.42 ? 'firework' : 'blank')
+  await animateRouletteShot(targetPlayer, shotType)
+
+  if (!navalRunning || navalFinished) {
+    rouletteShotInProgress = false
+    return
+  }
+
+  if (isHit) {
+    targetPlayer.isAlive = false
+    targetPlayer.eliminatedOrder = navalEliminationOrder.length + 1
+    navalEliminationOrder.push(targetPlayer)
+    addNavalLog(`${rouletteShotNumber}번째 발사 · ${targetPlayer.label} 피격 · 사망 처리`, 'hit')
+    updateNavalStatus(`${targetPlayer.label} 피격! MAP에서 사망 처리되고 탄창이 다시 리셋된다.`)
+    reloadRouletteChamberForAlive()
+    const nextAlive = getRouletteCurrentAlivePlayers()
+    rouletteTurnIndex = nextAlive.length ? rouletteTurnIndex % nextAlive.length : 0
+  } else {
+    if (shotType === 'firework') {
+      addNavalLog(`${rouletteShotNumber}번째 발사 · ${targetPlayer.label} 폭죽 · 생존`, 'blank')
+      updateNavalStatus(`${targetPlayer.label} 앞에서 폭죽이 터졌다! 효과는 없고 다음 차례로 넘어간다.`)
+    } else {
+      addNavalLog(`${rouletteShotNumber}번째 발사 · ${targetPlayer.label} 불발 · 생존`, 'blank')
+      updateNavalStatus(`${targetPlayer.label} 불발! 다음 참가자 차례로 넘어간다.`)
+    }
+    rouletteTurnIndex = (rouletteTurnIndex + 1) % alivePlayers.length
+  }
+
+  rouletteShotInProgress = false
+  renderNavalBoardState()
+  renderNavalLegend()
+  renderNavalLogs()
+  renderNavalRanking()
+
+  if (!maybeFinishNavalGame()) {
+    navalBombTimer = setTimeout(fireRouletteTurn, getScaledDelay(ROULETTE_SHOT_DELAY_MS, 'game5', 260))
+  }
+}
+
+function startNavalGame() {
+  if (!navalConfigInput || navalRunning) return
+
+  const parsed = parseNavalConfigToPlayers(navalConfigInput.value)
+
+  if (parsed.status !== 'OK') {
+    handleNavalParseFailure(parsed, { showPopupOnInvalid: true })
+    return
+  }
+
+  if (parsed.players.length < 2) {
+    showMinParticipantsPopup(ROULETTE_MAX_PLAYERS)
+    return
+  }
+
+  resetNavalBoardState()
+  setNavalPlayers(parsed.players)
+  buildRouletteChamber(parsed.players.length)
+  navalRunning = true
+  navalFinished = false
+  setNavalInputLock(true)
+
+  addNavalLog(`게임 시작 · 참가자 ${parsed.players.length}명 · 탄창 ${ROULETTE_CHAMBER_CAPACITY}/${ROULETTE_CHAMBER_CAPACITY}`, 'start')
+  updateNavalStatus('러시안 룰렛 시작! 실탄 여부는 공개되지 않고 중앙 총이 참가자를 순서대로 조준한다.')
+  renderNavalBoardState()
+  renderNavalLegend()
+  renderNavalLogs()
+  renderNavalRanking()
+
+  navalBombTimer = setTimeout(fireRouletteTurn, getScaledDelay(ROULETTE_FIRST_SHOT_DELAY_MS, 'game5', 180))
+}
+
+function resetNavalGame() {
+  resetNavalBoardState()
+  setNavalInputLock(false)
+
+  if (!navalConfigInput) return
+
+  const parsed = parseNavalConfigToPlayers(navalConfigInput.value)
+  if (parsed.status === 'OK') {
+    setNavalPlayers(parsed.players)
+  } else {
+    navalConfigInput.value = lastNavalValidConfigText || '홍길동, 김아무개, 박철수, 최영희'
+    const fallbackParsed = parseNavalConfigToPlayers(navalConfigInput.value)
+    if (fallbackParsed.status === 'OK') {
+      setNavalPlayers(fallbackParsed.players)
+    }
+  }
+
+  rouletteChamber = Array.from({ length: ROULETTE_CHAMBER_CAPACITY }, () => 'blank')
+  renderNavalBoardBase()
+  renderNavalLegend()
+  renderNavalLogs()
+  renderNavalRanking()
+  updateNavalStatus('리셋 완료. 시작 버튼을 누르면 총이 다시 자동 발사된다.')
+}
+
+
 const STOCK_MAX_PLAYERS = 4
 const STOCK_SEED_MONEY = 1000000
 const STOCK_MIN_DURATION = 10
@@ -9702,6 +10735,796 @@ function startRace() {
   raceAnimationFrame = requestAnimationFrame(raceFrame)
 }
 
+
+
+const LADDER_DESKTOP_MAX_PLAYERS = 8
+const LADDER_MOBILE_MAX_PLAYERS = 4
+const LADDER_MIN_PLAYERS = 2
+const LADDER_PLAYER_PALETTE = ['#ff82ad', '#6ce8d1', '#7fd8ff', '#ffd56f', '#c9b6ff', '#ffa97d', '#9fe9df', '#ffb087', '#d6c3ff', '#89f2b8', '#ffe07e', '#ffb6dc']
+
+let ladderPlayers = []
+let ladderRungs = []
+let ladderResults = []
+let ladderCheckedIds = new Set()
+let ladderGameStarted = false
+let ladderRevealed = false
+let ladderRows = 0
+let ladderLastValidConfigText = ladderConfigInput ? ladderConfigInput.value : ''
+let ladderAutoRunning = false
+let ladderActivePlayerId = ''
+let ladderRunToken = 0
+let ladderActiveProgress = 0
+let ladderProgressRaf = null
+
+function getLadderMaxPlayers() {
+  return isMobileOrTabletLike() ? LADDER_MOBILE_MAX_PLAYERS : LADDER_DESKTOP_MAX_PLAYERS
+}
+
+function updateLadderHelperText() {
+  if (!ladderHelperText) return
+  const max = getLadderMaxPlayers()
+  ladderHelperText.textContent = isMobileOrTabletLike()
+    ? `이름(번호) 형식만 가능. 모바일 최대 ${max}명, 번호는 1~참가자 수 안에서 중복 없이 입력.`
+    : `이름(번호) 형식만 가능. 데스크톱 최대 ${max}명, 번호는 1~참가자 수 안에서 중복 없이 입력.`
+}
+
+function parseLadderPlayers(text) {
+  const maxPlayers = getLadderMaxPlayers()
+  const rawItems = String(text || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (!rawItems.length) return { status: 'EMPTY', maxPlayers }
+  if (rawItems.length < LADDER_MIN_PLAYERS) return { status: 'TOO_FEW', count: rawItems.length, maxPlayers }
+  if (rawItems.length > maxPlayers) return { status: 'TOO_MANY', count: rawItems.length, maxPlayers }
+
+  const participantCount = rawItems.length
+  const seenNames = new Set()
+  const seenLanes = new Set()
+  const players = []
+
+  for (const raw of rawItems) {
+    const match = raw.match(/^(.+?)\s*\(\s*(\d+)\s*\)$/)
+    if (!match) {
+      return { status: 'INVALID_FORMAT', value: raw, maxPlayers }
+    }
+
+    const label = match[1].trim()
+    const laneNumber = Number(match[2])
+
+    if (!label || !Number.isInteger(laneNumber)) {
+      return { status: 'INVALID_FORMAT', value: raw, maxPlayers }
+    }
+
+    if (laneNumber < 1 || laneNumber > participantCount) {
+      return { status: 'OUT_OF_RANGE', laneNumber, participantCount, maxPlayers }
+    }
+
+    if (seenNames.has(label)) {
+      return { status: 'DUPLICATE_NAME', name: label, maxPlayers }
+    }
+
+    if (seenLanes.has(laneNumber)) {
+      return { status: 'DUPLICATE_LANE', laneNumber, maxPlayers }
+    }
+
+    seenNames.add(label)
+    seenLanes.add(laneNumber)
+
+    players.push({
+      id: `ladder-player-${players.length + 1}`,
+      label,
+      raw,
+      laneNumber,
+      startLane: laneNumber - 1,
+      color: LADDER_PLAYER_PALETTE[(laneNumber - 1) % LADDER_PLAYER_PALETTE.length]
+    })
+  }
+
+  return {
+    status: 'OK',
+    players: players.sort((a, b) => a.startLane - b.startLane),
+    maxPlayers
+  }
+}
+
+function setLadderInputLock(isLocked) {
+  if (ladderConfigInput) {
+    ladderConfigInput.disabled = isLocked
+    ladderConfigInput.style.opacity = isLocked ? '0.65' : '1'
+    ladderConfigInput.style.cursor = isLocked ? 'not-allowed' : ''
+  }
+
+  if (shuffleLadderBtn) {
+    shuffleLadderBtn.disabled = true
+    shuffleLadderBtn.style.display = 'none'
+  }
+}
+
+function handleLadderParseFailure(parsed, options = {}) {
+  const { showPopupOnInvalid = false } = options
+  const maxPlayers = parsed?.maxPlayers || getLadderMaxPlayers()
+  let title = '입력 확인'
+  let message = `홍길동(1), 김아무개(2)처럼 이름(사다리번호) 형식으로 입력해줘.`
+
+  if (parsed.status === 'TOO_MANY') {
+    title = '참가자 수 초과'
+    message = `투명 사다리 타기는 현재 환경에서 최대 ${maxPlayers}명까지 가능해.`
+  } else if (parsed.status === 'TOO_FEW' || parsed.status === 'EMPTY') {
+    title = '참가자 등록 확인'
+    message = `최소 ${LADDER_MIN_PLAYERS}명 이상 입력해야 해.`
+  } else if (parsed.status === 'INVALID_FORMAT') {
+    title = '입력 형식 확인'
+    message = `이번 게임은 반드시 홍길동(1), 김아무개(2)처럼 이름 뒤에 사용할 사다리 번호를 괄호로 적어야 해.`
+  } else if (parsed.status === 'DUPLICATE_NAME') {
+    title = '중복 이름 불가'
+    message = `같은 이름은 중복 등록할 수 없어: ${parsed.name}`
+  } else if (parsed.status === 'DUPLICATE_LANE') {
+    title = '중복 사다리 불가'
+    message = `${parsed.laneNumber}번 사다리는 이미 다른 참가자가 선택했어. 각 사다리는 한 명만 사용할 수 있어.`
+  } else if (parsed.status === 'OUT_OF_RANGE') {
+    title = '사다리 번호 확인'
+    message = `참가자가 ${parsed.participantCount}명이면 사다리 번호는 1~${parsed.participantCount}까지만 사용할 수 있어.`
+  }
+
+  if (ladderStatusText) {
+    ladderStatusText.textContent = message.replace(/<[^>]*>/g, '')
+  }
+  if (showPopupOnInvalid) {
+    showPopup(title, message, { icon: '⚠️', allowHtml: true })
+  }
+  return false
+}
+
+function setLadderPlayers(players) {
+  ladderPlayers = players
+    .slice()
+    .sort((a, b) => a.startLane - b.startLane)
+    .map((player, index) => ({
+      ...player,
+      id: `ladder-player-${index + 1}`,
+      color: LADDER_PLAYER_PALETTE[index % LADDER_PLAYER_PALETTE.length]
+    }))
+  ladderLastValidConfigText = ladderConfigInput ? ladderConfigInput.value : ladderLastValidConfigText
+}
+
+function updateLadderFromInput(options = {}) {
+  const { render = true } = options
+  if (!ladderConfigInput) return false
+
+  updateLadderHelperText()
+  const parsed = parseLadderPlayers(ladderConfigInput.value)
+  if (parsed.status !== 'OK') {
+    handleLadderParseFailure(parsed)
+    if (render) renderLadderGame()
+    return false
+  }
+
+  setLadderPlayers(parsed.players)
+  ladderGameStarted = false
+  ladderRevealed = false
+  ladderCheckedIds = new Set()
+  ladderRungs = []
+  ladderResults = []
+  ladderRows = 0
+  ladderAutoRunning = false
+  ladderActivePlayerId = ''
+
+  if (ladderStatusText) {
+    ladderStatusText.textContent = `참가자 ${ladderPlayers.length}명 준비 완료. 시작하면 1번 사다리부터 순서대로 내려와.`
+  }
+
+  if (render) renderLadderGame()
+  return true
+}
+
+function ensureLadderReady() {
+  updateLadderHelperText()
+  if (!ladderPlayers.length && ladderConfigInput) {
+    const parsed = parseLadderPlayers(ladderConfigInput.value)
+    if (parsed.status === 'OK') {
+      setLadderPlayers(parsed.players)
+    }
+  }
+  renderLadderGame()
+}
+
+function buildTransparentLadder(count) {
+  const rows = Math.max(8, count * 3)
+  const rungs = []
+  const laneTouchCount = Array.from({ length: Math.max(0, count - 1) }, () => 0)
+
+  for (let row = 0; row < rows; row += 1) {
+    const used = new Set()
+    const lineCount = count <= 3 ? 1 : (Math.random() < 0.28 ? 2 : 1)
+
+    for (let attempt = 0; attempt < lineCount; attempt += 1) {
+      const candidates = []
+      for (let lane = 0; lane < count - 1; lane += 1) {
+        if (used.has(lane) || used.has(lane - 1) || used.has(lane + 1)) continue
+        const sameAbove = rungs.some((rung) => rung.row === row - 1 && rung.leftLane === lane)
+        if (sameAbove) continue
+        candidates.push(lane)
+      }
+      if (!candidates.length) continue
+      candidates.sort((a, b) => laneTouchCount[a] - laneTouchCount[b] || Math.random() - 0.5)
+      const selected = candidates[0]
+      used.add(selected)
+      laneTouchCount[selected] += 1
+      rungs.push({ row, leftLane: selected })
+    }
+  }
+
+  for (let lane = 0; lane < count - 1; lane += 1) {
+    if (laneTouchCount[lane] > 0) continue
+    const row = Math.floor(rand(1, rows - 1))
+    if (!rungs.some((rung) => rung.row === row && Math.abs(rung.leftLane - lane) <= 1)) {
+      rungs.push({ row, leftLane: lane })
+    }
+  }
+
+  rungs.sort((a, b) => a.row - b.row || a.leftLane - b.leftLane)
+  return { rows, rungs }
+}
+
+function resolveLadderEndLane(startLane, rungs, rows) {
+  let lane = startLane
+  for (let row = 0; row < rows; row += 1) {
+    const rowRungs = rungs.filter((rung) => rung.row === row)
+    for (const rung of rowRungs) {
+      if (rung.leftLane === lane) {
+        lane += 1
+        break
+      }
+      if (rung.leftLane === lane - 1) {
+        lane -= 1
+        break
+      }
+    }
+  }
+  return lane
+}
+
+function isLadderMobilePortraitView() {
+  return isMobileOrTabletLike() && isPortraitMode() && window.innerWidth <= 820
+}
+
+function getCompactLadderLabel(label) {
+  const text = String(label || '')
+  if (!isLadderMobilePortraitView()) return text
+  return text.length > 4 ? `${text.slice(0, 4)}…` : text
+}
+
+function getLadderGeometry(count, rows) {
+  const useMobilePortrait = isLadderMobilePortraitView()
+
+  if (useMobilePortrait) {
+    const width = 420
+    const height = 760
+    const topY = 168
+    const bottomY = 600
+    const leftX = count === 1 ? width / 2 : 58
+    const rightX = count === 1 ? width / 2 : width - 58
+    const gap = count <= 1 ? 0 : (rightX - leftX) / (count - 1)
+    const rowGap = rows <= 1 ? 0 : (bottomY - topY) / rows
+    const laneX = (index) => leftX + gap * index
+    const yForRow = (row) => topY + rowGap * (row + 0.55)
+
+    return {
+      width,
+      height,
+      topY,
+      bottomY,
+      leftX,
+      rightX,
+      gap,
+      rowGap,
+      laneX,
+      yForRow,
+      isMobilePortrait: true,
+      topLabelY: 64,
+      topCircleR: 23,
+      topNameY: 56,
+      topLaneY: 84,
+      rankY: 682,
+      rankRectX: -42,
+      rankRectY: -28,
+      rankRectWidth: 84,
+      rankRectHeight: 46,
+      rankRectRadius: 23,
+      rankTextY: 4,
+      runnerR: 21,
+      runnerTextY: 8
+    }
+  }
+
+  const width = 1000
+  const height = 560
+  const topY = 88
+  const bottomY = 452
+  const leftX = count === 1 ? 500 : 90
+  const rightX = count === 1 ? 500 : 910
+  const gap = count <= 1 ? 0 : (rightX - leftX) / (count - 1)
+  const rowGap = rows <= 1 ? 0 : (bottomY - topY) / rows
+  const laneX = (index) => leftX + gap * index
+  const yForRow = (row) => topY + rowGap * (row + 0.55)
+
+  return {
+    width,
+    height,
+    topY,
+    bottomY,
+    leftX,
+    rightX,
+    gap,
+    rowGap,
+    laneX,
+    yForRow,
+    isMobilePortrait: false,
+    topLabelY: 38,
+    topCircleR: 16,
+    topNameY: 38,
+    topLaneY: 62,
+    rankY: 520,
+    rankRectX: -34,
+    rankRectY: -22,
+    rankRectWidth: 68,
+    rankRectHeight: 36,
+    rankRectRadius: 18,
+    rankTextY: 2,
+    runnerR: 18,
+    runnerTextY: 7
+  }
+}
+
+function getLadderPathData(points) {
+  if (!Array.isArray(points) || !points.length) return ''
+  return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+}
+
+function getLadderPointAtProgress(points, progress) {
+  if (!Array.isArray(points) || !points.length) return { x: 0, y: 0 }
+  if (points.length === 1) return points[0]
+
+  const safeProgress = clampValue(progress, 0, 1)
+  const segments = []
+  let totalLength = 0
+
+  for (let index = 1; index < points.length; index += 1) {
+    const from = points[index - 1]
+    const to = points[index]
+    const length = Math.hypot(to.x - from.x, to.y - from.y)
+    segments.push({ from, to, length })
+    totalLength += length
+  }
+
+  if (!totalLength) return points[points.length - 1]
+
+  let targetLength = totalLength * safeProgress
+  for (const segment of segments) {
+    if (targetLength > segment.length) {
+      targetLength -= segment.length
+      continue
+    }
+
+    const ratio = segment.length ? targetLength / segment.length : 0
+    return {
+      x: segment.from.x + (segment.to.x - segment.from.x) * ratio,
+      y: segment.from.y + (segment.to.y - segment.from.y) * ratio
+    }
+  }
+
+  return points[points.length - 1]
+}
+
+function stopLadderProgressAnimation() {
+  if (ladderProgressRaf) {
+    cancelAnimationFrame(ladderProgressRaf)
+    ladderProgressRaf = null
+  }
+}
+
+function updateLadderRunnerPosition() {
+  if (!ladderBoard || !ladderGameStarted || !ladderActivePlayerId || !ladderPlayers.length) return
+
+  const activePlayer = getLadderPlayerById(ladderActivePlayerId)
+  if (!activePlayer) return
+
+  let runnerEl = ladderBoard.querySelector('.ladder-active-runner')
+  if (!runnerEl) {
+    renderLadderGame()
+    runnerEl = ladderBoard.querySelector('.ladder-active-runner')
+    if (!runnerEl) return
+  }
+
+  const rows = ladderRows || Math.max(6, ladderPlayers.length * 2)
+  const geometry = getLadderGeometry(ladderPlayers.length, rows)
+  const path = getLadderPathPoints(activePlayer.startLane, ladderRungs, rows, geometry)
+  const point = getLadderPointAtProgress(path.points, ladderActiveProgress)
+  runnerEl.setAttribute('transform', `translate(${point.x}, ${point.y})`)
+}
+
+function animateLadderRunnerProgress(token, duration) {
+  stopLadderProgressAnimation()
+  ladderActiveProgress = 0
+
+  return new Promise((resolve) => {
+    const startedAt = performance.now()
+
+    const step = (now) => {
+      if (token !== ladderRunToken || !screens.game7?.classList.contains('active') || !ladderActivePlayerId) {
+        ladderProgressRaf = null
+        resolve(false)
+        return
+      }
+
+      const elapsed = now - startedAt
+      ladderActiveProgress = clampValue(elapsed / duration, 0, 1)
+      updateLadderRunnerPosition()
+
+      if (ladderActiveProgress >= 1) {
+        ladderProgressRaf = null
+        resolve(true)
+        return
+      }
+
+      ladderProgressRaf = requestAnimationFrame(step)
+    }
+
+    updateLadderRunnerPosition()
+    ladderProgressRaf = requestAnimationFrame(step)
+  })
+}
+
+function getLadderRankFillByLane() {
+  const fillMap = new Map()
+  ladderResults.forEach((result) => {
+    if (!ladderCheckedIds.has(result.playerId)) return
+    const player = getLadderPlayerById(result.playerId)
+    if (!player) return
+    fillMap.set(result.endLane, player)
+  })
+  return fillMap
+}
+
+function getLadderPathPoints(startLane, rungs, rows, geometry) {
+  const points = []
+  let lane = startLane
+  points.push({ x: geometry.laneX(lane), y: geometry.topY })
+
+  for (let row = 0; row < rows; row += 1) {
+    const y = geometry.yForRow(row)
+    points.push({ x: geometry.laneX(lane), y })
+
+    const rightRung = rungs.find((rung) => rung.row === row && rung.leftLane === lane)
+    const leftRung = rungs.find((rung) => rung.row === row && rung.leftLane === lane - 1)
+
+    if (rightRung) {
+      lane += 1
+      points.push({ x: geometry.laneX(lane), y })
+    } else if (leftRung) {
+      lane -= 1
+      points.push({ x: geometry.laneX(lane), y })
+    }
+  }
+
+  points.push({ x: geometry.laneX(lane), y: geometry.bottomY })
+  return { points, endLane: lane }
+}
+
+function computeLadderResults() {
+  ladderResults = ladderPlayers.map((player) => {
+    const endLane = resolveLadderEndLane(player.startLane, ladderRungs, ladderRows)
+    return {
+      playerId: player.id,
+      label: player.label,
+      color: player.color,
+      startLane: player.startLane,
+      laneNumber: player.laneNumber,
+      endLane,
+      rank: endLane + 1
+    }
+  })
+}
+
+function getLadderResultByPlayerId(playerId) {
+  return ladderResults.find((result) => result.playerId === playerId) || null
+}
+
+function getLadderPlayerById(playerId) {
+  return ladderPlayers.find((player) => player.id === playerId) || null
+}
+
+function getLadderFinalRanking() {
+  return [...ladderResults].sort((a, b) => a.rank - b.rank)
+}
+
+function showLadderFinalRankingPopup() {
+  const ranking = getLadderFinalRanking()
+  const html = ranking.length
+    ? `<div class="ladder-final-popup-list">${ranking.map((result) => `
+        <div class="ladder-final-popup-item${result.rank === 1 ? ' top' : ''}">
+          <span class="ladder-final-popup-rank">${result.rank}위</span>
+          <strong>${escapeHtml(result.label)}</strong>
+          <small>${result.laneNumber}번 사다리 → ${result.rank}등 도착</small>
+        </div>
+      `).join('')}</div>`
+    : '<span>결과가 없습니다.</span>'
+
+  showPopup('투명 사다리 종합 순위', html, {
+    icon: '🏆',
+    allowHtml: true,
+    popupClass: 'ladder-final-popup'
+  })
+}
+
+function getLadderStatusForPlayer(player) {
+  if (!ladderGameStarted) return '대기'
+  if (ladderActivePlayerId === player.id) return '내려가는 중'
+  if (ladderCheckedIds.has(player.id)) return '결과 확인 완료'
+  return '순서 대기'
+}
+
+async function runLadderAutoSequence(token) {
+  if (ladderAutoRunning) return
+  ladderAutoRunning = true
+
+  const order = [...ladderPlayers].sort((a, b) => a.startLane - b.startLane)
+  const traceDelay = 4700
+  const settleDelay = 820
+
+  for (const player of order) {
+    if (token !== ladderRunToken || !screens.game7?.classList.contains('active')) break
+
+    ladderActivePlayerId = player.id
+    ladderActiveProgress = 0
+    if (ladderStatusText) {
+      ladderStatusText.textContent = `${player.laneNumber}번 사다리 · ${player.label}이 천천히 내려오는 중이야.`
+    }
+    renderLadderGame()
+
+    const completedMove = await animateLadderRunnerProgress(token, traceDelay)
+    if (!completedMove || token !== ladderRunToken || !screens.game7?.classList.contains('active')) break
+
+    const result = getLadderResultByPlayerId(player.id)
+    if (result) {
+      ladderCheckedIds.add(player.id)
+      ladderActiveProgress = 1
+      ladderActivePlayerId = ''
+      if (ladderStatusText) {
+        ladderStatusText.textContent = `${player.label} 도착 완료. 다음 참가자가 이어서 내려와.`
+      }
+      renderLadderGame()
+      await new Promise((resolve) => setTimeout(resolve, settleDelay))
+    }
+  }
+
+  const isCompleted = token === ladderRunToken && ladderCheckedIds.size === ladderPlayers.length
+  ladderActivePlayerId = ''
+  ladderAutoRunning = false
+
+  if (isCompleted) {
+    revealLadderIfComplete()
+    return
+  }
+
+  renderLadderGame()
+}
+
+function startLadderGame() {
+  if (!ladderConfigInput || ladderAutoRunning) return
+
+  const parsed = parseLadderPlayers(ladderConfigInput.value)
+  if (parsed.status !== 'OK') {
+    handleLadderParseFailure(parsed, { showPopupOnInvalid: true })
+    return
+  }
+
+  setLadderPlayers(parsed.players)
+  const ladder = buildTransparentLadder(ladderPlayers.length)
+  ladderRows = ladder.rows
+  ladderRungs = ladder.rungs
+  ladderCheckedIds = new Set()
+  ladderGameStarted = true
+  ladderRevealed = false
+  ladderActivePlayerId = ''
+  ladderActiveProgress = 0
+  computeLadderResults()
+  setLadderInputLock(true)
+  ladderRunToken += 1
+
+  if (ladderStatusText) {
+    ladderStatusText.textContent = '투명 사다리 시작! 왼쪽 1번 사다리부터 순서대로 내려온다.'
+  }
+
+  renderLadderGame()
+  setTimeout(() => runLadderAutoSequence(ladderRunToken), 420)
+}
+
+function resetLadderGame() {
+  ladderRunToken += 1
+  stopLadderProgressAnimation()
+  ladderAutoRunning = false
+  ladderActivePlayerId = ''
+  ladderActiveProgress = 0
+  ladderGameStarted = false
+  ladderRevealed = false
+  ladderCheckedIds = new Set()
+  ladderRungs = []
+  ladderResults = []
+  ladderRows = 0
+  setLadderInputLock(false)
+  updateLadderFromInput({ render: true })
+}
+
+function shuffleLadderParticipants() {
+  showPopup('셔플 비활성화', '이번 게임은 참가자가 직접 사다리 번호를 선택해야 해서 셔플을 사용하지 않아.', { icon: '🪜' })
+}
+
+function revealLadderIfComplete() {
+  if (!ladderGameStarted || ladderRevealed) return
+  if (ladderCheckedIds.size < ladderPlayers.length) return
+
+  ladderRevealed = true
+  ladderActivePlayerId = ''
+  ladderActiveProgress = 0
+  setLadderInputLock(false)
+
+  if (ladderStatusText) {
+    ladderStatusText.textContent = '모든 참가자가 사다리를 탔어. 숨겨져 있던 가로 라인과 종합 순위를 공개했어!'
+  }
+
+  renderLadderGame()
+  showLadderFinalRankingPopup()
+}
+
+function checkLadderResult(playerId) {
+  if (!ladderGameStarted) {
+    showPopup('게임 시작 필요', '먼저 시작 버튼을 눌러 투명 사다리를 생성해줘.', { icon: '🪜' })
+    return
+  }
+
+  const result = getLadderResultByPlayerId(playerId)
+  if (!result) return
+
+  ladderCheckedIds.add(playerId)
+  renderLadderGame()
+  revealLadderIfComplete()
+}
+
+function renderLadderBoard() {
+  if (!ladderBoard) return
+
+  const count = Math.max(0, ladderPlayers.length)
+  const started = ladderGameStarted && count >= 2
+  const revealedClass = ladderRevealed ? ' is-revealed' : ''
+  const runningClass = ladderActivePlayerId ? ' is-running' : ''
+
+  if (!count) {
+    ladderBoard.className = 'ladder-board'
+    ladderBoard.innerHTML = '<div class="ladder-empty-state">홍길동(1), 김아무개(2) 형식으로 참가자를 입력하면 사다리 보드가 준비돼.</div>'
+    return
+  }
+
+  const rows = started ? ladderRows : Math.max(6, count * 2)
+  const rungs = started ? ladderRungs : []
+  const geometry = getLadderGeometry(count, rows)
+  const laneX = geometry.laneX
+  const yForRow = geometry.yForRow
+
+  const verticalLines = ladderPlayers.map((player) => {
+    const x = laneX(player.startLane)
+    return `<line class="ladder-vertical-line" x1="${x}" y1="${geometry.topY}" x2="${x}" y2="${geometry.bottomY}" />`
+  }).join('')
+
+  const horizontalLines = rungs.map((rung) => {
+    const x1 = laneX(rung.leftLane)
+    const x2 = laneX(rung.leftLane + 1)
+    const y = yForRow(rung.row)
+    return `<line class="ladder-horizontal-line" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" />`
+  }).join('')
+
+  const activePlayer = getLadderPlayerById(ladderActivePlayerId)
+  let activeMarker = ''
+  if (started && activePlayer) {
+    const path = getLadderPathPoints(activePlayer.startLane, rungs, rows, geometry)
+    const runnerPoint = getLadderPointAtProgress(path.points, ladderActiveProgress)
+    const runnerLabel = escapeHtml(activePlayer.label.slice(0, 1))
+    activeMarker = `
+      <g class="ladder-active-runner" transform="translate(${runnerPoint.x}, ${runnerPoint.y})" style="--ladder-player-color:${activePlayer.color};">
+        <circle class="ladder-active-runner-body" cx="0" cy="0" r="${geometry.runnerR}"></circle>
+        <text class="ladder-active-runner-text" x="0" y="${geometry.runnerTextY}">${runnerLabel}</text>
+      </g>
+    `
+  }
+
+  const rankFillByLane = getLadderRankFillByLane()
+
+  const topLabels = ladderPlayers.map((player) => {
+    const x = laneX(player.startLane)
+    const isActive = ladderActivePlayerId === player.id
+    const isDone = ladderCheckedIds.has(player.id)
+    return `
+      <g class="ladder-player-label${isActive ? ' is-active' : ''}${isDone ? ' is-done' : ''}" transform="translate(${x}, ${geometry.topLabelY})">
+        <circle r="${geometry.topCircleR}" fill="${player.color}"></circle>
+        <text y="${geometry.topNameY}">${escapeHtml(getCompactLadderLabel(player.label))}</text>
+        <text class="ladder-lane-num" y="${geometry.topLaneY}">${player.laneNumber}번</text>
+      </g>
+    `
+  }).join('')
+
+  const bottomLabels = Array.from({ length: count }, (_, index) => {
+    const x = laneX(index)
+    const rank = index + 1
+    const arrivedPlayer = rankFillByLane.get(index)
+    const filledClass = arrivedPlayer ? ' is-filled' : ''
+    const style = arrivedPlayer ? ` style="--ladder-rank-color:${arrivedPlayer.color};"` : ''
+    return `
+      <g class="ladder-rank-label${filledClass}" transform="translate(${x}, ${geometry.rankY})"${style}>
+        <rect x="${geometry.rankRectX}" y="${geometry.rankRectY}" width="${geometry.rankRectWidth}" height="${geometry.rankRectHeight}" rx="${geometry.rankRectRadius}"></rect>
+        <text y="${geometry.rankTextY}">${rank}등</text>
+      </g>
+    `
+  }).join('')
+
+  ladderBoard.className = `ladder-board${revealedClass}${runningClass}`
+  ladderBoard.innerHTML = `
+    <svg class="ladder-svg" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="투명 사다리">
+      <g class="ladder-grid-lines">
+        ${verticalLines}
+        ${horizontalLines}
+        ${activeMarker}
+      </g>
+      <g class="ladder-top-labels">${topLabels}</g>
+      <g class="ladder-bottom-labels">${bottomLabels}</g>
+    </svg>
+    <div class="ladder-board-caption">${ladderRevealed ? '숨겨졌던 가로 라인이 모두 공개됨' : (ladderActivePlayerId ? '현재 참가자가 투명 사다리를 내려오는 중' : '가로 라인은 투명 처리됨')}</div>
+  `
+}
+
+function renderLadderCheckList() {
+  if (!ladderCheckList || !ladderTotalInfo) return
+
+  const checkedCount = ladderCheckedIds.size
+  const total = ladderPlayers.length
+  ladderTotalInfo.textContent = total ? (ladderGameStarted ? `${checkedCount}/${total}명 완료` : `총 ${total}명`) : '총 0명'
+
+  if (!total) {
+    ladderCheckList.innerHTML = '<div class="ladder-check-empty">홍길동(1), 김아무개(2) 형식으로 입력하면 참가자 준비 현황이 표시돼.</div>'
+    return
+  }
+
+  const rows = ladderPlayers.map((player) => {
+    const done = ladderCheckedIds.has(player.id)
+    const active = ladderActivePlayerId === player.id
+    const result = getLadderResultByPlayerId(player.id)
+    const stateText = getLadderStatusForPlayer(player)
+    const resultText = done && result ? `${result.rank}등` : `${player.laneNumber}번 사다리`
+    return `
+      <div class="ladder-check-item${done ? ' is-checked' : ''}${active ? ' is-active' : ''}" style="--ladder-player-color:${player.color};">
+        <span class="ladder-check-dot"></span>
+        <span class="ladder-check-name">${escapeHtml(player.label)}</span>
+        <span class="ladder-check-lane">${resultText}</span>
+        <span class="ladder-check-result">${stateText}</span>
+      </div>
+    `
+  }).join('')
+
+  ladderCheckList.innerHTML = rows
+}
+
+function renderLadderGame() {
+  updateLadderHelperText()
+  renderLadderBoard()
+  renderLadderCheckList()
+
+  if (ladderRevealBadge) {
+    ladderRevealBadge.textContent = ladderRevealed ? '가로 라인 공개' : '가로 라인 숨김'
+    ladderRevealBadge.classList.toggle('is-revealed', ladderRevealed)
+  }
+}
+
 if (startBtn) {
   startBtn.addEventListener('click', () => showScreen('menu'))
 }
@@ -9890,6 +11713,43 @@ if (stockRoster) {
   })
 }
 
+if (ladderConfigInput) {
+  ladderConfigInput.addEventListener('input', () => {
+    if (!ladderGameStarted) {
+      updateLadderFromInput()
+    } else {
+      updateLadderHelperText()
+    }
+  })
+
+  ladderConfigInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      startLadderGame()
+    }
+  })
+}
+
+if (shuffleLadderBtn) {
+  shuffleLadderBtn.addEventListener('click', shuffleLadderParticipants)
+}
+
+if (startLadderBtn) {
+  startLadderBtn.addEventListener('click', startLadderGame)
+}
+
+if (resetLadderBtn) {
+  resetLadderBtn.addEventListener('click', resetLadderGame)
+}
+
+if (ladderCheckList) {
+  ladderCheckList.addEventListener('click', (event) => {
+    const button = event.target.closest('.ladder-check-btn')
+    if (!button || button.disabled) return
+    checkLadderResult(button.dataset.playerId)
+  })
+}
+
 if (shuffleBtn) {
   shuffleBtn.addEventListener('click', shuffleRound)
 }
@@ -10048,6 +11908,40 @@ if (simInfoBtn) {
   simInfoBtn.addEventListener('click', openSimGameInfo)
 }
 
+if (raceTrackZoomBtn) {
+  raceTrackZoomBtn.addEventListener('pointerdown', stopZoomControlEvent)
+  raceTrackZoomBtn.addEventListener('pointerup', stopZoomControlEvent)
+  raceTrackZoomBtn.addEventListener('click', (event) => {
+    event.stopPropagation()
+    toggleRaceTrackZoom()
+  })
+}
+
+if (raceTrackZoomBackdrop) {
+  raceTrackZoomBackdrop.addEventListener('click', () => {
+    if (raceTrackZoomed) {
+      closeRaceTrackZoom()
+    }
+  })
+}
+
+if (rouletteStageZoomBtn) {
+  rouletteStageZoomBtn.addEventListener('pointerdown', stopZoomControlEvent)
+  rouletteStageZoomBtn.addEventListener('pointerup', stopZoomControlEvent)
+  rouletteStageZoomBtn.addEventListener('click', (event) => {
+    event.stopPropagation()
+    toggleRouletteStageZoom()
+  })
+}
+
+if (rouletteStageZoomBackdrop) {
+  rouletteStageZoomBackdrop.addEventListener('click', () => {
+    if (rouletteStageZoomed) {
+      closeRouletteStageZoom()
+    }
+  })
+}
+
 if (simArenaZoomBtn) {
   simArenaZoomBtn.addEventListener('click', toggleSimArenaZoom)
 }
@@ -10095,8 +11989,18 @@ bindFastForwardTarget('game4')
 bindFastForwardTarget('game5')
 
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && simArenaZoomed) {
+  if (event.key !== 'Escape') return
+
+  if (raceTrackZoomed) {
+    closeRaceTrackZoom()
+  }
+
+  if (simArenaZoomed) {
     closeSimArenaZoom()
+  }
+
+  if (rouletteStageZoomed) {
+    closeRouletteStageZoom()
   }
 })
 
@@ -10165,8 +12069,16 @@ window.addEventListener('resize', () => {
       }
     }
 
+    if (screens.game7?.classList.contains('active')) {
+      updateLadderHelperText()
+      renderLadderGame()
+    }
+
     if (screens.game2?.classList.contains('active') && raceHorses.length) {
       renderRacePreview()
+      if (raceTrackZoomed) {
+        updateRaceTrackZoomLayout()
+      }
     }
 
     if (screens.game4?.classList.contains('active')) {
@@ -10175,6 +12087,14 @@ window.addEventListener('resize', () => {
       }
       if (simArenaZoomed) {
         updateSimArenaZoomScale()
+      }
+    }
+
+    if (screens.game5?.classList.contains('active')) {
+      if (rouletteStageZoomed) {
+        updateRouletteStageZoomLayout()
+      } else {
+        renderNavalBoardState()
       }
     }
   }, 120)
@@ -10197,6 +12117,9 @@ window.addEventListener('orientationchange', () => {
 
     if (screens.game2?.classList.contains('active') && raceHorses.length) {
       renderRacePreview()
+      if (raceTrackZoomed) {
+        updateRaceTrackZoomLayout()
+      }
     }
 
     if (screens.game4?.classList.contains('active')) {
@@ -10205,6 +12128,14 @@ window.addEventListener('orientationchange', () => {
       }
       if (simArenaZoomed) {
         updateSimArenaZoomScale()
+      }
+    }
+
+    if (screens.game5?.classList.contains('active')) {
+      if (rouletteStageZoomed) {
+        updateRouletteStageZoomLayout()
+      } else {
+        renderNavalBoardState()
       }
     }
   }, 150)
@@ -10326,7 +12257,9 @@ syncGame1MobileLayout()
 syncRaceMobileLayout()
 syncSimResponsiveLayout()
 syncLuckCarousel()
+updateRaceTrackZoomButton()
 updateSimArenaZoomButton()
+updateRouletteStageZoomButton()
 updateOrientationGate()
 initCustomCursor()
 
@@ -10367,6 +12300,11 @@ if (stockDurationInput) {
 if (stockConfigInput) {
   updateStockFromInput({ render: false, preserveDrafts: true })
   renderStockGame()
+}
+
+if (ladderConfigInput) {
+  updateLadderFromInput({ render: false })
+  renderLadderGame()
 }
 
 if (screens.home) {
