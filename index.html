@@ -281,6 +281,17 @@
                 <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">정확히 터치</span></div>
               </div>
             </button>
+
+            <button class="game-item physical-game-item physical-game-launch" data-physical-game="stay-click" data-physical-compat="desktop-only" type="button">
+              <span class="physical-compat-badge is-desktop-only">🖥️ PC 전용</span>
+              <div class="game-num">M4</div>
+              <h3>STAY CLICK</h3>
+              <p>STAY를 버티다가 CLICK이 뜨는 순간 자기 키를 가장 빠르게 누르는 키보드 반응속도 게임</p>
+              <div class="game-meta">
+                <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~4명</span></div>
+                <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">키보드</span></div>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -423,6 +434,102 @@
             </div>
 
             <button class="back-btn bomb-pass-back-btn" data-target="physical" type="button">← 피지컬 목록으로</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="physicalKeyReactScreen" class="screen game-screen">
+      <div class="card game-card key-react-card-screen">
+        <div class="key-react-layout">
+          <aside class="key-react-sidebar">
+            <div class="key-react-sidebar-inner">
+              <div class="sidebar-head">
+                <h3 class="sidebar-title">STAY CLICK 설정</h3>
+                <p class="sub-text">
+                  이름을 쉼표로 구분해 참가자를 등록하고, 각 참가자가 사용할 키보드 키를 지정한다.
+                  예: 홍길동, 김아무개, 박철수
+                </p>
+              </div>
+
+              <div class="controls-wrap">
+                <div class="input-card">
+                  <label for="keyReactConfigInput">참가자</label>
+                  <input
+                    id="keyReactConfigInput"
+                    type="text"
+                    value="홍길동, 김아무개, 박철수"
+                    autocomplete="off"
+                  />
+                  <p class="helper-text">
+                    쉼표(,)로 구분해 입력. 중복 이름은 불가하며 2~4명까지 가능.
+                  </p>
+                </div>
+
+                <div class="key-react-key-card">
+                  <div class="key-react-key-head">
+                    <strong>참가자별 키 지정</strong>
+                    <span>키 버튼 클릭 후 원하는 키 누르기</span>
+                  </div>
+                  <div id="keyReactKeyList" class="key-react-key-list"></div>
+                </div>
+
+                <div class="button-row key-react-button-row">
+                  <button id="startKeyReactBtn" class="action-btn primary" type="button">시작</button>
+                  <button id="resetKeyReactBtn" class="action-btn soft" type="button">리셋</button>
+                </div>
+
+                <div id="keyReactStatusText" class="status-text">
+                  참가자와 키를 지정한 뒤 시작을 누르면 STAY... 이후 CLICK이 뜬다.
+                </div>
+              </div>
+
+              <div class="scoreboard-card key-react-player-card">
+                <div class="scoreboard-head">
+                  <h3>참가자 현황</h3>
+                  <span id="keyReactTotalInfo">총 0명</span>
+                </div>
+                <div id="keyReactPlayerList" class="key-react-player-list"></div>
+              </div>
+            </div>
+          </aside>
+
+          <div class="key-react-main">
+            <div class="key-react-main-header">
+              <div>
+                <p class="small-badge game-mini-badge">⌨️ physical M4 ⌨️</p>
+                <h2>STAY CLICK</h2>
+                <p class="sub-text">게임 시작 후 STAY...가 보이면 절대 누르지 말고 기다린다. CLICK!이 뜨는 순간 자신의 키를 누른 순서대로 순위가 정해진다.</p>
+              </div>
+            </div>
+
+            <div class="key-react-stage-card">
+              <div class="key-react-panel-head">
+                <div>
+                  <h3>반응속도 스테이지</h3>
+                  <p class="sub-text">STAY 중에 먼저 누르면 실격 처리된다. CLICK 이후에는 가장 빠르게 누른 사람부터 실시간으로 순위가 쌓인다.</p>
+                </div>
+                <span id="keyReactPhaseBadge" class="key-react-phase-badge">대기</span>
+              </div>
+
+              <div id="keyReactStage" class="key-react-stage" aria-label="STAY CLICK 키보드 반응속도 스테이지">
+                <div class="key-react-stage-inner">
+                  <span id="keyReactSignalText" class="key-react-signal-text">READY</span>
+                  <p id="keyReactSignalSubText" class="key-react-signal-sub-text">시작을 누르면 곧 STAY...가 표시됩니다.</p>
+                  <div id="keyReactKeyChips" class="key-react-key-chips"></div>
+                </div>
+              </div>
+
+              <div class="key-react-live-card">
+                <div class="key-react-live-head">
+                  <h3>실시간 순위</h3>
+                  <span id="keyReactResultCount">0 / 0</span>
+                </div>
+                <div id="keyReactRankingList" class="key-react-ranking-list"></div>
+              </div>
+            </div>
+
+            <button class="back-btn key-react-back-btn" data-target="physical" type="button">← 피지컬 목록으로</button>
           </div>
         </div>
       </div>

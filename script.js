@@ -5,6 +5,7 @@ const screens = {
   physicalBalloon: document.getElementById('physicalBalloonScreen'),
   physicalBomb: document.getElementById('physicalBombScreen'),
   physicalCircle: document.getElementById('physicalCircleScreen'),
+  physicalKeyReact: document.getElementById('physicalKeyReactScreen'),
   luck: document.getElementById('luckScreen'),
   game1: document.getElementById('game1Screen'),
   game2: document.getElementById('game2Screen'),
@@ -63,6 +64,20 @@ const circleTapTarget = document.getElementById('circleTapTarget')
 const circleTapCount = document.getElementById('circleTapCount')
 const circleTapMissEffect = document.getElementById('circleTapMissEffect')
 const circleTapStageHint = document.getElementById('circleTapStageHint')
+const keyReactConfigInput = document.getElementById('keyReactConfigInput')
+const startKeyReactBtn = document.getElementById('startKeyReactBtn')
+const resetKeyReactBtn = document.getElementById('resetKeyReactBtn')
+const keyReactStatusText = document.getElementById('keyReactStatusText')
+const keyReactTotalInfo = document.getElementById('keyReactTotalInfo')
+const keyReactKeyList = document.getElementById('keyReactKeyList')
+const keyReactPlayerList = document.getElementById('keyReactPlayerList')
+const keyReactPhaseBadge = document.getElementById('keyReactPhaseBadge')
+const keyReactStage = document.getElementById('keyReactStage')
+const keyReactSignalText = document.getElementById('keyReactSignalText')
+const keyReactSignalSubText = document.getElementById('keyReactSignalSubText')
+const keyReactKeyChips = document.getElementById('keyReactKeyChips')
+const keyReactResultCount = document.getElementById('keyReactResultCount')
+const keyReactRankingList = document.getElementById('keyReactRankingList')
 
 const popupOverlay = document.getElementById('popupOverlay')
 const popupTitle = document.getElementById('popupTitle')
@@ -436,6 +451,22 @@ let circleTapRadius = CIRCLE_TAP_START_RADIUS
 let circleTapSuccessCount = 0
 let circleTapLastValidConfigText = circleTapConfigInput ? circleTapConfigInput.value : ''
 let circleTapLastAppliedRawText = circleTapConfigInput ? circleTapConfigInput.value : ''
+
+const KEY_REACT_MIN_PLAYERS = 2
+const KEY_REACT_MAX_PLAYERS = 4
+const KEY_REACT_DEFAULT_KEYS = ['A', 'S', 'K', 'L']
+const KEY_REACT_STAY_MIN_MS = 1400
+const KEY_REACT_STAY_MAX_MS = 4200
+
+let keyReactPlayers = []
+let keyReactPhase = 'idle'
+let keyReactTimer = null
+let keyReactClickStartedAt = 0
+let keyReactResults = []
+let keyReactRoundToken = 0
+let keyReactCapturePlayerId = ''
+let keyReactLastValidConfigText = keyReactConfigInput ? keyReactConfigInput.value : ''
+let keyReactLastAppliedRawText = keyReactConfigInput ? keyReactConfigInput.value : ''
 
 function getSlotPaletteByTheme() {
   return isDarkThemeEnabled() ? DARK_SLOT_PALETTE : slotPalette
@@ -1886,6 +1917,11 @@ function handlePhysicalGameSelection(button) {
 
   if (button.dataset.physicalGame === 'shrinking-circle') {
     showScreen('physicalCircle')
+    return
+  }
+
+  if (button.dataset.physicalGame === 'stay-click') {
+    showScreen('physicalKeyReact')
   }
 }
 
@@ -2588,6 +2624,7 @@ function getPreviousStepFallbackTarget(screenKey = getActiveScreenKey()) {
     case 'physicalBalloon':
     case 'physicalBomb':
     case 'physicalCircle':
+    case 'physicalKeyReact':
       return 'physical'
     case 'game1':
     case 'game2':
@@ -2698,6 +2735,10 @@ function showScreen(target, options = {}) {
     stopCircleTapGame({ preservePlayers: true })
   }
 
+  if (target !== 'physicalKeyReact') {
+    stopKeyReactGame({ preservePlayers: true })
+  }
+
   if (target === 'luck') {
     syncLuckCarousel({ align: true })
   }
@@ -2756,7 +2797,12 @@ function showScreen(target, options = {}) {
     forceScrollToTop()
   }
 
-  document.body.classList.toggle('app-active-game', /^game\d+$/.test(target) || target === 'physicalBalloon' || target === 'physicalBomb' || target === 'physicalCircle')
+  if (target === 'physicalKeyReact') {
+    ensureKeyReactReady()
+    forceScrollToTop()
+  }
+
+  document.body.classList.toggle('app-active-game', /^game\d+$/.test(target) || target === 'physicalBalloon' || target === 'physicalBomb' || target === 'physicalCircle' || target === 'physicalKeyReact')
   updateOrientationGate()
 
   currentScreenKey = target
@@ -12869,6 +12915,670 @@ function handleCircleTapPointer(event) {
   advanceCircleTapTurn()
 }
 
+
+function canPlayKeyReactOnThisDevice() {
+  return !isMobileOrTabletLike()
+}
+
+function normalizeKeyReactKey(value) {
+  const text = String(value || '')
+  if (text === ' ') return 'SPACE'
+
+  const raw = text.trim()
+  if (!raw) return ''
+
+  const aliases = {
+    Spacebar: 'SPACE',
+    Space: 'SPACE',
+    Enter: 'ENTER',
+    Escape: 'ESC',
+    Esc: 'ESC',
+    Backspace: 'BACKSPACE',
+    Delete: 'DELETE',
+    ArrowUp: '↑',
+    ArrowDown: '↓',
+    ArrowLeft: '←',
+    ArrowRight: '→',
+    Minus: '-',
+    Equal: '=',
+    BracketLeft: '[',
+    BracketRight: ']',
+    Semicolon: ';',
+    Quote: "'",
+    Comma: ',',
+    Period: '.',
+    Slash: '/',
+    Backslash: '\\',
+    Backquote: '`'
+  }
+
+  if (aliases[raw]) return aliases[raw]
+  if (/^Key[A-Z]$/i.test(raw)) return raw.slice(3).toUpperCase()
+  if (/^Digit[0-9]$/i.test(raw)) return raw.slice(5)
+  if (/^Numpad[0-9]$/i.test(raw)) return `NUM${raw.slice(6)}`
+  if (raw.length === 1) return raw.toUpperCase()
+  return raw.replace(/^Key/i, '').replace(/^Digit/i, '').toUpperCase()
+}
+
+function normalizeKeyReactEventKey(event) {
+  const code = String(event?.code || '')
+
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3)
+  if (/^Digit[0-9]$/.test(code)) return code.slice(5)
+  if (/^Numpad[0-9]$/.test(code)) return `NUM${code.slice(6)}`
+
+  const codeAliases = {
+    Space: 'SPACE',
+    Enter: 'ENTER',
+    Escape: 'ESC',
+    Backspace: 'BACKSPACE',
+    Delete: 'DELETE',
+    ArrowUp: '↑',
+    ArrowDown: '↓',
+    ArrowLeft: '←',
+    ArrowRight: '→',
+    Minus: '-',
+    Equal: '=',
+    BracketLeft: '[',
+    BracketRight: ']',
+    Semicolon: ';',
+    Quote: "'",
+    Comma: ',',
+    Period: '.',
+    Slash: '/',
+    Backslash: '\\',
+    Backquote: '`'
+  }
+
+  if (codeAliases[code]) return codeAliases[code]
+  return normalizeKeyReactKey(event?.key || '')
+}
+
+function getDefaultKeyReactKey(index, usedKeys = new Set()) {
+  const fallbackKeys = [...KEY_REACT_DEFAULT_KEYS, 'Q', 'W', 'E', 'R', 'U', 'I', 'O', 'P']
+  const found = fallbackKeys.find((key) => !usedKeys.has(key))
+  return found || `F${index + 1}`
+}
+
+function getKeyReactPlayerResult(playerId) {
+  return keyReactResults.find((result) => result.playerId === playerId) || null
+}
+
+function getValidKeyReactResults() {
+  return keyReactResults.filter((result) => result.status === 'valid')
+}
+
+function getKeyReactResultLabel(player) {
+  const result = getKeyReactPlayerResult(player.id)
+  if (!result) {
+    if (keyReactPhase === 'click') return '입력 대기'
+    if (keyReactPhase === 'stay') return '누르면 실격'
+    return '대기'
+  }
+
+  if (result.status === 'false-start') return '실격'
+
+  const rank = getValidKeyReactResults().findIndex((item) => item.playerId === player.id) + 1
+  return `${rank}위 · ${result.reactionMs}ms`
+}
+
+function parseKeyReactPlayers(text) {
+  const names = text
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (!names.length) return { status: 'EMPTY' }
+
+  const seen = new Set()
+  const usedKeys = new Set()
+  const existingKeyByName = new Map(keyReactPlayers.map((player) => [player.label, player.key]))
+  const players = []
+
+  for (const name of names) {
+    if (seen.has(name)) return { status: 'DUPLICATE', name }
+    seen.add(name)
+
+    const existingKey = normalizeKeyReactKey(existingKeyByName.get(name) || '')
+    const assignedKey = existingKey && !usedKeys.has(existingKey)
+      ? existingKey
+      : getDefaultKeyReactKey(players.length, usedKeys)
+
+    usedKeys.add(assignedKey)
+    players.push({
+      id: `key-react-${players.length + 1}-${name}`,
+      label: name,
+      key: assignedKey,
+      color: getCommonPlayerPaletteByTheme()[players.length % getCommonPlayerPaletteByTheme().length]
+    })
+
+    if (players.length > KEY_REACT_MAX_PLAYERS) {
+      return { status: 'TOO_MANY' }
+    }
+  }
+
+  if (players.length < KEY_REACT_MIN_PLAYERS) {
+    return { status: 'TOO_FEW', players }
+  }
+
+  return { status: 'OK', players }
+}
+
+function getKeyReactDuplicateKeys(players = keyReactPlayers) {
+  const counts = new Map()
+  players.forEach((player) => {
+    const key = normalizeKeyReactKey(player.key)
+    if (!key) return
+    counts.set(key, (counts.get(key) || 0) + 1)
+  })
+
+  return new Set([...counts.entries()].filter(([, count]) => count > 1).map(([key]) => key))
+}
+
+function updateKeyReactFromInput(options = {}) {
+  const { render = true } = options
+  if (!keyReactConfigInput) return false
+
+  const parsed = parseKeyReactPlayers(keyReactConfigInput.value)
+
+  if (parsed.status === 'OK') {
+    keyReactPlayers = parsed.players
+    keyReactLastValidConfigText = keyReactConfigInput.value
+    keyReactLastAppliedRawText = keyReactConfigInput.value
+
+    if (keyReactStatusText && keyReactPhase === 'idle') {
+      keyReactStatusText.textContent = '참가자 등록 완료. 각자 사용할 키를 지정한 뒤 시작을 눌러줘.'
+    }
+
+    if (render) renderKeyReactGame()
+    return true
+  }
+
+  if (keyReactPhase === 'idle') {
+    if (parsed.status === 'TOO_FEW' && parsed.players?.length) {
+      keyReactPlayers = parsed.players
+      if (keyReactStatusText) keyReactStatusText.textContent = `최소 ${KEY_REACT_MIN_PLAYERS}명부터 시작할 수 있어.`
+    } else if (keyReactStatusText) {
+      const messages = {
+        EMPTY: '참가자를 2명 이상 입력해줘.',
+        DUPLICATE: '중복 이름은 사용할 수 없어.',
+        TOO_MANY: `참가자는 최대 ${KEY_REACT_MAX_PLAYERS}명까지 가능해.`
+      }
+      keyReactStatusText.textContent = messages[parsed.status] || '참가자 입력을 확인해줘.'
+    }
+  }
+
+  if (render) renderKeyReactGame()
+  return false
+}
+
+function setKeyReactInputLock(isLocked) {
+  if (keyReactConfigInput) {
+    keyReactConfigInput.disabled = isLocked
+    keyReactConfigInput.style.opacity = isLocked ? '0.65' : '1'
+    keyReactConfigInput.style.cursor = isLocked ? 'not-allowed' : ''
+  }
+
+  if (keyReactKeyList) {
+    keyReactKeyList.querySelectorAll('.key-react-key-input').forEach((input) => {
+      input.disabled = isLocked
+      input.style.opacity = isLocked ? '0.65' : '1'
+      input.style.cursor = isLocked ? 'not-allowed' : 'pointer'
+    })
+  }
+}
+
+function updateKeyReactPhaseVisuals() {
+  if (keyReactStage) {
+    keyReactStage.classList.remove('is-idle', 'is-stay', 'is-click', 'is-finished', 'is-desktop-blocked')
+    keyReactStage.classList.add(`is-${keyReactPhase}`)
+    keyReactStage.classList.toggle('is-desktop-blocked', !canPlayKeyReactOnThisDevice())
+  }
+
+  if (keyReactPhaseBadge) {
+    if (!canPlayKeyReactOnThisDevice()) {
+      keyReactPhaseBadge.textContent = 'PC 전용'
+    } else if (keyReactPhase === 'stay') {
+      keyReactPhaseBadge.textContent = 'STAY'
+    } else if (keyReactPhase === 'click') {
+      keyReactPhaseBadge.textContent = 'CLICK!'
+    } else if (keyReactPhase === 'finished') {
+      keyReactPhaseBadge.textContent = '결과 완료'
+    } else {
+      keyReactPhaseBadge.textContent = '대기'
+    }
+  }
+
+  if (keyReactSignalText) {
+    if (!canPlayKeyReactOnThisDevice()) {
+      keyReactSignalText.textContent = 'PC ONLY'
+    } else if (keyReactPhase === 'stay') {
+      keyReactSignalText.textContent = 'STAY...'
+    } else if (keyReactPhase === 'click') {
+      keyReactSignalText.textContent = 'CLICK!'
+    } else if (keyReactPhase === 'finished') {
+      keyReactSignalText.textContent = 'RESULT'
+    } else {
+      keyReactSignalText.textContent = 'READY'
+    }
+  }
+
+  if (keyReactSignalSubText) {
+    if (!canPlayKeyReactOnThisDevice()) {
+      keyReactSignalSubText.textContent = '이 게임은 키보드 입력이 필요한 컴퓨터 전용 게임입니다.'
+    } else if (keyReactPhase === 'stay') {
+      keyReactSignalSubText.textContent = '아직 누르면 안 됩니다. STAY 중 입력은 실격입니다.'
+    } else if (keyReactPhase === 'click') {
+      keyReactSignalSubText.textContent = '지금 자신의 지정 키를 눌러주세요.'
+    } else if (keyReactPhase === 'finished') {
+      keyReactSignalSubText.textContent = '모든 참가자의 입력이 완료되었습니다. 리셋 후 다시 시작할 수 있습니다.'
+    } else {
+      keyReactSignalSubText.textContent = '시작을 누르면 곧 STAY...가 표시됩니다.'
+    }
+  }
+}
+
+function renderKeyReactKeyList() {
+  if (!keyReactKeyList) return
+
+  if (!keyReactPlayers.length) {
+    keyReactCapturePlayerId = ''
+    keyReactKeyList.innerHTML = '<div class="key-react-player-empty">참가자를 입력하면 키 지정칸이 표시돼.</div>'
+    return
+  }
+
+  if (!keyReactPlayers.some((player) => player.id === keyReactCapturePlayerId)) {
+    keyReactCapturePlayerId = ''
+  }
+
+  const duplicateKeys = getKeyReactDuplicateKeys()
+  keyReactKeyList.innerHTML = keyReactPlayers.map((player) => {
+    const isDuplicate = duplicateKeys.has(normalizeKeyReactKey(player.key))
+    const isListening = keyReactCapturePlayerId === player.id
+    return `
+      <div class="key-react-key-row${isDuplicate ? ' is-duplicate' : ''}${isListening ? ' is-listening' : ''}" data-player-id="${escapeHtml(player.id)}" style="--key-react-player-color:${player.color};">
+        <span class="key-react-player-dot"></span>
+        <strong>${escapeHtml(player.label)}</strong>
+        <button class="key-react-key-input" data-player-id="${escapeHtml(player.id)}" type="button" aria-label="${escapeHtml(player.label)} 키 지정" title="클릭 후 원하는 키를 누르세요">${escapeHtml(isListening ? '입력중' : player.key)}</button>
+      </div>
+    `
+  }).join('')
+}
+
+function renderKeyReactPlayers() {
+  if (!keyReactPlayerList || !keyReactTotalInfo) return
+
+  keyReactTotalInfo.textContent = keyReactPlayers.length ? `총 ${keyReactPlayers.length}명` : '총 0명'
+
+  if (!keyReactPlayers.length) {
+    keyReactPlayerList.innerHTML = '<div class="key-react-player-empty">참가자를 입력하면 키와 상태가 표시돼.</div>'
+    return
+  }
+
+  keyReactPlayerList.innerHTML = keyReactPlayers.map((player) => {
+    const result = getKeyReactPlayerResult(player.id)
+    const isDone = Boolean(result)
+    const isFalseStart = result?.status === 'false-start'
+    return `
+      <div class="key-react-player-item${isDone ? ' is-done' : ''}${isFalseStart ? ' is-false-start' : ''}" style="--key-react-player-color:${player.color};">
+        <span class="key-react-player-dot"></span>
+        <strong>${escapeHtml(player.label)}</strong>
+        <kbd>${escapeHtml(player.key)}</kbd>
+        <span>${escapeHtml(getKeyReactResultLabel(player))}</span>
+      </div>
+    `
+  }).join('')
+}
+
+function renderKeyReactKeyChips() {
+  if (!keyReactKeyChips) return
+
+  if (!keyReactPlayers.length) {
+    keyReactKeyChips.innerHTML = ''
+    return
+  }
+
+  keyReactKeyChips.innerHTML = keyReactPlayers.map((player) => {
+    const result = getKeyReactPlayerResult(player.id)
+    return `
+      <div class="key-react-chip${result ? ' is-pressed' : ''}${result?.status === 'false-start' ? ' is-false-start' : ''}" style="--key-react-player-color:${player.color};">
+        <strong>${escapeHtml(player.label)}</strong>
+        <kbd>${escapeHtml(player.key)}</kbd>
+      </div>
+    `
+  }).join('')
+}
+
+function renderKeyReactRanking() {
+  if (!keyReactRankingList || !keyReactResultCount) return
+
+  keyReactResultCount.textContent = `${keyReactResults.length} / ${keyReactPlayers.length}`
+
+  if (!keyReactResults.length) {
+    keyReactRankingList.innerHTML = '<div class="key-react-ranking-empty">CLICK 이후 키를 누른 순서가 여기에 표시돼.</div>'
+    return
+  }
+
+  const validResults = getValidKeyReactResults()
+  const html = keyReactResults.map((result) => {
+    const rank = result.status === 'valid'
+      ? validResults.findIndex((item) => item.playerId === result.playerId) + 1
+      : 0
+    const isValid = result.status === 'valid'
+    return `
+      <div class="key-react-ranking-item${isValid ? ' is-valid' : ' is-false-start'}">
+        <span class="key-react-rank-badge">${isValid ? `${rank}위` : '실격'}</span>
+        <strong>${escapeHtml(result.label)}</strong>
+        <span>${isValid ? `${result.reactionMs}ms` : 'STAY 입력'}</span>
+      </div>
+    `
+  }).join('')
+
+  keyReactRankingList.innerHTML = html
+}
+
+function renderKeyReactGame() {
+  renderKeyReactKeyList()
+  renderKeyReactPlayers()
+  renderKeyReactKeyChips()
+  renderKeyReactRanking()
+  updateKeyReactPhaseVisuals()
+  setKeyReactInputLock(keyReactPhase === 'stay' || keyReactPhase === 'click')
+
+  if (startKeyReactBtn) {
+    startKeyReactBtn.disabled = keyReactPhase === 'stay' || keyReactPhase === 'click'
+    startKeyReactBtn.textContent = keyReactPhase === 'stay' || keyReactPhase === 'click' ? '진행 중' : '시작'
+  }
+}
+
+function ensureKeyReactReady() {
+  if (!keyReactPlayers.length) {
+    updateKeyReactFromInput({ render: false })
+  }
+  renderKeyReactGame()
+}
+
+function getKeyReactInputByPlayerId(playerId) {
+  if (!keyReactKeyList || !playerId) return null
+  return [...keyReactKeyList.querySelectorAll('.key-react-key-input')]
+    .find((input) => input.dataset.playerId === playerId) || null
+}
+
+function beginKeyReactKeyCapture(input) {
+  if (!input || input.disabled) return
+  const playerId = input.dataset.playerId || ''
+  if (!playerId) return
+
+  keyReactCapturePlayerId = playerId
+
+  if (keyReactStatusText && keyReactPhase === 'idle') {
+    const player = keyReactPlayers.find((item) => item.id === playerId)
+    keyReactStatusText.textContent = `${player?.label || '참가자'}님 키 지정 대기 중. 원하는 키를 한 번 눌러줘.`
+  }
+
+  renderKeyReactKeyList()
+  const nextInput = getKeyReactInputByPlayerId(playerId)
+  nextInput?.focus({ preventScroll: true })
+}
+
+function endKeyReactKeyCapture() {
+  if (!keyReactCapturePlayerId) return
+  keyReactCapturePlayerId = ''
+  renderKeyReactKeyList()
+}
+
+function setKeyReactPlayerKey(playerId, key) {
+  const normalizedKey = normalizeKeyReactKey(key)
+  if (!normalizedKey) return
+
+  keyReactPlayers = keyReactPlayers.map((player) => {
+    if (player.id !== playerId) return player
+    return { ...player, key: normalizedKey }
+  })
+
+  if (keyReactStatusText && keyReactPhase === 'idle') {
+    const duplicateKeys = getKeyReactDuplicateKeys()
+    keyReactStatusText.textContent = duplicateKeys.size
+      ? '중복된 키가 있어. 참가자별 키는 서로 달라야 해.'
+      : '키 지정 완료. 시작을 누르면 STAY... 이후 CLICK이 뜬다.'
+  }
+
+  renderKeyReactGame()
+}
+
+function setKeyReactPlayerKeyFromEvent(playerId, event) {
+  const normalizedKey = normalizeKeyReactEventKey(event)
+  if (!normalizedKey) return
+  setKeyReactPlayerKey(playerId, normalizedKey)
+}
+
+function handleKeyReactKeyAssignKeydown(event) {
+  if (!screens.physicalKeyReact?.classList.contains('active')) return
+  if (!keyReactKeyList || keyReactPhase === 'stay' || keyReactPhase === 'click') return
+
+  const target = event.target
+  const focusedInput = target instanceof HTMLElement ? target.closest('.key-react-key-input') : null
+  const captureInput = keyReactCapturePlayerId ? getKeyReactInputByPlayerId(keyReactCapturePlayerId) : null
+  const input = focusedInput || captureInput
+
+  if (!input || input.disabled) return
+  if (event.key === 'Tab') return
+
+  event.preventDefault()
+  event.stopPropagation()
+
+  if (event.key === 'Escape') {
+    endKeyReactKeyCapture()
+    input.blur()
+    return
+  }
+
+  const playerId = input.dataset.playerId || keyReactCapturePlayerId
+  setKeyReactPlayerKeyFromEvent(playerId, event)
+  keyReactCapturePlayerId = ''
+  input.blur()
+  renderKeyReactGame()
+}
+
+function validateKeyReactStart() {
+  const duplicateKeys = getKeyReactDuplicateKeys()
+  const hasEmptyKey = keyReactPlayers.some((player) => !normalizeKeyReactKey(player.key))
+
+  if (hasEmptyKey || duplicateKeys.size) {
+    showPopup('키 지정 확인', '모든 참가자의 키를 서로 다르게 지정해야 시작할 수 있어.', { icon: '⌨️' })
+    return false
+  }
+
+  return true
+}
+
+function startKeyReactGame() {
+  if (!canPlayKeyReactOnThisDevice()) {
+    showPopup('PC 전용 게임', 'STAY CLICK은 키보드 입력이 필요한 컴퓨터 전용 피지컬 게임이야. PC에서 이용해줘.', { icon: '🖥️' })
+    renderKeyReactGame()
+    return
+  }
+
+  if (!keyReactConfigInput) return
+  const parsed = parseKeyReactPlayers(keyReactConfigInput.value)
+
+  if (parsed.status !== 'OK') {
+    showPopup('참가자 등록 확인', `STAY CLICK 게임은 ${KEY_REACT_MIN_PLAYERS}~${KEY_REACT_MAX_PLAYERS}명이 이용 가능해.<br>참가자 이름은 쉼표로 구분하고 중복 없이 입력해줘.`, { icon: '⚠️', allowHtml: true })
+    updateKeyReactFromInput()
+    return
+  }
+
+  keyReactPlayers = parsed.players.map((player) => {
+    const current = keyReactPlayers.find((item) => item.label === player.label)
+    return current ? { ...player, key: current.key } : player
+  })
+
+  if (!validateKeyReactStart()) {
+    renderKeyReactGame()
+    return
+  }
+
+  keyReactRoundToken += 1
+  const roundToken = keyReactRoundToken
+  keyReactPhase = 'stay'
+  keyReactCapturePlayerId = ''
+  keyReactResults = []
+  keyReactClickStartedAt = 0
+  clearKeyReactTimer()
+
+  const stayDuration = Math.round(rand(KEY_REACT_STAY_MIN_MS, KEY_REACT_STAY_MAX_MS))
+
+  if (keyReactStatusText) {
+    keyReactStatusText.textContent = 'STAY... 아직 누르면 안 돼. CLICK이 뜨는 순간 자신의 키를 눌러줘.'
+  }
+
+  renderKeyReactGame()
+
+  keyReactTimer = setTimeout(() => {
+    if (roundToken !== keyReactRoundToken || keyReactPhase !== 'stay') return
+    triggerKeyReactClick()
+  }, stayDuration)
+}
+
+function triggerKeyReactClick() {
+  if (keyReactResults.length >= keyReactPlayers.length) {
+    finishKeyReactGame()
+    return
+  }
+
+  keyReactPhase = 'click'
+  keyReactClickStartedAt = performance.now()
+
+  if (keyReactStatusText) {
+    keyReactStatusText.textContent = 'CLICK! 지금 자신의 키를 눌러줘.'
+  }
+
+  renderKeyReactGame()
+}
+
+function clearKeyReactTimer() {
+  if (!keyReactTimer) return
+  clearTimeout(keyReactTimer)
+  keyReactTimer = null
+}
+
+function stopKeyReactGame(options = {}) {
+  const { preservePlayers = true } = options
+  clearKeyReactTimer()
+  keyReactRoundToken += 1
+  keyReactPhase = 'idle'
+  keyReactCapturePlayerId = ''
+  keyReactClickStartedAt = 0
+  keyReactResults = []
+  if (!preservePlayers) keyReactPlayers = []
+  setKeyReactInputLock(false)
+  renderKeyReactGame()
+}
+
+function resetKeyReactGame() {
+  clearKeyReactTimer()
+  keyReactRoundToken += 1
+  keyReactPhase = 'idle'
+  keyReactCapturePlayerId = ''
+  keyReactClickStartedAt = 0
+  keyReactResults = []
+  setKeyReactInputLock(false)
+
+  if (keyReactStatusText) {
+    keyReactStatusText.textContent = '참가자와 키를 지정한 뒤 시작을 누르면 STAY... 이후 CLICK이 뜬다.'
+  }
+
+  updateKeyReactFromInput({ render: false })
+  renderKeyReactGame()
+}
+
+function finishKeyReactGame() {
+  if (keyReactPhase === 'finished') return
+
+  clearKeyReactTimer()
+  keyReactPhase = 'finished'
+  keyReactClickStartedAt = 0
+  setKeyReactInputLock(false)
+
+  if (keyReactStatusText) {
+    keyReactStatusText.textContent = '모든 참가자의 입력이 완료됐어. 순위가 확정됐어.'
+  }
+
+  renderKeyReactGame()
+  showKeyReactResultsPopup()
+}
+
+function showKeyReactResultsPopup() {
+  const validResults = getValidKeyReactResults()
+  const html = keyReactResults.length
+    ? `<div class="key-react-popup-list">${keyReactResults.map((result) => {
+        const isValid = result.status === 'valid'
+        const rank = isValid ? validResults.findIndex((item) => item.playerId === result.playerId) + 1 : 0
+        return `
+          <div class="key-react-popup-item${isValid ? ' is-valid' : ' is-false-start'}">
+            <span>${isValid ? `${rank}위` : '실격'}</span>
+            <strong>${escapeHtml(result.label)}</strong>
+            <em>${isValid ? `${result.reactionMs}ms` : 'STAY에서 먼저 누름'}</em>
+          </div>
+        `
+      }).join('')}</div>`
+    : '<span>결과가 없습니다.</span>'
+
+  showPopup('STAY CLICK 결과', html, { icon: '⌨️', allowHtml: true, popupClass: 'key-react-result-popup' })
+}
+
+function recordKeyReactResult(player, status, reactionMs = null) {
+  if (!player || getKeyReactPlayerResult(player.id)) return
+
+  keyReactResults.push({
+    playerId: player.id,
+    label: player.label,
+    key: player.key,
+    status,
+    reactionMs
+  })
+
+  if (keyReactStatusText) {
+    if (status === 'false-start') {
+      keyReactStatusText.textContent = `${player.label}님이 STAY 중에 눌러 실격 처리됐어.`
+    } else {
+      const rank = getValidKeyReactResults().length
+      keyReactStatusText.textContent = `${rank}위 ${player.label}님 · ${reactionMs}ms`
+    }
+  }
+
+  renderKeyReactGame()
+
+  if (keyReactResults.length >= keyReactPlayers.length) {
+    finishKeyReactGame()
+  }
+}
+
+function handleKeyReactGlobalKeydown(event) {
+  if (!screens.physicalKeyReact?.classList.contains('active')) return
+  if (event.repeat) return
+
+  const target = event.target
+  if (target instanceof HTMLElement && target.closest('.key-react-key-input')) return
+  if (keyReactPhase !== 'stay' && keyReactPhase !== 'click') return
+
+  const pressedKey = normalizeKeyReactEventKey(event)
+  const player = keyReactPlayers.find((item) => normalizeKeyReactKey(item.key) === pressedKey)
+  if (!player) return
+
+  event.preventDefault()
+
+  if (keyReactPhase === 'stay') {
+    recordKeyReactResult(player, 'false-start')
+    return
+  }
+
+  if (keyReactPhase === 'click') {
+    const reactionMs = Math.max(0, Math.round(performance.now() - keyReactClickStartedAt))
+    recordKeyReactResult(player, 'valid', reactionMs)
+  }
+}
+
 if (startBtn) {
   startBtn.addEventListener('click', () => showScreen('menu'))
 }
@@ -12993,6 +13703,66 @@ if (circleTapStage) {
   circleTapStage.addEventListener('pointerdown', handleCircleTapPointer)
   circleTapStage.addEventListener('contextmenu', (event) => event.preventDefault())
 }
+
+
+if (keyReactConfigInput) {
+  keyReactConfigInput.addEventListener('input', () => {
+    if (keyReactPhase === 'idle' || keyReactPhase === 'finished') {
+      keyReactPhase = 'idle'
+      keyReactResults = []
+      updateKeyReactFromInput()
+    }
+  })
+
+  keyReactConfigInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      startKeyReactGame()
+    }
+  })
+}
+
+if (keyReactKeyList) {
+  keyReactKeyList.addEventListener('pointerdown', (event) => {
+    const target = event.target instanceof HTMLElement ? event.target : null
+    const row = target?.closest('.key-react-key-row') || null
+    const input = target?.closest('.key-react-key-input') || row?.querySelector('.key-react-key-input') || null
+
+    if (input && !input.disabled && keyReactPhase !== 'stay' && keyReactPhase !== 'click') {
+      event.preventDefault()
+      beginKeyReactKeyCapture(input)
+    }
+  })
+
+  keyReactKeyList.addEventListener('click', (event) => {
+    const target = event.target instanceof HTMLElement ? event.target : null
+    const row = target?.closest('.key-react-key-row') || null
+    const input = target?.closest('.key-react-key-input') || row?.querySelector('.key-react-key-input') || null
+
+    if (input && !input.disabled && keyReactPhase !== 'stay' && keyReactPhase !== 'click') {
+      event.preventDefault()
+      beginKeyReactKeyCapture(input)
+    }
+  })
+
+  keyReactKeyList.addEventListener('focusin', (event) => {
+    const input = event.target instanceof HTMLElement ? event.target.closest('.key-react-key-input') : null
+    if (input && !input.disabled && keyReactCapturePlayerId !== input.dataset.playerId) {
+      beginKeyReactKeyCapture(input)
+    }
+  })
+}
+
+if (startKeyReactBtn) {
+  startKeyReactBtn.addEventListener('click', startKeyReactGame)
+}
+
+if (resetKeyReactBtn) {
+  resetKeyReactBtn.addEventListener('click', resetKeyReactGame)
+}
+
+document.addEventListener('keydown', handleKeyReactKeyAssignKeydown, true)
+document.addEventListener('keydown', handleKeyReactGlobalKeydown)
 
 if (stockConfigInput) {
   stockConfigInput.addEventListener('input', () => {
