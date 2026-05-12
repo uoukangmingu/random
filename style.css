@@ -6281,8 +6281,9 @@ input,
 
 .utility-controls {
   position: fixed;
-  top: 24px;
+  top: auto;
   right: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
   z-index: 50;
   display: flex;
   flex-direction: column;
@@ -6584,8 +6585,9 @@ html.theme-dark #simArenaZoomBackdrop {
 
 @media (max-width: 1024px) {
   .utility-controls {
-    top: 18px;
+    top: auto;
     right: 18px;
+    bottom: calc(18px + env(safe-area-inset-bottom));
   }
 
   .utility-btn {
