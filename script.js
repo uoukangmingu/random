@@ -1,6 +1,10 @@
 const screens = {
   home: document.getElementById('homeScreen'),
   menu: document.getElementById('menuScreen'),
+  physical: document.getElementById('physicalScreen'),
+  physicalBalloon: document.getElementById('physicalBalloonScreen'),
+  physicalBomb: document.getElementById('physicalBombScreen'),
+  physicalCircle: document.getElementById('physicalCircleScreen'),
   luck: document.getElementById('luckScreen'),
   game1: document.getElementById('game1Screen'),
   game2: document.getElementById('game2Screen'),
@@ -20,6 +24,45 @@ const comingSoonButtons = document.querySelectorAll('.game-coming-soon')
 const luckGameGrid = document.getElementById('luckGameGrid')
 const luckCarouselHud = document.getElementById('luckCarouselHud')
 const luckCarouselDots = document.getElementById('luckCarouselDots')
+const physicalGameGrid = document.getElementById('physicalGameGrid')
+const physicalCarouselHud = document.getElementById('physicalCarouselHud')
+const physicalCarouselDots = document.getElementById('physicalCarouselDots')
+const physicalGameLaunchButtons = document.querySelectorAll('.physical-game-launch')
+
+const balloonConfigInput = document.getElementById('balloonConfigInput')
+const startBalloonBtn = document.getElementById('startBalloonBtn')
+const resetBalloonBtn = document.getElementById('resetBalloonBtn')
+const balloonStatusText = document.getElementById('balloonStatusText')
+const balloonTotalInfo = document.getElementById('balloonTotalInfo')
+const balloonPlayerList = document.getElementById('balloonPlayerList')
+const balloonTurnBadge = document.getElementById('balloonTurnBadge')
+const balloonPressArea = document.getElementById('balloonPressArea')
+const balloonVisual = document.getElementById('balloonVisual')
+const balloonPressureNumber = document.getElementById('balloonPressureNumber')
+const balloonPressureLabel = document.getElementById('balloonPressureLabel')
+const balloonPressureFill = document.getElementById('balloonPressureFill')
+const balloonStageHint = document.getElementById('balloonStageHint')
+const balloonPopEffect = document.getElementById('balloonPopEffect')
+const startBombPassBtn = document.getElementById('startBombPassBtn')
+const resetBombPassBtn = document.getElementById('resetBombPassBtn')
+const bombPassStateBadge = document.getElementById('bombPassStateBadge')
+const bombPassStage = document.getElementById('bombPassStage')
+const bombPassVisual = document.getElementById('bombPassVisual')
+const bombPassBoom = document.getElementById('bombPassBoom')
+const bombPassStatusText = document.getElementById('bombPassStatusText')
+const bombPassDeviceText = document.getElementById('bombPassDeviceText')
+const circleTapConfigInput = document.getElementById('circleTapConfigInput')
+const startCircleTapBtn = document.getElementById('startCircleTapBtn')
+const resetCircleTapBtn = document.getElementById('resetCircleTapBtn')
+const circleTapStatusText = document.getElementById('circleTapStatusText')
+const circleTapTotalInfo = document.getElementById('circleTapTotalInfo')
+const circleTapPlayerList = document.getElementById('circleTapPlayerList')
+const circleTapTurnBadge = document.getElementById('circleTapTurnBadge')
+const circleTapStage = document.getElementById('circleTapStage')
+const circleTapTarget = document.getElementById('circleTapTarget')
+const circleTapCount = document.getElementById('circleTapCount')
+const circleTapMissEffect = document.getElementById('circleTapMissEffect')
+const circleTapStageHint = document.getElementById('circleTapStageHint')
 
 const popupOverlay = document.getElementById('popupOverlay')
 const popupTitle = document.getElementById('popupTitle')
@@ -348,6 +391,52 @@ const APP_HISTORY_ID = 'roulette-app-screen-history'
 let currentScreenKey = 'home'
 let currentHistoryIndex = 0
 
+
+const BALLOON_MIN_PLAYERS = 2
+const BALLOON_MAX_PLAYERS = 8
+const BALLOON_MIN_BURST_PRESSURE = 48
+const BALLOON_MAX_BURST_PRESSURE = 125
+const BALLOON_PRESS_INTERVAL_MS = 64
+const BALLOON_MIN_PRESSURE_STEP = 0.18
+const BALLOON_MAX_PRESSURE_STEP = 0.74
+
+let balloonPlayers = []
+let balloonGameStarted = false
+let balloonPopped = false
+let balloonHolding = false
+let balloonCurrentIndex = 0
+let balloonPressure = 0
+let balloonBurstPressure = 0
+let balloonHoldTimer = null
+let balloonLastValidConfigText = balloonConfigInput ? balloonConfigInput.value : ''
+let balloonLastAppliedRawText = balloonConfigInput ? balloonConfigInput.value : ''
+
+const BOMB_PASS_MIN_DURATION_MS = 4500
+const BOMB_PASS_MAX_DURATION_MS = 16000
+const BOMB_PASS_VIBRATION_PATTERN = [260, 90, 260, 90, 560]
+
+let bombPassRunning = false
+let bombPassExploded = false
+let bombPassTimer = null
+let bombPassStartedAt = 0
+let bombPassDuration = 0
+
+const CIRCLE_TAP_MIN_PLAYERS = 2
+const CIRCLE_TAP_MAX_PLAYERS = 8
+const CIRCLE_TAP_START_RADIUS = 142
+const CIRCLE_TAP_MIN_RADIUS = 3
+const CIRCLE_TAP_SHRINK_MIN = 0.055
+const CIRCLE_TAP_SHRINK_MAX = 0.095
+
+let circleTapPlayers = []
+let circleTapStarted = false
+let circleTapFinished = false
+let circleTapCurrentIndex = 0
+let circleTapRadius = CIRCLE_TAP_START_RADIUS
+let circleTapSuccessCount = 0
+let circleTapLastValidConfigText = circleTapConfigInput ? circleTapConfigInput.value : ''
+let circleTapLastAppliedRawText = circleTapConfigInput ? circleTapConfigInput.value : ''
+
 function getSlotPaletteByTheme() {
   return isDarkThemeEnabled() ? DARK_SLOT_PALETTE : slotPalette
 }
@@ -498,6 +587,11 @@ let luckCarouselScrollTicking = false
 let luckCarouselLoopReady = false
 let luckCarouselLoopJumping = false
 let luckCarouselLoopSettleTimer = null
+let physicalCarouselActiveIndex = 0
+let physicalCarouselScrollTicking = false
+let physicalCarouselLoopReady = false
+let physicalCarouselLoopJumping = false
+let physicalCarouselLoopSettleTimer = null
 
 const RACE_MAX_COUNT = 8
 const RACE_DISTANCE = 2400
@@ -1772,6 +1866,380 @@ function syncLuckCarousel(options = {}) {
   }
 }
 
+
+function isPhysicalCarouselMode() {
+  return Boolean(physicalGameGrid) && isTouchDevice() && window.innerWidth <= 820
+}
+
+function handlePhysicalGameSelection(button) {
+  if (!button) return
+
+  if (button.dataset.physicalGame === 'balloon') {
+    showScreen('physicalBalloon')
+    return
+  }
+
+  if (button.dataset.physicalGame === 'bomb-pass') {
+    showScreen('physicalBomb')
+    return
+  }
+
+  if (button.dataset.physicalGame === 'shrinking-circle') {
+    showScreen('physicalCircle')
+  }
+}
+
+function bindPhysicalGameItemInteraction(button) {
+  if (!button || button.dataset.physicalGameBound === 'true') return
+
+  button.dataset.physicalGameBound = 'true'
+  button.addEventListener('click', () => {
+    handlePhysicalGameSelection(button)
+  })
+}
+
+function getVisiblePhysicalCarouselItems(items) {
+  return items.filter((item) => window.getComputedStyle(item).display !== 'none')
+}
+
+function getPhysicalCarouselOriginalItems() {
+  if (!physicalGameGrid) return []
+  return getVisiblePhysicalCarouselItems([...physicalGameGrid.querySelectorAll('.physical-game-item:not([data-clone])')])
+}
+
+function getPhysicalCarouselTrackItems() {
+  if (!physicalGameGrid) return []
+  return getVisiblePhysicalCarouselItems([...physicalGameGrid.querySelectorAll('.physical-game-item')])
+}
+
+function ensurePhysicalCarouselLoop() {
+  if (!physicalGameGrid) return
+
+  const existingClones = [...physicalGameGrid.querySelectorAll('.physical-game-item[data-clone]')]
+  if (existingClones.length) {
+    existingClones.forEach((item) => item.remove())
+  }
+
+  const originalItems = getPhysicalCarouselOriginalItems()
+  originalItems.forEach((item, index) => {
+    item.dataset.carouselIndex = String(index)
+    item.dataset.loopSet = 'center'
+    bindPhysicalGameItemInteraction(item)
+  })
+
+  physicalCarouselLoopReady = false
+
+  if (originalItems.length <= 1) {
+    physicalCarouselLoopReady = true
+    return
+  }
+
+  const prependFragment = document.createDocumentFragment()
+  const appendFragment = document.createDocumentFragment()
+
+  originalItems.forEach((item) => {
+    const prependClone = item.cloneNode(true)
+    prependClone.dataset.clone = 'prepend'
+    prependClone.dataset.loopSet = 'prepend'
+    prependClone.dataset.carouselIndex = item.dataset.carouselIndex
+    prependClone.removeAttribute('id')
+    bindPhysicalGameItemInteraction(prependClone)
+    prependFragment.appendChild(prependClone)
+
+    const appendClone = item.cloneNode(true)
+    appendClone.dataset.clone = 'append'
+    appendClone.dataset.loopSet = 'append'
+    appendClone.dataset.carouselIndex = item.dataset.carouselIndex
+    appendClone.removeAttribute('id')
+    bindPhysicalGameItemInteraction(appendClone)
+    appendFragment.appendChild(appendClone)
+  })
+
+  physicalGameGrid.prepend(prependFragment)
+  physicalGameGrid.append(appendFragment)
+  physicalCarouselLoopReady = true
+}
+
+function updatePhysicalCarouselDots(activeIndex = 0) {
+  if (!physicalCarouselDots) return
+
+  const dots = [...physicalCarouselDots.querySelectorAll('.physical-carousel-dot')]
+  dots.forEach((dot, index) => {
+    const isActive = index === activeIndex
+    dot.classList.toggle('is-active', isActive)
+    dot.setAttribute('aria-pressed', isActive ? 'true' : 'false')
+    dot.setAttribute('aria-current', isActive ? 'true' : 'false')
+  })
+}
+
+function buildPhysicalCarouselDots() {
+  if (!physicalCarouselDots) return
+
+  const items = getPhysicalCarouselOriginalItems()
+  physicalCarouselDots.innerHTML = ''
+
+  items.forEach((item, index) => {
+    const dot = document.createElement('button')
+    dot.type = 'button'
+    dot.className = 'physical-carousel-dot'
+    dot.setAttribute('aria-label', `${index + 1}번째 피지컬 게임으로 이동`)
+    dot.addEventListener('click', () => {
+      scrollToPhysicalCarouselIndex(index)
+    })
+    physicalCarouselDots.appendChild(dot)
+  })
+
+  updatePhysicalCarouselDots(physicalCarouselActiveIndex)
+}
+
+function getPhysicalCarouselClosestItem() {
+  const items = getPhysicalCarouselTrackItems()
+  if (!physicalGameGrid || !items.length) return null
+
+  const viewportCenter = physicalGameGrid.scrollLeft + physicalGameGrid.clientWidth / 2
+  let closestItem = null
+  let closestDistance = Number.POSITIVE_INFINITY
+
+  items.forEach((item) => {
+    const itemCenter = item.offsetLeft + item.offsetWidth / 2
+    const distance = Math.abs(itemCenter - viewportCenter)
+    if (distance < closestDistance) {
+      closestDistance = distance
+      closestItem = item
+    }
+  })
+
+  return closestItem
+}
+
+function getPhysicalCarouselClosestIndex() {
+  const closestItem = getPhysicalCarouselClosestItem()
+  if (!closestItem) return 0
+
+  const rawIndex = Number.parseInt(closestItem.dataset.carouselIndex || '0', 10)
+  const itemCount = getPhysicalCarouselOriginalItems().length
+  if (!itemCount) return 0
+
+  if (Number.isNaN(rawIndex)) return 0
+  return clampValue(rawIndex, 0, itemCount - 1)
+}
+
+function updatePhysicalCarouselActiveIndex(index, closestItem = null) {
+  const originalItems = getPhysicalCarouselOriginalItems()
+  const trackItems = getPhysicalCarouselTrackItems()
+  const safeIndex = clampValue(index, 0, Math.max(0, originalItems.length - 1))
+  const activeItem = closestItem && trackItems.includes(closestItem)
+    ? closestItem
+    : trackItems.find((item) => Number.parseInt(item.dataset.carouselIndex || '-1', 10) === safeIndex) || null
+
+  physicalCarouselActiveIndex = safeIndex
+  updatePhysicalCarouselDots(safeIndex)
+
+  const activeTrackIndex = activeItem ? trackItems.indexOf(activeItem) : -1
+
+  trackItems.forEach((item, itemTrackIndex) => {
+    const isActive = item === activeItem
+    const isNeighbor = activeTrackIndex !== -1 && Math.abs(itemTrackIndex - activeTrackIndex) === 1
+    item.classList.toggle('is-carousel-active', isActive)
+    item.classList.toggle('is-carousel-neighbor', isNeighbor)
+  })
+}
+
+function getPhysicalCarouselCenteredLeft(targetItem) {
+  if (!physicalGameGrid || !targetItem) return 0
+
+  const targetLeft = targetItem.offsetLeft - (physicalGameGrid.clientWidth - targetItem.offsetWidth) / 2
+  const maxLeft = Math.max(0, physicalGameGrid.scrollWidth - physicalGameGrid.clientWidth)
+  return clampValue(targetLeft, 0, maxLeft)
+}
+
+function scrollPhysicalCarouselToItem(targetItem, behavior = 'smooth') {
+  if (!physicalGameGrid || !targetItem) return
+
+  physicalGameGrid.scrollTo({
+    left: getPhysicalCarouselCenteredLeft(targetItem),
+    behavior
+  })
+}
+
+function scrollToPhysicalCarouselIndex(index, behavior = 'smooth') {
+  if (!physicalGameGrid) return
+
+  const items = getPhysicalCarouselOriginalItems()
+  const safeIndex = clampValue(index, 0, Math.max(0, items.length - 1))
+  const targetItem = items[safeIndex]
+  if (!targetItem) return
+
+  updatePhysicalCarouselActiveIndex(safeIndex, targetItem)
+  scrollPhysicalCarouselToItem(targetItem, behavior)
+}
+
+function getPhysicalCarouselLoopMetrics() {
+  if (!physicalGameGrid) return null
+
+  const prependItems = getVisiblePhysicalCarouselItems([...physicalGameGrid.querySelectorAll('.physical-game-item[data-loop-set="prepend"]')])
+  const centerItems = getVisiblePhysicalCarouselItems([...physicalGameGrid.querySelectorAll('.physical-game-item[data-loop-set="center"]')])
+  const appendItems = getVisiblePhysicalCarouselItems([...physicalGameGrid.querySelectorAll('.physical-game-item[data-loop-set="append"]')])
+
+  if (!prependItems.length || !centerItems.length || !appendItems.length) {
+    return null
+  }
+
+  const prependFirst = prependItems[0]
+  const centerFirst = centerItems[0]
+  const appendFirst = appendItems[0]
+  const setWidth = appendFirst.offsetLeft - centerFirst.offsetLeft
+
+  if (!Number.isFinite(setWidth) || setWidth <= 0) {
+    return null
+  }
+
+  return {
+    prependItems,
+    centerItems,
+    appendItems,
+    prependFirst,
+    centerFirst,
+    appendFirst,
+    setWidth
+  }
+}
+
+function clearPhysicalCarouselLoopSettleTimer() {
+  if (!physicalCarouselLoopSettleTimer) return
+  clearTimeout(physicalCarouselLoopSettleTimer)
+  physicalCarouselLoopSettleTimer = null
+}
+
+function schedulePhysicalCarouselLoopNormalize(closestItem) {
+  clearPhysicalCarouselLoopSettleTimer()
+
+  if (!isPhysicalCarouselMode() || !physicalGameGrid || !closestItem || physicalCarouselLoopJumping) {
+    return
+  }
+
+  const loopSet = closestItem.dataset.loopSet || 'center'
+  if (loopSet === 'center') return
+
+  const snapshotKey = `${loopSet}:${closestItem.dataset.carouselIndex || ''}`
+
+  physicalCarouselLoopSettleTimer = setTimeout(() => {
+    physicalCarouselLoopSettleTimer = null
+
+    if (physicalCarouselLoopJumping) return
+
+    const settledItem = getPhysicalCarouselClosestItem()
+    if (!settledItem) return
+
+    const settledLoopSet = settledItem.dataset.loopSet || 'center'
+    const settledKey = `${settledLoopSet}:${settledItem.dataset.carouselIndex || ''}`
+
+    if (settledKey !== snapshotKey) {
+      if (settledLoopSet !== 'center') {
+        schedulePhysicalCarouselLoopNormalize(settledItem)
+      }
+      return
+    }
+
+    normalizePhysicalCarouselLoop(settledItem)
+  }, 96)
+}
+
+function normalizePhysicalCarouselLoop(closestItem) {
+  if (!isPhysicalCarouselMode() || !physicalGameGrid || !closestItem || physicalCarouselLoopJumping) {
+    return
+  }
+
+  const loopSet = closestItem.dataset.loopSet || 'center'
+  if (loopSet === 'center') return
+
+  const metrics = getPhysicalCarouselLoopMetrics()
+  if (!metrics) return
+
+  const targetIndex = Number.parseInt(closestItem.dataset.carouselIndex || '-1', 10)
+  const targetItem = metrics.centerItems[targetIndex]
+
+  if (!targetItem) return
+
+  const centeredLeft = getPhysicalCarouselCenteredLeft(closestItem)
+  if (Math.abs(physicalGameGrid.scrollLeft - centeredLeft) > Math.max(12, closestItem.offsetWidth * 0.08)) {
+    return
+  }
+
+  clearPhysicalCarouselLoopSettleTimer()
+  physicalCarouselLoopJumping = true
+  physicalGameGrid.classList.add('is-loop-resetting')
+  physicalGameGrid.scrollLeft = getPhysicalCarouselCenteredLeft(targetItem)
+  updatePhysicalCarouselActiveIndex(targetIndex, targetItem)
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      physicalGameGrid.classList.remove('is-loop-resetting')
+      setTimeout(() => {
+        physicalCarouselLoopJumping = false
+      }, 40)
+    })
+  })
+}
+
+function handlePhysicalCarouselScroll() {
+  if (!isPhysicalCarouselMode() || !physicalGameGrid) return
+  if (physicalCarouselScrollTicking) return
+
+  physicalCarouselScrollTicking = true
+
+  requestAnimationFrame(() => {
+    const closestItem = getPhysicalCarouselClosestItem()
+    const closestIndex = getPhysicalCarouselClosestIndex()
+    updatePhysicalCarouselActiveIndex(closestIndex, closestItem)
+    schedulePhysicalCarouselLoopNormalize(closestItem)
+    physicalCarouselScrollTicking = false
+  })
+}
+
+function syncPhysicalCarousel(options = {}) {
+  if (!physicalGameGrid) return
+
+  const { align = false } = options
+  const shouldUseCarousel = isPhysicalCarouselMode()
+
+  clearPhysicalCarouselLoopSettleTimer()
+  physicalCarouselLoopJumping = false
+  physicalGameGrid.classList.remove('is-loop-resetting')
+
+  ensurePhysicalCarouselLoop()
+
+  const originalItems = getPhysicalCarouselOriginalItems()
+
+  document.body.classList.toggle('physical-carousel-mode', shouldUseCarousel)
+
+  if (physicalCarouselHud) {
+    physicalCarouselHud.setAttribute('aria-hidden', shouldUseCarousel ? 'false' : 'true')
+  }
+
+  if (!originalItems.length) return
+
+  if (!physicalCarouselDots || physicalCarouselDots.children.length !== originalItems.length) {
+    buildPhysicalCarouselDots()
+  }
+
+  const safeIndex = Math.min(physicalCarouselActiveIndex, originalItems.length - 1)
+  updatePhysicalCarouselActiveIndex(safeIndex, originalItems[safeIndex] || null)
+
+  if (shouldUseCarousel) {
+    if (align || screens.physical?.classList.contains('active')) {
+      requestAnimationFrame(() => {
+        scrollToPhysicalCarouselIndex(safeIndex, 'auto')
+      })
+    }
+    return
+  }
+
+  if (physicalGameGrid.scrollLeft !== 0) {
+    physicalGameGrid.scrollLeft = 0
+  }
+}
+
 function syncGame1MobileLayout() {
   if (
     !gameCardFull ||
@@ -2115,6 +2583,12 @@ function getPreviousStepFallbackTarget(screenKey = getActiveScreenKey()) {
       return 'home'
     case 'luck':
       return 'menu'
+    case 'physical':
+      return 'menu'
+    case 'physicalBalloon':
+    case 'physicalBomb':
+    case 'physicalCircle':
+      return 'physical'
     case 'game1':
     case 'game2':
     case 'game3':
@@ -2212,8 +2686,24 @@ function showScreen(target, options = {}) {
     setLadderInputLock(false)
   }
 
+  if (target !== 'physicalBalloon') {
+    stopBalloonHold()
+  }
+
+  if (target !== 'physicalBomb') {
+    stopBombPassGame()
+  }
+
+  if (target !== 'physicalCircle') {
+    stopCircleTapGame({ preservePlayers: true })
+  }
+
   if (target === 'luck') {
     syncLuckCarousel({ align: true })
+  }
+
+  if (target === 'physical') {
+    syncPhysicalCarousel({ align: true })
   }
 
   if (target === 'game1') {
@@ -2251,7 +2741,22 @@ function showScreen(target, options = {}) {
     forceLadderEntryScrollTop()
   }
 
-  document.body.classList.toggle('app-active-game', /^game\d+$/.test(target))
+  if (target === 'physicalBalloon') {
+    ensureBalloonReady()
+    forceScrollToTop()
+  }
+
+  if (target === 'physicalBomb') {
+    ensureBombPassReady()
+    forceScrollToTop()
+  }
+
+  if (target === 'physicalCircle') {
+    ensureCircleTapReady()
+    forceScrollToTop()
+  }
+
+  document.body.classList.toggle('app-active-game', /^game\d+$/.test(target) || target === 'physicalBalloon' || target === 'physicalBomb' || target === 'physicalCircle')
   updateOrientationGate()
 
   currentScreenKey = target
@@ -11525,12 +12030,851 @@ function renderLadderGame() {
   }
 }
 
+
+function parseBalloonPlayers(text) {
+  const names = text
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (!names.length) {
+    return { status: 'EMPTY' }
+  }
+
+  const seen = new Set()
+  const players = []
+
+  for (const name of names) {
+    if (seen.has(name)) {
+      return { status: 'DUPLICATE', name }
+    }
+
+    seen.add(name)
+    players.push({
+      id: `balloon-${players.length + 1}-${name}`,
+      label: name,
+      color: getCommonPlayerPaletteByTheme()[players.length % getCommonPlayerPaletteByTheme().length]
+    })
+
+    if (players.length > BALLOON_MAX_PLAYERS) {
+      return { status: 'TOO_MANY' }
+    }
+  }
+
+  if (players.length < BALLOON_MIN_PLAYERS) {
+    return { status: 'TOO_FEW', players }
+  }
+
+  return { status: 'OK', players }
+}
+
+function updateBalloonFromInput(options = {}) {
+  const { render = true } = options
+  if (!balloonConfigInput) return false
+
+  const parsed = parseBalloonPlayers(balloonConfigInput.value)
+
+  if (parsed.status === 'OK') {
+    balloonPlayers = parsed.players
+    balloonLastValidConfigText = balloonConfigInput.value
+    balloonLastAppliedRawText = balloonConfigInput.value
+
+    if (balloonStatusText && !balloonGameStarted) {
+      balloonStatusText.textContent = '참가자 등록 완료. 시작을 누르면 첫 참가자부터 풍선을 누를 수 있어.'
+    }
+
+    if (render) renderBalloonGame()
+    return true
+  }
+
+  if (!balloonGameStarted) {
+    if (parsed.status === 'TOO_FEW' && parsed.players?.length) {
+      balloonPlayers = parsed.players
+      if (balloonStatusText) {
+        balloonStatusText.textContent = `최소 ${BALLOON_MIN_PLAYERS}명부터 시작할 수 있어.`
+      }
+    } else if (balloonStatusText) {
+      const messages = {
+        EMPTY: '참가자를 2명 이상 입력해줘.',
+        DUPLICATE: '중복 이름은 사용할 수 없어.',
+        TOO_MANY: `참가자는 최대 ${BALLOON_MAX_PLAYERS}명까지 가능해.`
+      }
+      balloonStatusText.textContent = messages[parsed.status] || '참가자 입력을 확인해줘.'
+    }
+  }
+
+  if (render) renderBalloonGame()
+  return false
+}
+
+function setBalloonInputLock(isLocked) {
+  if (!balloonConfigInput) return
+  balloonConfigInput.disabled = isLocked
+  balloonConfigInput.style.opacity = isLocked ? '0.65' : '1'
+  balloonConfigInput.style.cursor = isLocked ? 'not-allowed' : ''
+}
+
+function getCurrentBalloonPlayer() {
+  return balloonPlayers[balloonCurrentIndex] || null
+}
+
+function getBalloonPressurePercent() {
+  if (!balloonBurstPressure) return 0
+  return clampValue((balloonPressure / balloonBurstPressure) * 100, 0, 100)
+}
+
+function updateBalloonVisual() {
+  const scale = clampValue(1 + balloonPressure * 0.0105, 1, 2.55)
+  const currentPlayer = getCurrentBalloonPlayer()
+  const currentColor = currentPlayer?.color || getCommonPlayerPaletteByTheme()[0] || '#ff6f9f'
+  const displayPressure = Number(balloonPressure).toFixed(3)
+
+  if (balloonVisual) {
+    balloonVisual.style.setProperty('--balloon-scale', scale.toFixed(3))
+    balloonVisual.style.setProperty('--balloon-current-color', currentColor)
+    balloonVisual.classList.remove('is-warning', 'is-danger')
+    balloonVisual.classList.toggle('is-popped', balloonPopped)
+  }
+
+  if (balloonPressureNumber) {
+    balloonPressureNumber.textContent = displayPressure
+  }
+
+  if (balloonPressArea) {
+    balloonPressArea.classList.toggle('is-disabled', !balloonGameStarted || balloonPopped)
+    balloonPressArea.classList.toggle('is-holding', balloonHolding)
+    balloonPressArea.classList.toggle('is-popped', balloonPopped)
+  }
+}
+
+function renderBalloonPlayers() {
+  if (!balloonPlayerList || !balloonTotalInfo) return
+
+  balloonTotalInfo.textContent = balloonPlayers.length ? `총 ${balloonPlayers.length}명` : '총 0명'
+
+  if (!balloonPlayers.length) {
+    balloonPlayerList.innerHTML = '<div class="balloon-player-empty">참가자를 입력하면 차례가 표시돼.</div>'
+    return
+  }
+
+  const currentPlayer = getCurrentBalloonPlayer()
+  balloonPlayerList.innerHTML = balloonPlayers.map((player, index) => {
+    const isCurrent = balloonGameStarted && !balloonPopped && currentPlayer?.id === player.id
+    const isLoser = balloonPopped && currentPlayer?.id === player.id
+    const label = isLoser ? '터뜨림' : isCurrent ? '현재 차례' : `${index + 1}번째`
+    return `
+      <div class="balloon-player-item${isCurrent ? ' is-current' : ''}${isLoser ? ' is-loser' : ''}" style="--balloon-player-color:${player.color};">
+        <span class="balloon-player-dot"></span>
+        <strong>${escapeHtml(player.label)}</strong>
+        <span>${label}</span>
+      </div>
+    `
+  }).join('')
+}
+
+function renderBalloonGame() {
+  renderBalloonPlayers()
+
+  const currentPlayer = getCurrentBalloonPlayer()
+  const currentColor = currentPlayer?.color || getCommonPlayerPaletteByTheme()[0] || '#ff6f9f'
+
+  if (balloonPressArea) {
+    balloonPressArea.style.setProperty('--balloon-current-color', currentColor)
+  }
+
+  if (balloonTurnBadge) {
+    if (balloonPopped && currentPlayer) {
+      balloonTurnBadge.textContent = `${currentPlayer.label} 당첨`
+    } else if (balloonGameStarted && currentPlayer) {
+      balloonTurnBadge.textContent = `${currentPlayer.label} 차례`
+    } else {
+      balloonTurnBadge.textContent = '대기'
+    }
+  }
+
+  if (balloonStageHint) {
+    if (balloonPopped && currentPlayer) {
+      balloonStageHint.textContent = `${currentPlayer.label}님이 풍선을 터뜨렸어. 리셋 후 다시 시작할 수 있어.`
+    } else if (balloonHolding && currentPlayer) {
+      balloonStageHint.textContent = `${currentPlayer.label}님이 누르는 중... 손을 떼기 전까지 계속 커져.`
+    } else if (balloonGameStarted && currentPlayer) {
+      balloonStageHint.textContent = `${currentPlayer.label}님 차례. 풍선을 길게 누르고, 무섭다 싶으면 손을 떼서 다음 사람에게 넘겨.`
+    } else {
+      balloonStageHint.textContent = '시작을 누른 뒤, 현재 차례의 참가자가 풍선을 길게 눌러줘.'
+    }
+  }
+
+  updateBalloonVisual()
+}
+
+function ensureBalloonReady() {
+  if (!balloonPlayers.length) {
+    updateBalloonFromInput({ render: false })
+  }
+  renderBalloonGame()
+}
+
+function startBalloonGame() {
+  if (!balloonConfigInput) return
+
+  const parsed = parseBalloonPlayers(balloonConfigInput.value)
+
+  if (parsed.status !== 'OK') {
+    const maxText = `${BALLOON_MIN_PLAYERS}~${BALLOON_MAX_PLAYERS}`
+    showPopup('참가자 등록 확인', `풍선 불기 게임은 ${maxText}명이 이용 가능해.<br>참가자 이름은 쉼표로 구분하고 중복 없이 입력해줘.`, { icon: '⚠️', allowHtml: true })
+    updateBalloonFromInput()
+    return
+  }
+
+  balloonPlayers = parsed.players
+  balloonGameStarted = true
+  balloonPopped = false
+  balloonHolding = false
+  balloonCurrentIndex = 0
+  balloonPressure = 0
+  balloonBurstPressure = Number(rand(BALLOON_MIN_BURST_PRESSURE, BALLOON_MAX_BURST_PRESSURE).toFixed(3))
+  balloonLastValidConfigText = balloonConfigInput.value
+  balloonLastAppliedRawText = balloonConfigInput.value
+
+  if (balloonStatusText) {
+    balloonStatusText.textContent = '게임 시작! 현재 차례의 참가자가 풍선을 꾹 눌러줘.'
+  }
+
+  setBalloonInputLock(true)
+  renderBalloonGame()
+}
+
+function stopBalloonHold() {
+  if (balloonHoldTimer) {
+    clearInterval(balloonHoldTimer)
+    balloonHoldTimer = null
+  }
+  balloonHolding = false
+  updateBalloonVisual()
+}
+
+function resetBalloonGame() {
+  stopBalloonHold()
+  balloonGameStarted = false
+  balloonPopped = false
+  balloonCurrentIndex = 0
+  balloonPressure = 0
+  balloonBurstPressure = 0
+  setBalloonInputLock(false)
+
+  if (balloonVisual) {
+    balloonVisual.classList.remove('is-popped', 'is-warning', 'is-danger')
+  }
+
+  if (balloonPopEffect) {
+    balloonPopEffect.classList.remove('is-active')
+  }
+
+  if (balloonStatusText) {
+    balloonStatusText.textContent = '참가자를 등록한 뒤 시작을 누르면 첫 번째 참가자부터 풍선을 꾹 누를 수 있다.'
+  }
+
+  updateBalloonFromInput({ render: false })
+  renderBalloonGame()
+}
+
+function advanceBalloonTurn() {
+  if (!balloonGameStarted || balloonPopped || !balloonPlayers.length) return
+
+  balloonCurrentIndex = (balloonCurrentIndex + 1) % balloonPlayers.length
+  const currentPlayer = getCurrentBalloonPlayer()
+
+  if (balloonStatusText && currentPlayer) {
+    balloonStatusText.textContent = `${currentPlayer.label}님 차례. 풍선을 꾹 눌러줘.`
+  }
+
+  renderBalloonGame()
+}
+
+function popBalloon() {
+  if (balloonPopped) return
+
+  const loser = getCurrentBalloonPlayer()
+  stopBalloonHold()
+  balloonPopped = true
+  balloonGameStarted = false
+
+  if (balloonPressArea) {
+    balloonPressArea.classList.add('is-popped')
+  }
+
+  if (balloonVisual) {
+    balloonVisual.classList.add('is-popped')
+  }
+
+  if (balloonPopEffect) {
+    balloonPopEffect.classList.remove('is-active')
+    void balloonPopEffect.offsetWidth
+    balloonPopEffect.classList.add('is-active')
+  }
+
+  if (balloonStatusText && loser) {
+    balloonStatusText.textContent = `${loser.label}님이 풍선을 터뜨렸어.`
+  }
+
+  renderBalloonGame()
+
+  if (loser) {
+    showPopup(
+      '풍선 터짐!',
+      `<strong>${escapeHtml(loser.label)}</strong>님이 풍선을 터뜨렸습니다.<br>이번 게임의 당첨자입니다.`,
+      { icon: '🎈', allowHtml: true, popupClass: 'balloon-result-popup' }
+    )
+  }
+}
+
+function inflateBalloonOnce() {
+  if (!balloonGameStarted || balloonPopped || !balloonHolding) return
+
+  balloonPressure += rand(BALLOON_MIN_PRESSURE_STEP, BALLOON_MAX_PRESSURE_STEP)
+
+  if (balloonPressure >= balloonBurstPressure) {
+    balloonPressure = balloonBurstPressure
+    updateBalloonVisual()
+    popBalloon()
+    return
+  }
+
+  updateBalloonVisual()
+  renderBalloonPlayers()
+}
+
+function startBalloonPress(event) {
+  if (event?.cancelable) event.preventDefault()
+
+  if (!balloonGameStarted || balloonPopped) {
+    if (!balloonPlayers.length) {
+      updateBalloonFromInput()
+    }
+    if (!balloonGameStarted && !balloonPopped) {
+      showPopup('게임 시작 필요', '참가자를 등록한 뒤 시작 버튼을 먼저 눌러줘.', { icon: '🎈' })
+    }
+    return
+  }
+
+  if (balloonHolding) return
+
+  balloonHolding = true
+
+  if (balloonPressArea && event?.pointerId !== undefined && typeof balloonPressArea.setPointerCapture === 'function') {
+    try {
+      balloonPressArea.setPointerCapture(event.pointerId)
+    } catch (error) {}
+  }
+
+  inflateBalloonOnce()
+
+  if (!balloonPopped) {
+    balloonHoldTimer = setInterval(inflateBalloonOnce, BALLOON_PRESS_INTERVAL_MS)
+  }
+
+  renderBalloonGame()
+}
+
+function endBalloonPress(event) {
+  if (!balloonHolding) return
+
+  if (balloonPressArea && event?.pointerId !== undefined && typeof balloonPressArea.releasePointerCapture === 'function') {
+    try {
+      balloonPressArea.releasePointerCapture(event.pointerId)
+    } catch (error) {}
+  }
+
+  stopBalloonHold()
+
+  if (!balloonPopped && balloonGameStarted) {
+    advanceBalloonTurn()
+  }
+}
+
+
+function canPlayBombPassOnThisDevice() {
+  return isTouchDevice() && getViewportShortSide() <= 820
+}
+
+function setBombPassControlsLocked(isLocked) {
+  if (startBombPassBtn) {
+    startBombPassBtn.disabled = isLocked
+    startBombPassBtn.style.opacity = isLocked ? '0.55' : '1'
+    startBombPassBtn.style.cursor = isLocked ? 'not-allowed' : ''
+  }
+}
+
+function updateBombPassGame() {
+  const canPlay = canPlayBombPassOnThisDevice()
+
+  if (bombPassStateBadge) {
+    if (!canPlay) {
+      bombPassStateBadge.textContent = '모바일 전용'
+    } else if (bombPassExploded) {
+      bombPassStateBadge.textContent = '폭발'
+    } else if (bombPassRunning) {
+      bombPassStateBadge.textContent = '전달 중'
+    } else {
+      bombPassStateBadge.textContent = '대기'
+    }
+  }
+
+  if (bombPassStage) {
+    bombPassStage.classList.toggle('is-running', bombPassRunning)
+    bombPassStage.classList.toggle('is-exploded', bombPassExploded)
+    bombPassStage.classList.toggle('is-desktop-blocked', !canPlay)
+  }
+
+  if (bombPassVisual) {
+    bombPassVisual.classList.toggle('is-running', bombPassRunning)
+    bombPassVisual.classList.toggle('is-exploded', bombPassExploded)
+  }
+
+  if (bombPassStatusText) {
+    if (!canPlay) {
+      bombPassStatusText.textContent = '이 게임은 핸드폰을 실제로 넘기며 플레이하는 모바일 전용 게임이야. 모바일에서 접속해줘.'
+    } else if (bombPassExploded) {
+      bombPassStatusText.textContent = '폭탄이 터졌어! 지금 핸드폰을 들고 있던 사람이 당첨이야. 리셋 후 다시 시작할 수 있어.'
+    } else if (bombPassRunning) {
+      bombPassStatusText.textContent = '폭탄 작동 중... 언제 터질지 몰라. 핸드폰을 조심히 넘겨줘.'
+    } else {
+      bombPassStatusText.textContent = '시작을 누른 뒤 핸드폰을 사람들에게 넘겨줘. 폭탄이 터지는 순간 들고 있던 사람이 당첨이야.'
+    }
+  }
+
+  if (bombPassDeviceText) {
+    const vibrationSupported = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'
+    bombPassDeviceText.textContent = canPlay
+      ? (vibrationSupported ? '※ 이 기기에서는 진동 기능을 시도할 수 있습니다.' : '※ 현재 브라우저에서는 진동 기능이 지원되지 않을 수 있습니다.')
+      : '※ 이 게임은 모바일 전용 게임입니다. 데스크톱에서는 목록에 표시되지 않도록 설정되어 있습니다.'
+  }
+
+  setBombPassControlsLocked(bombPassRunning)
+}
+
+function ensureBombPassReady() {
+  updateBombPassGame()
+}
+
+function vibrateBombPassDevice() {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(BOMB_PASS_VIBRATION_PATTERN)
+    }
+  } catch (error) {}
+}
+
+function stopBombPassGame() {
+  if (bombPassTimer) {
+    clearTimeout(bombPassTimer)
+    bombPassTimer = null
+  }
+
+  bombPassRunning = false
+  bombPassStartedAt = 0
+  bombPassDuration = 0
+  updateBombPassGame()
+}
+
+function resetBombPassGame() {
+  stopBombPassGame()
+  bombPassExploded = false
+
+  if (bombPassBoom) {
+    bombPassBoom.classList.remove('is-active')
+  }
+
+  updateBombPassGame()
+}
+
+function explodeBombPassGame() {
+  if (!bombPassRunning || bombPassExploded) return
+
+  if (bombPassTimer) {
+    clearTimeout(bombPassTimer)
+    bombPassTimer = null
+  }
+
+  bombPassRunning = false
+  bombPassExploded = true
+  vibrateBombPassDevice()
+
+  if (bombPassBoom) {
+    bombPassBoom.classList.remove('is-active')
+    void bombPassBoom.offsetWidth
+    bombPassBoom.classList.add('is-active')
+  }
+
+  updateBombPassGame()
+
+  showPopup(
+    '폭탄 터짐!',
+    '지금 핸드폰을 들고 있던 사람이 당첨입니다.<br>지원되는 기기에서는 폭발 순간 진동이 울립니다.',
+    { icon: '💣', allowHtml: true, popupClass: 'bomb-pass-result-popup' }
+  )
+}
+
+function startBombPassGame() {
+  if (!canPlayBombPassOnThisDevice()) {
+    showPopup('모바일 전용 게임', '폭탄 넘기기는 핸드폰을 실제로 넘기며 플레이하는 게임이라 모바일에서만 이용할 수 있어.', { icon: '📱' })
+    updateBombPassGame()
+    return
+  }
+
+  if (bombPassRunning) return
+
+  bombPassExploded = false
+  bombPassRunning = true
+  bombPassStartedAt = Date.now()
+  bombPassDuration = Math.round(rand(BOMB_PASS_MIN_DURATION_MS, BOMB_PASS_MAX_DURATION_MS))
+
+  if (bombPassBoom) {
+    bombPassBoom.classList.remove('is-active')
+  }
+
+  updateBombPassGame()
+  bombPassTimer = setTimeout(explodeBombPassGame, bombPassDuration)
+}
+
+function canPlayCircleTapOnThisDevice() {
+  return isTouchDevice() && getViewportShortSide() <= 820
+}
+
+function parseCircleTapPlayers(text) {
+  const names = String(text || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (!names.length) return { status: 'EMPTY' }
+
+  const seen = new Set()
+  const players = []
+
+  for (const name of names) {
+    if (seen.has(name)) return { status: 'DUPLICATE', name }
+    seen.add(name)
+
+    players.push({
+      id: `circle-tap-${players.length + 1}-${name}`,
+      label: name,
+      color: getCommonPlayerPaletteByTheme()[players.length % getCommonPlayerPaletteByTheme().length]
+    })
+
+    if (players.length > CIRCLE_TAP_MAX_PLAYERS) {
+      return { status: 'TOO_MANY' }
+    }
+  }
+
+  if (players.length < CIRCLE_TAP_MIN_PLAYERS) {
+    return { status: 'TOO_FEW', players }
+  }
+
+  return { status: 'OK', players }
+}
+
+function setCircleTapInputLock(isLocked) {
+  if (!circleTapConfigInput) return
+  circleTapConfigInput.disabled = isLocked
+  circleTapConfigInput.style.opacity = isLocked ? '0.65' : '1'
+  circleTapConfigInput.style.cursor = isLocked ? 'not-allowed' : ''
+}
+
+function setCircleTapPlayers(players) {
+  circleTapPlayers = players
+  circleTapLastValidConfigText = circleTapConfigInput ? circleTapConfigInput.value : circleTapLastValidConfigText
+  circleTapLastAppliedRawText = circleTapConfigInput ? circleTapConfigInput.value : circleTapLastAppliedRawText
+}
+
+function updateCircleTapFromInput(options = {}) {
+  const { render = true } = options
+  if (!circleTapConfigInput) return false
+
+  const parsed = parseCircleTapPlayers(circleTapConfigInput.value)
+
+  if (parsed.status === 'OK') {
+    setCircleTapPlayers(parsed.players)
+    if (circleTapStatusText && !circleTapStarted) {
+      circleTapStatusText.textContent = '참가자 등록 완료. 시작을 누르면 첫 번째 참가자 색상의 원이 나타나.'
+    }
+    if (render) renderCircleTapGame()
+    return true
+  }
+
+  if (!circleTapStarted) {
+    if (parsed.status === 'TOO_FEW' && parsed.players?.length) {
+      circleTapPlayers = parsed.players
+      if (circleTapStatusText) circleTapStatusText.textContent = `최소 ${CIRCLE_TAP_MIN_PLAYERS}명부터 시작할 수 있어.`
+    } else if (circleTapStatusText) {
+      const messages = {
+        EMPTY: '참가자를 2명 이상 입력해줘.',
+        DUPLICATE: '중복 이름은 사용할 수 없어.',
+        TOO_MANY: `참가자는 최대 ${CIRCLE_TAP_MAX_PLAYERS}명까지 가능해.`
+      }
+      circleTapStatusText.textContent = messages[parsed.status] || '참가자 입력을 확인해줘.'
+    }
+  }
+
+  if (render) renderCircleTapGame()
+  return false
+}
+
+function getCurrentCircleTapPlayer() {
+  return circleTapPlayers[circleTapCurrentIndex] || null
+}
+
+function updateCircleTapVisual() {
+  const currentPlayer = getCurrentCircleTapPlayer()
+  const currentColor = currentPlayer?.color || getCommonPlayerPaletteByTheme()[0] || '#ff82ad'
+  const safeRadius = clampValue(circleTapRadius, CIRCLE_TAP_MIN_RADIUS, CIRCLE_TAP_START_RADIUS)
+  const diameter = Math.round(safeRadius * 2)
+
+  if (circleTapStage) {
+    circleTapStage.classList.toggle('is-started', circleTapStarted && !circleTapFinished)
+    circleTapStage.classList.toggle('is-finished', circleTapFinished)
+    circleTapStage.classList.toggle('is-mobile-blocked', !canPlayCircleTapOnThisDevice())
+    circleTapStage.style.setProperty('--circle-tap-current-color', currentColor)
+  }
+
+  if (circleTapTarget) {
+    circleTapTarget.style.setProperty('--circle-tap-size', `${diameter}px`)
+    circleTapTarget.style.setProperty('--circle-tap-current-color', currentColor)
+    circleTapTarget.classList.toggle('is-active', circleTapStarted && !circleTapFinished)
+    circleTapTarget.classList.toggle('is-finished', circleTapFinished)
+  }
+
+}
+
+function renderCircleTapPlayers() {
+  if (!circleTapPlayerList || !circleTapTotalInfo) return
+
+  circleTapTotalInfo.textContent = circleTapPlayers.length ? `총 ${circleTapPlayers.length}명` : '총 0명'
+
+  if (!circleTapPlayers.length) {
+    circleTapPlayerList.innerHTML = '<div class="circle-tap-player-empty">참가자를 입력하면 차례 색상이 표시돼.</div>'
+    return
+  }
+
+  const currentPlayer = getCurrentCircleTapPlayer()
+  circleTapPlayerList.innerHTML = circleTapPlayers.map((player, index) => {
+    const isCurrent = circleTapStarted && !circleTapFinished && currentPlayer?.id === player.id
+    const isLoser = circleTapFinished && currentPlayer?.id === player.id
+    const label = isLoser ? '탈락' : isCurrent ? '현재 차례' : `${index + 1}번째`
+    return `
+      <div class="circle-tap-player-item${isCurrent ? ' is-current' : ''}${isLoser ? ' is-loser' : ''}" style="--circle-tap-player-color:${player.color};">
+        <span class="circle-tap-player-dot"></span>
+        <strong>${escapeHtml(player.label)}</strong>
+        <span>${label}</span>
+      </div>
+    `
+  }).join('')
+}
+
+function renderCircleTapGame() {
+  renderCircleTapPlayers()
+
+  const canPlay = canPlayCircleTapOnThisDevice()
+  const currentPlayer = getCurrentCircleTapPlayer()
+
+  if (circleTapTurnBadge) {
+    if (!canPlay) {
+      circleTapTurnBadge.textContent = '모바일 전용'
+    } else if (circleTapFinished && currentPlayer) {
+      circleTapTurnBadge.textContent = `${currentPlayer.label} 탈락`
+    } else if (circleTapStarted && currentPlayer) {
+      circleTapTurnBadge.textContent = `${currentPlayer.label} 차례`
+    } else {
+      circleTapTurnBadge.textContent = '대기'
+    }
+  }
+
+  if (circleTapStageHint) {
+    if (!canPlay) {
+      circleTapStageHint.textContent = '작아지는 원은 손가락 터치 판정이 핵심이라 모바일에서만 이용할 수 있어.'
+    } else if (circleTapFinished && currentPlayer) {
+      circleTapStageHint.textContent = `${currentPlayer.label}님이 원 밖을 눌러 탈락했어. 리셋 후 다시 시작할 수 있어.`
+    } else if (circleTapStarted && currentPlayer) {
+      circleTapStageHint.textContent = `${currentPlayer.label}님 차례. 자신의 색 원 안쪽을 정확히 눌러줘. 원 밖을 누르면 바로 탈락이야.`
+    } else {
+      circleTapStageHint.textContent = '시작을 누른 뒤, 현재 차례 참가자가 색상 원 안쪽을 정확히 눌러줘.'
+    }
+  }
+
+  updateCircleTapVisual()
+}
+
+function ensureCircleTapReady() {
+  if (!circleTapPlayers.length) {
+    updateCircleTapFromInput({ render: false })
+  }
+  renderCircleTapGame()
+}
+
+function startCircleTapGame() {
+  if (!canPlayCircleTapOnThisDevice()) {
+    showPopup('모바일 전용 게임', '작아지는 원은 손가락으로 원 안쪽을 정확히 누르는 모바일 전용 게임이야. 모바일에서 접속해줘.', { icon: '📱' })
+    renderCircleTapGame()
+    return
+  }
+
+  if (!circleTapConfigInput) return
+  const parsed = parseCircleTapPlayers(circleTapConfigInput.value)
+
+  if (parsed.status !== 'OK') {
+    showPopup('참가자 등록 확인', `작아지는 원 게임은 ${CIRCLE_TAP_MIN_PLAYERS}~${CIRCLE_TAP_MAX_PLAYERS}명이 이용 가능해.<br>참가자 이름은 쉼표로 구분하고 중복 없이 입력해줘.`, { icon: '⚠️', allowHtml: true })
+    updateCircleTapFromInput()
+    return
+  }
+
+  setCircleTapPlayers(parsed.players)
+  circleTapStarted = true
+  circleTapFinished = false
+  circleTapCurrentIndex = 0
+  circleTapRadius = CIRCLE_TAP_START_RADIUS
+  circleTapSuccessCount = 0
+
+  if (circleTapMissEffect) {
+    circleTapMissEffect.classList.remove('is-active')
+  }
+
+  if (circleTapStatusText) {
+    circleTapStatusText.textContent = '게임 시작! 현재 차례 참가자는 자기 색상 원 안쪽을 정확히 눌러줘.'
+  }
+
+  setCircleTapInputLock(true)
+  renderCircleTapGame()
+}
+
+function stopCircleTapGame(options = {}) {
+  const { preservePlayers = true } = options
+  if (!preservePlayers) {
+    circleTapPlayers = []
+  }
+  circleTapStarted = false
+  renderCircleTapGame()
+}
+
+function resetCircleTapGame() {
+  circleTapStarted = false
+  circleTapFinished = false
+  circleTapCurrentIndex = 0
+  circleTapRadius = CIRCLE_TAP_START_RADIUS
+  circleTapSuccessCount = 0
+  setCircleTapInputLock(false)
+
+  if (circleTapMissEffect) {
+    circleTapMissEffect.classList.remove('is-active')
+  }
+
+  if (circleTapStatusText) {
+    circleTapStatusText.textContent = '참가자를 등록한 뒤 시작을 누르면 현재 차례의 색상 원을 정확히 눌러줘.'
+  }
+
+  updateCircleTapFromInput({ render: false })
+  renderCircleTapGame()
+}
+
+function advanceCircleTapTurn() {
+  if (!circleTapStarted || circleTapFinished || !circleTapPlayers.length) return
+  circleTapCurrentIndex = (circleTapCurrentIndex + 1) % circleTapPlayers.length
+  const currentPlayer = getCurrentCircleTapPlayer()
+
+  if (circleTapStatusText && currentPlayer) {
+    circleTapStatusText.textContent = `${currentPlayer.label}님 차례. 원 안쪽을 정확히 눌러줘.`
+  }
+
+  renderCircleTapGame()
+}
+
+function shrinkCircleTapTarget() {
+  const shrinkRatio = rand(CIRCLE_TAP_SHRINK_MIN, CIRCLE_TAP_SHRINK_MAX)
+  const shrinkAmount = Math.max(0.75, circleTapRadius * shrinkRatio)
+  circleTapRadius = Math.max(CIRCLE_TAP_MIN_RADIUS, circleTapRadius - shrinkAmount)
+  circleTapSuccessCount += 1
+}
+
+function failCircleTapGame() {
+  if (!circleTapStarted || circleTapFinished) return
+
+  const loser = getCurrentCircleTapPlayer()
+  circleTapFinished = true
+  circleTapStarted = false
+
+  if (circleTapMissEffect) {
+    circleTapMissEffect.classList.remove('is-active')
+    void circleTapMissEffect.offsetWidth
+    circleTapMissEffect.classList.add('is-active')
+  }
+
+  if (circleTapStatusText && loser) {
+    circleTapStatusText.textContent = `${loser.label}님이 원 밖을 눌러 탈락했어.`
+  }
+
+  renderCircleTapGame()
+
+  if (loser) {
+    showPopup(
+      '원 밖 터치!',
+      `<strong>${escapeHtml(loser.label)}</strong>님이 원 밖을 눌렀습니다.<br>이번 게임의 탈락자입니다.`,
+      { icon: '⭕', allowHtml: true, popupClass: 'circle-tap-result-popup' }
+    )
+  }
+}
+
+function getCircleTapPointerResult(event) {
+  if (!circleTapTarget || !event) return { inside: false }
+
+  const rect = circleTapTarget.getBoundingClientRect()
+  const centerX = rect.left + rect.width / 2
+  const centerY = rect.top + rect.height / 2
+  const x = event.clientX
+  const y = event.clientY
+  const distance = Math.hypot(x - centerX, y - centerY)
+  const radius = rect.width / 2
+
+  return { inside: distance <= radius, distance, radius }
+}
+
+function handleCircleTapPointer(event) {
+  if (event?.cancelable) event.preventDefault()
+
+  if (!canPlayCircleTapOnThisDevice()) {
+    showPopup('모바일 전용 게임', '이 게임은 손가락 터치 판정이 핵심이라 모바일에서만 이용할 수 있어.', { icon: '📱' })
+    renderCircleTapGame()
+    return
+  }
+
+  if (!circleTapStarted || circleTapFinished) {
+    showPopup('게임 시작 필요', '참가자를 등록한 뒤 시작 버튼을 먼저 눌러줘.', { icon: '⭕' })
+    return
+  }
+
+  const result = getCircleTapPointerResult(event)
+
+  if (!result.inside) {
+    failCircleTapGame()
+    return
+  }
+
+  shrinkCircleTapTarget()
+  updateCircleTapVisual()
+
+  if (circleTapTarget) {
+    circleTapTarget.classList.remove('is-hit')
+    void circleTapTarget.offsetWidth
+    circleTapTarget.classList.add('is-hit')
+  }
+
+  advanceCircleTapTurn()
+}
+
 if (startBtn) {
   startBtn.addEventListener('click', () => showScreen('menu'))
 }
 
 if (physicalBtn) {
-  physicalBtn.addEventListener('click', () => showPopup('개발중', '피지컬 메뉴는 아직 개발중이야!'))
+  physicalBtn.addEventListener('click', () => showScreen('physical'))
 }
 
 if (luckBtn) {
@@ -11567,6 +12911,88 @@ gameLaunchButtons.forEach((button) => {
 comingSoonButtons.forEach((button) => {
   bindLuckGameItemInteraction(button)
 })
+
+physicalGameLaunchButtons.forEach((button) => {
+  bindPhysicalGameItemInteraction(button)
+})
+
+
+if (balloonConfigInput) {
+  balloonConfigInput.addEventListener('input', () => {
+    if (!balloonGameStarted) {
+      updateBalloonFromInput()
+    }
+  })
+
+  balloonConfigInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      startBalloonGame()
+    }
+  })
+}
+
+if (startBalloonBtn) {
+  startBalloonBtn.addEventListener('click', startBalloonGame)
+}
+
+if (resetBalloonBtn) {
+  resetBalloonBtn.addEventListener('click', resetBalloonGame)
+}
+
+if (balloonPressArea) {
+  balloonPressArea.addEventListener('pointerdown', startBalloonPress)
+  balloonPressArea.addEventListener('pointerup', endBalloonPress)
+  balloonPressArea.addEventListener('pointercancel', endBalloonPress)
+  balloonPressArea.addEventListener('pointerleave', endBalloonPress)
+  balloonPressArea.addEventListener('contextmenu', (event) => event.preventDefault())
+  balloonPressArea.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    startBalloonPress(event)
+  })
+  balloonPressArea.addEventListener('keyup', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    endBalloonPress()
+  })
+}
+
+if (startBombPassBtn) {
+  startBombPassBtn.addEventListener('click', startBombPassGame)
+}
+
+if (resetBombPassBtn) {
+  resetBombPassBtn.addEventListener('click', resetBombPassGame)
+}
+
+if (circleTapConfigInput) {
+  circleTapConfigInput.addEventListener('input', () => {
+    if (!circleTapStarted) {
+      updateCircleTapFromInput()
+    }
+  })
+
+  circleTapConfigInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      startCircleTapGame()
+    }
+  })
+}
+
+if (startCircleTapBtn) {
+  startCircleTapBtn.addEventListener('click', startCircleTapGame)
+}
+
+if (resetCircleTapBtn) {
+  resetCircleTapBtn.addEventListener('click', resetCircleTapGame)
+}
+
+if (circleTapStage) {
+  circleTapStage.addEventListener('pointerdown', handleCircleTapPointer)
+  circleTapStage.addEventListener('contextmenu', (event) => event.preventDefault())
+}
 
 if (stockConfigInput) {
   stockConfigInput.addEventListener('input', () => {
@@ -12059,6 +13485,7 @@ window.addEventListener('resize', () => {
     syncRaceMobileLayout()
     syncSimResponsiveLayout()
     syncLuckCarousel({ align: screens.luck?.classList.contains('active') })
+    syncPhysicalCarousel({ align: screens.physical?.classList.contains('active') })
     updateOrientationGate()
 
     if (screens.game1?.classList.contains('active')) {
@@ -12105,6 +13532,7 @@ window.addEventListener('orientationchange', () => {
     syncGame1MobileLayout()
     syncRaceMobileLayout()
     syncSimResponsiveLayout()
+    syncPhysicalCarousel({ align: screens.physical?.classList.contains('active') })
     updateOrientationGate()
 
     if (screens.game1?.classList.contains('active')) {
@@ -12153,6 +13581,10 @@ if (luckGameGrid) {
   luckGameGrid.addEventListener('scroll', handleLuckCarouselScroll, { passive: true })
 }
 
+if (physicalGameGrid) {
+  physicalGameGrid.addEventListener('scroll', handlePhysicalCarouselScroll, { passive: true })
+}
+
 window.addEventListener('popstate', (event) => {
   const state = event.state
 
@@ -12195,7 +13627,7 @@ function syncCustomCursorState(target) {
   if (!customCursorEl) return
 
   const element = target instanceof Element ? target : null
-  const interactive = element?.closest('button, a, input, textarea, select, summary, label, [role="button"], .game-item, .luck-carousel-dot, .utility-btn, .action-btn, .back-btn, .popup-btn, .sim-info-btn, .sim-arena-zoom-btn')
+  const interactive = element?.closest('button, a, input, textarea, select, summary, label, [role="button"], .game-item, .luck-carousel-dot, .physical-carousel-dot, .utility-btn, .action-btn, .back-btn, .popup-btn, .sim-info-btn, .sim-arena-zoom-btn')
   const textEditable = element?.closest('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"]')
   const nextState = `${Boolean(interactive)}:${Boolean(textEditable)}`
 
@@ -12257,6 +13689,7 @@ syncGame1MobileLayout()
 syncRaceMobileLayout()
 syncSimResponsiveLayout()
 syncLuckCarousel()
+syncPhysicalCarousel()
 updateRaceTrackZoomButton()
 updateSimArenaZoomButton()
 updateRouletteStageZoomButton()
@@ -12305,6 +13738,11 @@ if (stockConfigInput) {
 if (ladderConfigInput) {
   updateLadderFromInput({ render: false })
   renderLadderGame()
+}
+
+if (balloonConfigInput) {
+  updateBalloonFromInput({ render: false })
+  renderBalloonGame()
 }
 
 if (screens.home) {

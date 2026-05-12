@@ -57,7 +57,84 @@
           </button>
           </div>
         </div>
+    </section>
 
+    <section id="physicalCircleScreen" class="screen game-screen">
+      <div class="card game-card circle-tap-card-screen">
+        <div class="circle-tap-layout">
+          <aside class="circle-tap-sidebar">
+            <div class="circle-tap-sidebar-inner">
+              <div class="sidebar-head">
+                <h3 class="sidebar-title">작아지는 원 설정</h3>
+                <p class="sub-text">
+                  이름을 쉼표로 구분해 참가자를 등록한다.
+                  예: 홍길동, 김아무개, 박철수
+                </p>
+              </div>
+
+              <div class="controls-wrap">
+                <div class="input-card">
+                  <label for="circleTapConfigInput">참가자</label>
+                  <input
+                    id="circleTapConfigInput"
+                    type="text"
+                    value="홍길동, 김아무개, 박철수"
+                    autocomplete="off"
+                  />
+                  <p class="helper-text">
+                    쉼표(,)로 구분해 입력. 중복 이름은 불가하며 2~8명까지 가능.
+                  </p>
+                </div>
+
+                <div class="button-row circle-tap-button-row">
+                  <button id="startCircleTapBtn" class="action-btn primary" type="button">시작</button>
+                  <button id="resetCircleTapBtn" class="action-btn soft" type="button">리셋</button>
+                </div>
+
+                <div id="circleTapStatusText" class="status-text">
+                  참가자를 등록한 뒤 시작을 누르면 현재 차례의 색상 원을 정확히 눌러줘.
+                </div>
+              </div>
+
+              <div class="scoreboard-card circle-tap-player-card">
+                <div class="scoreboard-head">
+                  <h3>참가자 순서</h3>
+                  <span id="circleTapTotalInfo">총 0명</span>
+                </div>
+                <div id="circleTapPlayerList" class="circle-tap-player-list"></div>
+              </div>
+            </div>
+          </aside>
+
+          <div class="circle-tap-main">
+            <div class="circle-tap-main-header">
+              <div>
+                <p class="small-badge game-mini-badge">⭕ physical M3 ⭕</p>
+                <h2>작아지는 원</h2>
+                <p class="sub-text">각 참가자는 자신의 차례 색상에 맞춰 원을 정확히 누른다. 성공할 때마다 원은 점점 작아지고, 원 밖을 누른 순간 현재 차례 참가자가 탈락한다.</p>
+              </div>
+            </div>
+
+            <div class="circle-tap-stage-card">
+              <div class="circle-tap-panel-head">
+                <div>
+                  <h3>정확도 스테이지</h3>
+                  <p class="sub-text">손가락이 원 안에 들어왔는지만 판정한다. 원이 작아질수록 실수할 가능성이 높아진다.</p>
+                </div>
+                <span id="circleTapTurnBadge" class="circle-tap-turn-badge">대기</span>
+              </div>
+
+              <div id="circleTapStage" class="circle-tap-stage" aria-label="작아지는 원 터치 스테이지">
+                <div id="circleTapTarget" class="circle-tap-target" aria-hidden="true"></div>
+                <div id="circleTapMissEffect" class="circle-tap-miss-effect" aria-hidden="true">탈락!</div>
+              </div>
+
+              <p id="circleTapStageHint" class="circle-tap-stage-hint">시작을 누른 뒤, 현재 차례 참가자가 색상 원 안쪽을 정확히 눌러줘.</p>
+            </div>
+
+            <button class="back-btn circle-tap-back-btn" data-target="physical" type="button">← 피지컬 목록으로</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -156,6 +233,198 @@
           <div id="luckCarouselDots" class="luck-carousel-dots" aria-label="운 게임 페이지 표시"></div>
         </div>
 
+      </div>
+    </section>
+
+
+    <section id="physicalScreen" class="screen">
+      <div class="card physical-card">
+        <div class="physical-header">
+          <div>
+            <p class="small-badge">💪 physical games 💪</p>
+            <h2>피지컬 게임 목록</h2>
+            <p class="sub-text">피지컬 게임은 조작 방식에 따라 모바일 호환 게임과 데스크톱 전용 게임으로 나뉜다. 모바일 호환 게임은 컴퓨터에서도 이용 가능하고, 데스크톱 전용 게임은 모바일 화면에 표시되지 않는다.</p>
+          </div>
+        </div>
+
+        <div class="physical-game-shell">
+          <div id="physicalGameGrid" class="game-grid physical-game-grid">
+            <button class="game-item physical-game-item physical-game-launch" data-physical-game="balloon" data-physical-compat="mobile-compatible" type="button">
+              <span class="physical-compat-badge">📱 모바일 · PC</span>
+              <div class="game-num">M1</div>
+              <h3>풍선 불기</h3>
+              <p>풍선을 꾹 눌러 점점 키우다가 랜덤 순간에 터뜨린 사람이 당첨되는 피지컬 게임</p>
+              <div class="game-meta">
+                <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~8명</span></div>
+                <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">꾹 누르기</span></div>
+              </div>
+            </button>
+
+            <button class="game-item physical-game-item physical-game-launch" data-physical-game="bomb-pass" data-physical-compat="mobile-only" type="button">
+              <span class="physical-compat-badge is-mobile-only">📱 모바일 전용</span>
+              <div class="game-num">M2</div>
+              <h3>폭탄 넘기기</h3>
+              <p>시작 후 핸드폰을 넘기다가 폭탄이 터지는 순간 들고 있던 사람이 걸리는 모바일 전용 게임</p>
+              <div class="game-meta">
+                <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">자유</span></div>
+                <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">폰 넘기기</span></div>
+              </div>
+            </button>
+
+            <button class="game-item physical-game-item physical-game-launch" data-physical-game="shrinking-circle" data-physical-compat="mobile-only" type="button">
+              <span class="physical-compat-badge is-mobile-only">📱 모바일 전용</span>
+              <div class="game-num">M3</div>
+              <h3>작아지는 원</h3>
+              <p>자신의 색 원을 정확히 누를 때마다 원이 작아지고, 원 밖을 누른 사람이 바로 탈락하는 모바일 전용 게임</p>
+              <div class="game-meta">
+                <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~8명</span></div>
+                <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">정확히 터치</span></div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div id="physicalCarouselHud" class="physical-carousel-hud" aria-hidden="true">
+          <p class="physical-carousel-hint">좌우로 넘겨서 피지컬 게임을 선택해줘</p>
+          <div id="physicalCarouselDots" class="physical-carousel-dots" aria-label="피지컬 게임 페이지 표시"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="physicalBalloonScreen" class="screen game-screen">
+      <div class="card game-card balloon-card-screen">
+        <div class="balloon-layout">
+          <aside class="balloon-sidebar">
+            <div class="balloon-sidebar-inner">
+              <div class="sidebar-head">
+                <h3 class="sidebar-title">풍선 불기 설정</h3>
+                <p class="sub-text">
+                  이름을 쉼표로 구분해 참가자를 등록한다.
+                  예: 홍길동, 김아무개, 박철수
+                </p>
+              </div>
+
+              <div class="controls-wrap">
+                <div class="input-card">
+                  <label for="balloonConfigInput">참가자</label>
+                  <input
+                    id="balloonConfigInput"
+                    type="text"
+                    value="홍길동, 김아무개, 박철수"
+                    autocomplete="off"
+                  />
+                  <p class="helper-text">
+                    쉼표(,)로 구분해 입력. 중복 이름은 불가하며 2~8명까지 가능.
+                  </p>
+                </div>
+
+                <div class="button-row balloon-button-row">
+                  <button id="startBalloonBtn" class="action-btn primary" type="button">시작</button>
+                  <button id="resetBalloonBtn" class="action-btn soft" type="button">리셋</button>
+                </div>
+
+                <div id="balloonStatusText" class="status-text">
+                  참가자를 등록한 뒤 시작을 누르면 첫 번째 참가자부터 풍선을 꾹 누를 수 있다.
+                </div>
+              </div>
+
+              <div class="scoreboard-card balloon-player-card">
+                <div class="scoreboard-head">
+                  <h3>참가자 순서</h3>
+                  <span id="balloonTotalInfo">총 0명</span>
+                </div>
+                <div id="balloonPlayerList" class="balloon-player-list"></div>
+              </div>
+            </div>
+          </aside>
+
+          <div class="balloon-main">
+            <div class="balloon-main-header">
+              <div>
+                <p class="small-badge game-mini-badge">🎈 physical M1 🎈</p>
+                <h2>풍선 불기</h2>
+                <p class="sub-text">각 참가자가 차례대로 풍선을 꾹 누른다. 손을 떼면 다음 사람에게 넘어가고, 랜덤 순간에 풍선을 터뜨린 사람이 당첨된다.</p>
+              </div>
+            </div>
+
+            <div class="balloon-stage-card">
+              <div class="balloon-panel-head">
+                <div>
+                  <h3>풍선 스테이지</h3>
+                  <p class="sub-text">풍선을 누르는 동안 숫자가 올라가고 풍선이 커진다. 터지는 기준은 화면에 공개되지 않는다.</p>
+                </div>
+                <span id="balloonTurnBadge" class="balloon-turn-badge">대기</span>
+              </div>
+
+              <button id="balloonPressArea" class="balloon-press-area" type="button" aria-label="풍선 꾹 누르기">
+                <div id="balloonVisual" class="balloon-visual">
+                  <div class="balloon-body">
+                    <span id="balloonPressureNumber" class="balloon-pressure-number">0.000</span>
+                  </div>
+                  <div class="balloon-knot"></div>
+                  <div class="balloon-string"></div>
+                </div>
+                <div id="balloonPopEffect" class="balloon-pop-effect" aria-hidden="true">💥</div>
+              </button>
+
+
+              <p id="balloonStageHint" class="balloon-stage-hint">시작을 누른 뒤, 현재 차례의 참가자가 풍선을 길게 눌러줘.</p>
+            </div>
+
+            <button class="back-btn balloon-back-btn" data-target="physical" type="button">← 피지컬 목록으로</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="physicalBombScreen" class="screen game-screen">
+      <div class="card game-card bomb-pass-card-screen">
+        <div class="bomb-pass-layout">
+          <div class="bomb-pass-main">
+            <div class="bomb-pass-main-header">
+              <div>
+                <p class="small-badge game-mini-badge">💣 physical M2 💣</p>
+                <h2>폭탄 넘기기</h2>
+                <p class="sub-text">참가자 등록 없이 시작한다. 시작 후 핸드폰을 한 명씩 넘기다가 폭탄이 터지는 순간 손에 들고 있던 사람이 걸린다.</p>
+              </div>
+            </div>
+
+            <div class="bomb-pass-stage-card">
+              <div class="bomb-pass-panel-head">
+                <div>
+                  <h3>폭탄 스테이지</h3>
+                  <p class="sub-text">터지는 시간은 완전 랜덤이며 화면에 공개되지 않는다. 가능한 기기에서는 터지는 순간 진동이 울린다.</p>
+                </div>
+                <span id="bombPassStateBadge" class="bomb-pass-state-badge">대기</span>
+              </div>
+
+              <div id="bombPassStage" class="bomb-pass-stage" aria-label="폭탄 넘기기 스테이지">
+                <div id="bombPassVisual" class="bomb-pass-visual" aria-hidden="true">
+                  <div class="bomb-pass-fuse">
+                    <span class="bomb-pass-fuse-line"></span>
+                    <span class="bomb-pass-spark">✦</span>
+                  </div>
+                  <div class="bomb-pass-body">
+                    <span class="bomb-pass-highlight"></span>
+                    <span class="bomb-pass-face">💣</span>
+                  </div>
+                  <div id="bombPassBoom" class="bomb-pass-boom">💥</div>
+                </div>
+              </div>
+
+              <div class="bomb-pass-control-card">
+                <div class="button-row bomb-pass-button-row">
+                  <button id="startBombPassBtn" class="action-btn primary" type="button">시작</button>
+                  <button id="resetBombPassBtn" class="action-btn soft" type="button">리셋</button>
+                </div>
+                <p id="bombPassStatusText" class="bomb-pass-status-text">시작을 누른 뒤 핸드폰을 사람들에게 넘겨줘. 폭탄이 터지는 순간 들고 있던 사람이 당첨이야.</p>
+                <p id="bombPassDeviceText" class="bomb-pass-device-text">※ 이 게임은 모바일 전용 게임입니다. 진동은 기기와 브라우저가 지원할 때만 작동합니다.</p>
+              </div>
+            </div>
+
+            <button class="back-btn bomb-pass-back-btn" data-target="physical" type="button">← 피지컬 목록으로</button>
+          </div>
+        </div>
       </div>
     </section>
 
