@@ -678,7 +678,7 @@ const FAST_FORWARD_CARD_CONFIG = {
   5: { title: '러시안 룰렛', state: 'none', badgeText: '없음' },
   6: { title: '주식게임', state: 'none', badgeText: '없음' },
   7: { title: '투명 사다리 타기', state: 'none', badgeText: '없음' },
-  8: { title: '게임 8', state: 'pending', badgeText: '미정' }
+  8: { title: '랜덤 룰렛', state: 'none', badgeText: '없음' }
 }
 
 const fastForwardStates = {
@@ -1573,13 +1573,19 @@ function handleLuckGameSelection(button) {
   if (!button) return
 
   if (button.classList.contains('game-launch')) {
-    if (button.dataset.game === '1') showScreen('game1')
-    if (button.dataset.game === '2') showScreen('game2')
-    if (button.dataset.game === '3') showScreen('game3')
-    if (button.dataset.game === '4') showScreen('game4')
-    if (button.dataset.game === '5') showScreen('game5')
-    if (button.dataset.game === '6') showScreen('game6')
-    if (button.dataset.game === '7') showScreen('game7')
+    let selectedGame = button.dataset.game
+
+    if (selectedGame === '8') {
+      selectedGame = String(Math.floor(Math.random() * 7) + 1)
+    }
+
+    if (selectedGame === '1') showScreen('game1')
+    if (selectedGame === '2') showScreen('game2')
+    if (selectedGame === '3') showScreen('game3')
+    if (selectedGame === '4') showScreen('game4')
+    if (selectedGame === '5') showScreen('game5')
+    if (selectedGame === '6') showScreen('game6')
+    if (selectedGame === '7') showScreen('game7')
     return
   }
 
