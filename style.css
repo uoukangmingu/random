@@ -19345,3 +19345,605 @@ html.theme-dark .key-react-popup-item span {
   background: linear-gradient(180deg, rgba(55, 45, 25, 0.96) 0%, rgba(69, 52, 24, 0.94) 100%);
   color: #ffd56f;
 }
+
+
+/* home banner ad */
+.home-screen {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.home-screen-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.home-banner-link {
+  display: block;
+  width: min(100%, 760px);
+  min-height: 120px;
+  border-radius: 28px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.22);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.home-banner-link:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 42px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.03);
+}
+
+.home-banner-link img {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 120px;
+  object-fit: cover;
+}
+
+@media (max-width: 720px) {
+  .home-screen-stack {
+    gap: 20px;
+  }
+
+  .home-banner-link {
+    width: 100%;
+    border-radius: 22px;
+  }
+}
+
+
+
+/* final responsive home banner size override */
+#homeScreen.home-screen {
+  max-width: 1180px;
+  margin: 0 auto;
+  position: relative;
+}
+
+#homeScreen .home-screen-stack {
+  width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#homeScreen .home-banner-link {
+  position: absolute;
+  top: calc(100% + 30px);
+  left: 50%;
+  display: block;
+  width: clamp(360px, 31.1vw, 521px);
+  height: clamp(116px, 10vw, 168px);
+  min-height: 0;
+  aspect-ratio: 521 / 168;
+  transform: translateX(-50%);
+  border-radius: 0;
+  overflow: hidden;
+  border: 0;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.16);
+  z-index: 3;
+}
+
+#homeScreen .home-banner-link:hover {
+  transform: translateX(-50%) translateY(-4px);
+}
+
+#homeScreen .home-banner-link img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  object-position: center center;
+}
+
+/* 스마트폰에서는 배너가 너무 아래로 밀리지 않도록 상단 배치 */
+@media (max-width: 720px) {
+  .app {
+    align-items: flex-start;
+  }
+
+  #homeScreen.home-screen {
+    padding-top: max(18px, env(safe-area-inset-top));
+  }
+
+  #homeScreen .home-screen-stack {
+    position: static;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  #homeScreen .home-banner-link {
+    position: static;
+    order: -1;
+    left: auto;
+    top: auto;
+    width: min(92vw, 480px);
+    height: auto;
+    aspect-ratio: 521 / 168;
+    transform: none;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+  }
+
+  #homeScreen .home-banner-link:hover {
+    transform: translateY(-3px);
+  }
+
+  #homeScreen .main-card {
+    width: min(100%, 680px);
+  }
+}
+
+@media (max-width: 420px) {
+  #homeScreen .home-banner-link {
+    width: min(94vw, 380px);
+  }
+}
+
+
+.bear-find-svg-filters {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* =========================
+   physical M5 : bear find
+========================= */
+
+.bear-find-card-screen {
+  padding: 20px;
+}
+
+.physical-header h2,
+.bear-find-card-screen h2 {
+  font-family: 'Gaegu', cursive;
+  color: var(--soft-brown);
+  font-size: clamp(2rem, 4vw, 3rem);
+  margin-bottom: 10px;
+}
+
+.bear-find-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 720px;
+}
+
+.bear-find-sidebar {
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.34);
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 24px;
+  box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
+}
+
+.bear-find-button-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bear-find-sidebar-inner {
+  height: 100%;
+  overflow: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bear-find-main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bear-find-main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 2px 4px 0;
+  flex-wrap: wrap;
+}
+
+.bear-find-stage-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--card-strong);
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  border-radius: 24px;
+  box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bear-find-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bear-find-panel-head h3 {
+  color: var(--soft-brown);
+  margin-bottom: 6px;
+}
+
+.bear-find-phase-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 248, 222, 0.96), rgba(255, 239, 188, 0.96));
+  color: #8b6a37;
+  font-weight: 900;
+  font-size: 0.86rem;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 16px rgba(120, 90, 70, 0.08);
+}
+
+.bear-find-stage-button {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  max-height: min(62vh, 620px);
+  border-radius: 28px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.38), transparent 30%),
+    linear-gradient(180deg, #fff6ef 0%, #ffe9da 100%);
+  border: 3px solid rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 16px 28px rgba(120, 90, 70, 0.08);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.bear-find-stage-button.is-ready:hover {
+  transform: translateY(-3px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42), 0 18px 34px rgba(120, 90, 70, 0.13);
+}
+
+.bear-find-stage-button:disabled {
+  cursor: not-allowed;
+}
+
+
+.bear-find-stage-button:disabled,
+.bear-find-stage-button.is-playing,
+html.theme-dark .bear-find-stage-button:disabled,
+html.theme-dark .bear-find-stage-button.is-playing {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.bear-find-stage-button.is-playing .bear-find-video,
+.bear-find-video.is-active {
+  opacity: 1 !important;
+  filter: none;
+  mix-blend-mode: normal;
+  color-scheme: only light;
+}
+
+.bear-find-stage-button.is-playing .bear-find-video.is-color-matched,
+.bear-find-video.is-active.is-color-matched {
+  filter: none !important;
+}
+
+.bear-find-touch-blocker {
+  background: rgba(0, 0, 0, 0) !important;
+  backdrop-filter: none !important;
+}
+
+.bear-find-poster,
+.bear-find-still-frame,
+.bear-find-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bear-find-poster {
+  display: block;
+  opacity: 1;
+  z-index: 1;
+  transition: none;
+}
+
+.bear-find-poster.is-hidden {
+  opacity: 1;
+}
+
+.bear-find-still-frame {
+  display: block;
+  opacity: 0;
+  visibility: hidden;
+  z-index: 2;
+  background: transparent;
+  pointer-events: none;
+  transition: none;
+}
+
+.bear-find-still-frame.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.bear-find-video {
+  display: block;
+  opacity: 0;
+  visibility: hidden;
+  z-index: 3;
+  background: transparent;
+  pointer-events: none;
+  transition: none;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  image-rendering: auto;
+}
+
+.bear-find-color-probe {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.bear-find-video.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.bear-find-current-label {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 9px 15px;
+  border-radius: 999px;
+  background: rgba(255, 250, 246, 0.88);
+  color: #735949;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(80, 45, 25, 0.14);
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.bear-find-stage-button.is-playing .bear-find-current-label {
+  background: rgba(10, 10, 10, 0.52);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.bear-find-stage-hint {
+  color: #8c7262;
+  line-height: 1.6;
+  text-align: center;
+  font-weight: 700;
+}
+
+.bear-find-player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  max-height: 310px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.bear-find-player-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.bear-find-player-list::-webkit-scrollbar-thumb {
+  background: rgba(157, 125, 107, 0.35);
+  border-radius: 999px;
+}
+
+.bear-find-player-item,
+.bear-find-player-empty {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 13px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  color: #7a6151;
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.05);
+}
+
+.bear-find-player-empty {
+  display: block;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.bear-find-player-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #d9c9ff;
+  box-shadow: 0 0 0 4px rgba(217, 201, 255, 0.18);
+}
+
+.bear-find-player-item.is-current {
+  background: linear-gradient(180deg, rgba(255, 248, 222, 0.98), rgba(255, 241, 205, 0.96));
+  color: #7e6338;
+}
+
+.bear-find-player-item.is-current .bear-find-player-dot {
+  background: #ffd56f;
+}
+
+.bear-find-player-item.is-bear {
+  opacity: 0.78;
+}
+
+.bear-find-player-item.is-bear .bear-find-player-dot {
+  background: #c89f72;
+}
+
+.bear-find-player-item.is-panda {
+  background: linear-gradient(180deg, rgba(237, 255, 247, 0.98), rgba(214, 248, 229, 0.96));
+  color: #44745a;
+}
+
+.bear-find-player-item.is-panda .bear-find-player-dot {
+  background: #68f0c0;
+  box-shadow: 0 0 0 4px rgba(104, 240, 192, 0.2);
+}
+
+.bear-find-touch-blocker {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: none;
+  background: transparent;
+  cursor: wait;
+  touch-action: none;
+}
+
+.bear-find-touch-blocker.is-active {
+  display: block;
+}
+
+.popup.bear-find-result-popup {
+  max-width: 520px;
+}
+
+@media (max-width: 980px) {
+  .bear-find-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .bear-find-sidebar {
+    order: 2;
+  }
+
+  .bear-find-main {
+    order: 1;
+  }
+
+  .bear-find-stage-button {
+    max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .bear-find-card-screen {
+    padding: 16px;
+  }
+
+  .bear-find-stage-card {
+    padding: 13px;
+    border-radius: 22px;
+  }
+
+  .bear-find-stage-button {
+    border-radius: 22px;
+  }
+
+  .bear-find-current-label {
+    left: 12px;
+    bottom: 12px;
+    min-height: 34px;
+    padding: 8px 12px;
+    font-size: 0.86rem;
+  }
+
+  .bear-find-player-item {
+    grid-template-columns: auto 1fr;
+  }
+
+  .bear-find-player-item span:last-child {
+    grid-column: 2;
+  }
+}
+
+html.theme-dark .bear-find-card-screen {
+  background: rgba(20, 27, 38, 0.84);
+  border-color: rgba(130, 151, 174, 0.34);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.24);
+}
+
+html.theme-dark .bear-find-sidebar,
+html.theme-dark .bear-find-stage-card {
+  background: rgba(26, 35, 48, 0.74);
+  border-color: rgba(130, 151, 174, 0.26);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
+}
+
+html.theme-dark .bear-find-stage-button {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(127, 216, 255, 0.13), transparent 34%),
+    linear-gradient(180deg, #111926 0%, #0d1420 100%);
+  border-color: rgba(130, 151, 174, 0.32);
+  box-shadow: inset 0 0 0 1px rgba(143, 170, 205, 0.1), 0 18px 32px rgba(0, 0, 0, 0.3);
+}
+
+html.theme-dark .bear-find-current-label {
+  background: rgba(13, 20, 31, 0.78);
+  color: #d8e4f3;
+  border-color: rgba(130, 151, 174, 0.28);
+}
+
+html.theme-dark .bear-find-stage-hint,
+html.theme-dark .bear-find-player-empty {
+  color: #b8c5d6;
+}
+
+html.theme-dark .bear-find-phase-badge {
+  background: linear-gradient(180deg, rgba(75, 61, 26, 0.96), rgba(57, 46, 22, 0.96));
+  color: #ffd66d;
+  border-color: rgba(255, 214, 109, 0.2);
+}
+
+html.theme-dark .bear-find-player-item,
+html.theme-dark .bear-find-player-empty {
+  background: rgba(19, 28, 40, 0.82);
+  border-color: rgba(130, 151, 174, 0.24);
+  color: #d8e4f3;
+}
+
+html.theme-dark .bear-find-player-item.is-current {
+  background: linear-gradient(180deg, rgba(78, 63, 29, 0.98), rgba(62, 51, 28, 0.96));
+  color: #ffe29a;
+}
+
+html.theme-dark .bear-find-player-item.is-panda {
+  background: linear-gradient(180deg, rgba(31, 68, 62, 0.96), rgba(22, 54, 50, 0.96));
+  color: #8ff0d7;
+}

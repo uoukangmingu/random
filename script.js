@@ -6,6 +6,7 @@ const screens = {
   physicalBomb: document.getElementById('physicalBombScreen'),
   physicalCircle: document.getElementById('physicalCircleScreen'),
   physicalKeyReact: document.getElementById('physicalKeyReactScreen'),
+  physicalBearFind: document.getElementById('physicalBearFindScreen'),
   luck: document.getElementById('luckScreen'),
   game1: document.getElementById('game1Screen'),
   game2: document.getElementById('game2Screen'),
@@ -78,6 +79,25 @@ const keyReactSignalSubText = document.getElementById('keyReactSignalSubText')
 const keyReactKeyChips = document.getElementById('keyReactKeyChips')
 const keyReactResultCount = document.getElementById('keyReactResultCount')
 const keyReactRankingList = document.getElementById('keyReactRankingList')
+
+const bearFindCountInput = document.getElementById('bearFindCountInput')
+const startBearFindBtn = document.getElementById('startBearFindBtn')
+const resetBearFindBtn = document.getElementById('resetBearFindBtn')
+const bearFindStatusText = document.getElementById('bearFindStatusText')
+const bearFindTotalInfo = document.getElementById('bearFindTotalInfo')
+const bearFindPlayerList = document.getElementById('bearFindPlayerList')
+const bearFindPhaseBadge = document.getElementById('bearFindPhaseBadge')
+const bearFindStageButton = document.getElementById('bearFindStageButton')
+const bearFindPoster = document.getElementById('bearFindPoster')
+const bearFindVideo = document.getElementById('bearFindVideo')
+const bearFindStillFrame = document.getElementById('bearFindStillFrame')
+const bearFindColorMatchProbe = document.getElementById('bearFindColorMatchProbe')
+const bearFindColorMatchR = document.getElementById('bearFindColorMatchR')
+const bearFindColorMatchG = document.getElementById('bearFindColorMatchG')
+const bearFindColorMatchB = document.getElementById('bearFindColorMatchB')
+const bearFindStageHint = document.getElementById('bearFindStageHint')
+const bearFindCurrentLabel = document.getElementById('bearFindCurrentLabel')
+const bearFindTouchBlocker = document.getElementById('bearFindTouchBlocker')
 
 const popupOverlay = document.getElementById('popupOverlay')
 const popupTitle = document.getElementById('popupTitle')
@@ -467,6 +487,26 @@ let keyReactRoundToken = 0
 let keyReactCapturePlayerId = ''
 let keyReactLastValidConfigText = keyReactConfigInput ? keyReactConfigInput.value : ''
 let keyReactLastAppliedRawText = keyReactConfigInput ? keyReactConfigInput.value : ''
+
+const BEAR_FIND_MIN_PLAYERS = 2
+const BEAR_FIND_MAX_PLAYERS = 20
+const BEAR_FIND_POSTER_SRC = 'assets/bear-find-start.png'
+const BEAR_FIND_BEAR_VIDEO_SRC = '곰인형.mp4'
+const BEAR_FIND_PANDA_VIDEO_SRC = '판다.mp4'
+
+let bearFindPlayerCount = bearFindCountInput ? Number(bearFindCountInput.value) || 4 : 4
+let bearFindCurrentIndex = 0
+let bearFindWinningIndex = -1
+let bearFindStarted = false
+let bearFindLocked = false
+let bearFindFinished = false
+let bearFindResults = []
+let bearFindCurrentOutcome = ''
+let bearFindVideoVisible = false
+let bearFindStillFrameVisible = false
+let bearFindPendingPlayToken = 0
+let bearFindColorMatchTimer = null
+let bearFindLastColorMatchKey = ''
 
 function getSlotPaletteByTheme() {
   return isDarkThemeEnabled() ? DARK_SLOT_PALETTE : slotPalette
@@ -1922,6 +1962,11 @@ function handlePhysicalGameSelection(button) {
 
   if (button.dataset.physicalGame === 'stay-click') {
     showScreen('physicalKeyReact')
+    return
+  }
+
+  if (button.dataset.physicalGame === 'bear-find') {
+    showScreen('physicalBearFind')
   }
 }
 
@@ -2625,6 +2670,7 @@ function getPreviousStepFallbackTarget(screenKey = getActiveScreenKey()) {
     case 'physicalBomb':
     case 'physicalCircle':
     case 'physicalKeyReact':
+    case 'physicalBearFind':
       return 'physical'
     case 'game1':
     case 'game2':
@@ -2739,6 +2785,11 @@ function showScreen(target, options = {}) {
     stopKeyReactGame({ preservePlayers: true })
   }
 
+
+  if (target !== 'physicalBearFind') {
+    stopBearFindPlayback()
+  }
+
   if (target === 'luck') {
     syncLuckCarousel({ align: true })
   }
@@ -2802,7 +2853,13 @@ function showScreen(target, options = {}) {
     forceScrollToTop()
   }
 
-  document.body.classList.toggle('app-active-game', /^game\d+$/.test(target) || target === 'physicalBalloon' || target === 'physicalBomb' || target === 'physicalCircle' || target === 'physicalKeyReact')
+
+  if (target === 'physicalBearFind') {
+    ensureBearFindReady()
+    forceScrollToTop()
+  }
+
+  document.body.classList.toggle('app-active-game', /^game\d+$/.test(target) || target === 'physicalBalloon' || target === 'physicalBomb' || target === 'physicalCircle' || target === 'physicalKeyReact' || target === 'physicalBearFind')
   updateOrientationGate()
 
   currentScreenKey = target
@@ -13579,6 +13636,547 @@ function handleKeyReactGlobalKeydown(event) {
   }
 }
 
+
+
+function resetBearFindVideoColorMatch() {
+  bearFindLastColorMatchKey = ''
+  if (bearFindColorMatchTimer) {
+    clearTimeout(bearFindColorMatchTimer)
+    bearFindColorMatchTimer = null
+  }
+  ;[bearFindColorMatchR, bearFindColorMatchG, bearFindColorMatchB].forEach((node) => {
+    if (!node) return
+    node.setAttribute('slope', '1')
+    node.setAttribute('intercept', '0')
+  })
+  if (bearFindVideo) {
+    bearFindVideo.classList.remove('is-color-matched')
+  }
+}
+
+function clampBearFindColorValue(value, min, max) {
+  return Math.max(min, Math.min(max, value))
+}
+
+function drawBearFindCover(ctx, source, sourceWidth, sourceHeight, size) {
+  if (!ctx || !source || !sourceWidth || !sourceHeight) return false
+  const scale = Math.max(size / sourceWidth, size / sourceHeight)
+  const drawWidth = sourceWidth * scale
+  const drawHeight = sourceHeight * scale
+  const offsetX = (size - drawWidth) / 2
+  const offsetY = (size - drawHeight) / 2
+  ctx.clearRect(0, 0, size, size)
+  ctx.drawImage(source, offsetX, offsetY, drawWidth, drawHeight)
+  return true
+}
+
+function getBearFindEdgeStats(ctx, size) {
+  const imageData = ctx.getImageData(0, 0, size, size).data
+  const edge = Math.max(12, Math.round(size * 0.16))
+  const centerStart = Math.round(size * 0.26)
+  const centerEnd = Math.round(size * 0.74)
+  const sums = [0, 0, 0]
+  const squares = [0, 0, 0]
+  let count = 0
+
+  for (let y = 0; y < size; y += 2) {
+    for (let x = 0; x < size; x += 2) {
+      const isEdge = x < edge || x >= size - edge || y < edge || y >= size - edge
+      const isCenter = x >= centerStart && x <= centerEnd && y >= centerStart && y <= centerEnd
+      if (!isEdge || isCenter) continue
+
+      const offset = (y * size + x) * 4
+      for (let channel = 0; channel < 3; channel += 1) {
+        const value = imageData[offset + channel]
+        sums[channel] += value
+        squares[channel] += value * value
+      }
+      count += 1
+    }
+  }
+
+  if (!count) return null
+
+  return sums.map((sum, channel) => {
+    const mean = sum / count
+    const variance = Math.max(0, (squares[channel] / count) - (mean * mean))
+    return {
+      mean,
+      std: Math.sqrt(variance)
+    }
+  })
+}
+
+function applyBearFindVideoColorMatchFromStats(posterStats, videoStats, key) {
+  if (!posterStats || !videoStats || !bearFindVideo) return false
+  if (!bearFindColorMatchR || !bearFindColorMatchG || !bearFindColorMatchB) return false
+
+  const funcs = [bearFindColorMatchR, bearFindColorMatchG, bearFindColorMatchB]
+  funcs.forEach((node, channel) => {
+    const poster = posterStats[channel]
+    const video = videoStats[channel]
+    const stdSlope = video.std > 2 ? poster.std / video.std : 1
+    const meanSlope = video.mean > 1 ? poster.mean / video.mean : 1
+    const slope = clampBearFindColorValue((stdSlope * 0.65) + (meanSlope * 0.35), 0.82, 1.18)
+    const intercept = clampBearFindColorValue((poster.mean - (video.mean * slope)) / 255, -0.08, 0.08)
+    node.setAttribute('slope', slope.toFixed(4))
+    node.setAttribute('intercept', intercept.toFixed(4))
+  })
+
+  bearFindLastColorMatchKey = key
+  bearFindVideo.classList.add('is-color-matched')
+  return true
+}
+
+function calibrateBearFindVideoColorMatch() {
+  if (!bearFindVideo || !bearFindPoster) return
+  if (!bearFindVideo.videoWidth || !bearFindVideo.videoHeight) return
+
+  const key = `${bearFindCurrentOutcome || 'idle'}:${bearFindVideo.currentSrc || bearFindVideo.src || ''}`
+  if (bearFindLastColorMatchKey === key && bearFindVideo.classList.contains('is-color-matched')) return
+
+  try {
+    const size = 160
+    const posterCanvas = document.createElement('canvas')
+    const videoCanvas = document.createElement('canvas')
+    posterCanvas.width = size
+    posterCanvas.height = size
+    videoCanvas.width = size
+    videoCanvas.height = size
+    const posterCtx = posterCanvas.getContext('2d', { willReadFrequently: true })
+    const videoCtx = videoCanvas.getContext('2d', { willReadFrequently: true })
+    if (!posterCtx || !videoCtx) return
+
+    const posterReady = bearFindPoster.complete && bearFindPoster.naturalWidth && bearFindPoster.naturalHeight
+    if (!posterReady) return
+
+    drawBearFindCover(posterCtx, bearFindPoster, bearFindPoster.naturalWidth, bearFindPoster.naturalHeight, size)
+    drawBearFindCover(videoCtx, bearFindVideo, bearFindVideo.videoWidth, bearFindVideo.videoHeight, size)
+
+    const posterStats = getBearFindEdgeStats(posterCtx, size)
+    const videoStats = getBearFindEdgeStats(videoCtx, size)
+    applyBearFindVideoColorMatchFromStats(posterStats, videoStats, key)
+  } catch (error) {
+    // 일부 브라우저/파일 실행 환경에서는 비디오 프레임 샘플링이 제한될 수 있다.
+    // 이 경우 원본 비디오를 그대로 보여주되, 레이어/필터는 추가하지 않는다.
+    if (bearFindVideo) {
+      bearFindVideo.classList.remove('is-color-matched')
+    }
+  }
+}
+
+function scheduleBearFindVideoColorMatch(delay = 80) {
+  if (bearFindColorMatchTimer) clearTimeout(bearFindColorMatchTimer)
+  bearFindColorMatchTimer = setTimeout(() => {
+    bearFindColorMatchTimer = null
+    calibrateBearFindVideoColorMatch()
+  }, delay)
+}
+
+function hideBearFindStillFrame() {
+  bearFindStillFrameVisible = false
+  if (!bearFindStillFrame) return
+  bearFindStillFrame.classList.remove('is-active')
+}
+
+function showBearFindStillFrameFromVideo() {
+  if (!bearFindVideo || !bearFindStillFrame) return false
+  if (!bearFindVideo.videoWidth || !bearFindVideo.videoHeight) return false
+
+  try {
+    const ctx = bearFindStillFrame.getContext('2d')
+    if (!ctx) return false
+    bearFindStillFrame.width = bearFindVideo.videoWidth
+    bearFindStillFrame.height = bearFindVideo.videoHeight
+    ctx.clearRect(0, 0, bearFindStillFrame.width, bearFindStillFrame.height)
+    ctx.drawImage(bearFindVideo, 0, 0, bearFindStillFrame.width, bearFindStillFrame.height)
+    bearFindStillFrameVisible = true
+    bearFindStillFrame.classList.add('is-active')
+    return true
+  } catch (error) {
+    hideBearFindStillFrame()
+    return false
+  }
+}
+
+function setBearFindVideoVisible(isVisible) {
+  bearFindVideoVisible = Boolean(isVisible)
+  if (bearFindVideo) {
+    bearFindVideo.classList.toggle('is-active', bearFindVideoVisible)
+  }
+  if (bearFindVideoVisible) {
+    hideBearFindStillFrame()
+  }
+}
+
+function parseBearFindPlayerCount(value) {
+  const count = Number.parseInt(String(value || '').trim(), 10)
+  if (!Number.isFinite(count)) return { status: 'EMPTY' }
+  if (count < BEAR_FIND_MIN_PLAYERS) return { status: 'TOO_FEW', count }
+  if (count > BEAR_FIND_MAX_PLAYERS) return { status: 'TOO_MANY', count }
+  return { status: 'OK', count }
+}
+
+function getBearFindPlayerLabel(index) {
+  return `${index + 1}번 참가자`
+}
+
+function getBearFindOutcomeByIndex(index) {
+  if (index === bearFindWinningIndex) return 'panda'
+  return 'bear'
+}
+
+function getBearFindVideoSrc(outcome) {
+  return outcome === 'panda' ? BEAR_FIND_PANDA_VIDEO_SRC : BEAR_FIND_BEAR_VIDEO_SRC
+}
+
+function updateBearFindFromInput(options = {}) {
+  const { render = true } = options
+  if (!bearFindCountInput) return false
+
+  const parsed = parseBearFindPlayerCount(bearFindCountInput.value)
+  if (parsed.status === 'OK') {
+    bearFindPlayerCount = parsed.count
+    if (!bearFindStarted && !bearFindFinished && bearFindStatusText) {
+      bearFindStatusText.textContent = `참가자 ${parsed.count}명 등록 완료. 시작을 누르면 판다 1개가 랜덤 배정돼.`
+    }
+    if (render) renderBearFindGame()
+    return true
+  }
+
+  if (!bearFindStarted && !bearFindFinished && bearFindStatusText) {
+    const messages = {
+      EMPTY: '참가자 인원수를 입력해줘.',
+      TOO_FEW: `참가자는 최소 ${BEAR_FIND_MIN_PLAYERS}명부터 가능해.`,
+      TOO_MANY: `참가자는 최대 ${BEAR_FIND_MAX_PLAYERS}명까지 가능해.`
+    }
+    bearFindStatusText.textContent = messages[parsed.status] || '참가자 인원수를 확인해줘.'
+  }
+
+  if (render) renderBearFindGame()
+  return false
+}
+
+function setBearFindInputLock(isLocked) {
+  if (!bearFindCountInput) return
+  bearFindCountInput.disabled = isLocked
+  bearFindCountInput.style.opacity = isLocked ? '0.65' : '1'
+  bearFindCountInput.style.cursor = isLocked ? 'not-allowed' : ''
+}
+
+function setBearFindLocked(isLocked) {
+  bearFindLocked = isLocked
+
+  if (bearFindTouchBlocker) {
+    bearFindTouchBlocker.classList.toggle('is-active', isLocked)
+    bearFindTouchBlocker.setAttribute('aria-hidden', isLocked ? 'false' : 'true')
+  }
+
+  if (bearFindStageButton) {
+    bearFindStageButton.disabled = isLocked || !bearFindStarted || bearFindFinished
+    bearFindStageButton.classList.toggle('is-locked', isLocked)
+  }
+}
+
+function stopBearFindPlayback() {
+  resetBearFindVideoColorMatch()
+  bearFindPendingPlayToken += 1
+  setBearFindVideoVisible(false)
+  hideBearFindStillFrame()
+  if (bearFindVideo) {
+    try {
+      bearFindVideo.pause()
+      bearFindVideo.removeAttribute('src')
+      bearFindVideo.load()
+    } catch (error) {}
+  }
+
+  bearFindCurrentOutcome = ''
+  setBearFindLocked(false)
+  renderBearFindGame()
+}
+
+function clearBearFindVideoWithoutFlash() {
+  // 영상 종료 뒤에는 src를 비우지 않는다.
+  // MP4와 PNG는 브라우저의 색공간/감마 처리 방식이 달라 같은 프레임이어도 색이 미세하게 달라질 수 있다.
+  // 그래서 마지막 비디오 프레임을 정지 화면으로 유지해 다음 차례 전환 때 색 튐과 검은 깜빡임을 동시에 막는다.
+  resetBearFindVideoColorMatch()
+  setBearFindVideoVisible(false)
+}
+
+function resetBearFindGame() {
+  stopBearFindPlayback()
+  bearFindStarted = false
+  bearFindFinished = false
+  bearFindLocked = false
+  bearFindCurrentIndex = 0
+  bearFindWinningIndex = -1
+  bearFindResults = []
+  bearFindCurrentOutcome = ''
+  setBearFindInputLock(false)
+
+  if (bearFindStatusText) {
+    bearFindStatusText.textContent = '인원수를 입력한 뒤 시작을 누르면 1번 참가자부터 원하는 순간 상자를 누를 수 있다.'
+  }
+
+  updateBearFindFromInput({ render: false })
+  renderBearFindGame()
+}
+
+function renderBearFindPlayers() {
+  if (!bearFindPlayerList || !bearFindTotalInfo) return
+
+  bearFindTotalInfo.textContent = bearFindPlayerCount ? `총 ${bearFindPlayerCount}명` : '총 0명'
+
+  if (!bearFindPlayerCount) {
+    bearFindPlayerList.innerHTML = '<div class="bear-find-player-empty">인원수를 입력하면 참가자 현황이 표시돼.</div>'
+    return
+  }
+
+  const rows = Array.from({ length: bearFindPlayerCount }, (_, index) => {
+    const result = bearFindResults[index]
+    const isCurrent = bearFindStarted && !bearFindFinished && !result && index === bearFindCurrentIndex
+    const isPanda = result === 'panda'
+    const isBear = result === 'bear'
+    const label = isPanda ? '당첨' : isBear ? '곰인형' : isCurrent ? '현재 차례' : '대기'
+    return `
+      <div class="bear-find-player-item${isCurrent ? ' is-current' : ''}${isBear ? ' is-bear' : ''}${isPanda ? ' is-panda' : ''}">
+        <span class="bear-find-player-dot"></span>
+        <strong>${escapeHtml(getBearFindPlayerLabel(index))}</strong>
+        <span>${label}</span>
+      </div>
+    `
+  }).join('')
+
+  bearFindPlayerList.innerHTML = rows
+}
+
+function renderBearFindGame() {
+  renderBearFindPlayers()
+
+  const isOpening = bearFindLocked && Boolean(bearFindCurrentOutcome)
+  const isPlaying = isOpening && bearFindVideoVisible
+  const canPress = bearFindStarted && !bearFindFinished && !bearFindLocked
+
+  if (bearFindStageButton) {
+    bearFindStageButton.disabled = !canPress
+    bearFindStageButton.classList.toggle('is-playing', isOpening)
+    bearFindStageButton.classList.toggle('is-ready', canPress)
+    bearFindStageButton.classList.toggle('is-finished', bearFindFinished)
+  }
+
+  if (bearFindPoster) {
+    bearFindPoster.src = BEAR_FIND_POSTER_SRC
+    bearFindPoster.classList.toggle('is-hidden', isOpening || bearFindStillFrameVisible)
+  }
+
+  if (bearFindStillFrame) {
+    bearFindStillFrame.classList.toggle('is-active', bearFindStillFrameVisible && !isPlaying)
+  }
+
+  if (bearFindVideo) {
+    bearFindVideo.controls = false
+    bearFindVideo.removeAttribute('controls')
+    bearFindVideo.classList.toggle('is-active', isPlaying)
+    if (!isPlaying) {
+      bearFindVideo.classList.remove('is-color-matched')
+    }
+  }
+
+  if (bearFindPhaseBadge) {
+    if (isOpening) {
+      bearFindPhaseBadge.textContent = '상자 오픈 중'
+    } else if (bearFindFinished) {
+      bearFindPhaseBadge.textContent = '당첨 완료'
+    } else if (bearFindStarted) {
+      bearFindPhaseBadge.textContent = `${bearFindCurrentIndex + 1}번 차례`
+    } else {
+      bearFindPhaseBadge.textContent = '대기'
+    }
+  }
+
+  if (bearFindCurrentLabel) {
+    if (isOpening) {
+      bearFindCurrentLabel.textContent = '상자 오픈 중'
+    } else if (bearFindFinished) {
+      const winnerIndex = bearFindResults.findIndex((item) => item === 'panda')
+      bearFindCurrentLabel.textContent = winnerIndex >= 0 ? `${winnerIndex + 1}번 참가자 당첨` : '게임 종료'
+    } else if (bearFindStarted) {
+      bearFindCurrentLabel.textContent = `${bearFindCurrentIndex + 1}번 참가자 차례`
+    } else {
+      bearFindCurrentLabel.textContent = '시작 전'
+    }
+  }
+
+  if (bearFindStageHint) {
+    if (isOpening) {
+      bearFindStageHint.textContent = '영상이 끝날 때까지 다른 조작은 막힌다.'
+    } else if (bearFindFinished) {
+      bearFindStageHint.textContent = '판다를 찾았어. 리셋 후 다시 시작할 수 있어.'
+    } else if (bearFindStarted) {
+      bearFindStageHint.textContent = `${bearFindCurrentIndex + 1}번 참가자가 원할 때 선물 상자를 눌러줘.`
+    } else {
+      bearFindStageHint.textContent = '시작을 누른 뒤, 현재 참가자가 원할 때 상자를 눌러줘.'
+    }
+  }
+
+  if (startBearFindBtn) {
+    startBearFindBtn.disabled = bearFindStarted && !bearFindFinished
+    startBearFindBtn.textContent = bearFindStarted && !bearFindFinished ? '진행 중' : '시작'
+  }
+}
+
+function ensureBearFindReady() {
+  if (!bearFindPlayerCount) {
+    updateBearFindFromInput({ render: false })
+  }
+  renderBearFindGame()
+}
+
+function startBearFindGame() {
+  if (!bearFindCountInput) return
+
+  const parsed = parseBearFindPlayerCount(bearFindCountInput.value)
+  if (parsed.status !== 'OK') {
+    showPopup('참가자 인원수 확인', `곰찾기 게임은 ${BEAR_FIND_MIN_PLAYERS}~${BEAR_FIND_MAX_PLAYERS}명이 이용 가능해.<br>참가자 인원수를 숫자로 입력해줘.`, { icon: '🎁', allowHtml: true })
+    updateBearFindFromInput()
+    return
+  }
+
+  stopBearFindPlayback()
+  bearFindPlayerCount = parsed.count
+  bearFindStarted = true
+  bearFindFinished = false
+  bearFindLocked = false
+  bearFindCurrentIndex = 0
+  bearFindWinningIndex = Math.floor(Math.random() * bearFindPlayerCount)
+  bearFindResults = []
+  bearFindCurrentOutcome = ''
+  setBearFindInputLock(true)
+
+  if (bearFindStatusText) {
+    bearFindStatusText.textContent = '게임 시작! 현재 참가자가 원할 때 상자를 눌러줘.'
+  }
+
+  renderBearFindGame()
+}
+
+function handleBearFindVideoEnd() {
+  if (!bearFindStarted || !bearFindCurrentOutcome) return
+
+  const finishedIndex = bearFindCurrentIndex
+  const outcome = bearFindCurrentOutcome
+  bearFindResults[finishedIndex] = outcome
+
+  // PNG 포스터로 되돌리면 MP4와 색공간/감마 처리 차이 때문에 같은 프레임도 미세하게 달라 보일 수 있다.
+  // 그래서 영상의 마지막 프레임을 캔버스에 잡아 정지 화면처럼 유지한다.
+  showBearFindStillFrameFromVideo()
+  bearFindCurrentOutcome = ''
+  setBearFindVideoVisible(false)
+  setBearFindLocked(false)
+
+  if (bearFindVideo) {
+    try {
+      bearFindVideo.pause()
+    } catch (error) {}
+  }
+
+  if (outcome === 'panda') {
+    bearFindFinished = true
+    bearFindStarted = false
+    setBearFindInputLock(false)
+
+    if (bearFindStatusText) {
+      bearFindStatusText.textContent = `${finishedIndex + 1}번 참가자가 판다를 찾았어.`
+    }
+
+    renderBearFindGame()
+    showPopup(
+      '당첨!',
+      `<strong>${escapeHtml(getBearFindPlayerLabel(finishedIndex))}</strong>님이 판다를 찾았습니다.<br>당신이 당첨입니다!`,
+      { icon: '🐼', allowHtml: true, popupClass: 'bear-find-result-popup' }
+    )
+    return
+  }
+
+  bearFindCurrentIndex += 1
+
+  if (bearFindStatusText) {
+    bearFindStatusText.textContent = `${finishedIndex + 1}번 참가자는 곰인형이 나왔어. 다음 참가자 차례야.`
+  }
+
+  renderBearFindGame()
+}
+
+function handleBearFindVideoError() {
+  if (!bearFindLocked) return
+
+  const missingSrc = getBearFindVideoSrc(bearFindCurrentOutcome)
+  bearFindCurrentOutcome = ''
+  setBearFindLocked(false)
+
+  if (bearFindVideo) {
+    try {
+      bearFindVideo.pause()
+      setBearFindVideoVisible(false)
+      bearFindVideo.removeAttribute('src')
+      bearFindVideo.load()
+    } catch (error) {}
+  }
+
+  if (bearFindStatusText) {
+    bearFindStatusText.textContent = '영상 파일을 찾지 못했어. 파일명을 확인한 뒤 다시 눌러줘.'
+  }
+
+  renderBearFindGame()
+  showPopup('영상 파일 필요', `${escapeHtml(missingSrc)} 파일을 index.html과 같은 폴더에 넣어줘.`, { icon: '🎬' })
+}
+
+function playBearFindCurrentTurn() {
+  if (!bearFindStarted || bearFindFinished || bearFindLocked) {
+    if (!bearFindStarted && !bearFindFinished) {
+      showPopup('게임 시작 필요', '참가자 인원수를 입력하고 시작 버튼을 먼저 눌러줘.', { icon: '🎁' })
+    }
+    return
+  }
+
+  const outcome = getBearFindOutcomeByIndex(bearFindCurrentIndex)
+  const src = getBearFindVideoSrc(outcome)
+  bearFindCurrentOutcome = outcome
+  setBearFindLocked(true)
+
+  if (bearFindStatusText) {
+    bearFindStatusText.textContent = `${bearFindCurrentIndex + 1}번 참가자 상자 오픈 중...`
+  }
+
+  const playToken = bearFindPendingPlayToken + 1
+  bearFindPendingPlayToken = playToken
+
+  if (bearFindVideo) {
+    resetBearFindVideoColorMatch()
+    setBearFindVideoVisible(false)
+    bearFindVideo.controls = false
+    bearFindVideo.removeAttribute('controls')
+    bearFindVideo.playsInline = true
+    bearFindVideo.poster = BEAR_FIND_POSTER_SRC
+    bearFindVideo.preload = 'auto'
+    bearFindVideo.src = src
+    try {
+      bearFindVideo.currentTime = 0
+    } catch (error) {}
+    bearFindVideo.load()
+  }
+
+  renderBearFindGame()
+
+  const playPromise = bearFindVideo?.play?.()
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.catch(() => {
+      handleBearFindVideoError()
+    })
+  }
+}
+
 if (startBtn) {
   startBtn.addEventListener('click', () => showScreen('menu'))
 }
@@ -13674,6 +14272,44 @@ if (startBombPassBtn) {
 
 if (resetBombPassBtn) {
   resetBombPassBtn.addEventListener('click', resetBombPassGame)
+}
+
+if (bearFindCountInput) {
+  bearFindCountInput.addEventListener('input', () => {
+    if (!bearFindStarted && !bearFindLocked) {
+      updateBearFindFromInput()
+    }
+  })
+
+  bearFindCountInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      startBearFindGame()
+    }
+  })
+}
+
+if (startBearFindBtn) {
+  startBearFindBtn.addEventListener('click', startBearFindGame)
+}
+
+if (resetBearFindBtn) {
+  resetBearFindBtn.addEventListener('click', resetBearFindGame)
+}
+
+if (bearFindStageButton) {
+  bearFindStageButton.addEventListener('click', playBearFindCurrentTurn)
+}
+
+if (bearFindVideo) {
+  bearFindVideo.addEventListener('playing', () => {
+    if (!bearFindCurrentOutcome) return
+    setBearFindVideoVisible(true)
+    renderBearFindGame()
+  })
+  bearFindVideo.addEventListener('ended', handleBearFindVideoEnd)
+  bearFindVideo.addEventListener('error', handleBearFindVideoError)
+  bearFindVideo.addEventListener('contextmenu', (event) => event.preventDefault())
 }
 
 if (circleTapConfigInput) {
