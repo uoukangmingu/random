@@ -491,8 +491,8 @@ let keyReactLastAppliedRawText = keyReactConfigInput ? keyReactConfigInput.value
 const BEAR_FIND_MIN_PLAYERS = 2
 const BEAR_FIND_MAX_PLAYERS = 20
 const BEAR_FIND_POSTER_SRC = 'assets/bear-find-start.png'
-const BEAR_FIND_BEAR_VIDEO_SRC = '곰인형.mp4'
-const BEAR_FIND_PANDA_VIDEO_SRC = '판다.mp4'
+const BEAR_FIND_BEAR_VIDEO_SRC = 'assets/bear-find-bear.mp4'
+const BEAR_FIND_PANDA_VIDEO_SRC = 'assets/bear-find-panda.mp4'
 
 let bearFindPlayerCount = bearFindCountInput ? Number(bearFindCountInput.value) || 4 : 4
 let bearFindCurrentIndex = 0
@@ -675,7 +675,7 @@ const FAST_FORWARD_CARD_CONFIG = {
   2: { title: '경마', state: 'supported', badgeText: '가능' },
   3: { title: '카드 연산 배틀', state: 'none', badgeText: '없음' },
   4: { title: '볼 배틀', state: 'supported', badgeText: '가능' },
-  5: { title: '러시안 룰렛', state: 'none', badgeText: '없음' },
+  5: { title: '러시안 룰렛', state: 'supported', badgeText: '가능' },
   6: { title: '주식게임', state: 'none', badgeText: '없음' },
   7: { title: '투명 사다리 타기', state: 'none', badgeText: '없음' },
   8: { title: '랜덤 룰렛', state: 'none', badgeText: '없음' }
@@ -4563,6 +4563,7 @@ function renderRaceTracks() {
   if (!raceTrackWrap) return
 
   raceTrackWrap.innerHTML = ''
+  raceTrackWrap.style.setProperty('--race-lane-count', String(Math.max(1, raceHorses.length || 1)))
 
   const stageHead = document.createElement('div')
   stageHead.className = 'race-track-stage-head'
@@ -4625,6 +4626,7 @@ function updateHorsePosition(horse) {
 
   if (horse.runnerEl.dataset.progress !== percentText) {
     horse.runnerEl.style.left = percentText
+    horse.runnerEl.style.setProperty('--race-progress', percentText)
     horse.runnerEl.dataset.progress = percentText
   }
 
@@ -9330,8 +9332,11 @@ function renderNavalBoardState() {
   syncRouletteMapLayoutVars()
 
   const gun = document.createElement('div')
-  gun.className = `roulette-gun-core${navalRunning && !navalFinished ? ' is-live' : ''}`
+  const normalizedAimAngle = ((((activeAngle % 360) + 540) % 360) - 180)
+  const isRightAim = normalizedAimAngle > -90 && normalizedAimAngle < 90
+  gun.className = `roulette-gun-core${navalRunning && !navalFinished ? ' is-live' : ''}${isRightAim ? ' is-right-aim' : ''}`
   gun.style.setProperty('--gun-angle', `${activeAngle + 90}deg`)
+  gun.style.setProperty('--gun-target-angle', `${normalizedAimAngle}deg`)
   gun.innerHTML = `
     <span class="roulette-gun-emoji" aria-hidden="true">🔫</span>
   `
