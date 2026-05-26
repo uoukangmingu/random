@@ -120,6 +120,11 @@ const desktopPrevStepBtn = document.getElementById('desktopPrevStepBtn')
 const mobilePrevStepBtn = document.getElementById('mobilePrevStepBtn')
 
 const THEME_STORAGE_KEY = 'roulette-theme-preference'
+
+document.body.classList.toggle('home-screen-mode', screens.home?.classList.contains('active'))
+document.body.classList.toggle('menu-screen-mode', screens.menu?.classList.contains('active'))
+document.body.classList.toggle('physical-screen-mode', screens.physical?.classList.contains('active'))
+document.body.classList.toggle('luck-screen-mode', screens.luck?.classList.contains('active'))
 const AUDIO_STORAGE_KEY = 'roulette-audio-preference'
 
 const configInput = document.getElementById('configInput')
@@ -3474,6 +3479,32 @@ function forceScrollToTop() {
   }
 }
 
+
+function scrollBalloonStageIntoViewAfterStart() {
+  if (!isMobileOrTabletLike()) return
+
+  const target = document.querySelector('#physicalBalloonScreen .balloon-stage-card') || balloonPressArea
+  if (!target) return
+
+  const scrollToTarget = () => {
+    const rect = target.getBoundingClientRect()
+    const currentY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
+    const top = Math.max(0, currentY + rect.top - 12)
+
+    try {
+      window.scrollTo({ top, behavior: 'smooth' })
+    } catch (error) {
+      window.scrollTo(0, top)
+    }
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(scrollToTarget)
+  })
+
+  setTimeout(scrollToTarget, 160)
+}
+
 function forceGame4EntryScrollTop() {
   if (!isMobileOrTabletLike()) return
 
@@ -3624,6 +3655,10 @@ function showScreen(target, options = {}) {
   Object.values(screens).forEach((screen) => screen?.classList.remove('active'))
   screens[target].classList.add('active')
 
+  document.body.classList.toggle('home-screen-mode', target === 'home')
+  document.body.classList.toggle('menu-screen-mode', target === 'menu')
+  document.body.classList.toggle('physical-screen-mode', target === 'physical')
+  document.body.classList.toggle('luck-screen-mode', target === 'luck')
   document.body.classList.toggle('key-react-compact-mode', target === 'physicalKeyReact')
 
   if (target !== 'game1') {
@@ -13440,6 +13475,7 @@ function startBalloonGame() {
 
   setBalloonInputLock(true)
   renderBalloonGame()
+  scrollBalloonStageIntoViewAfterStart()
 }
 
 function stopBalloonHold() {

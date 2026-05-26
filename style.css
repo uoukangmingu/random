@@ -20470,3 +20470,73 @@ html.theme-dark .key-react-stage.is-countdown .key-react-signal-text {
   0%, 100% { transform: scale(1); }
   45% { transform: scale(1.08); }
 }
+
+/* =========================
+   final fix: mobile home vertical centering
+   모바일 홈 화면이 위로 붙지 않도록, 홈 화면에서만 세로 중앙 정렬을 강제한다.
+========================= */
+@media (max-width: 720px) {
+  .app:has(#homeScreen.active) {
+    min-height: 100dvh;
+    align-items: center;
+    justify-content: center;
+    padding-top: max(18px, env(safe-area-inset-top));
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  #homeScreen.home-screen.active {
+    padding-top: 0;
+  }
+
+  #homeScreen.active .home-screen-stack {
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+@supports not selector(.app:has(#homeScreen.active)) {
+  @media (max-width: 720px) {
+    body.home-screen-mode .app {
+      min-height: 100dvh;
+      align-items: center;
+      justify-content: center;
+      padding-top: max(18px, env(safe-area-inset-top));
+      padding-bottom: max(18px, env(safe-area-inset-bottom));
+    }
+
+    body.home-screen-mode #homeScreen.home-screen {
+      padding-top: 0;
+    }
+  }
+}
+
+
+/* =========================
+   final fix: mobile menu/physical/luck vertical centering
+   모바일 메뉴/게임선택 화면이 위로 치우치지 않도록 선택 화면에서만 세로 중앙 정렬
+========================= */
+@media (max-width: 720px) {
+  body.menu-screen-mode .app,
+  body.physical-screen-mode .app,
+  body.luck-screen-mode .app {
+    min-height: 100dvh;
+    align-items: center;
+    justify-content: center;
+    padding-top: max(18px, env(safe-area-inset-top));
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  body.menu-screen-mode #menuScreen,
+  body.physical-screen-mode #physicalScreen,
+  body.luck-screen-mode #luckScreen {
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  body.menu-screen-mode .menu-card,
+  body.physical-screen-mode .physical-card,
+  body.luck-screen-mode .luck-card {
+    margin: 0 auto;
+  }
+}
