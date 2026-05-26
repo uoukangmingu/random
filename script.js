@@ -480,6 +480,7 @@ let circleTapLastAppliedRawText = circleTapConfigInput ? circleTapConfigInput.va
 const KEY_REACT_MIN_PLAYERS = 2
 const KEY_REACT_MAX_PLAYERS = 4
 const KEY_REACT_DEFAULT_KEYS = ['A', 'S', 'K', 'L']
+const KEY_REACT_COUNTDOWN_SECONDS = 5
 const KEY_REACT_STAY_MIN_MS = 1400
 const KEY_REACT_STAY_MAX_MS = 4200
 
@@ -488,6 +489,8 @@ let keyReactPhase = 'idle'
 let keyReactTimer = null
 let keyReactClickStartedAt = 0
 let keyReactResults = []
+let keyReactCountdownLeft = 0
+let keyReactCountdownTimer = null
 let keyReactRoundToken = 0
 let keyReactCapturePlayerId = ''
 let keyReactLastValidConfigText = keyReactConfigInput ? keyReactConfigInput.value : ''
@@ -712,6 +715,11 @@ const BATTLE_MAX_PLAYERS = 8
 const BATTLE_OPERATORS = ['+', '-', '×', '÷']
 const SIM_MAX_PLAYERS = 6
 const SIM_BASE_HP = 50
+const SIM_SUDDEN_DEATH_START_MS = 42000
+const SIM_SUDDEN_DEATH_INTERVAL_MS = 2600
+const SIM_SUDDEN_DEATH_BASE_DAMAGE = 2
+const SIM_SUDDEN_DEATH_MAX_DAMAGE = 8
+const SIM_SUDDEN_DEATH_DAMAGE_STEP_EVERY = 3
 const SIM_STAT_KEYS = ['health', 'attack', 'accuracy', 'defense']
 const SIM_STAT_META = {
   health: { label: '추가 체력', short: '+HP', icon: '❤️' },
@@ -751,6 +759,9 @@ let simBattleToken = 0
 let simCurrentToken = 0
 let simEliminationOrder = []
 let simLastCombatMessageAt = 0
+let simSuddenDeathStarted = false
+let simSuddenDeathLastTickAt = 0
+let simSuddenDeathTickCount = 0
 let simArenaEngine = null
 let simArenaRender = null
 let simArenaRunner = null
@@ -1119,6 +1130,7 @@ const SFX_THROTTLE_MS = {
   raceStumble: 320,
   simImpact: 120,
   simEliminate: 280,
+  simDecay: 700,
   rouletteSpin: 160,
   rouletteEmpty: 120,
   stockTick: 220,
@@ -1636,6 +1648,11 @@ function playSfx(name) {
     case 'simImpact':
       playTone(rand(130, 220), { duration: 0.055, gain: 0.046, type: 'square', slideTo: rand(70, 110), release: 0.05 })
       playNoise({ duration: 0.075, gain: 0.034, filterFreq: 520, filterType: 'lowpass' })
+      break
+    case 'simDecay':
+      playTone(260, { duration: 0.08, gain: 0.044, type: 'sawtooth', slideTo: 155, release: 0.08 })
+      playTone(190, { duration: 0.1, gain: 0.034, type: 'sine', delay: 0.045, slideTo: 96, release: 0.1 })
+      playNoise({ duration: 0.16, gain: 0.035, filterFreq: 520, filterType: 'lowpass', filterQ: 0.7 })
       break
     case 'simEliminate':
       playTone(240, { duration: 0.12, gain: 0.052, type: 'sawtooth', slideTo: 90, release: 0.11 })
@@ -3606,6 +3623,8 @@ function showScreen(target, options = {}) {
   closePopup({ force: true })
   Object.values(screens).forEach((screen) => screen?.classList.remove('active'))
   screens[target].classList.add('active')
+
+  document.body.classList.toggle('key-react-compact-mode', target === 'physicalKeyReact')
 
   if (target !== 'game1') {
     clearSpawnTimers()
@@ -7985,6 +8004,7 @@ function resetSimCardsOnly() {
 }
 
 function clearSimArena() {
+  resetSimSuddenDeathState()
   closeSimArenaZoom()
 
   if (simOverlayRaf) {
@@ -8283,6 +8303,115 @@ function spawnSimHitEffect(player, damage = 0) {
   })
 }
 
+function spawnSimDecayEffect(player, damage = 0) {
+  if (!player || damage <= 0) return
+
+  const label = simOverlayMap.get(player.id)
+  if (label) {
+    label.classList.remove('is-hit')
+    void label.offsetWidth
+    label.classList.add('is-hit')
+    setTimeout(() => label.classList.remove('is-hit'), 320)
+  }
+
+  flashSimBallBody(player, {
+    glowStroke: '#ffb14f',
+    lineWidth: 6,
+    duration: 300
+  })
+
+  spawnSimFloatingBurst(player, {
+    text: `-${damage}`,
+    className: 'sim-hit-burst sim-decay-burst',
+    duration: 780,
+    yOffset: -8
+  })
+}
+
+function resetSimSuddenDeathState() {
+  simSuddenDeathStarted = false
+  simSuddenDeathLastTickAt = 0
+  simSuddenDeathTickCount = 0
+  if (simArenaWrap) {
+    simArenaWrap.classList.remove('is-sudden-death')
+  }
+}
+
+function getSimSuddenDeathDamage() {
+  const escalation = Math.floor(Math.max(0, simSuddenDeathTickCount - 1) / SIM_SUDDEN_DEATH_DAMAGE_STEP_EVERY)
+  return Math.min(SIM_SUDDEN_DEATH_MAX_DAMAGE, SIM_SUDDEN_DEATH_BASE_DAMAGE + escalation)
+}
+
+function updateSimSuddenDeath(now) {
+  if (!simArenaMeta || !simBattleRunning || simBattleFinished) return
+
+  const aliveBefore = simRoundPlayers.filter((player) => player.isAlive)
+  if (aliveBefore.length <= 1) return
+  if (now < SIM_SUDDEN_DEATH_START_MS) return
+
+  if (!simSuddenDeathStarted) {
+    simSuddenDeathStarted = true
+    simSuddenDeathLastTickAt = now
+    simSuddenDeathTickCount = 0
+    if (simArenaWrap) {
+      simArenaWrap.classList.add('is-sudden-death')
+    }
+    playThrottledSfx('simDecay', SFX_THROTTLE_MS.simDecay)
+    syncSimCombatStatus('후반전 돌입! 전투가 길어져 모든 생존자의 체력이 서서히 깎이기 시작한다.', { force: true })
+    return
+  }
+
+  if (now - simSuddenDeathLastTickAt < SIM_SUDDEN_DEATH_INTERVAL_MS) return
+
+  simSuddenDeathLastTickAt = now
+  simSuddenDeathTickCount += 1
+
+  const damage = getSimSuddenDeathDamage()
+  const alive = simRoundPlayers.filter((player) => player.isAlive)
+  if (alive.length <= 1) return
+
+  const hpBefore = new Map(alive.map((player) => [player.id, player.currentHp]))
+  playThrottledSfx('simDecay', SFX_THROTTLE_MS.simDecay)
+
+  alive.forEach((player) => {
+    player.currentHp -= damage
+    spawnSimDecayEffect(player, damage)
+  })
+
+  let deadPlayers = alive.filter((player) => player.currentHp <= 0)
+  let forcedSurvivor = null
+
+  if (deadPlayers.length >= alive.length && alive.length > 1) {
+    forcedSurvivor = [...alive].sort((a, b) => {
+      const hpDiff = (hpBefore.get(b.id) || 0) - (hpBefore.get(a.id) || 0)
+      if (hpDiff !== 0) return hpDiff
+      const statDiff = (b.stats.health + b.stats.attack + b.stats.accuracy + b.stats.defense) - (a.stats.health + a.stats.attack + a.stats.accuracy + a.stats.defense)
+      if (statDiff !== 0) return statDiff
+      return Math.random() < 0.5 ? -1 : 1
+    })[0]
+    forcedSurvivor.currentHp = 1
+    deadPlayers = deadPlayers.filter((player) => player.id !== forcedSurvivor.id)
+  }
+
+  deadPlayers.forEach((player) => {
+    player.currentHp = 0
+    markSimPlayerDead(player, { silent: true })
+  })
+
+  renderSimRanking(getSimRankingData())
+  updateSimArenaOverlay(true)
+
+  if (forcedSurvivor && !simBattleFinished) {
+    syncSimCombatStatus(`후반 체력 감소로 전원이 쓰러질 뻔했다. ${forcedSurvivor.label}이 1 체력으로 버텼다.`, { force: true })
+  } else if (deadPlayers.length) {
+    syncSimCombatStatus(`후반 체력 감소 -${damage}. ${deadPlayers.map((player) => player.label).join(', ')} 탈락.`, { force: true })
+  } else {
+    syncSimCombatStatus(`후반 체력 감소 -${damage}. 전원이 체력을 잃고 있다.`, { force: true })
+  }
+
+  maybeFinishSimBattle()
+}
+
 function spawnSimBombExplosionEffect(bomb, { innerRadius = null, outerRadius = null, duration = 760 } = {}) {
   if (!simHealthOverlay || !simArenaWrap || !simArenaRender || !bomb) return
 
@@ -8420,6 +8549,7 @@ function createSimMapBodies(mapId, width, height) {
 function triggerSimBombExplosion(bomb) {
   if (!bomb || bomb.plugin.exploded || !simArenaWorld) return
   bomb.plugin.exploded = true
+  playThrottledSfx('bombExplosion', 180)
   applySimBombAppearance(bomb, 3)
   bomb.render.strokeStyle = '#ffffff'
   bomb.render.lineWidth = 4
@@ -8674,6 +8804,7 @@ function updateSimMovement() {
 
   const now = simArenaEngine.timing.timestamp
   updateSimArenaHazards(now)
+  updateSimSuddenDeath(now)
   if (!simBattleRunning) return
 
   simRoundPlayers.forEach((player) => {
@@ -8807,9 +8938,10 @@ function getSimRankingData() {
   return [...alive, ...dead]
 }
 
-function syncSimCombatStatus(message) {
+function syncSimCombatStatus(message, options = {}) {
+  const { force = false } = options
   const now = performance.now()
-  if (now - simLastCombatMessageAt < 120) return
+  if (!force && now - simLastCombatMessageAt < 120) return
   simLastCombatMessageAt = now
   if (simStatusText) {
     simStatusText.textContent = message
@@ -9107,6 +9239,9 @@ function maybeFinishSimBattle() {
   releaseFastForward('game4')
   simBattleRunning = false
   simBattleFinished = true
+  if (simArenaWrap) {
+    simArenaWrap.classList.remove('is-sudden-death')
+  }
 
   if (survivors.length === 1) {
     playSfx('simWin')
@@ -9185,6 +9320,7 @@ async function startSimBattle() {
   simEliminationOrder = []
   simBattleFinished = false
   simFinalResultsShown = false
+  resetSimSuddenDeathState()
   clearSimFinalResultsWatchdog()
 
   if (simFinalResultsTimer) {
@@ -14048,6 +14184,7 @@ function getKeyReactResultLabel(player) {
   if (!result) {
     if (keyReactPhase === 'click') return '입력 대기'
     if (keyReactPhase === 'stay') return '누르면 실격'
+    if (keyReactPhase === 'countdown') return '준비 중'
     return '대기'
   }
 
@@ -14165,7 +14302,7 @@ function setKeyReactInputLock(isLocked) {
 
 function updateKeyReactPhaseVisuals() {
   if (keyReactStage) {
-    keyReactStage.classList.remove('is-idle', 'is-stay', 'is-click', 'is-finished', 'is-desktop-blocked')
+    keyReactStage.classList.remove('is-idle', 'is-countdown', 'is-stay', 'is-click', 'is-finished', 'is-desktop-blocked')
     keyReactStage.classList.add(`is-${keyReactPhase}`)
     keyReactStage.classList.toggle('is-desktop-blocked', !canPlayKeyReactOnThisDevice())
   }
@@ -14173,6 +14310,8 @@ function updateKeyReactPhaseVisuals() {
   if (keyReactPhaseBadge) {
     if (!canPlayKeyReactOnThisDevice()) {
       keyReactPhaseBadge.textContent = 'PC 전용'
+    } else if (keyReactPhase === 'countdown') {
+      keyReactPhaseBadge.textContent = `준비 · ${keyReactCountdownLeft}`
     } else if (keyReactPhase === 'stay') {
       keyReactPhaseBadge.textContent = 'STAY'
     } else if (keyReactPhase === 'click') {
@@ -14187,6 +14326,8 @@ function updateKeyReactPhaseVisuals() {
   if (keyReactSignalText) {
     if (!canPlayKeyReactOnThisDevice()) {
       keyReactSignalText.textContent = 'PC ONLY'
+    } else if (keyReactPhase === 'countdown') {
+      keyReactSignalText.textContent = String(keyReactCountdownLeft)
     } else if (keyReactPhase === 'stay') {
       keyReactSignalText.textContent = 'STAY...'
     } else if (keyReactPhase === 'click') {
@@ -14201,8 +14342,10 @@ function updateKeyReactPhaseVisuals() {
   if (keyReactSignalSubText) {
     if (!canPlayKeyReactOnThisDevice()) {
       keyReactSignalSubText.textContent = '이 게임은 키보드 입력이 필요한 컴퓨터 전용 게임입니다.'
+    } else if (keyReactPhase === 'countdown') {
+      keyReactSignalSubText.textContent = '카운트다운이 끝나면 STAY가 나타납니다. 아직 게임 입력은 받지 않습니다.'
     } else if (keyReactPhase === 'stay') {
-      keyReactSignalSubText.textContent = '아직 누르면 안 됩니다. STAY 중 입력은 실격입니다.'
+      keyReactSignalSubText.textContent = '아직 누르면 안 됩니다. 랜덤한 순간 CLICK으로 바뀝니다.'
     } else if (keyReactPhase === 'click') {
       keyReactSignalSubText.textContent = '지금 자신의 지정 키를 눌러주세요.'
     } else if (keyReactPhase === 'finished') {
@@ -14318,11 +14461,11 @@ function renderKeyReactGame() {
   renderKeyReactKeyChips()
   renderKeyReactRanking()
   updateKeyReactPhaseVisuals()
-  setKeyReactInputLock(keyReactPhase === 'stay' || keyReactPhase === 'click')
+  setKeyReactInputLock(keyReactPhase === 'countdown' || keyReactPhase === 'stay' || keyReactPhase === 'click')
 
   if (startKeyReactBtn) {
-    startKeyReactBtn.disabled = keyReactPhase === 'stay' || keyReactPhase === 'click'
-    startKeyReactBtn.textContent = keyReactPhase === 'stay' || keyReactPhase === 'click' ? '진행 중' : '시작'
+    startKeyReactBtn.disabled = keyReactPhase === 'countdown' || keyReactPhase === 'stay' || keyReactPhase === 'click'
+    startKeyReactBtn.textContent = keyReactPhase === 'countdown' || keyReactPhase === 'stay' || keyReactPhase === 'click' ? '진행 중' : '시작'
   }
 }
 
@@ -14375,7 +14518,7 @@ function setKeyReactPlayerKey(playerId, key) {
     const duplicateKeys = getKeyReactDuplicateKeys()
     keyReactStatusText.textContent = duplicateKeys.size
       ? '중복된 키가 있어. 참가자별 키는 서로 달라야 해.'
-      : '키 지정 완료. 시작을 누르면 STAY... 이후 CLICK이 뜬다.'
+      : '키 지정 완료. 시작을 누르면 5초 카운트다운 후 STAY가 뜨고, 랜덤한 순간 CLICK으로 바뀐다.'
   }
 
   renderKeyReactGame()
@@ -14455,16 +14598,53 @@ function startKeyReactGame() {
 
   keyReactRoundToken += 1
   const roundToken = keyReactRoundToken
-  keyReactPhase = 'stay'
+  keyReactPhase = 'countdown'
   keyReactCapturePlayerId = ''
   keyReactResults = []
   keyReactClickStartedAt = 0
   clearKeyReactTimer()
 
-  const stayDuration = Math.round(rand(KEY_REACT_STAY_MIN_MS, KEY_REACT_STAY_MAX_MS))
+  keyReactCountdownLeft = KEY_REACT_COUNTDOWN_SECONDS
 
   if (keyReactStatusText) {
-    keyReactStatusText.textContent = 'STAY... 아직 누르면 안 돼. CLICK이 뜨는 순간 자신의 키를 눌러줘.'
+    keyReactStatusText.textContent = `${KEY_REACT_COUNTDOWN_SECONDS}초 카운트다운 후 STAY가 나타나고, 이후 랜덤한 순간 CLICK으로 바뀌어.`
+  }
+
+  renderKeyReactGame()
+  playSfx('stayBeep')
+
+  keyReactCountdownTimer = setInterval(() => {
+    if (roundToken !== keyReactRoundToken || keyReactPhase !== 'countdown') return
+
+    keyReactCountdownLeft = Math.max(0, keyReactCountdownLeft - 1)
+
+    if (keyReactCountdownLeft > 0) {
+      if (keyReactStatusText) {
+        keyReactStatusText.textContent = `${keyReactCountdownLeft}초 뒤 STAY가 나타납니다.`
+      }
+      playSfx('stayBeep')
+      renderKeyReactGame()
+      return
+    }
+
+    clearKeyReactTimer()
+    beginKeyReactStayPhase(roundToken)
+  }, 1000)
+}
+
+
+function beginKeyReactStayPhase(roundToken = keyReactRoundToken) {
+  if (roundToken !== keyReactRoundToken) return
+
+  keyReactPhase = 'stay'
+  keyReactCountdownLeft = 0
+
+  const stayDuration = Math.round(
+    KEY_REACT_STAY_MIN_MS + Math.random() * (KEY_REACT_STAY_MAX_MS - KEY_REACT_STAY_MIN_MS)
+  )
+
+  if (keyReactStatusText) {
+    keyReactStatusText.textContent = 'STAY... 아직 누르면 실격이야. 언제 CLICK으로 바뀔지 몰라.'
   }
 
   renderKeyReactGame()
@@ -14483,6 +14663,7 @@ function triggerKeyReactClick() {
   }
 
   keyReactPhase = 'click'
+  keyReactCountdownLeft = 0
   keyReactClickStartedAt = performance.now()
   playSfx('clickSignal')
 
@@ -14494,9 +14675,15 @@ function triggerKeyReactClick() {
 }
 
 function clearKeyReactTimer() {
-  if (!keyReactTimer) return
-  clearTimeout(keyReactTimer)
-  keyReactTimer = null
+  if (keyReactTimer) {
+    clearTimeout(keyReactTimer)
+    keyReactTimer = null
+  }
+
+  if (keyReactCountdownTimer) {
+    clearInterval(keyReactCountdownTimer)
+    keyReactCountdownTimer = null
+  }
 }
 
 function stopKeyReactGame(options = {}) {
@@ -14506,6 +14693,7 @@ function stopKeyReactGame(options = {}) {
   keyReactPhase = 'idle'
   keyReactCapturePlayerId = ''
   keyReactClickStartedAt = 0
+  keyReactCountdownLeft = 0
   keyReactResults = []
   if (!preservePlayers) keyReactPlayers = []
   setKeyReactInputLock(false)
@@ -14518,11 +14706,12 @@ function resetKeyReactGame() {
   keyReactPhase = 'idle'
   keyReactCapturePlayerId = ''
   keyReactClickStartedAt = 0
+  keyReactCountdownLeft = 0
   keyReactResults = []
   setKeyReactInputLock(false)
 
   if (keyReactStatusText) {
-    keyReactStatusText.textContent = '참가자와 키를 지정한 뒤 시작을 누르면 STAY... 이후 CLICK이 뜬다.'
+    keyReactStatusText.textContent = '참가자와 키를 지정한 뒤 시작을 누르면 5초 카운트다운 후 STAY가 뜨고, 랜덤한 순간 CLICK으로 바뀐다.'
   }
 
   updateKeyReactFromInput({ render: false })
@@ -14534,6 +14723,7 @@ function finishKeyReactGame() {
 
   clearKeyReactTimer()
   keyReactPhase = 'finished'
+  keyReactCountdownLeft = 0
   keyReactClickStartedAt = 0
   setKeyReactInputLock(false)
 
