@@ -113,10 +113,14 @@ const themeToggleLabel = themeToggleBtn?.querySelector('.utility-btn-label') || 
 const fullscreenToggleBtn = document.getElementById('fullscreenToggleBtn')
 const fullscreenToggleIcon = fullscreenToggleBtn?.querySelector('.utility-btn-icon') || null
 const fullscreenToggleLabel = fullscreenToggleBtn?.querySelector('.utility-btn-label') || null
+const audioToggleBtn = document.getElementById('audioToggleBtn')
+const audioToggleIcon = audioToggleBtn?.querySelector('.utility-btn-icon') || null
+const audioToggleLabel = audioToggleBtn?.querySelector('.utility-btn-label') || null
 const desktopPrevStepBtn = document.getElementById('desktopPrevStepBtn')
 const mobilePrevStepBtn = document.getElementById('mobilePrevStepBtn')
 
 const THEME_STORAGE_KEY = 'roulette-theme-preference'
+const AUDIO_STORAGE_KEY = 'roulette-audio-preference'
 
 const configInput = document.getElementById('configInput')
 const shuffleBtn = document.getElementById('shuffleBtn')
@@ -453,6 +457,7 @@ const BOMB_PASS_VIBRATION_PATTERN = [260, 90, 260, 90, 560]
 let bombPassRunning = false
 let bombPassExploded = false
 let bombPassTimer = null
+let bombPassFuseTimer = null
 let bombPassStartedAt = 0
 let bombPassDuration = 0
 
@@ -1079,6 +1084,884 @@ function escapeHtml(text) {
 }
 
 
+
+function getSavedAudioPreference() {
+  try {
+    const savedAudio = localStorage.getItem(AUDIO_STORAGE_KEY)
+    return savedAudio === 'off' ? 'off' : 'on'
+  } catch (error) {
+    return 'on'
+  }
+}
+
+const siteAudio = {
+  ctx: null,
+  masterGain: null,
+  bgmGain: null,
+  sfxGain: null,
+  bgmFilter: null,
+  bgmTimer: null,
+  bgmProfileKey: '',
+  bgmStep: 0,
+  enabled: getSavedAudioPreference() !== 'off',
+  unlocked: false,
+  hoverReadyAt: 0,
+  lastHoverTarget: null,
+  sfxLastAt: Object.create(null)
+}
+
+const SFX_THROTTLE_MS = {
+  marbleDrop: 85,
+  marbleHit: 70,
+  countdown: 120,
+  chainExplosion: 90,
+  raceHoof: 180,
+  raceStumble: 320,
+  simImpact: 120,
+  simEliminate: 280,
+  rouletteSpin: 160,
+  rouletteEmpty: 120,
+  stockTick: 220,
+  stockUp: 300,
+  stockDown: 300,
+  ladderStep: 140,
+  balloonInflate: 95,
+  bombFuse: 180,
+  circleHit: 70,
+  keyHit: 80,
+  bear: 280
+}
+
+const SCREEN_BGM_PROFILES = {
+  home: {
+    key: 'home',
+    interval: 960,
+    gain: 0.052,
+    wave: 'sine',
+    notes: [329.63, 392.0, 493.88, 587.33, 493.88, 392.0],
+    chords: [[164.81, 246.94], [196.0, 293.66], [220.0, 329.63], [196.0, 293.66]],
+    chordEvery: 4
+  },
+  menu: {
+    key: 'menu',
+    interval: 780,
+    gain: 0.055,
+    wave: 'triangle',
+    notes: [261.63, 329.63, 392.0, 523.25, 392.0, 329.63],
+    chords: [[130.81, 196.0], [146.83, 220.0], [164.81, 246.94], [146.83, 220.0]],
+    chordEvery: 4
+  },
+  physical: {
+    key: 'physical',
+    interval: 640,
+    gain: 0.048,
+    wave: 'triangle',
+    notes: [196.0, 246.94, 293.66, 329.63, 293.66, 246.94],
+    chords: [[98.0, 196.0], [110.0, 220.0], [123.47, 246.94], [110.0, 220.0]],
+    chordEvery: 5
+  },
+  luck: {
+    key: 'luck',
+    interval: 700,
+    gain: 0.052,
+    wave: 'sine',
+    notes: [392.0, 493.88, 587.33, 659.25, 587.33, 493.88],
+    chords: [[196.0, 293.66], [220.0, 329.63], [246.94, 369.99], [220.0, 329.63]],
+    chordEvery: 4
+  },
+  calmGame: {
+    key: 'calmGame',
+    interval: 820,
+    gain: 0.046,
+    wave: 'sine',
+    notes: [293.66, 349.23, 440.0, 523.25, 440.0, 349.23],
+    chords: [[146.83, 220.0], [174.61, 261.63], [196.0, 293.66], [174.61, 261.63]],
+    chordEvery: 4
+  },
+  suspense: {
+    key: 'suspense',
+    interval: 1120,
+    gain: 0.04,
+    wave: 'sine',
+    notes: [146.83, 155.56, 174.61, 155.56, 196.0, 174.61],
+    chords: [[73.42, 146.83], [77.78, 155.56], [87.31, 174.61]],
+    chordEvery: 3
+  },
+  race: {
+    key: 'race',
+    interval: 520,
+    gain: 0.047,
+    wave: 'triangle',
+    notes: [220.0, 293.66, 349.23, 440.0, 349.23, 293.66],
+    chords: [[110.0, 220.0], [146.83, 293.66]],
+    chordEvery: 6
+  },
+  stock: {
+    key: 'stock',
+    interval: 760,
+    gain: 0.044,
+    wave: 'square',
+    notes: [523.25, 493.88, 587.33, 554.37, 659.25, 622.25],
+    chords: [[130.81, 261.63], [164.81, 329.63], [146.83, 293.66]],
+    chordEvery: 5
+  },
+  marble: {
+    key: 'marble',
+    interval: 560,
+    gain: 0.042,
+    wave: 'triangle',
+    notes: [659.25, 587.33, 493.88, 392.0, 493.88, 587.33],
+    chords: [[164.81, 246.94], [196.0, 293.66]],
+    chordEvery: 6
+  },
+  cardBattle: {
+    key: 'cardBattle',
+    interval: 680,
+    gain: 0.043,
+    wave: 'triangle',
+    notes: [329.63, 392.0, 466.16, 523.25, 466.16, 392.0],
+    chords: [[164.81, 246.94], [174.61, 261.63], [196.0, 293.66]],
+    chordEvery: 5
+  },
+  arena: {
+    key: 'arena',
+    interval: 610,
+    gain: 0.038,
+    wave: 'sawtooth',
+    notes: [196.0, 220.0, 246.94, 293.66, 246.94, 220.0],
+    chords: [[98.0, 196.0], [110.0, 220.0]],
+    chordEvery: 6
+  },
+  ladder: {
+    key: 'ladder',
+    interval: 740,
+    gain: 0.043,
+    wave: 'sine',
+    notes: [392.0, 440.0, 523.25, 587.33, 523.25, 440.0],
+    chords: [[196.0, 293.66], [220.0, 329.63], [246.94, 369.99]],
+    chordEvery: 4
+  },
+  balloon: {
+    key: 'balloon',
+    interval: 620,
+    gain: 0.04,
+    wave: 'sine',
+    notes: [392.0, 440.0, 493.88, 587.33, 493.88, 440.0],
+    chords: [[196.0, 293.66], [220.0, 329.63]],
+    chordEvery: 5
+  },
+  bombPass: {
+    key: 'bombPass',
+    interval: 920,
+    gain: 0.038,
+    wave: 'triangle',
+    notes: [196.0, 184.99, 174.61, 164.81, 174.61, 184.99],
+    chords: [[98.0, 146.83], [92.5, 138.59]],
+    chordEvery: 3
+  },
+  precision: {
+    key: 'precision',
+    interval: 690,
+    gain: 0.04,
+    wave: 'triangle',
+    notes: [523.25, 587.33, 659.25, 587.33, 523.25, 493.88],
+    chords: [[261.63, 392.0], [246.94, 369.99]],
+    chordEvery: 4
+  },
+  keyReact: {
+    key: 'keyReact',
+    interval: 520,
+    gain: 0.038,
+    wave: 'square',
+    notes: [440.0, 440.0, 523.25, 440.0, 659.25, 523.25],
+    chords: [[110.0, 220.0], [130.81, 261.63]],
+    chordEvery: 6
+  },
+  bearFind: {
+    key: 'bearFind',
+    interval: 780,
+    gain: 0.044,
+    wave: 'sine',
+    notes: [329.63, 392.0, 493.88, 659.25, 493.88, 392.0],
+    chords: [[164.81, 246.94], [196.0, 293.66]],
+    chordEvery: 4
+  }
+}
+
+function getAudioContextCtor() {
+  return window.AudioContext || window.webkitAudioContext || null
+}
+
+function ensureAudioContext() {
+  if (siteAudio.ctx) return siteAudio.ctx
+
+  const AudioContextCtor = getAudioContextCtor()
+  if (!AudioContextCtor) return null
+
+  const ctx = new AudioContextCtor()
+  const masterGain = ctx.createGain()
+  const bgmGain = ctx.createGain()
+  const sfxGain = ctx.createGain()
+  const bgmFilter = ctx.createBiquadFilter()
+
+  masterGain.gain.value = 0.9
+  bgmGain.gain.value = 0.26
+  sfxGain.gain.value = 0.58
+  bgmFilter.type = 'lowpass'
+  bgmFilter.frequency.value = 2600
+  bgmFilter.Q.value = 0.7
+
+  bgmGain.connect(bgmFilter)
+  bgmFilter.connect(masterGain)
+  sfxGain.connect(masterGain)
+  masterGain.connect(ctx.destination)
+
+  siteAudio.ctx = ctx
+  siteAudio.masterGain = masterGain
+  siteAudio.bgmGain = bgmGain
+  siteAudio.sfxGain = sfxGain
+  siteAudio.bgmFilter = bgmFilter
+  return ctx
+}
+
+function updateAudioToggleButton() {
+  if (!audioToggleBtn) return
+
+  const label = siteAudio.enabled ? '사운드 켬' : '사운드 꺼짐'
+  const action = siteAudio.enabled ? '사운드 끄기' : '사운드 켜기'
+
+  audioToggleBtn.setAttribute('aria-pressed', siteAudio.enabled ? 'true' : 'false')
+  audioToggleBtn.setAttribute('aria-label', action)
+  audioToggleBtn.title = action
+  audioToggleBtn.classList.toggle('is-audio-off', !siteAudio.enabled)
+
+  if (audioToggleIcon) {
+    audioToggleIcon.textContent = siteAudio.enabled ? '🔊' : '🔇'
+  }
+
+  if (audioToggleLabel) {
+    audioToggleLabel.textContent = label
+  }
+}
+
+function scheduleGain(gainNode, startValue, peakValue, endValue, startTime, attack = 0.012, release = 0.16) {
+  if (!gainNode) return
+  gainNode.gain.cancelScheduledValues(startTime)
+  gainNode.gain.setValueAtTime(startValue, startTime)
+  gainNode.gain.linearRampToValueAtTime(peakValue, startTime + attack)
+  gainNode.gain.exponentialRampToValueAtTime(Math.max(0.0001, endValue), startTime + attack + release)
+}
+
+function playTone(freq, options = {}) {
+  const ctx = ensureAudioContext()
+  if (!ctx || !siteAudio.enabled) return null
+
+  const {
+    duration = 0.14,
+    gain = 0.12,
+    type = 'sine',
+    destination = siteAudio.sfxGain,
+    delay = 0,
+    detune = 0,
+    slideTo = null,
+    attack = 0.01,
+    release = duration
+  } = options
+
+  const startTime = ctx.currentTime + delay
+  const oscillator = ctx.createOscillator()
+  const toneGain = ctx.createGain()
+  oscillator.type = type
+  oscillator.frequency.setValueAtTime(freq, startTime)
+  oscillator.detune.setValueAtTime(detune, startTime)
+
+  if (Number.isFinite(slideTo)) {
+    oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), startTime + Math.max(0.03, duration * 0.85))
+  }
+
+  scheduleGain(toneGain, 0.0001, gain, 0.0001, startTime, attack, Math.max(0.035, release))
+  oscillator.connect(toneGain)
+  toneGain.connect(destination || siteAudio.sfxGain)
+  oscillator.start(startTime)
+  oscillator.stop(startTime + duration + 0.08)
+  return oscillator
+}
+
+function playNoise(options = {}) {
+  const ctx = ensureAudioContext()
+  if (!ctx || !siteAudio.enabled) return
+
+  const {
+    duration = 0.18,
+    gain = 0.12,
+    delay = 0,
+    filterType = 'bandpass',
+    filterFreq = 1200,
+    filterQ = 0.8
+  } = options
+
+  const startTime = ctx.currentTime + delay
+  const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * duration))
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+  const data = buffer.getChannelData(0)
+
+  for (let i = 0; i < bufferSize; i += 1) {
+    const fade = 1 - i / bufferSize
+    data[i] = (Math.random() * 2 - 1) * fade
+  }
+
+  const source = ctx.createBufferSource()
+  const filter = ctx.createBiquadFilter()
+  const noiseGain = ctx.createGain()
+
+  source.buffer = buffer
+  filter.type = filterType
+  filter.frequency.value = filterFreq
+  filter.Q.value = filterQ
+  scheduleGain(noiseGain, 0.0001, gain, 0.0001, startTime, 0.005, duration)
+
+  source.connect(filter)
+  filter.connect(noiseGain)
+  noiseGain.connect(siteAudio.sfxGain)
+  source.start(startTime)
+}
+
+
+function playThrottledSfx(name, throttleMs = SFX_THROTTLE_MS[name] || 100) {
+  const now = performance.now()
+  const lastAt = siteAudio.sfxLastAt[name] || 0
+  if (now - lastAt < throttleMs) return false
+  siteAudio.sfxLastAt[name] = now
+  playSfx(name)
+  return true
+}
+
+function playRandomToneCluster(baseFreq, count = 3, options = {}) {
+  const { gap = 0.035, spread = 0.16, gain = 0.035, type = 'triangle', duration = 0.08 } = options
+  for (let index = 0; index < count; index += 1) {
+    const ratio = 1 + rand(-spread, spread)
+    playTone(baseFreq * ratio, {
+      duration: duration * rand(0.78, 1.24),
+      gain: gain * rand(0.72, 1.06),
+      type,
+      delay: index * gap,
+      release: duration * 0.92
+    })
+  }
+}
+
+function playUiClickSfx(target = null) {
+  const element = target instanceof Element ? target : null
+  if (element?.closest('input, textarea, select')) return
+
+  if (element?.closest('.main-btn')) {
+    playSfx('start')
+    return
+  }
+
+  if (element?.closest('.back-btn, .utility-prevstep-btn')) {
+    playSfx('back')
+    return
+  }
+
+  if (element?.closest('.popup-btn')) {
+    playSfx('close')
+    return
+  }
+
+  if (element?.closest('.game-launch, .physical-game-launch, .menu-btn')) {
+    playSfx('select')
+    return
+  }
+
+  if (element?.closest('.action-btn.primary')) {
+    playSfx('start')
+    return
+  }
+
+  if (element?.closest('.action-btn.soft, .action-btn.secondary')) {
+    playSfx('reset')
+    return
+  }
+
+  if (element?.closest('button, a, .luck-carousel-dot, .physical-carousel-dot')) {
+    playSfx('tap')
+  }
+}
+
+function playSfx(name) {
+  const ctx = ensureAudioContext()
+  if (!ctx || !siteAudio.enabled) return
+
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {})
+  }
+
+  switch (name) {
+    case 'tap':
+      playTone(740, { duration: 0.055, gain: 0.055, type: 'triangle', release: 0.06 })
+      break
+    case 'hover':
+      playTone(1050, { duration: 0.045, gain: 0.025, type: 'sine', release: 0.045 })
+      break
+    case 'select':
+      playTone(523.25, { duration: 0.08, gain: 0.07, type: 'triangle', release: 0.08 })
+      playTone(783.99, { duration: 0.1, gain: 0.055, type: 'triangle', delay: 0.045, release: 0.09 })
+      break
+    case 'start':
+      playTone(392.0, { duration: 0.08, gain: 0.07, type: 'sine', release: 0.075 })
+      playTone(587.33, { duration: 0.08, gain: 0.06, type: 'sine', delay: 0.055, release: 0.075 })
+      playTone(783.99, { duration: 0.12, gain: 0.06, type: 'sine', delay: 0.11, release: 0.12 })
+      break
+    case 'back':
+      playTone(420, { duration: 0.09, gain: 0.06, type: 'triangle', slideTo: 260, release: 0.09 })
+      break
+    case 'reset':
+      playTone(330, { duration: 0.09, gain: 0.055, type: 'triangle', slideTo: 220, release: 0.09 })
+      playNoise({ duration: 0.08, gain: 0.035, filterFreq: 900 })
+      break
+    case 'close':
+      playTone(560, { duration: 0.06, gain: 0.045, type: 'triangle', slideTo: 420, release: 0.06 })
+      break
+    case 'screen':
+      playTone(440, { duration: 0.07, gain: 0.035, type: 'sine', release: 0.08 })
+      playTone(660, { duration: 0.08, gain: 0.032, type: 'sine', delay: 0.045, release: 0.08 })
+      break
+    case 'popup':
+      playTone(659.25, { duration: 0.08, gain: 0.06, type: 'sine', release: 0.09 })
+      playTone(880, { duration: 0.12, gain: 0.045, type: 'sine', delay: 0.06, release: 0.12 })
+      break
+    case 'error':
+      playTone(180, { duration: 0.18, gain: 0.06, type: 'sawtooth', slideTo: 130, release: 0.16 })
+      playNoise({ duration: 0.12, gain: 0.03, filterFreq: 260, filterType: 'lowpass' })
+      break
+    case 'result':
+      playTone(523.25, { duration: 0.11, gain: 0.07, type: 'triangle', release: 0.1 })
+      playTone(659.25, { duration: 0.11, gain: 0.065, type: 'triangle', delay: 0.09, release: 0.1 })
+      playTone(783.99, { duration: 0.18, gain: 0.07, type: 'triangle', delay: 0.18, release: 0.18 })
+      playNoise({ duration: 0.22, gain: 0.035, delay: 0.18, filterFreq: 3200, filterType: 'highpass' })
+      break
+    case 'pop':
+      playTone(160, { duration: 0.12, gain: 0.09, type: 'sine', slideTo: 65, release: 0.12 })
+      playNoise({ duration: 0.2, gain: 0.08, filterFreq: 1000 })
+      break
+    case 'bomb':
+      playTone(130, { duration: 0.2, gain: 0.09, type: 'sine', slideTo: 55, release: 0.22 })
+      playNoise({ duration: 0.32, gain: 0.1, filterFreq: 420, filterType: 'lowpass', filterQ: 0.4 })
+      break
+    case 'card':
+      playNoise({ duration: 0.055, gain: 0.04, filterFreq: 2100, filterType: 'bandpass', filterQ: 1.4 })
+      playTone(900, { duration: 0.05, gain: 0.028, type: 'triangle', release: 0.05 })
+      break
+    case 'raceFinish':
+      playTone(587.33, { duration: 0.08, gain: 0.055, type: 'square', release: 0.08 })
+      playTone(783.99, { duration: 0.12, gain: 0.052, type: 'square', delay: 0.07, release: 0.1 })
+      playTone(987.77, { duration: 0.18, gain: 0.05, type: 'square', delay: 0.16, release: 0.16 })
+      break
+    case 'bearOpen':
+      playTone(250, { duration: 0.08, gain: 0.055, type: 'triangle', slideTo: 420, release: 0.08 })
+      playNoise({ duration: 0.12, gain: 0.035, filterFreq: 1800 })
+      break
+    case 'panda':
+      playTone(523.25, { duration: 0.08, gain: 0.065, type: 'sine', release: 0.08 })
+      playTone(659.25, { duration: 0.08, gain: 0.06, type: 'sine', delay: 0.07, release: 0.08 })
+      playTone(1046.5, { duration: 0.2, gain: 0.055, type: 'sine', delay: 0.15, release: 0.18 })
+      break
+    case 'tick':
+      playTone(1180, { duration: 0.035, gain: 0.028, type: 'square', release: 0.035 })
+      break
+    case 'marbleStart':
+      playNoise({ duration: 0.12, gain: 0.035, filterFreq: 2600, filterType: 'highpass' })
+      playTone(392, { duration: 0.08, gain: 0.05, type: 'triangle', release: 0.07 })
+      playTone(587.33, { duration: 0.1, gain: 0.045, type: 'triangle', delay: 0.06, release: 0.1 })
+      break
+    case 'marbleDrop':
+      playTone(rand(720, 1040), { duration: 0.045, gain: 0.022, type: 'triangle', release: 0.04 })
+      break
+    case 'marbleHit':
+      playTone(rand(520, 920), { duration: 0.035, gain: 0.018, type: 'sine', release: 0.035 })
+      break
+    case 'countdown':
+      playTone(880, { duration: 0.055, gain: 0.052, type: 'square', release: 0.045 })
+      playTone(1320, { duration: 0.04, gain: 0.026, type: 'sine', delay: 0.035, release: 0.04 })
+      break
+    case 'chainExplosion':
+      playTone(110, { duration: 0.16, gain: 0.085, type: 'sine', slideTo: 48, release: 0.18 })
+      playNoise({ duration: 0.24, gain: 0.074, filterFreq: 520, filterType: 'lowpass', filterQ: 0.55 })
+      break
+    case 'slotSettle':
+      playRandomToneCluster(740, 4, { gap: 0.055, spread: 0.08, gain: 0.03, type: 'triangle', duration: 0.075 })
+      break
+    case 'shuffle':
+      playNoise({ duration: 0.18, gain: 0.04, filterFreq: 1600, filterType: 'bandpass', filterQ: 1.5 })
+      playRandomToneCluster(620, 3, { gap: 0.04, spread: 0.18, gain: 0.026, type: 'triangle', duration: 0.06 })
+      break
+    case 'raceStart':
+      playTone(392, { duration: 0.1, gain: 0.058, type: 'square', release: 0.1 })
+      playTone(523.25, { duration: 0.1, gain: 0.055, type: 'square', delay: 0.08, release: 0.1 })
+      playTone(783.99, { duration: 0.2, gain: 0.054, type: 'square', delay: 0.16, release: 0.18 })
+      break
+    case 'raceHoof':
+      playTone(180, { duration: 0.032, gain: 0.034, type: 'square', release: 0.028 })
+      playTone(140, { duration: 0.03, gain: 0.026, type: 'square', delay: 0.052, release: 0.026 })
+      playNoise({ duration: 0.035, gain: 0.014, delay: 0.02, filterFreq: 650, filterType: 'bandpass', filterQ: 2 })
+      break
+    case 'raceStumble':
+      playTone(260, { duration: 0.08, gain: 0.045, type: 'sawtooth', slideTo: 150, release: 0.08 })
+      playNoise({ duration: 0.12, gain: 0.04, filterFreq: 520, filterType: 'lowpass' })
+      break
+    case 'battleShuffle':
+      playNoise({ duration: 0.22, gain: 0.05, filterFreq: 2400, filterType: 'bandpass', filterQ: 1.8 })
+      playRandomToneCluster(740, 5, { gap: 0.03, spread: 0.22, gain: 0.024, type: 'triangle', duration: 0.045 })
+      break
+    case 'battleFormula':
+      playTone(440, { duration: 0.07, gain: 0.04, type: 'triangle', release: 0.07 })
+      playTone(554.37, { duration: 0.08, gain: 0.038, type: 'triangle', delay: 0.06, release: 0.08 })
+      playTone(659.25, { duration: 0.11, gain: 0.04, type: 'triangle', delay: 0.13, release: 0.1 })
+      break
+    case 'battleFinal':
+      playTone(523.25, { duration: 0.08, gain: 0.06, type: 'triangle', release: 0.08 })
+      playTone(659.25, { duration: 0.08, gain: 0.058, type: 'triangle', delay: 0.075, release: 0.08 })
+      playTone(783.99, { duration: 0.22, gain: 0.058, type: 'triangle', delay: 0.15, release: 0.2 })
+      break
+    case 'simShuffle':
+      playNoise({ duration: 0.18, gain: 0.04, filterFreq: 1700, filterType: 'bandpass', filterQ: 1.3 })
+      playTone(330, { duration: 0.08, gain: 0.034, type: 'triangle', release: 0.07 })
+      playTone(494, { duration: 0.09, gain: 0.034, type: 'triangle', delay: 0.07, release: 0.08 })
+      break
+    case 'arenaStart':
+      playTone(196, { duration: 0.13, gain: 0.06, type: 'sawtooth', slideTo: 330, release: 0.12 })
+      playTone(392, { duration: 0.18, gain: 0.046, type: 'triangle', delay: 0.08, release: 0.16 })
+      break
+    case 'simImpact':
+      playTone(rand(130, 220), { duration: 0.055, gain: 0.046, type: 'square', slideTo: rand(70, 110), release: 0.05 })
+      playNoise({ duration: 0.075, gain: 0.034, filterFreq: 520, filterType: 'lowpass' })
+      break
+    case 'simEliminate':
+      playTone(240, { duration: 0.12, gain: 0.052, type: 'sawtooth', slideTo: 90, release: 0.11 })
+      playTone(120, { duration: 0.18, gain: 0.04, type: 'sine', delay: 0.08, release: 0.18 })
+      break
+    case 'simWin':
+      playTone(392, { duration: 0.08, gain: 0.055, type: 'triangle', release: 0.08 })
+      playTone(587.33, { duration: 0.08, gain: 0.054, type: 'triangle', delay: 0.075, release: 0.08 })
+      playTone(783.99, { duration: 0.2, gain: 0.055, type: 'triangle', delay: 0.15, release: 0.18 })
+      break
+    case 'rouletteReload':
+      playNoise({ duration: 0.11, gain: 0.046, filterFreq: 950, filterType: 'bandpass', filterQ: 2.2 })
+      playTone(260, { duration: 0.06, gain: 0.036, type: 'triangle', delay: 0.045, slideTo: 210, release: 0.055 })
+      break
+    case 'rouletteSpin':
+      playRandomToneCluster(300, 4, { gap: 0.045, spread: 0.28, gain: 0.026, type: 'square', duration: 0.04 })
+      break
+    case 'rouletteAim':
+      playTone(300, { duration: 0.09, gain: 0.035, type: 'triangle', slideTo: 210, release: 0.08 })
+      break
+    case 'rouletteEmpty':
+      playTone(520, { duration: 0.042, gain: 0.044, type: 'square', release: 0.04 })
+      playNoise({ duration: 0.035, gain: 0.015, filterFreq: 2600, filterType: 'highpass' })
+      break
+    case 'rouletteShot':
+      playTone(90, { duration: 0.12, gain: 0.085, type: 'sine', slideTo: 45, release: 0.12 })
+      playNoise({ duration: 0.22, gain: 0.095, filterFreq: 620, filterType: 'lowpass', filterQ: 0.65 })
+      playNoise({ duration: 0.075, gain: 0.05, filterFreq: 2600, filterType: 'highpass', delay: 0.015 })
+      break
+    case 'rouletteFirework':
+      playTone(740, { duration: 0.06, gain: 0.048, type: 'triangle', release: 0.06 })
+      playTone(988, { duration: 0.14, gain: 0.04, type: 'sine', delay: 0.05, release: 0.14 })
+      playNoise({ duration: 0.12, gain: 0.034, delay: 0.04, filterFreq: 3300, filterType: 'highpass' })
+      break
+    case 'rouletteEliminate':
+      playTone(155, { duration: 0.14, gain: 0.055, type: 'sawtooth', slideTo: 65, release: 0.13 })
+      break
+    case 'stockBell':
+      playTone(880, { duration: 0.09, gain: 0.055, type: 'triangle', release: 0.08 })
+      playTone(1320, { duration: 0.12, gain: 0.045, type: 'triangle', delay: 0.055, release: 0.12 })
+      break
+    case 'stockTick':
+      playTone(880, { duration: 0.032, gain: 0.022, type: 'square', release: 0.028 })
+      break
+    case 'stockUp':
+      playTone(560, { duration: 0.05, gain: 0.032, type: 'triangle', release: 0.05 })
+      playTone(840, { duration: 0.07, gain: 0.026, type: 'triangle', delay: 0.045, release: 0.065 })
+      break
+    case 'stockDown':
+      playTone(540, { duration: 0.06, gain: 0.03, type: 'triangle', slideTo: 280, release: 0.06 })
+      break
+    case 'stockCrash':
+      playTone(260, { duration: 0.12, gain: 0.052, type: 'sawtooth', slideTo: 120, release: 0.11 })
+      playNoise({ duration: 0.16, gain: 0.044, filterFreq: 480, filterType: 'lowpass' })
+      break
+    case 'stockFinal':
+      playTone(659.25, { duration: 0.08, gain: 0.055, type: 'triangle', release: 0.08 })
+      playTone(880, { duration: 0.16, gain: 0.052, type: 'triangle', delay: 0.075, release: 0.14 })
+      break
+    case 'ladderDraw':
+      playNoise({ duration: 0.11, gain: 0.035, filterFreq: 1900, filterType: 'bandpass', filterQ: 1.7 })
+      playTone(410, { duration: 0.08, gain: 0.026, type: 'triangle', release: 0.075 })
+      break
+    case 'ladderStep':
+      playTone(620, { duration: 0.035, gain: 0.024, type: 'triangle', release: 0.035 })
+      break
+    case 'ladderReveal':
+      playRandomToneCluster(740, 5, { gap: 0.055, spread: 0.1, gain: 0.032, type: 'triangle', duration: 0.065 })
+      break
+    case 'ladderWin':
+      playTone(523.25, { duration: 0.08, gain: 0.05, type: 'triangle', release: 0.08 })
+      playTone(783.99, { duration: 0.18, gain: 0.048, type: 'triangle', delay: 0.08, release: 0.16 })
+      break
+    case 'balloonInflate':
+      playTone(180 + balloonPressure * 2.4, { duration: 0.055, gain: 0.028, type: 'sine', slideTo: 220 + balloonPressure * 2.7, release: 0.05 })
+      break
+    case 'balloonWarning':
+      playTone(520, { duration: 0.05, gain: 0.032, type: 'square', release: 0.05 })
+      playTone(400, { duration: 0.05, gain: 0.024, type: 'square', delay: 0.045, release: 0.05 })
+      break
+    case 'balloonPop':
+      playTone(160, { duration: 0.12, gain: 0.095, type: 'sine', slideTo: 55, release: 0.12 })
+      playNoise({ duration: 0.24, gain: 0.085, filterFreq: 1400, filterType: 'bandpass' })
+      break
+    case 'bombFuse':
+      playNoise({ duration: 0.05, gain: 0.026, filterFreq: 3600, filterType: 'highpass', filterQ: 0.9 })
+      playTone(980, { duration: 0.035, gain: 0.02, type: 'sine', release: 0.03 })
+      break
+    case 'bombPassWarning':
+      playTone(260, { duration: 0.06, gain: 0.034, type: 'square', release: 0.055 })
+      break
+    case 'bombExplosion':
+      playTone(120, { duration: 0.18, gain: 0.095, type: 'sine', slideTo: 42, release: 0.2 })
+      playNoise({ duration: 0.36, gain: 0.11, filterFreq: 420, filterType: 'lowpass', filterQ: 0.4 })
+      break
+    case 'circleHit':
+      playTone(760, { duration: 0.035, gain: 0.036, type: 'triangle', release: 0.032 })
+      break
+    case 'circleMiss':
+      playTone(220, { duration: 0.12, gain: 0.06, type: 'sawtooth', slideTo: 80, release: 0.12 })
+      playNoise({ duration: 0.1, gain: 0.035, filterFreq: 360, filterType: 'lowpass' })
+      break
+    case 'stayBeep':
+      playTone(440, { duration: 0.055, gain: 0.036, type: 'square', release: 0.045 })
+      break
+    case 'clickSignal':
+      playTone(880, { duration: 0.08, gain: 0.068, type: 'square', release: 0.07 })
+      playTone(1320, { duration: 0.11, gain: 0.05, type: 'square', delay: 0.055, release: 0.1 })
+      break
+    case 'keyHit':
+      playTone(1040, { duration: 0.035, gain: 0.038, type: 'square', release: 0.032 })
+      break
+    case 'falseStart':
+      playTone(190, { duration: 0.14, gain: 0.06, type: 'sawtooth', slideTo: 110, release: 0.13 })
+      break
+    case 'giftOpen':
+      playTone(240, { duration: 0.07, gain: 0.052, type: 'triangle', slideTo: 470, release: 0.07 })
+      playNoise({ duration: 0.14, gain: 0.04, filterFreq: 2100, filterType: 'bandpass', filterQ: 1.3 })
+      break
+    case 'bear':
+      playTone(330, { duration: 0.08, gain: 0.04, type: 'sine', release: 0.08 })
+      playTone(392, { duration: 0.1, gain: 0.034, type: 'sine', delay: 0.07, release: 0.1 })
+      break
+    case 'pandaWin':
+      playTone(523.25, { duration: 0.08, gain: 0.06, type: 'sine', release: 0.08 })
+      playTone(659.25, { duration: 0.08, gain: 0.058, type: 'sine', delay: 0.065, release: 0.08 })
+      playTone(1046.5, { duration: 0.22, gain: 0.06, type: 'sine', delay: 0.14, release: 0.2 })
+      playNoise({ duration: 0.18, gain: 0.03, delay: 0.14, filterFreq: 3500, filterType: 'highpass' })
+      break
+    default:
+      playTone(620, { duration: 0.07, gain: 0.04, type: 'triangle', release: 0.07 })
+  }
+}
+
+function getBgmProfileForScreen(screenKey) {
+  if (screenKey === 'home') return SCREEN_BGM_PROFILES.home
+  if (screenKey === 'menu') return SCREEN_BGM_PROFILES.menu
+  if (screenKey === 'physical') return SCREEN_BGM_PROFILES.physical
+  if (screenKey === 'physicalBalloon') return SCREEN_BGM_PROFILES.balloon
+  if (screenKey === 'physicalBomb') return SCREEN_BGM_PROFILES.bombPass
+  if (screenKey === 'physicalCircle') return SCREEN_BGM_PROFILES.precision
+  if (screenKey === 'physicalKeyReact') return SCREEN_BGM_PROFILES.keyReact
+  if (screenKey === 'physicalBearFind') return SCREEN_BGM_PROFILES.bearFind
+  if (screenKey === 'luck') return SCREEN_BGM_PROFILES.luck
+  if (screenKey === 'game1') return SCREEN_BGM_PROFILES.marble
+  if (screenKey === 'game2') return SCREEN_BGM_PROFILES.race
+  if (screenKey === 'game3') return SCREEN_BGM_PROFILES.cardBattle
+  if (screenKey === 'game4') return SCREEN_BGM_PROFILES.arena
+  if (screenKey === 'game5') return SCREEN_BGM_PROFILES.suspense
+  if (screenKey === 'game6') return SCREEN_BGM_PROFILES.stock
+  if (screenKey === 'game7') return SCREEN_BGM_PROFILES.ladder
+  if (/^physical/.test(screenKey)) return SCREEN_BGM_PROFILES.physical
+  if (/^game\d+$/.test(screenKey)) return SCREEN_BGM_PROFILES.calmGame
+  return SCREEN_BGM_PROFILES.menu
+}
+
+function playBgmStep(profile) {
+  const ctx = ensureAudioContext()
+  if (!ctx || !siteAudio.enabled || !siteAudio.unlocked) return
+
+  const step = siteAudio.bgmStep % profile.notes.length
+  const freq = profile.notes[step]
+  const noteGain = profile.gain || 0.045
+  const isAccent = step % 4 === 0
+
+  playTone(freq, {
+    duration: isAccent ? 0.42 : 0.28,
+    gain: isAccent ? noteGain * 1.25 : noteGain,
+    type: profile.wave || 'sine',
+    destination: siteAudio.bgmGain,
+    release: isAccent ? 0.42 : 0.26
+  })
+
+  if (profile.chords?.length && profile.chordEvery && siteAudio.bgmStep % profile.chordEvery === 0) {
+    const chord = profile.chords[(siteAudio.bgmStep / profile.chordEvery) % profile.chords.length]
+    chord.forEach((chordFreq, index) => {
+      playTone(chordFreq, {
+        duration: 1.55,
+        gain: noteGain * 0.32,
+        type: 'sine',
+        destination: siteAudio.bgmGain,
+        delay: index * 0.015,
+        attack: 0.08,
+        release: 1.25
+      })
+    })
+  }
+
+  siteAudio.bgmStep += 1
+}
+
+function stopBgm() {
+  if (siteAudio.bgmTimer) {
+    clearInterval(siteAudio.bgmTimer)
+    siteAudio.bgmTimer = null
+  }
+  siteAudio.bgmProfileKey = ''
+  siteAudio.bgmStep = 0
+}
+
+function startBgmForScreen(screenKey = currentScreenKey) {
+  if (!siteAudio.enabled || !siteAudio.unlocked) return
+
+  const ctx = ensureAudioContext()
+  if (!ctx) return
+
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {})
+  }
+
+  const profile = getBgmProfileForScreen(screenKey)
+  if (!profile) return
+  if (siteAudio.bgmProfileKey === profile.key && siteAudio.bgmTimer) return
+
+  stopBgm()
+  siteAudio.bgmProfileKey = profile.key
+  siteAudio.bgmStep = 0
+  playBgmStep(profile)
+  siteAudio.bgmTimer = window.setInterval(() => playBgmStep(profile), profile.interval || 820)
+}
+
+function unlockSiteAudio() {
+  if (!siteAudio.enabled) return
+
+  const ctx = ensureAudioContext()
+  if (!ctx) return
+
+  siteAudio.unlocked = true
+  ctx.resume().then(() => {
+    startBgmForScreen(currentScreenKey)
+  }).catch(() => {})
+}
+
+function setSiteAudioEnabled(enabled) {
+  siteAudio.enabled = Boolean(enabled)
+
+  try {
+    localStorage.setItem(AUDIO_STORAGE_KEY, siteAudio.enabled ? 'on' : 'off')
+  } catch (error) {}
+
+  updateAudioToggleButton()
+
+  if (!siteAudio.enabled) {
+    stopBgm()
+    if (siteAudio.ctx?.state === 'running') {
+      siteAudio.ctx.suspend().catch(() => {})
+    }
+    return
+  }
+
+  unlockSiteAudio()
+  playSfx('select')
+}
+
+function toggleSiteAudio() {
+  setSiteAudioEnabled(!siteAudio.enabled)
+}
+
+function handleAudioPointerUnlock(event) {
+  const target = event.target instanceof Element ? event.target : null
+  unlockSiteAudio()
+
+  if (target?.closest('#audioToggleBtn')) {
+    return
+  }
+
+  playUiClickSfx(target)
+}
+
+function handleAudioHover(event) {
+  if (!siteAudio.enabled || !siteAudio.unlocked || !window.matchMedia('(pointer: fine)').matches) return
+
+  const target = event.target instanceof Element ? event.target.closest('button, a, .game-item, .luck-carousel-dot, .physical-carousel-dot') : null
+  if (!target || target === siteAudio.lastHoverTarget) return
+
+  const now = performance.now()
+  if (now < siteAudio.hoverReadyAt) return
+
+  siteAudio.lastHoverTarget = target
+  siteAudio.hoverReadyAt = now + 140
+  playSfx('hover')
+}
+
+function installSiteAudioInteractions() {
+  updateAudioToggleButton()
+
+  document.addEventListener('pointerdown', handleAudioPointerUnlock, true)
+  document.addEventListener('pointerover', handleAudioHover, true)
+
+  if (audioToggleBtn) {
+    audioToggleBtn.addEventListener('click', toggleSiteAudio)
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (!siteAudio.ctx) return
+
+    if (document.hidden) {
+      stopBgm()
+      if (siteAudio.ctx.state === 'running') {
+        siteAudio.ctx.suspend().catch(() => {})
+      }
+      return
+    }
+
+    if (siteAudio.enabled && siteAudio.unlocked) {
+      siteAudio.ctx.resume().then(() => startBgmForScreen(currentScreenKey)).catch(() => {})
+    }
+  })
+}
+
+function playPopupAudioCue(title, message) {
+  const text = `${title || ''} ${typeof message === 'string' ? message : ''}`
+
+  if (/결과|최종|당첨|완주|성공|우승|판다/.test(text)) {
+    playSfx('result')
+    return
+  }
+
+  if (/오류|불가|확인|초과|중복|필요|실패|차단|지원하지|입력/.test(text)) {
+    playSfx('error')
+    return
+  }
+
+  playSfx('popup')
+}
+
 function getSavedThemePreference() {
   try {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
@@ -1432,6 +2315,8 @@ function showPopup(title, message, options = {}) {
   if (popupOverlay) {
     popupOverlay.classList.remove('hidden')
   }
+
+  playPopupAudioCue(title, message)
 }
 
 function showResultsPopup(resultItems) {
@@ -2871,6 +3756,12 @@ function showScreen(target, options = {}) {
   currentScreenKey = target
   updatePrevStepButtons()
 
+  if (target !== previousScreenKey) {
+    playSfx('screen')
+  }
+
+  startBgmForScreen(target)
+
   if (historyMode === 'replace') {
     commitScreenHistory(target, 'replace')
   } else if (historyMode === 'push' && target !== previousScreenKey) {
@@ -3104,6 +3995,17 @@ function initMatterWorld() {
 
   Events.on(engine, 'beforeUpdate', animateMovingBodies)
   Events.on(engine, 'afterUpdate', scheduleRefreshCounts)
+  Events.on(engine, 'collisionStart', handleGame1CollisionAudio)
+}
+
+function handleGame1CollisionAudio(event) {
+  if (!roundSpawnComplete && !ballBodies.length) return
+  if (!event?.pairs?.length) return
+
+  const hasBallCollision = event.pairs.some((pair) => ballBodies.includes(pair.bodyA) || ballBodies.includes(pair.bodyB))
+  if (hasBallCollision) {
+    playThrottledSfx('marbleHit', SFX_THROTTLE_MS.marbleHit)
+  }
 }
 
 function clearCountdownTimers() {
@@ -3310,6 +4212,7 @@ function finalizeResults() {
   })
 
   refreshCounts()
+  playSfx('slotSettle')
   if (statusText) {
     statusText.textContent = '최종 결과가 반영됐어!'
   }
@@ -3348,6 +4251,7 @@ function startBombCountdown() {
 
   countdownValues.forEach((value, index) => {
     const timer = setTimeout(() => {
+      playThrottledSfx('countdown', SFX_THROTTLE_MS.countdown)
       if (statusText) {
         statusText.textContent = `폭탄 폭발까지 ${value}...`
       }
@@ -3411,12 +4315,14 @@ function triggerBombExplosionChain() {
     return
   }
 
+  playSfx('chainExplosion')
   if (statusText) {
     statusText.textContent = '폭탄 연쇄 폭발 시작...'
   }
 
   bombs.forEach((bomb, index) => {
     const timer = setTimeout(() => {
+      playThrottledSfx('chainExplosion', SFX_THROTTLE_MS.chainExplosion)
       explodeSingleBomb(bomb, index + 1, bombs.length)
 
       if (index === bombs.length - 1) {
@@ -3458,6 +4364,7 @@ function startResultCountdown() {
         return
       }
 
+      playThrottledSfx('countdown', SFX_THROTTLE_MS.countdown)
       if (statusText) {
         statusText.textContent = `결과 공개까지 ${value}...`
       }
@@ -4062,6 +4969,7 @@ function spawnBalls() {
       const y = S(22) + Math.random() * S(12)
 
       createBall(x, y, { isBomb })
+      playThrottledSfx(isBomb ? 'bombFuse' : 'marbleDrop', isBomb ? 160 : SFX_THROTTLE_MS.marbleDrop)
       spawned += 1
 
       if (statusText) {
@@ -4131,6 +5039,7 @@ function startRound() {
   setDrawerState(false)
   setGame1InputLock(true)
   setGame1ShuffleLock(true)
+  playSfx('marbleStart')
   spawnBalls()
 }
 
@@ -4151,6 +5060,7 @@ function shuffleRound() {
   lastAppliedRawText = configInput.value
   buildBoard()
   setDrawerState(false)
+  playSfx('shuffle')
   if (statusText) {
     statusText.textContent = '셔플 완료! 개별 그릇 위치가 랜덤으로 섞였어.'
   }
@@ -4778,6 +5688,7 @@ function shuffleRace() {
   setRaceHorses(shuffleArray(parsed.horses))
   syncRaceInputToCurrentOrder()
   renderRacePreview()
+  playSfx('shuffle')
 
   addRaceCommentary('출전 순서가 랜덤으로 재배치되었습니다. 시작을 누르면 이 순서 그대로 출발합니다.')
 }
@@ -4923,6 +5834,7 @@ function triggerRaceEvent() {
       status: '넘어짐'
     })
     updateHorsePosition(horse)
+    playSfx('raceStumble')
     addRaceCommentary(`${horse.label}, 크게 휘청하며 속도가 확 떨어집니다!`)
     return
   }
@@ -4971,6 +5883,7 @@ function finishHorse(horse) {
   horse.finishOrder = raceFinishOrder.length + 1
   horse.currentStatus = '완주'
   raceFinishOrder.push(horse)
+  playSfx('raceFinish')
   updateHorsePosition(horse)
 
   if (horse.runnerEl) {
@@ -5004,6 +5917,7 @@ function raceFrame(timestamp) {
     raceLastTimestamp = timestamp
   }
 
+  playThrottledSfx('raceHoof', SFX_THROTTLE_MS.raceHoof)
   const speedMultiplier = getFastForwardMultiplier('game2')
   const rawDt = Math.min(0.05, (timestamp - raceLastTimestamp) / 1000)
   const dt = rawDt * speedMultiplier
@@ -5509,6 +6423,7 @@ function prepareBattleRoundRows(roundPlayers) {
 async function playBattleShuffleAnimation(token) {
   if (!battleDeck) return
   battleDeck.classList.add('is-shuffling')
+  playSfx('battleShuffle')
   if (battleStatusText) {
     battleStatusText.textContent = '카드를 섞는 중...'
   }
@@ -5536,6 +6451,7 @@ async function dealBattleCards(roundPlayers, token) {
       requestAnimationFrame(() => {
         cardEl.classList.add('is-dealt')
       })
+      playThrottledSfx('card', 70)
       await sleep(95)
     }
 
@@ -5842,6 +6758,7 @@ async function finalizeBattleIfReady(token) {
   }
 
   const ranking = getBattleRanking(battleRoundPlayers)
+  playSfx('battleFinal')
   renderBattleRanking(ranking)
 
   if (battleStatusText) {
@@ -5882,6 +6799,7 @@ async function handleBattleCardReveal(player, cardIndex) {
   refreshBattleCardAvailability()
 
   targetCard.classList.add('is-flipped')
+  playSfx('card')
   await sleep(260)
   if (!isBattleFlowActive(token)) return
 
@@ -5900,6 +6818,7 @@ async function handleBattleCardReveal(player, cardIndex) {
     }
 
     player.phase1Done = true
+    playSfx('battleFormula')
 
     await showPopupAndWait(
       `${player.label}의 1차 수식 완성`,
@@ -6933,6 +7852,7 @@ async function playSimDealAndReveal(token) {
   if (!simDeck) return
 
   simDeck.classList.add('is-shuffling')
+  playSfx('simShuffle')
   updateSimPhase('카드 셔플')
   if (simStatusText) {
     simStatusText.textContent = '참가자별 스탯 카드를 섞는 중...'
@@ -6966,6 +7886,7 @@ async function playSimDealAndReveal(token) {
         frontValue.textContent = formatSimStatValue(statKey, player.stats[statKey])
       }
       card.classList.add('is-flipped')
+      playSfx('card')
       await sleep(120)
     }
 
@@ -7897,6 +8818,7 @@ function syncSimCombatStatus(message) {
 
 function markSimPlayerDead(player, { silent = false } = {}) {
   if (!player || !player.isAlive) return
+  playSfx('simEliminate')
   player.isAlive = false
   player.currentHp = 0
   simEliminationOrder.push(player)
@@ -7936,6 +8858,7 @@ function markSimPlayerDead(player, { silent = false } = {}) {
 
 function resolveSimPairCombat(playerA, playerB) {
   if (!playerA || !playerB || !playerA.isAlive || !playerB.isAlive) return
+  playThrottledSfx('simImpact', SFX_THROTTLE_MS.simImpact)
 
   const hpBeforeA = playerA.currentHp
   const hpBeforeB = playerB.currentHp
@@ -8186,6 +9109,7 @@ function maybeFinishSimBattle() {
   simBattleFinished = true
 
   if (survivors.length === 1) {
+    playSfx('simWin')
     survivors[0].rankLabel = '우승'
     survivors[0].finalPlace = 1
     const winnerLabel = simOverlayMap.get(survivors[0].id)
@@ -8295,6 +9219,7 @@ async function startSimBattle() {
   }
 
   simBattleRunning = true
+  playSfx('arenaStart')
   syncFastForwardRuntime('game4')
   setSimInputLock(true)
   setSimShuffleLock(true)
@@ -9639,10 +10564,12 @@ async function animateRouletteShot(targetPlayer, shotType) {
   navalBombLayer.innerHTML = ''
   targetNode.classList.add('is-targeted')
   gun.classList.add('is-firing')
+  playSfx('rouletteAim')
 
   const flash = createRouletteEffectNode('roulette-muzzle-flash', startX, startY)
   await sleepRoulette(aimDuration)
 
+  playSfx(shotType === 'hit' ? 'rouletteShot' : shotType === 'firework' ? 'rouletteFirework' : 'rouletteEmpty')
   const beam = document.createElement('div')
   beam.className = `roulette-shot-beam is-${shotType}`
   beam.style.left = `${startX}px`
@@ -9696,6 +10623,7 @@ async function animateRouletteShot(targetPlayer, shotType) {
 
 function reloadRouletteChamberForAlive() {
   const aliveCount = getRouletteCurrentAlivePlayers().length
+  playSfx('rouletteReload')
   buildRouletteChamber(aliveCount)
   addNavalLog(`탄창 리셋 · ${ROULETTE_CHAMBER_CAPACITY}/${ROULETTE_CHAMBER_CAPACITY}`, 'reload')
 }
@@ -9774,6 +10702,7 @@ async function fireRouletteTurn() {
   const isHit = bullet === 'live'
   rouletteShotNumber += 1
   rouletteShotInProgress = true
+  playSfx('rouletteSpin')
 
   renderNavalBoardState()
   updateNavalStatus(`${targetPlayer.label} 차례 · 총구가 타깃을 향했다.`)
@@ -9787,6 +10716,7 @@ async function fireRouletteTurn() {
   }
 
   if (isHit) {
+    playSfx('rouletteEliminate')
     targetPlayer.isAlive = false
     targetPlayer.eliminatedOrder = navalEliminationOrder.length + 1
     navalEliminationOrder.push(targetPlayer)
@@ -9835,6 +10765,7 @@ function startNavalGame() {
   resetNavalBoardState()
   setNavalPlayers(parsed.players)
   buildRouletteChamber(parsed.players.length)
+  playSfx('rouletteReload')
   navalRunning = true
   navalFinished = false
   setNavalInputLock(true)
@@ -11109,6 +12040,13 @@ function updateSingleStockTick(stock, tickIndex) {
   stock.price = nextPrice
   stock.lastChangeValue = nextPrice - prevPrice
   stock.lastChangePct = prevPrice ? stock.lastChangeValue / prevPrice : 0
+  if (Math.abs(stock.lastChangePct) >= 0.032) {
+    playThrottledSfx(stock.lastChangePct > 0 ? 'stockUp' : 'stockCrash', stock.lastChangePct > 0 ? 300 : 420)
+  } else if (Math.abs(stock.lastChangePct) >= 0.014) {
+    playThrottledSfx(stock.lastChangePct > 0 ? 'stockUp' : 'stockDown', stock.lastChangePct > 0 ? 300 : 300)
+  } else {
+    playThrottledSfx('stockTick', SFX_THROTTLE_MS.stockTick)
+  }
   stock.eventText = getStockEventText(stock, stock.lastChangePct)
   stock.history.push(nextPrice)
   if (stock.history.length > STOCK_HISTORY_LENGTH) {
@@ -11167,6 +12105,7 @@ function finishStockGame() {
   setStockInputLock(false)
   setStockSetupLock(false)
   updateStockStatus('게임 종료! 최종 자산이 자동으로 정산됐어.')
+  playSfx('stockFinal')
   renderStockGame()
   showStockResultsPopup()
 }
@@ -11219,6 +12158,7 @@ function startStockGame() {
   setStockInputLock(true)
   setStockSetupLock(true)
   updateStockStatus('실시간 변동 시작! 중간 매도 없이 끝까지 지켜보는 관찰형 주식게임이야.')
+  playSfx('stockBell')
   renderStockGame()
 
   if (stockGameInterval) {
@@ -11242,6 +12182,7 @@ function sellStockHolding(playerId, stockId) {
   holding.sellPrice = getStockMeta(holding.stockId)?.price || holding.buyPrice
 
   updateStockStatus(`${player.label}이(가) ${getStockMeta(stockId)?.name || stockId}을(를) ${formatStockMoney(value)}에 매도했다.`)
+  playSfx('stockBell')
   renderStockBoard()
   renderStockPortfolio()
   renderStockRanking()
@@ -11282,6 +12223,7 @@ function shuffleStockParticipants() {
   resetStockDrafts()
   regenerateStockMarket()
   renderStockGame()
+  playSfx('shuffle')
   updateStockStatus('참가자 순서와 주식 시세를 새로 셔플했어.')
 }
 
@@ -11347,6 +12289,7 @@ function startRace() {
   setRaceInputLock(true)
   setRaceShuffleLock(true)
 
+  playSfx('raceStart')
   addRaceCommentary('게이트 오픈, 경주가 시작되었습니다! 셔플한 레인 순서와 지정 색상 그대로 출발합니다.')
 
   scheduleRaceEventLoop()
@@ -11780,6 +12723,7 @@ function animateLadderRunnerProgress(token, duration) {
 
       const elapsed = now - startedAt
       ladderActiveProgress = clampValue(elapsed / duration, 0, 1)
+      playThrottledSfx('ladderStep', SFX_THROTTLE_MS.ladderStep)
       updateLadderRunnerPosition()
 
       if (ladderActiveProgress >= 1) {
@@ -11953,6 +12897,7 @@ function startLadderGame() {
   setLadderInputLock(true)
   ladderRunToken += 1
 
+  playSfx('ladderDraw')
   if (ladderStatusText) {
     ladderStatusText.textContent = '투명 사다리 시작! 왼쪽 1번 사다리부터 순서대로 내려온다.'
   }
@@ -11990,6 +12935,8 @@ function revealLadderIfComplete() {
   ladderActiveProgress = 0
   setLadderInputLock(false)
 
+  playSfx('ladderReveal')
+  playSfx('ladderWin')
   if (ladderStatusText) {
     ladderStatusText.textContent = '모든 참가자가 사다리를 탔어. 숨겨져 있던 가로 라인과 종합 순위를 공개했어!'
   }
@@ -12350,6 +13297,7 @@ function startBalloonGame() {
   balloonLastValidConfigText = balloonConfigInput.value
   balloonLastAppliedRawText = balloonConfigInput.value
 
+  playSfx('start')
   if (balloonStatusText) {
     balloonStatusText.textContent = '게임 시작! 현재 차례의 참가자가 풍선을 꾹 눌러줘.'
   }
@@ -12402,6 +13350,7 @@ function advanceBalloonTurn() {
     balloonStatusText.textContent = `${currentPlayer.label}님 차례. 풍선을 꾹 눌러줘.`
   }
 
+  playThrottledSfx('tick', 120)
   renderBalloonGame()
 }
 
@@ -12412,6 +13361,7 @@ function popBalloon() {
   stopBalloonHold()
   balloonPopped = true
   balloonGameStarted = false
+  playSfx('balloonPop')
 
   if (balloonPressArea) {
     balloonPressArea.classList.add('is-popped')
@@ -12446,6 +13396,10 @@ function inflateBalloonOnce() {
   if (!balloonGameStarted || balloonPopped || !balloonHolding) return
 
   balloonPressure += rand(BALLOON_MIN_PRESSURE_STEP, BALLOON_MAX_PRESSURE_STEP)
+  playThrottledSfx('balloonInflate', SFX_THROTTLE_MS.balloonInflate)
+  if (balloonBurstPressure && balloonPressure / balloonBurstPressure > 0.72) {
+    playThrottledSfx('balloonWarning', 520)
+  }
 
   if (balloonPressure >= balloonBurstPressure) {
     balloonPressure = balloonBurstPressure
@@ -12584,6 +13538,10 @@ function stopBombPassGame() {
     clearTimeout(bombPassTimer)
     bombPassTimer = null
   }
+  if (bombPassFuseTimer) {
+    clearInterval(bombPassFuseTimer)
+    bombPassFuseTimer = null
+  }
 
   bombPassRunning = false
   bombPassStartedAt = 0
@@ -12612,6 +13570,7 @@ function explodeBombPassGame() {
 
   bombPassRunning = false
   bombPassExploded = true
+  playSfx('bombExplosion')
   vibrateBombPassDevice()
 
   if (bombPassBoom) {
@@ -12648,6 +13607,12 @@ function startBombPassGame() {
   }
 
   updateBombPassGame()
+  playSfx('bombFuse')
+  bombPassFuseTimer = setInterval(() => {
+    if (!bombPassRunning || bombPassExploded) return
+    const elapsedRatio = bombPassDuration ? (Date.now() - bombPassStartedAt) / bombPassDuration : 0
+    playThrottledSfx(elapsedRatio > 0.72 ? 'bombPassWarning' : 'bombFuse', elapsedRatio > 0.72 ? 380 : SFX_THROTTLE_MS.bombFuse)
+  }, 420)
   bombPassTimer = setTimeout(explodeBombPassGame, bombPassDuration)
 }
 
@@ -12912,6 +13877,7 @@ function failCircleTapGame() {
   if (!circleTapStarted || circleTapFinished) return
 
   const loser = getCurrentCircleTapPlayer()
+  playSfx('circleMiss')
   circleTapFinished = true
   circleTapStarted = false
 
@@ -12972,6 +13938,7 @@ function handleCircleTapPointer(event) {
   }
 
   shrinkCircleTapTarget()
+  playThrottledSfx('circleHit', SFX_THROTTLE_MS.circleHit)
   updateCircleTapVisual()
 
   if (circleTapTarget) {
@@ -13501,6 +14468,7 @@ function startKeyReactGame() {
   }
 
   renderKeyReactGame()
+  playSfx('stayBeep')
 
   keyReactTimer = setTimeout(() => {
     if (roundToken !== keyReactRoundToken || keyReactPhase !== 'stay') return
@@ -13516,6 +14484,7 @@ function triggerKeyReactClick() {
 
   keyReactPhase = 'click'
   keyReactClickStartedAt = performance.now()
+  playSfx('clickSignal')
 
   if (keyReactStatusText) {
     keyReactStatusText.textContent = 'CLICK! 지금 자신의 키를 눌러줘.'
@@ -13597,6 +14566,8 @@ function showKeyReactResultsPopup() {
 
 function recordKeyReactResult(player, status, reactionMs = null) {
   if (!player || getKeyReactPlayerResult(player.id)) return
+
+  playSfx(status === 'false-start' ? 'falseStart' : 'keyHit')
 
   keyReactResults.push({
     playerId: player.id,
@@ -14065,6 +15036,7 @@ function startBearFindGame() {
   bearFindCurrentOutcome = ''
   setBearFindInputLock(true)
 
+  playSfx('giftOpen')
   if (bearFindStatusText) {
     bearFindStatusText.textContent = '게임 시작! 현재 참가자가 원할 때 상자를 눌러줘.'
   }
@@ -14093,6 +15065,7 @@ function handleBearFindVideoEnd() {
   }
 
   if (outcome === 'panda') {
+    playSfx('pandaWin')
     bearFindFinished = true
     bearFindStarted = false
     setBearFindInputLock(false)
@@ -14110,6 +15083,7 @@ function handleBearFindVideoEnd() {
     return
   }
 
+  playSfx('bear')
   bearFindCurrentIndex += 1
 
   if (bearFindStatusText) {
@@ -14152,6 +15126,7 @@ function playBearFindCurrentTurn() {
   }
 
   const outcome = getBearFindOutcomeByIndex(bearFindCurrentIndex)
+  playSfx('giftOpen')
   const src = getBearFindVideoSrc(outcome)
   bearFindCurrentOutcome = outcome
   setBearFindLocked(true)
@@ -15099,6 +16074,7 @@ function initCustomCursor() {
 applyThemePreference(getSavedThemePreference(), { persist: false })
 updateFullscreenToggleButton()
 updatePrevStepButtons()
+installSiteAudioInteractions()
 
 updateGame1BallCountText()
 decorateLuckGameFastForwardBadges()

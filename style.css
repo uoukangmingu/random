@@ -6329,6 +6329,11 @@ input,
   opacity: 0.82;
 }
 
+.utility-audio-btn.is-audio-off {
+  opacity: 0.78;
+  background: rgba(245, 239, 235, 0.92);
+}
+
 .utility-desktop-only {
   display: inline-flex;
 }
