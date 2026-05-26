@@ -507,6 +507,117 @@ const BEAR_FIND_POSTER_SRC = 'assets/bear-find-start.png'
 const BEAR_FIND_BEAR_VIDEO_SRC = 'assets/bear-find-bear.mp4'
 const BEAR_FIND_PANDA_VIDEO_SRC = 'assets/bear-find-panda.mp4'
 
+const PHONE_PASS_TURN_COUNT = 8
+
+function isPhonePassPhysicalMode() {
+  return isTouchDevice() && getViewportShortSide() <= 820
+}
+
+function createPhonePassPlayers(prefix, count = PHONE_PASS_TURN_COUNT) {
+  const palette = getCommonPlayerPaletteByTheme()
+  const names = ['분홍', '민트', '하늘', '노랑', '보라', '주황', '초록', '라벤더']
+
+  return Array.from({ length: count }, (_, index) => ({
+    id: `${prefix}-pass-${index + 1}`,
+    label: names[index % names.length],
+    color: palette[index % palette.length] || '#ff82ad',
+    isPhonePassVirtual: true
+  }))
+}
+
+function setGameStartButtonRunningState(button, isRunning, options = {}) {
+  if (!button) return
+
+  const running = Boolean(isRunning)
+  const { busyText = '진행 중', restoreText = true } = options
+
+  if (!button.dataset.defaultStartText) {
+    button.dataset.defaultStartText = button.textContent || '시작'
+  }
+
+  button.disabled = running
+  button.classList.toggle('is-game-running', running)
+  button.setAttribute('aria-pressed', running ? 'true' : 'false')
+  button.setAttribute('aria-disabled', running ? 'true' : 'false')
+
+  if (restoreText) {
+    button.textContent = running ? busyText : button.dataset.defaultStartText
+  }
+
+  if (running) {
+    button.title = '게임 진행 중에는 다시 시작할 수 없습니다.'
+  } else {
+    button.removeAttribute('title')
+  }
+}
+
+function setPhysicalStartButtonRunningState(button, isRunning) {
+  setGameStartButtonRunningState(button, isRunning, { busyText: '진행 중' })
+}
+
+function isKeyReactRunning() {
+  return keyReactPhase === 'countdown' || keyReactPhase === 'stay' || keyReactPhase === 'click'
+}
+
+function updateAllGameStartButtonRunningStates() {
+  setGameStartButtonRunningState(startGameBtn, typeof hasLiveRound === 'function' && hasLiveRound(), { busyText: '진행 중' })
+  setGameStartButtonRunningState(startRaceBtn, raceRunning && !raceFinished, { busyText: '진행 중' })
+  setGameStartButtonRunningState(startBattleBtn, battleGameRunning, { busyText: '진행 중' })
+  setGameStartButtonRunningState(startSimSetupBtn, simSetupRunning, { busyText: '진행 중' })
+  if (startSimBattleBtn && !simBattleRunning && (!simSetupDone || !simRoundPlayers.length)) {
+    startSimBattleBtn.disabled = true
+    startSimBattleBtn.classList.remove('is-game-running')
+    startSimBattleBtn.setAttribute('aria-disabled', 'true')
+    startSimBattleBtn.setAttribute('aria-pressed', 'false')
+    if (startSimBattleBtn.dataset.defaultStartText) {
+      startSimBattleBtn.textContent = startSimBattleBtn.dataset.defaultStartText
+    }
+    startSimBattleBtn.title = '스탯 공개가 끝난 뒤 전투를 시작할 수 있습니다.'
+  } else {
+    setGameStartButtonRunningState(startSimBattleBtn, simBattleRunning, { busyText: '전투 중' })
+  }
+  setGameStartButtonRunningState(startNavalBtn, navalRunning && !navalFinished, { busyText: '진행 중' })
+  setGameStartButtonRunningState(startStockBtn, stockGameRunning, { busyText: '진행 중' })
+  setGameStartButtonRunningState(startLadderBtn, ladderAutoRunning || (ladderGameStarted && !ladderRevealed), { busyText: '진행 중' })
+  setGameStartButtonRunningState(startBalloonBtn, balloonGameStarted && !balloonPopped, { busyText: '진행 중' })
+  setGameStartButtonRunningState(startBombPassBtn, bombPassRunning, { busyText: '진행 중' })
+  setGameStartButtonRunningState(startCircleTapBtn, circleTapStarted && !circleTapFinished, { busyText: '진행 중' })
+  setGameStartButtonRunningState(startKeyReactBtn, isKeyReactRunning(), { busyText: '진행 중' })
+  setGameStartButtonRunningState(startBearFindBtn, bearFindStarted && !bearFindFinished, { busyText: '진행 중' })
+}
+
+function scheduleGameStartButtonStateSync() {
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(updateAllGameStartButtonRunningStates)
+  } else {
+    setTimeout(updateAllGameStartButtonRunningStates, 0)
+  }
+}
+
+function isUsingBalloonPhonePassMode() {
+  return isPhonePassPhysicalMode()
+}
+
+function isUsingCircleTapPhonePassMode() {
+  return canPlayCircleTapOnThisDevice()
+}
+
+function ensureBalloonPhonePassPlayers() {
+  if (!isUsingBalloonPhonePassMode()) return false
+  if (!balloonPlayers.length || !balloonPlayers.every((player) => player.isPhonePassVirtual)) {
+    balloonPlayers = createPhonePassPlayers('balloon')
+  }
+  return true
+}
+
+function ensureCircleTapPhonePassPlayers() {
+  if (!isUsingCircleTapPhonePassMode()) return false
+  if (!circleTapPlayers.length || !circleTapPlayers.every((player) => player.isPhonePassVirtual)) {
+    circleTapPlayers = createPhonePassPlayers('circle-tap')
+  }
+  return true
+}
+
 let bearFindPlayerCount = bearFindCountInput ? Number(bearFindCountInput.value) || 4 : 4
 let bearFindCurrentIndex = 0
 let bearFindWinningIndex = -1
@@ -3659,6 +3770,10 @@ function showScreen(target, options = {}) {
   document.body.classList.toggle('menu-screen-mode', target === 'menu')
   document.body.classList.toggle('physical-screen-mode', target === 'physical')
   document.body.classList.toggle('luck-screen-mode', target === 'luck')
+  document.body.classList.toggle('physical-balloon-mode', target === 'physicalBalloon')
+  document.body.classList.toggle('physical-bomb-mode', target === 'physicalBomb')
+  document.body.classList.toggle('physical-circle-mode', target === 'physicalCircle')
+  document.body.classList.toggle('physical-bearfind-mode', target === 'physicalBearFind')
   document.body.classList.toggle('key-react-compact-mode', target === 'physicalKeyReact')
 
   if (target !== 'game1') {
@@ -5070,6 +5185,7 @@ function clearBallsOnly() {
 }
 
 function startRound() {
+  if (typeof hasLiveRound === 'function' && hasLiveRound()) return
   if (!configInput) return
 
   const parsed = parseConfigToSlots(configInput.value)
@@ -11312,9 +11428,7 @@ function setStockSetupLock(isLocked) {
     shuffleStockBtn.style.cursor = isLocked ? 'not-allowed' : ''
   }
 
-  if (startStockBtn) {
-    startStockBtn.disabled = false
-  }
+  setGameStartButtonRunningState(startStockBtn, stockGameRunning, { busyText: '진행 중' })
 
   if (stockCardScreen) {
     stockCardScreen.classList.toggle('stock-setup-locked', isLocked)
@@ -12425,6 +12539,7 @@ function resetStockGame() {
 }
 
 function startRace() {
+  if (raceRunning && !raceFinished) return
   if (!raceConfigInput) return
 
   const parsed = parseRaceConfigToHorses(raceConfigInput.value)
@@ -13047,7 +13162,7 @@ async function runLadderAutoSequence(token) {
 }
 
 function startLadderGame() {
-  if (!ladderConfigInput || ladderAutoRunning) return
+  if (!ladderConfigInput || ladderAutoRunning || (ladderGameStarted && !ladderRevealed)) return
 
   const parsed = parseLadderPlayers(ladderConfigInput.value)
   if (parsed.status !== 'OK') {
@@ -13407,15 +13522,25 @@ function renderBalloonPlayers() {
 function renderBalloonGame() {
   renderBalloonPlayers()
 
+  const passMode = isUsingBalloonPhonePassMode()
   const currentPlayer = getCurrentBalloonPlayer()
   const currentColor = currentPlayer?.color || getCommonPlayerPaletteByTheme()[0] || '#ff6f9f'
+  const currentColorName = currentPlayer?.label || '현재'
 
   if (balloonPressArea) {
     balloonPressArea.style.setProperty('--balloon-current-color', currentColor)
   }
 
   if (balloonTurnBadge) {
-    if (balloonPopped && currentPlayer) {
+    if (passMode) {
+      if (balloonPopped) {
+        balloonTurnBadge.textContent = '당첨'
+      } else if (balloonGameStarted) {
+        balloonTurnBadge.textContent = `${currentColorName} 차례`
+      } else {
+        balloonTurnBadge.textContent = '대기'
+      }
+    } else if (balloonPopped && currentPlayer) {
       balloonTurnBadge.textContent = `${currentPlayer.label} 당첨`
     } else if (balloonGameStarted && currentPlayer) {
       balloonTurnBadge.textContent = `${currentPlayer.label} 차례`
@@ -13424,8 +13549,22 @@ function renderBalloonGame() {
     }
   }
 
+  if (balloonStatusText && passMode && !balloonGameStarted && !balloonPopped) {
+    balloonStatusText.textContent = '시작을 누른 뒤 휴대폰을 넘겨줘. 풍선 색이 바뀌면 다음 사람이 누르면 돼.'
+  }
+
   if (balloonStageHint) {
-    if (balloonPopped && currentPlayer) {
+    if (passMode) {
+      if (balloonPopped) {
+        balloonStageHint.textContent = '풍선이 터졌어. 지금 휴대폰을 들고 있던 사람이 당첨이야.'
+      } else if (balloonHolding) {
+        balloonStageHint.textContent = '누르는 중... 손을 떼면 다음 차례로 넘어가.'
+      } else if (balloonGameStarted) {
+        balloonStageHint.textContent = `${currentColorName} 색 차례. 현재 들고 있는 사람이 풍선을 길게 눌러줘.`
+      } else {
+        balloonStageHint.textContent = '시작을 누른 뒤, 현재 차례 참가자가 풍선을 길게 눌러줘.'
+      }
+    } else if (balloonPopped && currentPlayer) {
       balloonStageHint.textContent = `${currentPlayer.label}님이 풍선을 터뜨렸어. 리셋 후 다시 시작할 수 있어.`
     } else if (balloonHolding && currentPlayer) {
       balloonStageHint.textContent = `${currentPlayer.label}님이 누르는 중... 손을 떼기 전까지 계속 커져.`
@@ -13436,46 +13575,63 @@ function renderBalloonGame() {
     }
   }
 
+  setPhysicalStartButtonRunningState(startBalloonBtn, balloonGameStarted && !balloonPopped)
   updateBalloonVisual()
 }
 
 function ensureBalloonReady() {
-  if (!balloonPlayers.length) {
+  if (isUsingBalloonPhonePassMode()) {
+    ensureBalloonPhonePassPlayers()
+  } else if (!balloonPlayers.length) {
     updateBalloonFromInput({ render: false })
   }
   renderBalloonGame()
 }
 
 function startBalloonGame() {
-  if (!balloonConfigInput) return
+  if (balloonGameStarted && !balloonPopped) return
 
-  const parsed = parseBalloonPlayers(balloonConfigInput.value)
+  const passMode = isUsingBalloonPhonePassMode()
+  let parsed = null
 
-  if (parsed.status !== 'OK') {
-    const maxText = `${BALLOON_MIN_PLAYERS}~${BALLOON_MAX_PLAYERS}`
-    showPopup('참가자 등록 확인', `풍선 불기 게임은 ${maxText}명이 이용 가능해.<br>참가자 이름은 쉼표로 구분하고 중복 없이 입력해줘.`, { icon: '⚠️', allowHtml: true })
-    updateBalloonFromInput()
-    return
+  if (passMode) {
+    ensureBalloonPhonePassPlayers()
+  } else {
+    if (!balloonConfigInput) return
+
+    parsed = parseBalloonPlayers(balloonConfigInput.value)
+
+    if (parsed.status !== 'OK') {
+      const maxText = `${BALLOON_MIN_PLAYERS}~${BALLOON_MAX_PLAYERS}`
+      showPopup('참가자 등록 확인', `풍선 불기 게임은 ${maxText}명이 이용 가능해.<br>참가자 이름은 쉼표로 구분하고 중복 없이 입력해줘.`, { icon: '⚠️', allowHtml: true })
+      updateBalloonFromInput()
+      return
+    }
+
+    balloonPlayers = parsed.players
+    balloonLastValidConfigText = balloonConfigInput.value
+    balloonLastAppliedRawText = balloonConfigInput.value
   }
 
-  balloonPlayers = parsed.players
   balloonGameStarted = true
   balloonPopped = false
   balloonHolding = false
   balloonCurrentIndex = 0
   balloonPressure = 0
   balloonBurstPressure = Number(rand(BALLOON_MIN_BURST_PRESSURE, BALLOON_MAX_BURST_PRESSURE).toFixed(3))
-  balloonLastValidConfigText = balloonConfigInput.value
-  balloonLastAppliedRawText = balloonConfigInput.value
 
   playSfx('start')
   if (balloonStatusText) {
-    balloonStatusText.textContent = '게임 시작! 현재 차례의 참가자가 풍선을 꾹 눌러줘.'
+    balloonStatusText.textContent = passMode
+      ? '게임 시작! 지금 휴대폰을 든 사람이 풍선을 길게 눌러줘.'
+      : '게임 시작! 현재 차례의 참가자가 풍선을 꾹 눌러줘.'
   }
 
-  setBalloonInputLock(true)
+  setBalloonInputLock(!passMode)
   renderBalloonGame()
-  scrollBalloonStageIntoViewAfterStart()
+  if (!passMode) {
+    scrollBalloonStageIntoViewAfterStart()
+  }
 }
 
 function stopBalloonHold() {
@@ -13488,6 +13644,7 @@ function stopBalloonHold() {
 }
 
 function resetBalloonGame() {
+  const passMode = isUsingBalloonPhonePassMode()
   stopBalloonHold()
   balloonGameStarted = false
   balloonPopped = false
@@ -13495,6 +13652,10 @@ function resetBalloonGame() {
   balloonPressure = 0
   balloonBurstPressure = 0
   setBalloonInputLock(false)
+
+  if (passMode) {
+    balloonPlayers = createPhonePassPlayers('balloon')
+  }
 
   if (balloonVisual) {
     balloonVisual.classList.remove('is-popped', 'is-warning', 'is-danger')
@@ -13505,21 +13666,28 @@ function resetBalloonGame() {
   }
 
   if (balloonStatusText) {
-    balloonStatusText.textContent = '참가자를 등록한 뒤 시작을 누르면 첫 번째 참가자부터 풍선을 꾹 누를 수 있다.'
+    balloonStatusText.textContent = passMode
+      ? '시작을 누른 뒤 휴대폰을 넘겨줘. 풍선 색이 바뀌면 다음 사람이 누르면 돼.'
+      : '참가자를 등록한 뒤 시작을 누르면 첫 번째 참가자부터 풍선을 꾹 누를 수 있다.'
   }
 
-  updateBalloonFromInput({ render: false })
+  if (!passMode) {
+    updateBalloonFromInput({ render: false })
+  }
   renderBalloonGame()
 }
 
 function advanceBalloonTurn() {
   if (!balloonGameStarted || balloonPopped || !balloonPlayers.length) return
 
+  const passMode = isUsingBalloonPhonePassMode()
   balloonCurrentIndex = (balloonCurrentIndex + 1) % balloonPlayers.length
   const currentPlayer = getCurrentBalloonPlayer()
 
   if (balloonStatusText && currentPlayer) {
-    balloonStatusText.textContent = `${currentPlayer.label}님 차례. 풍선을 꾹 눌러줘.`
+    balloonStatusText.textContent = passMode
+      ? `${currentPlayer.label} 색으로 바뀌었어. 다음 사람이 풍선을 꾹 눌러줘.`
+      : `${currentPlayer.label}님 차례. 풍선을 꾹 눌러줘.`
   }
 
   playThrottledSfx('tick', 120)
@@ -13529,6 +13697,7 @@ function advanceBalloonTurn() {
 function popBalloon() {
   if (balloonPopped) return
 
+  const passMode = isUsingBalloonPhonePassMode()
   const loser = getCurrentBalloonPlayer()
   stopBalloonHold()
   balloonPopped = true
@@ -13549,13 +13718,21 @@ function popBalloon() {
     balloonPopEffect.classList.add('is-active')
   }
 
-  if (balloonStatusText && loser) {
-    balloonStatusText.textContent = `${loser.label}님이 풍선을 터뜨렸어.`
+  if (balloonStatusText) {
+    balloonStatusText.textContent = passMode
+      ? '풍선이 터졌어. 지금 휴대폰을 들고 있던 사람이 당첨이야.'
+      : (loser ? `${loser.label}님이 풍선을 터뜨렸어.` : '풍선이 터졌어.')
   }
 
   renderBalloonGame()
 
-  if (loser) {
+  if (passMode) {
+    showPopup(
+      '풍선 터짐!',
+      '지금 휴대폰을 들고 있던 사람이 당첨입니다.<br>리셋 후 다시 시작할 수 있어요.',
+      { icon: '🎈', allowHtml: true, popupClass: 'balloon-result-popup' }
+    )
+  } else if (loser) {
     showPopup(
       '풍선 터짐!',
       `<strong>${escapeHtml(loser.label)}</strong>님이 풍선을 터뜨렸습니다.<br>이번 게임의 당첨자입니다.`,
@@ -13587,12 +13764,16 @@ function inflateBalloonOnce() {
 function startBalloonPress(event) {
   if (event?.cancelable) event.preventDefault()
 
+  const passMode = isUsingBalloonPhonePassMode()
+
   if (!balloonGameStarted || balloonPopped) {
-    if (!balloonPlayers.length) {
+    if (passMode) {
+      ensureBalloonPhonePassPlayers()
+    } else if (!balloonPlayers.length) {
       updateBalloonFromInput()
     }
     if (!balloonGameStarted && !balloonPopped) {
-      showPopup('게임 시작 필요', '참가자를 등록한 뒤 시작 버튼을 먼저 눌러줘.', { icon: '🎈' })
+      showPopup('게임 시작 필요', passMode ? '시작 버튼을 먼저 눌러줘.' : '참가자를 등록한 뒤 시작 버튼을 먼저 눌러줘.', { icon: '🎈' })
     }
     return
   }
@@ -13638,11 +13819,7 @@ function canPlayBombPassOnThisDevice() {
 }
 
 function setBombPassControlsLocked(isLocked) {
-  if (startBombPassBtn) {
-    startBombPassBtn.disabled = isLocked
-    startBombPassBtn.style.opacity = isLocked ? '0.55' : '1'
-    startBombPassBtn.style.cursor = isLocked ? 'not-allowed' : ''
-  }
+  setPhysicalStartButtonRunningState(startBombPassBtn, isLocked)
 }
 
 function updateBombPassGame() {
@@ -13926,11 +14103,21 @@ function renderCircleTapGame() {
   renderCircleTapPlayers()
 
   const canPlay = canPlayCircleTapOnThisDevice()
+  const passMode = isUsingCircleTapPhonePassMode()
   const currentPlayer = getCurrentCircleTapPlayer()
+  const currentColorName = currentPlayer?.label || '현재'
 
   if (circleTapTurnBadge) {
     if (!canPlay) {
       circleTapTurnBadge.textContent = '모바일 전용'
+    } else if (passMode) {
+      if (circleTapFinished) {
+        circleTapTurnBadge.textContent = '탈락'
+      } else if (circleTapStarted) {
+        circleTapTurnBadge.textContent = `${currentColorName} 차례`
+      } else {
+        circleTapTurnBadge.textContent = '대기'
+      }
     } else if (circleTapFinished && currentPlayer) {
       circleTapTurnBadge.textContent = `${currentPlayer.label} 탈락`
     } else if (circleTapStarted && currentPlayer) {
@@ -13940,9 +14127,21 @@ function renderCircleTapGame() {
     }
   }
 
+  if (circleTapStatusText && passMode && !circleTapStarted && !circleTapFinished) {
+    circleTapStatusText.textContent = '시작을 누른 뒤 휴대폰을 넘겨줘. 원 색이 바뀌면 다음 사람이 누르면 돼.'
+  }
+
   if (circleTapStageHint) {
     if (!canPlay) {
       circleTapStageHint.textContent = '작아지는 원은 손가락 터치 판정이 핵심이라 모바일에서만 이용할 수 있어.'
+    } else if (passMode) {
+      if (circleTapFinished) {
+        circleTapStageHint.textContent = '원 밖을 눌렀어. 지금 터치한 사람이 탈락이야.'
+      } else if (circleTapStarted) {
+        circleTapStageHint.textContent = `${currentColorName} 색 차례. 현재 들고 있는 사람이 원 안쪽을 정확히 눌러줘.`
+      } else {
+        circleTapStageHint.textContent = '시작을 누른 뒤, 현재 차례 참가자가 색상 원 안쪽을 정확히 눌러줘.'
+      }
     } else if (circleTapFinished && currentPlayer) {
       circleTapStageHint.textContent = `${currentPlayer.label}님이 원 밖을 눌러 탈락했어. 리셋 후 다시 시작할 수 있어.`
     } else if (circleTapStarted && currentPlayer) {
@@ -13952,33 +14151,44 @@ function renderCircleTapGame() {
     }
   }
 
+  setPhysicalStartButtonRunningState(startCircleTapBtn, circleTapStarted && !circleTapFinished)
   updateCircleTapVisual()
 }
 
 function ensureCircleTapReady() {
-  if (!circleTapPlayers.length) {
+  if (isUsingCircleTapPhonePassMode()) {
+    ensureCircleTapPhonePassPlayers()
+  } else if (!circleTapPlayers.length) {
     updateCircleTapFromInput({ render: false })
   }
   renderCircleTapGame()
 }
 
 function startCircleTapGame() {
+  if (circleTapStarted && !circleTapFinished) return
+
   if (!canPlayCircleTapOnThisDevice()) {
     showPopup('모바일 전용 게임', '작아지는 원은 손가락으로 원 안쪽을 정확히 누르는 모바일 전용 게임이야. 모바일에서 접속해줘.', { icon: '📱' })
     renderCircleTapGame()
     return
   }
 
-  if (!circleTapConfigInput) return
-  const parsed = parseCircleTapPlayers(circleTapConfigInput.value)
+  const passMode = isUsingCircleTapPhonePassMode()
+  if (passMode) {
+    ensureCircleTapPhonePassPlayers()
+  } else {
+    if (!circleTapConfigInput) return
+    const parsed = parseCircleTapPlayers(circleTapConfigInput.value)
 
-  if (parsed.status !== 'OK') {
-    showPopup('참가자 등록 확인', `작아지는 원 게임은 ${CIRCLE_TAP_MIN_PLAYERS}~${CIRCLE_TAP_MAX_PLAYERS}명이 이용 가능해.<br>참가자 이름은 쉼표로 구분하고 중복 없이 입력해줘.`, { icon: '⚠️', allowHtml: true })
-    updateCircleTapFromInput()
-    return
+    if (parsed.status !== 'OK') {
+      showPopup('참가자 등록 확인', `작아지는 원 게임은 ${CIRCLE_TAP_MIN_PLAYERS}~${CIRCLE_TAP_MAX_PLAYERS}명이 이용 가능해.<br>참가자 이름은 쉼표로 구분하고 중복 없이 입력해줘.`, { icon: '⚠️', allowHtml: true })
+      updateCircleTapFromInput()
+      return
+    }
+
+    setCircleTapPlayers(parsed.players)
   }
 
-  setCircleTapPlayers(parsed.players)
   circleTapStarted = true
   circleTapFinished = false
   circleTapCurrentIndex = 0
@@ -13990,10 +14200,12 @@ function startCircleTapGame() {
   }
 
   if (circleTapStatusText) {
-    circleTapStatusText.textContent = '게임 시작! 현재 차례 참가자는 자기 색상 원 안쪽을 정확히 눌러줘.'
+    circleTapStatusText.textContent = passMode
+      ? '게임 시작! 지금 휴대폰을 든 사람이 원 안쪽을 정확히 눌러줘.'
+      : '게임 시작! 현재 차례 참가자는 자기 색상 원 안쪽을 정확히 눌러줘.'
   }
 
-  setCircleTapInputLock(true)
+  setCircleTapInputLock(!passMode)
   renderCircleTapGame()
 }
 
@@ -14007,6 +14219,7 @@ function stopCircleTapGame(options = {}) {
 }
 
 function resetCircleTapGame() {
+  const passMode = isUsingCircleTapPhonePassMode()
   circleTapStarted = false
   circleTapFinished = false
   circleTapCurrentIndex = 0
@@ -14014,25 +14227,36 @@ function resetCircleTapGame() {
   circleTapSuccessCount = 0
   setCircleTapInputLock(false)
 
+  if (passMode) {
+    circleTapPlayers = createPhonePassPlayers('circle-tap')
+  }
+
   if (circleTapMissEffect) {
     circleTapMissEffect.classList.remove('is-active')
   }
 
   if (circleTapStatusText) {
-    circleTapStatusText.textContent = '참가자를 등록한 뒤 시작을 누르면 현재 차례의 색상 원을 정확히 눌러줘.'
+    circleTapStatusText.textContent = passMode
+      ? '시작을 누른 뒤 휴대폰을 넘겨줘. 원 색이 바뀌면 다음 사람이 누르면 돼.'
+      : '참가자를 등록한 뒤 시작을 누르면 현재 차례의 색상 원을 정확히 눌러줘.'
   }
 
-  updateCircleTapFromInput({ render: false })
+  if (!passMode) {
+    updateCircleTapFromInput({ render: false })
+  }
   renderCircleTapGame()
 }
 
 function advanceCircleTapTurn() {
   if (!circleTapStarted || circleTapFinished || !circleTapPlayers.length) return
+  const passMode = isUsingCircleTapPhonePassMode()
   circleTapCurrentIndex = (circleTapCurrentIndex + 1) % circleTapPlayers.length
   const currentPlayer = getCurrentCircleTapPlayer()
 
   if (circleTapStatusText && currentPlayer) {
-    circleTapStatusText.textContent = `${currentPlayer.label}님 차례. 원 안쪽을 정확히 눌러줘.`
+    circleTapStatusText.textContent = passMode
+      ? `${currentPlayer.label} 색으로 바뀌었어. 다음 사람이 원 안쪽을 정확히 눌러줘.`
+      : `${currentPlayer.label}님 차례. 원 안쪽을 정확히 눌러줘.`
   }
 
   renderCircleTapGame()
@@ -14048,6 +14272,7 @@ function shrinkCircleTapTarget() {
 function failCircleTapGame() {
   if (!circleTapStarted || circleTapFinished) return
 
+  const passMode = isUsingCircleTapPhonePassMode()
   const loser = getCurrentCircleTapPlayer()
   playSfx('circleMiss')
   circleTapFinished = true
@@ -14059,13 +14284,21 @@ function failCircleTapGame() {
     circleTapMissEffect.classList.add('is-active')
   }
 
-  if (circleTapStatusText && loser) {
-    circleTapStatusText.textContent = `${loser.label}님이 원 밖을 눌러 탈락했어.`
+  if (circleTapStatusText) {
+    circleTapStatusText.textContent = passMode
+      ? '원 밖을 눌렀어. 지금 터치한 사람이 탈락이야.'
+      : (loser ? `${loser.label}님이 원 밖을 눌러 탈락했어.` : '원 밖을 눌러 탈락했어.')
   }
 
   renderCircleTapGame()
 
-  if (loser) {
+  if (passMode) {
+    showPopup(
+      '원 밖 터치!',
+      '지금 터치한 사람이 탈락입니다.<br>리셋 후 다시 시작할 수 있어요.',
+      { icon: '⭕', allowHtml: true, popupClass: 'circle-tap-result-popup' }
+    )
+  } else if (loser) {
     showPopup(
       '원 밖 터치!',
       `<strong>${escapeHtml(loser.label)}</strong>님이 원 밖을 눌렀습니다.<br>이번 게임의 탈락자입니다.`,
@@ -14098,7 +14331,7 @@ function handleCircleTapPointer(event) {
   }
 
   if (!circleTapStarted || circleTapFinished) {
-    showPopup('게임 시작 필요', '참가자를 등록한 뒤 시작 버튼을 먼저 눌러줘.', { icon: '⭕' })
+    showPopup('게임 시작 필요', isUsingCircleTapPhonePassMode() ? '시작 버튼을 먼저 눌러줘.' : '참가자를 등록한 뒤 시작 버튼을 먼저 눌러줘.', { icon: '⭕' })
     return
   }
 
@@ -14499,10 +14732,7 @@ function renderKeyReactGame() {
   updateKeyReactPhaseVisuals()
   setKeyReactInputLock(keyReactPhase === 'countdown' || keyReactPhase === 'stay' || keyReactPhase === 'click')
 
-  if (startKeyReactBtn) {
-    startKeyReactBtn.disabled = keyReactPhase === 'countdown' || keyReactPhase === 'stay' || keyReactPhase === 'click'
-    startKeyReactBtn.textContent = keyReactPhase === 'countdown' || keyReactPhase === 'stay' || keyReactPhase === 'click' ? '진행 중' : '시작'
-  }
+  setGameStartButtonRunningState(startKeyReactBtn, isKeyReactRunning(), { busyText: '진행 중' })
 }
 
 function ensureKeyReactReady() {
@@ -14607,6 +14837,8 @@ function validateKeyReactStart() {
 }
 
 function startKeyReactGame() {
+  if (isKeyReactRunning()) return
+
   if (!canPlayKeyReactOnThisDevice()) {
     showPopup('PC 전용 게임', 'STAY CLICK은 키보드 입력이 필요한 컴퓨터 전용 피지컬 게임이야. PC에서 이용해줘.', { icon: '🖥️' })
     renderKeyReactGame()
@@ -15228,10 +15460,7 @@ function renderBearFindGame() {
     }
   }
 
-  if (startBearFindBtn) {
-    startBearFindBtn.disabled = bearFindStarted && !bearFindFinished
-    startBearFindBtn.textContent = bearFindStarted && !bearFindFinished ? '진행 중' : '시작'
-  }
+  setGameStartButtonRunningState(startBearFindBtn, bearFindStarted && !bearFindFinished, { busyText: '진행 중' })
 }
 
 function ensureBearFindReady() {
@@ -15242,6 +15471,7 @@ function ensureBearFindReady() {
 }
 
 function startBearFindGame() {
+  if (bearFindStarted && !bearFindFinished) return
   if (!bearFindCountInput) return
 
   const parsed = parseBearFindPlayerCount(bearFindCountInput.value)
@@ -15434,6 +15664,29 @@ comingSoonButtons.forEach((button) => {
 
 physicalGameLaunchButtons.forEach((button) => {
   bindPhysicalGameItemInteraction(button)
+})
+
+const allGameStartButtons = [
+  startGameBtn,
+  startRaceBtn,
+  startBattleBtn,
+  startSimSetupBtn,
+  startSimBattleBtn,
+  startNavalBtn,
+  startStockBtn,
+  startLadderBtn,
+  startBalloonBtn,
+  startBombPassBtn,
+  startCircleTapBtn,
+  startKeyReactBtn,
+  startBearFindBtn
+].filter(Boolean)
+
+allGameStartButtons.forEach((button) => {
+  if (!button.dataset.defaultStartText) {
+    button.dataset.defaultStartText = button.textContent || '시작'
+  }
+  button.addEventListener('click', scheduleGameStartButtonStateSync, true)
 })
 
 
@@ -16322,6 +16575,8 @@ setRaceInputLock(false)
 setRaceShuffleLock(false)
 setSimInputLock(false)
 setSimShuffleLock(false)
+updateAllGameStartButtonRunningStates()
+setInterval(updateAllGameStartButtonRunningStates, 180)
 
 if (configInput) {
   updateSlotsFromInput({ build: false })

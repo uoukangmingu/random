@@ -20540,3 +20540,814 @@ html.theme-dark .key-react-stage.is-countdown .key-react-signal-text {
     margin: 0 auto;
   }
 }
+
+/* =========================
+   mobile physical redesign: M1/M2/M3 no-scroll compact play screens + M5 mobile ordering
+========================= */
+@media (max-width: 767px) {
+  body.physical-balloon-mode,
+  body.physical-bomb-mode,
+  body.physical-circle-mode {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  body.physical-balloon-mode .background-deco,
+  body.physical-bomb-mode .background-deco,
+  body.physical-circle-mode .background-deco {
+    display: none;
+  }
+
+  body.physical-balloon-mode .app,
+  body.physical-bomb-mode .app,
+  body.physical-circle-mode .app {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    align-items: stretch;
+    padding: max(6px, env(safe-area-inset-top)) 8px max(6px, env(safe-area-inset-bottom));
+  }
+
+  body.physical-balloon-mode #physicalBalloonScreen,
+  body.physical-bomb-mode #physicalBombScreen,
+  body.physical-circle-mode #physicalCircleScreen {
+    height: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  body.physical-balloon-mode .balloon-card-screen,
+  body.physical-bomb-mode .bomb-pass-card-screen,
+  body.physical-circle-mode .circle-tap-card-screen {
+    height: 100%;
+    min-height: 0;
+    padding: clamp(8px, 1.5dvh, 12px);
+    border-radius: 24px;
+    overflow: hidden;
+  }
+
+  body.physical-balloon-mode .balloon-layout,
+  body.physical-bomb-mode .bomb-pass-layout,
+  body.physical-circle-mode .circle-tap-layout {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(7px, 1.2dvh, 10px);
+  }
+
+  body.physical-balloon-mode .balloon-main,
+  body.physical-circle-mode .circle-tap-main,
+  body.physical-balloon-mode .balloon-sidebar,
+  body.physical-circle-mode .circle-tap-sidebar,
+  body.physical-balloon-mode .balloon-sidebar-inner,
+  body.physical-circle-mode .circle-tap-sidebar-inner {
+    display: contents;
+  }
+
+  body.physical-balloon-mode .balloon-main-header,
+  body.physical-bomb-mode .bomb-pass-main-header,
+  body.physical-circle-mode .circle-tap-main-header {
+    order: 1;
+    flex: 0 0 auto;
+    padding: 0 4px;
+    gap: 6px;
+  }
+
+  body.physical-balloon-mode .game-mini-badge,
+  body.physical-bomb-mode .game-mini-badge,
+  body.physical-circle-mode .game-mini-badge {
+    margin-bottom: 7px;
+    padding: 7px 12px;
+    font-size: clamp(0.76rem, 3vw, 0.92rem);
+  }
+
+  body.physical-balloon-mode .balloon-main-header h2,
+  body.physical-bomb-mode .bomb-pass-main-header h2,
+  body.physical-circle-mode .circle-tap-main-header h2 {
+    font-size: clamp(2rem, 9vw, 2.65rem);
+    line-height: 0.95;
+    margin-bottom: 6px;
+  }
+
+  body.physical-balloon-mode .balloon-main-header .sub-text,
+  body.physical-bomb-mode .bomb-pass-main-header .sub-text,
+  body.physical-circle-mode .circle-tap-main-header .sub-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: clamp(0.88rem, 3.4vw, 1rem);
+    line-height: 1.42;
+  }
+
+  body.physical-balloon-mode .balloon-stage-card,
+  body.physical-bomb-mode .bomb-pass-stage-card,
+  body.physical-circle-mode .circle-tap-stage-card {
+    order: 2;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: clamp(10px, 1.8dvh, 14px);
+    border-radius: 22px;
+    gap: clamp(7px, 1.2dvh, 10px);
+    overflow: hidden;
+  }
+
+  body.physical-balloon-mode .balloon-panel-head,
+  body.physical-bomb-mode .bomb-pass-panel-head,
+  body.physical-circle-mode .circle-tap-panel-head {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+  }
+
+  body.physical-balloon-mode .balloon-panel-head h3,
+  body.physical-bomb-mode .bomb-pass-panel-head h3,
+  body.physical-circle-mode .circle-tap-panel-head h3 {
+    font-size: clamp(1.05rem, 4vw, 1.28rem);
+    margin-bottom: 0;
+  }
+
+  body.physical-balloon-mode .balloon-panel-head .sub-text,
+  body.physical-bomb-mode .bomb-pass-panel-head .sub-text,
+  body.physical-circle-mode .circle-tap-panel-head .sub-text {
+    display: none;
+  }
+
+  body.physical-balloon-mode .balloon-turn-badge,
+  body.physical-bomb-mode .bomb-pass-state-badge,
+  body.physical-circle-mode .circle-tap-turn-badge {
+    min-height: 32px;
+    padding: 7px 11px;
+    font-size: 0.82rem;
+  }
+
+  body.physical-balloon-mode .balloon-press-area,
+  body.physical-bomb-mode .bomb-pass-stage,
+  body.physical-circle-mode .circle-tap-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    border-radius: 22px;
+  }
+
+  body.physical-balloon-mode .balloon-press-area {
+    min-height: clamp(210px, 35dvh, 330px);
+  }
+
+  body.physical-bomb-mode .bomb-pass-stage {
+    min-height: clamp(210px, 35dvh, 330px);
+  }
+
+  body.physical-circle-mode .circle-tap-stage {
+    min-height: clamp(210px, 36dvh, 340px);
+  }
+
+  body.physical-balloon-mode .balloon-body {
+    width: clamp(96px, 27vw, 124px);
+    height: clamp(118px, 33vw, 148px);
+  }
+
+  body.physical-balloon-mode .balloon-pressure-number {
+    font-size: clamp(2rem, 8vw, 2.7rem);
+  }
+
+  body.physical-circle-mode .circle-tap-target {
+    width: min(var(--circle-tap-size), 84vw, 38dvh);
+    height: min(var(--circle-tap-size), 84vw, 38dvh);
+  }
+
+  body.physical-bomb-mode .bomb-pass-visual {
+    width: min(58vw, 250px, 30dvh);
+    height: min(58vw, 250px, 30dvh);
+  }
+
+  body.physical-bomb-mode .bomb-pass-body {
+    width: min(42vw, 188px, 23dvh);
+    height: min(42vw, 188px, 23dvh);
+  }
+
+  body.physical-bomb-mode .bomb-pass-fuse {
+    top: 10px;
+    left: 53%;
+    transform: rotate(22deg) scale(0.86);
+    transform-origin: left center;
+  }
+
+  body.physical-balloon-mode .balloon-stage-hint,
+  body.physical-circle-mode .circle-tap-stage-hint {
+    flex: 0 0 auto;
+    min-height: 0;
+    padding: 9px 12px;
+    border-radius: 16px;
+    font-size: clamp(0.82rem, 3.2vw, 0.96rem);
+    line-height: 1.4;
+  }
+
+  body.physical-balloon-mode .balloon-sidebar .sidebar-head,
+  body.physical-circle-mode .circle-tap-sidebar .sidebar-head,
+  body.physical-balloon-mode .balloon-sidebar .input-card,
+  body.physical-circle-mode .circle-tap-sidebar .input-card,
+  body.physical-balloon-mode .balloon-player-card,
+  body.physical-circle-mode .circle-tap-player-card {
+    display: none !important;
+  }
+
+  body.physical-balloon-mode .balloon-sidebar .controls-wrap,
+  body.physical-circle-mode .circle-tap-sidebar .controls-wrap,
+  body.physical-bomb-mode .bomb-pass-control-card {
+    order: 3;
+    flex: 0 0 auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0 4px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    display: grid;
+    gap: 7px;
+  }
+
+  body.physical-balloon-mode .balloon-button-row,
+  body.physical-circle-mode .circle-tap-button-row,
+  body.physical-bomb-mode .bomb-pass-button-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(10px, 3vw, 16px);
+    margin: 0;
+  }
+
+  body.physical-balloon-mode .action-btn,
+  body.physical-circle-mode .action-btn,
+  body.physical-bomb-mode .action-btn {
+    width: 100%;
+    min-height: clamp(44px, 6.2dvh, 58px);
+    padding: 10px 8px;
+    font-size: clamp(1rem, 4.4vw, 1.28rem);
+    font-weight: 900;
+  }
+
+  body.physical-balloon-mode .status-text,
+  body.physical-circle-mode .status-text,
+  body.physical-bomb-mode .bomb-pass-status-text,
+  body.physical-bomb-mode .bomb-pass-device-text {
+    margin: 0;
+    min-height: 0;
+    padding: 8px 10px;
+    border-radius: 16px;
+    font-size: clamp(0.78rem, 3.2vw, 0.94rem);
+    line-height: 1.38;
+    text-align: center;
+  }
+
+  body.physical-bomb-mode .bomb-pass-device-text {
+    padding-top: 0;
+    font-size: clamp(0.72rem, 2.9vw, 0.86rem);
+    opacity: 0.9;
+  }
+
+  body.physical-circle-mode .circle-tap-back-btn,
+  body.physical-bomb-mode .bomb-pass-back-btn {
+    order: 4;
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: clamp(40px, 5.4dvh, 52px);
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: clamp(0.9rem, 3.6vw, 1.05rem);
+    text-align: center;
+  }
+
+  body.physical-balloon-mode .utility-controls,
+  body.physical-bomb-mode .utility-controls,
+  body.physical-circle-mode .utility-controls {
+    right: 6px;
+    bottom: calc(6px + env(safe-area-inset-bottom));
+    gap: 7px;
+    transform: scale(0.84);
+    transform-origin: right bottom;
+  }
+
+  body.physical-balloon-mode .utility-btn,
+  body.physical-bomb-mode .utility-btn,
+  body.physical-circle-mode .utility-btn {
+    width: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: 16px;
+  }
+
+  body.physical-balloon-mode .popup-overlay,
+  body.physical-bomb-mode .popup-overlay,
+  body.physical-circle-mode .popup-overlay {
+    padding: 12px;
+  }
+
+  body.physical-balloon-mode .popup,
+  body.physical-bomb-mode .popup,
+  body.physical-circle-mode .popup {
+    max-width: min(92vw, 360px);
+  }
+}
+
+@media (max-width: 767px) and (max-height: 720px) {
+  body.physical-balloon-mode .balloon-main-header .sub-text,
+  body.physical-bomb-mode .bomb-pass-main-header .sub-text,
+  body.physical-circle-mode .circle-tap-main-header .sub-text {
+    -webkit-line-clamp: 1;
+  }
+
+  body.physical-balloon-mode .game-mini-badge,
+  body.physical-bomb-mode .game-mini-badge,
+  body.physical-circle-mode .game-mini-badge {
+    display: none;
+  }
+
+  body.physical-balloon-mode .balloon-stage-hint,
+  body.physical-circle-mode .circle-tap-stage-hint {
+    font-size: 0.78rem;
+    padding-block: 7px;
+  }
+
+  body.physical-bomb-mode .bomb-pass-device-text {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  body.physical-bearfind-mode .app {
+    align-items: flex-start;
+    padding: 12px 10px calc(84px + env(safe-area-inset-bottom));
+  }
+
+  body.physical-bearfind-mode #physicalBearFindScreen {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  body.physical-bearfind-mode .bear-find-card-screen {
+    padding: 14px;
+    border-radius: 24px;
+    overflow: visible;
+  }
+
+  body.physical-bearfind-mode .bear-find-layout,
+  body.physical-bearfind-mode .bear-find-main,
+  body.physical-bearfind-mode .bear-find-sidebar,
+  body.physical-bearfind-mode .bear-find-sidebar-inner {
+    display: contents;
+  }
+
+  body.physical-bearfind-mode .bear-find-main-header {
+    order: 1;
+    padding: 0 4px;
+  }
+
+  body.physical-bearfind-mode .bear-find-sidebar .controls-wrap {
+    order: 2;
+    margin: 12px 0 14px;
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  body.physical-bearfind-mode .bear-find-stage-card {
+    order: 3;
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  body.physical-bearfind-mode .bear-find-player-card {
+    order: 4;
+    margin-top: 14px;
+    max-height: 40vh;
+    overflow: hidden;
+  }
+
+  body.physical-bearfind-mode .bear-find-player-list {
+    max-height: 34vh;
+  }
+
+  body.physical-bearfind-mode .bear-find-main-header h2 {
+    font-size: clamp(2rem, 9vw, 2.65rem);
+    line-height: 1;
+  }
+
+  body.physical-bearfind-mode .bear-find-main-header .sub-text,
+  body.physical-bearfind-mode .bear-find-sidebar .sidebar-head .sub-text,
+  body.physical-bearfind-mode .bear-find-stage-hint {
+    font-size: 0.94rem;
+    line-height: 1.55;
+  }
+
+  body.physical-bearfind-mode .bear-find-stage-button {
+    aspect-ratio: 1 / 1;
+    border-radius: 22px;
+  }
+
+  body.physical-bearfind-mode .bear-find-button-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  body.physical-balloon-mode .status-text,
+  body.physical-circle-mode .status-text,
+  body.physical-bomb-mode .bomb-pass-status-text,
+  body.physical-bomb-mode .bomb-pass-device-text {
+    background: rgba(255, 250, 245, 0.74);
+    border: 2px solid rgba(255, 255, 255, 0.68);
+  }
+
+  html.theme-dark body.physical-balloon-mode .status-text,
+  html.theme-dark body.physical-circle-mode .status-text,
+  html.theme-dark body.physical-bomb-mode .bomb-pass-status-text,
+  html.theme-dark body.physical-bomb-mode .bomb-pass-device-text {
+    background: rgba(30, 43, 59, 0.76);
+    border-color: rgba(130, 151, 174, 0.24);
+    color: #d9e5f0 !important;
+  }
+}
+
+/* =========================
+   patch: remove opaque mobile control boxes + restore utility button size
+   요청 수정: M1/M2/M3 모바일 시작/리셋 뒤 불투명 박스 제거, 우측 하단 유틸 버튼 원래 크기 복구
+========================= */
+@media (max-width: 767px) {
+  body.physical-balloon-mode .balloon-sidebar .controls-wrap,
+  body.physical-balloon-mode .controls-wrap,
+  body.physical-circle-mode .circle-tap-sidebar .controls-wrap,
+  body.physical-circle-mode .controls-wrap,
+  body.physical-bomb-mode .bomb-pass-control-card {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body.physical-balloon-mode .balloon-button-row,
+  body.physical-circle-mode .circle-tap-button-row,
+  body.physical-bomb-mode .bomb-pass-button-row {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  body.physical-balloon-mode .utility-controls,
+  body.physical-bomb-mode .utility-controls,
+  body.physical-circle-mode .utility-controls {
+    right: 14px !important;
+    bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+    gap: 10px !important;
+    transform: none !important;
+    transform-origin: right bottom !important;
+  }
+
+  body.physical-balloon-mode .utility-btn,
+  body.physical-bomb-mode .utility-btn,
+  body.physical-circle-mode .utility-btn {
+    min-width: 52px !important;
+    width: 52px !important;
+    min-height: 52px !important;
+    height: 52px !important;
+    padding: 0 !important;
+    border-radius: 18px !important;
+  }
+
+  body.physical-balloon-mode .utility-btn-icon,
+  body.physical-bomb-mode .utility-btn-icon,
+  body.physical-circle-mode .utility-btn-icon {
+    font-size: 1.15rem !important;
+  }
+}
+
+/* =========================
+   patch: lock active M1/M2/M3 start button while game is running
+   요청 수정: 게임 진행 중 시작 버튼 중복 입력 방지 + 눌린 상태 시각화
+========================= */
+.action-btn.primary.is-game-running,
+.action-btn.primary:disabled.is-game-running {
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+  color: rgba(255, 244, 250, 0.92) !important;
+  background: linear-gradient(180deg, #9b5f82 0%, #6f415f 100%) !important;
+  box-shadow:
+    inset 0 5px 12px rgba(41, 22, 36, 0.42),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.16),
+    0 5px 10px rgba(18, 28, 44, 0.12) !important;
+  transform: translateY(2px) scale(0.985) !important;
+  filter: saturate(0.86) brightness(0.88);
+}
+
+html.theme-dark .action-btn.primary.is-game-running,
+html.theme-dark .action-btn.primary:disabled.is-game-running {
+  color: #f8d7e8 !important;
+  background: linear-gradient(180deg, #6d3859 0%, #44243b 100%) !important;
+  box-shadow:
+    inset 0 5px 14px rgba(5, 9, 15, 0.54),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    0 5px 10px rgba(5, 9, 15, 0.18) !important;
+}
+
+/* =========================
+   patch: M5 bear find mobile layout matches uploaded reference
+   요청 수정: 곰찾기 모바일 화면을 설정 → 선물 상자 스테이지 → 참가자 현황 순서의 세로형 카드 UI로 정리
+========================= */
+@media (max-width: 767px) {
+  body.physical-bearfind-mode {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  body.physical-bearfind-mode .background-deco {
+    display: none;
+  }
+
+  body.physical-bearfind-mode .app {
+    align-items: flex-start;
+    justify-content: center;
+    padding: max(22px, env(safe-area-inset-top)) 18px calc(98px + env(safe-area-inset-bottom));
+  }
+
+  body.physical-bearfind-mode #physicalBearFindScreen {
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+
+  body.physical-bearfind-mode .bear-find-card-screen {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 16px 22px;
+    border-radius: 28px;
+    overflow: visible;
+  }
+
+  body.physical-bearfind-mode .bear-find-layout,
+  body.physical-bearfind-mode .bear-find-main,
+  body.physical-bearfind-mode .bear-find-sidebar,
+  body.physical-bearfind-mode .bear-find-sidebar-inner {
+    display: contents !important;
+  }
+
+  body.physical-bearfind-mode .bear-find-sidebar .sidebar-head {
+    display: none !important;
+  }
+
+  body.physical-bearfind-mode .bear-find-main-header {
+    order: 1;
+    display: block;
+    padding: 0 4px 4px;
+  }
+
+  body.physical-bearfind-mode .bear-find-main-header .game-mini-badge {
+    margin: 0 0 16px;
+    padding: 8px 16px;
+    font-size: clamp(0.9rem, 4vw, 1.05rem);
+    border-radius: 999px;
+  }
+
+  body.physical-bearfind-mode .bear-find-main-header h2 {
+    margin: 0 0 14px;
+    font-size: clamp(2.15rem, 11vw, 3rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+
+  body.physical-bearfind-mode .bear-find-main-header .sub-text {
+    margin: 0;
+    max-width: 100%;
+    font-size: clamp(0.98rem, 4.2vw, 1.12rem);
+    line-height: 1.65;
+    word-break: keep-all;
+  }
+
+  body.physical-bearfind-mode .bear-find-sidebar .controls-wrap {
+    order: 2;
+    margin: 0 10px;
+    padding: 22px 20px 20px;
+    border-radius: 24px;
+    display: grid;
+    gap: 14px;
+  }
+
+  body.physical-bearfind-mode .bear-find-sidebar .input-card {
+    gap: 10px;
+  }
+
+  body.physical-bearfind-mode .bear-find-sidebar .input-card label {
+    font-size: 1.02rem;
+    font-weight: 900;
+  }
+
+  body.physical-bearfind-mode #bearFindCountInput {
+    min-height: 58px;
+    padding: 14px 18px;
+    border-radius: 18px;
+    font-size: 1.02rem;
+    font-weight: 700;
+  }
+
+  body.physical-bearfind-mode .bear-find-sidebar .helper-text,
+  body.physical-bearfind-mode #bearFindStatusText {
+    font-size: clamp(0.92rem, 3.8vw, 1rem);
+    line-height: 1.6;
+    word-break: keep-all;
+  }
+
+  body.physical-bearfind-mode .bear-find-button-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin: 8px 0 2px;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  body.physical-bearfind-mode .bear-find-button-row .action-btn {
+    width: 100%;
+    min-height: 58px;
+    padding: 13px 10px;
+    border-radius: 999px;
+    font-size: clamp(1.04rem, 4.6vw, 1.25rem);
+    font-weight: 900;
+  }
+
+  body.physical-bearfind-mode .bear-find-stage-card {
+    order: 3;
+    margin: 0;
+    padding: 18px;
+    border-radius: 26px;
+    gap: 16px;
+  }
+
+  body.physical-bearfind-mode .bear-find-panel-head {
+    display: block;
+  }
+
+  body.physical-bearfind-mode .bear-find-panel-head h3 {
+    margin: 0 0 10px;
+    font-size: clamp(1.32rem, 5.5vw, 1.65rem);
+    line-height: 1.1;
+    font-weight: 900;
+  }
+
+  body.physical-bearfind-mode .bear-find-panel-head .sub-text {
+    margin: 0;
+    font-size: clamp(0.92rem, 3.9vw, 1rem);
+    line-height: 1.55;
+  }
+
+  body.physical-bearfind-mode .bear-find-phase-badge {
+    margin-top: 14px;
+    min-height: 36px;
+    padding: 7px 16px;
+    font-size: 0.9rem;
+  }
+
+  body.physical-bearfind-mode .bear-find-stage-button {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: none;
+    border-radius: 24px;
+  }
+
+  body.physical-bearfind-mode .bear-find-current-label {
+    left: 16px;
+    bottom: 16px;
+    min-height: 38px;
+    padding: 9px 14px;
+    font-size: 0.9rem;
+  }
+
+  body.physical-bearfind-mode .bear-find-stage-hint {
+    margin: 0;
+    font-size: clamp(0.95rem, 4vw, 1.08rem);
+    line-height: 1.55;
+    text-align: center;
+    word-break: keep-all;
+  }
+
+  body.physical-bearfind-mode .bear-find-player-card {
+    order: 4;
+    margin: 4px 18px 0;
+    padding: 20px 18px;
+    border-radius: 24px;
+    max-height: min(46vh, 460px);
+    overflow: hidden;
+  }
+
+  body.physical-bearfind-mode .bear-find-player-card .scoreboard-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+
+  body.physical-bearfind-mode .bear-find-player-card .scoreboard-head h3 {
+    font-size: clamp(1.05rem, 4.4vw, 1.25rem);
+    font-weight: 900;
+  }
+
+  body.physical-bearfind-mode #bearFindTotalInfo {
+    white-space: nowrap;
+    font-size: clamp(0.9rem, 3.8vw, 1.02rem);
+    font-weight: 900;
+  }
+
+  body.physical-bearfind-mode .bear-find-player-list {
+    max-height: min(38vh, 360px);
+    margin-top: 16px;
+    padding-right: 6px;
+    gap: 12px;
+  }
+
+  body.physical-bearfind-mode .bear-find-player-item,
+  body.physical-bearfind-mode .bear-find-player-empty {
+    min-height: 82px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    grid-template-columns: auto 1fr;
+    row-gap: 8px;
+  }
+
+  body.physical-bearfind-mode .bear-find-player-item span:last-child {
+    grid-column: 2;
+  }
+
+  body.physical-bearfind-mode .utility-controls {
+    right: 12px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 390px) {
+  body.physical-bearfind-mode .app {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  body.physical-bearfind-mode .bear-find-card-screen {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  body.physical-bearfind-mode .bear-find-sidebar .controls-wrap {
+    margin-inline: 4px;
+    padding: 18px 16px;
+  }
+
+  body.physical-bearfind-mode .bear-find-stage-card {
+    padding: 14px;
+  }
+
+  body.physical-bearfind-mode .bear-find-player-card {
+    margin-inline: 8px;
+    padding: 18px 14px;
+  }
+}
+
+html.theme-dark body.physical-bearfind-mode .bear-find-card-screen {
+  background:
+    radial-gradient(circle at 78% 14%, rgba(29, 53, 80, 0.32), transparent 30%),
+    linear-gradient(180deg, rgba(15, 25, 38, 0.96) 0%, rgba(10, 17, 27, 0.96) 100%);
+  border-color: rgba(89, 112, 138, 0.52);
+  box-shadow: inset 0 0 0 2px rgba(34, 58, 86, 0.42), 0 18px 38px rgba(0, 0, 0, 0.28);
+}
+
+html.theme-dark body.physical-bearfind-mode .bear-find-sidebar .controls-wrap,
+html.theme-dark body.physical-bearfind-mode .bear-find-stage-card,
+html.theme-dark body.physical-bearfind-mode .bear-find-player-card {
+  background: linear-gradient(180deg, rgba(26, 37, 52, 0.92) 0%, rgba(17, 28, 42, 0.92) 100%);
+  border-color: rgba(93, 116, 143, 0.44);
+  box-shadow: inset 0 0 0 1px rgba(110, 135, 163, 0.08), 0 14px 28px rgba(0, 0, 0, 0.24);
+}
+
+html.theme-dark body.physical-bearfind-mode #bearFindCountInput {
+  background: rgba(8, 15, 24, 0.86);
+  border-color: rgba(92, 117, 145, 0.42);
+  color: #edf4ff;
+}
+
+html.theme-dark body.physical-bearfind-mode .bear-find-main-header h2,
+html.theme-dark body.physical-bearfind-mode .bear-find-panel-head h3,
+html.theme-dark body.physical-bearfind-mode .bear-find-player-card .scoreboard-head h3,
+html.theme-dark body.physical-bearfind-mode .bear-find-sidebar .input-card label {
+  color: #ffd8e7;
+}
