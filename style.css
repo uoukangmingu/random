@@ -26204,3 +26204,623 @@ html:not(.theme-dark) .game-screen .sim-arena-zoom-btn {
   color: var(--day-ink) !important;
   border-color: rgba(23,56,75,0.12) !important;
 }
+
+
+/* =========================================================
+   NIGHT MODE DISTINCT GAME COLORS PASS
+   목적: 밤모드도 낮모드처럼 게임별/패널별 구분감을 명확히 유지
+   원칙: 낮모드와 같은 구조, 밤 팔레트(네온/사이버펑크) 유지
+========================================================= */
+html.theme-dark .game-item,
+html.theme-dark .physical-game-item {
+  --night-tile-bg: #102542;
+  --night-tile-surface: #183251;
+  --night-tile-accent: #69d8ff;
+}
+
+html.theme-dark .game-item:nth-child(5n+1),
+html.theme-dark .physical-game-item:nth-child(5n+1) {
+  --night-tile-bg: #3a1834;
+  --night-tile-surface: #4a2342;
+  --night-tile-accent: #ff5fa2;
+}
+
+html.theme-dark .game-item:nth-child(5n+2),
+html.theme-dark .physical-game-item:nth-child(5n+2) {
+  --night-tile-bg: #123152;
+  --night-tile-surface: #1a4270;
+  --night-tile-accent: #69d8ff;
+}
+
+html.theme-dark .game-item:nth-child(5n+3),
+html.theme-dark .physical-game-item:nth-child(5n+3) {
+  --night-tile-bg: #191f49;
+  --night-tile-surface: #272f63;
+  --night-tile-accent: #b58cff;
+}
+
+html.theme-dark .game-item:nth-child(5n+4),
+html.theme-dark .physical-game-item:nth-child(5n+4) {
+  --night-tile-bg: #123b45;
+  --night-tile-surface: #1c4e5b;
+  --night-tile-accent: #63e6be;
+}
+
+html.theme-dark .game-item:nth-child(5n),
+html.theme-dark .physical-game-item:nth-child(5n) {
+  --night-tile-bg: #39251a;
+  --night-tile-surface: #523526;
+  --night-tile-accent: #ffe66d;
+}
+
+html.theme-dark .game-item,
+html.theme-dark .game-item.game-launch,
+html.theme-dark .physical-game-item,
+html.theme-dark .menu-btn {
+  background: var(--night-tile-bg) !important;
+  color: var(--night-text) !important;
+  border: 1px solid rgba(237,248,255,0.08) !important;
+  box-shadow: 0 18px 30px rgba(0,0,0,0.42), 0 0 0 1px rgba(255,255,255,0.03) inset !important;
+}
+
+html.theme-dark .game-item .game-num,
+html.theme-dark .physical-game-item .game-num {
+  background: var(--night-tile-surface) !important;
+  color: var(--night-text) !important;
+  border: 1px solid rgba(237,248,255,0.10) !important;
+  box-shadow: 0 10px 18px rgba(0,0,0,0.26), 0 0 12px color-mix(in srgb, var(--night-tile-accent) 18%, transparent) !important;
+}
+
+html.theme-dark .game-item .game-meta-row,
+html.theme-dark .physical-game-item .game-meta-row,
+html.theme-dark .game-item .physical-compat-badge,
+html.theme-dark .physical-game-item .physical-compat-badge {
+  background: var(--night-tile-surface) !important;
+  border-color: rgba(237,248,255,0.08) !important;
+  color: var(--night-text) !important;
+}
+
+html.theme-dark .game-item .game-meta-label,
+html.theme-dark .physical-game-item .game-meta-label {
+  color: var(--night-text-2) !important;
+}
+
+html.theme-dark .game-item .game-meta-value,
+html.theme-dark .physical-game-item .game-meta-value,
+html.theme-dark .game-item h3,
+html.theme-dark .game-item p,
+html.theme-dark .physical-game-item h3,
+html.theme-dark .physical-game-item p {
+  color: var(--night-text) !important;
+}
+
+html.theme-dark .game-screen {
+  --dark-screen-accent: #69d8ff;
+  --dark-screen-surface: #102542;
+  --dark-screen-surface-2: #183251;
+  --dark-screen-stage: #0b172a;
+}
+
+html.theme-dark #game1Screen,
+html.theme-dark #physicalBearFindScreen {
+  --dark-screen-accent: #ff5fa2;
+  --dark-screen-surface: #3a1834;
+  --dark-screen-surface-2: #4a2342;
+  --dark-screen-stage: #1f1320;
+}
+
+html.theme-dark #game2Screen,
+html.theme-dark #game7Screen,
+html.theme-dark #physicalKeyReactScreen {
+  --dark-screen-accent: #63e6be;
+  --dark-screen-surface: #123b45;
+  --dark-screen-surface-2: #1c4e5b;
+  --dark-screen-stage: #0d1f24;
+}
+
+html.theme-dark #game3Screen,
+html.theme-dark #game6Screen,
+html.theme-dark #physicalCircleScreen {
+  --dark-screen-accent: #69d8ff;
+  --dark-screen-surface: #123152;
+  --dark-screen-surface-2: #1a4270;
+  --dark-screen-stage: #0d1a2c;
+}
+
+html.theme-dark #game4Screen,
+html.theme-dark #physicalBombScreen {
+  --dark-screen-accent: #ffe66d;
+  --dark-screen-surface: #39251a;
+  --dark-screen-surface-2: #523526;
+  --dark-screen-stage: #1d1610;
+}
+
+html.theme-dark #game5Screen,
+html.theme-dark #physicalBalloonScreen {
+  --dark-screen-accent: #b58cff;
+  --dark-screen-surface: #191f49;
+  --dark-screen-surface-2: #272f63;
+  --dark-screen-stage: #11162d;
+}
+
+html.theme-dark .game-screen .controls-wrap,
+html.theme-dark .game-screen .scoreboard-card,
+html.theme-dark .game-screen .game-board-card,
+html.theme-dark .game-screen .race-panel,
+html.theme-dark .game-screen .battle-panel,
+html.theme-dark .game-screen .sim-setup-card,
+html.theme-dark .game-screen .sim-arena-card,
+html.theme-dark .game-screen .sim-battle-summary-card,
+html.theme-dark .game-screen .naval-board-card,
+html.theme-dark .game-screen .stock-portfolio-card,
+html.theme-dark .game-screen .bear-find-stage-card,
+html.theme-dark .game-screen .balloon-stage-card,
+html.theme-dark .game-screen .bomb-pass-stage-card,
+html.theme-dark .game-screen .circle-tap-stage-card,
+html.theme-dark .game-screen .key-react-stage-card,
+html.theme-dark .game-screen .ladder-stage-card,
+html.theme-dark .game-screen .roulette-stage-card,
+html.theme-dark .game-screen .game-sidebar,
+html.theme-dark .game-screen .race-sidebar,
+html.theme-dark .game-screen .battle-sidebar,
+html.theme-dark .game-screen .sim-sidebar,
+html.theme-dark .game-screen .naval-sidebar,
+html.theme-dark .game-screen .balloon-sidebar,
+html.theme-dark .game-screen .circle-tap-sidebar,
+html.theme-dark .game-screen .key-react-sidebar,
+html.theme-dark .game-screen .bear-find-sidebar {
+  background: var(--dark-screen-surface) !important;
+  border: 1px solid rgba(237,248,255,0.08) !important;
+  box-shadow: 0 18px 30px rgba(0,0,0,0.42), 0 0 0 1px rgba(255,255,255,0.03) inset !important;
+}
+
+html.theme-dark .game-screen .small-badge,
+html.theme-dark .game-screen .game-mini-badge,
+html.theme-dark .game-screen .sim-phase-badge,
+html.theme-dark .game-screen .battle-deck-label,
+html.theme-dark .game-screen .legend-chip,
+html.theme-dark .game-screen .physical-compat-badge,
+html.theme-dark .game-screen .race-ranking-item,
+html.theme-dark .game-screen .battle-ranking-item,
+html.theme-dark .game-screen .battle-ranking-empty,
+html.theme-dark .game-screen .sim-empty-state,
+html.theme-dark .game-screen .naval-log-item,
+html.theme-dark .game-screen .naval-ranking-item,
+html.theme-dark .game-screen .naval-player-chip,
+html.theme-dark .game-screen .naval-elimination-item {
+  background: var(--dark-screen-surface-2) !important;
+  border-color: rgba(237,248,255,0.08) !important;
+  color: var(--night-text) !important;
+}
+
+html.theme-dark .game-screen .input-card input,
+html.theme-dark .game-screen .game-meta-row,
+html.theme-dark .game-screen .slot-box,
+html.theme-dark .game-screen .battle-row,
+html.theme-dark .game-screen .battle-slot,
+html.theme-dark .game-screen .stock-player-tab,
+html.theme-dark .game-screen .stock-allocation-row,
+html.theme-dark .game-screen .sim-player-row,
+html.theme-dark .game-screen .key-react-key-card {
+  background: var(--dark-screen-stage) !important;
+  border-color: rgba(237,248,255,0.08) !important;
+  color: var(--night-text) !important;
+}
+
+html.theme-dark .game-screen .game-board-head,
+html.theme-dark .game-screen .scoreboard-head,
+html.theme-dark .game-screen .battle-panel-head,
+html.theme-dark .game-screen .stock-panel-head,
+html.theme-dark .game-screen .race-track-stage-head {
+  background: var(--dark-screen-surface-2) !important;
+  border-radius: 18px !important;
+  padding: 12px 14px !important;
+}
+
+html.theme-dark .game-screen .game-canvas-wrap,
+html.theme-dark .game-screen .race-track-wrap,
+html.theme-dark .game-screen .sim-arena-wrap,
+html.theme-dark .game-screen .sim-arena-zoom-stage,
+html.theme-dark .game-screen .naval-board-wrap {
+  background: var(--dark-screen-stage) !important;
+  border: 2px solid rgba(237,248,255,0.08) !important;
+  box-shadow: 0 16px 28px rgba(0,0,0,0.34) !important;
+}
+
+html.theme-dark .game-screen .back-btn,
+html.theme-dark .game-screen .drawer-toggle-btn,
+html.theme-dark .game-screen .sim-info-btn,
+html.theme-dark .game-screen .sim-arena-zoom-btn,
+html.theme-dark .game-screen .utility-btn,
+html.theme-dark .game-screen .utility-volume-panel {
+  background: var(--dark-screen-surface-2) !important;
+  color: var(--night-text) !important;
+  border-color: rgba(237,248,255,0.08) !important;
+  box-shadow: 0 12px 22px rgba(0,0,0,0.28) !important;
+}
+
+html.theme-dark .game-screen .action-btn.primary {
+  background: var(--dark-screen-accent) !important;
+  color: #07111f !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--dark-screen-accent) 28%, transparent) !important;
+}
+
+html.theme-dark .game-screen .action-btn.secondary {
+  background: var(--dark-screen-surface-2) !important;
+  color: var(--night-text) !important;
+  border-color: rgba(237,248,255,0.08) !important;
+}
+
+html.theme-dark .game-screen .action-btn.soft,
+html.theme-dark .game-screen .popup-btn {
+  background: color-mix(in srgb, var(--dark-screen-accent) 68%, #101936) !important;
+  color: var(--night-text) !important;
+  border-color: rgba(237,248,255,0.08) !important;
+}
+
+html.theme-dark .game-screen .race-lane {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 28px, rgba(255,255,255,0.025) 28px, rgba(255,255,255,0.025) 56px),
+    var(--dark-screen-surface-2) !important;
+  border-color: rgba(237,248,255,0.08) !important;
+}
+
+html.theme-dark .game-screen .race-horse,
+html.theme-dark .game-screen .battle-card-front,
+html.theme-dark .game-screen .sim-stat-card-front {
+  background: var(--dark-screen-stage) !important;
+  color: var(--night-text) !important;
+  border-color: rgba(237,248,255,0.08) !important;
+}
+
+/* =========================================================
+   FINAL HOTFIX 2026-06-10
+   밤모드 왼쪽 하단에 보이던 의도치 않은 세로 네온 라인 제거.
+   기존 body::after의 90deg stripe gradient를 완전히 덮어쓴다.
+========================================================= */
+html.theme-dark body::after {
+  content: '' !important;
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 44vh !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(circle at 18% 92%, rgba(255, 95, 162, 0.09) 0%, rgba(255, 95, 162, 0.045) 12%, transparent 30%),
+    radial-gradient(circle at 82% 90%, rgba(105, 216, 255, 0.08) 0%, rgba(105, 216, 255, 0.035) 12%, transparent 30%),
+    linear-gradient(180deg, transparent 0%, rgba(105, 216, 255, 0.045) 56%, rgba(5, 11, 22, 0.22) 100%) !important;
+  opacity: 0.78 !important;
+}
+
+
+/* =========================================================
+   FINAL HOTFIX 2026-06-10-2
+   STAY CLICK 설정 패널 겹침/가림 수정 + 게임 화면 사용성 보강
+   - 스크린샷의 빨간 영역처럼 시작/리셋 버튼이 참가자 현황 카드에 눌려 보이는 문제 방지
+   - 좁은 데스크톱/노트북 높이에서도 설정 패널 내부 스크롤 허용
+   - STAY CLICK 자체 헤더에 목록 복귀 버튼 복원
+   - 우측 유틸리티 패널이 게임 화면을 덮지 않도록 중간 폭에서는 아이콘형으로 축소
+========================================================= */
+body.key-react-compact-mode {
+  overflow-x: hidden !important;
+}
+
+body.key-react-compact-mode .key-react-sidebar-inner {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable !important;
+  padding-bottom: 18px !important;
+}
+
+body.key-react-compact-mode .key-react-sidebar-inner > .sidebar-head,
+body.key-react-compact-mode .key-react-sidebar-inner > .controls-wrap,
+body.key-react-compact-mode .key-react-sidebar-inner > .scoreboard-card,
+body.key-react-compact-mode .key-react-key-card,
+body.key-react-compact-mode .key-react-button-row,
+body.key-react-compact-mode .status-text {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+}
+
+body.key-react-compact-mode .key-react-sidebar-inner > .controls-wrap {
+  overflow: visible !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+body.key-react-compact-mode .key-react-key-card {
+  margin-top: 0 !important;
+}
+
+body.key-react-compact-mode .key-react-key-head {
+  margin-bottom: 10px !important;
+}
+
+body.key-react-compact-mode .key-react-key-list {
+  max-height: clamp(142px, 24vh, 210px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 3px !important;
+}
+
+body.key-react-compact-mode .key-react-button-row {
+  position: relative !important;
+  z-index: 4 !important;
+  margin-top: 2px !important;
+  padding-top: 2px !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+body.key-react-compact-mode .key-react-button-row .action-btn {
+  min-height: 44px !important;
+  width: 100% !important;
+}
+
+body.key-react-compact-mode #keyReactStatusText {
+  max-height: 58px !important;
+  overflow-y: auto !important;
+  padding-right: 3px !important;
+}
+
+body.key-react-compact-mode .key-react-player-card {
+  max-height: clamp(128px, 25vh, 190px) !important;
+  overflow: hidden !important;
+}
+
+body.key-react-compact-mode .key-react-player-list {
+  max-height: clamp(76px, 17vh, 132px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+#physicalKeyReactScreen .key-react-main-header {
+  align-items: flex-start !important;
+}
+
+#physicalKeyReactScreen .key-react-header-actions {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-end !important;
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
+}
+
+#physicalKeyReactScreen .key-react-back-btn {
+  display: inline-flex !important;
+  width: auto !important;
+  min-height: 42px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 1024px) {
+  #physicalKeyReactScreen .key-react-header-actions {
+    width: 100% !important;
+    justify-content: stretch !important;
+    margin-left: 0 !important;
+  }
+
+  #physicalKeyReactScreen .key-react-back-btn {
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1520px) {
+  body.app-active-game .utility-controls {
+    right: 12px !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    gap: 8px !important;
+  }
+
+  body.app-active-game .utility-volume-panel {
+    display: none !important;
+  }
+
+  body.app-active-game .utility-btn {
+    min-width: 46px !important;
+    width: 46px !important;
+    min-height: 46px !important;
+    height: 46px !important;
+    padding: 0 !important;
+    border-radius: 16px !important;
+  }
+
+  body.app-active-game .utility-btn-label {
+    display: none !important;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 1025px) {
+  body.key-react-compact-mode .key-react-main-header h2 {
+    font-size: clamp(2rem, 3.2vw, 2.65rem) !important;
+  }
+
+  body.key-react-compact-mode .key-react-main-header .sub-text,
+  body.key-react-compact-mode .key-react-panel-head .sub-text,
+  body.key-react-compact-mode .sidebar-head .sub-text {
+    font-size: 0.84rem !important;
+    line-height: 1.38 !important;
+  }
+
+  body.key-react-compact-mode .key-react-stage-card {
+    gap: 8px !important;
+  }
+
+  body.key-react-compact-mode .key-react-stage {
+    min-height: 190px !important;
+  }
+}
+
+/* =========================================================
+   FINAL HOTFIX 2026-06-10-3
+   NIGHT MODE LAYOUT PARITY WITH DAY MODE
+   목적: 밤모드는 색상만 다르게 보이고, 요소 크기/간격/외곽선 두께/카드 레이아웃은 낮모드 기준과 동일하게 고정한다.
+   주의: 아래는 색상 팔레트가 아니라 박스 모델만 맞추는 패치다.
+========================================================= */
+html.theme-dark .main-btn,
+html.theme-dark .action-btn.primary,
+html.theme-dark .game-screen .action-btn.primary {
+  border-width: 2px !important;
+  border-style: solid !important;
+}
+
+html.theme-dark .action-btn.secondary,
+html.theme-dark .drawer-toggle-btn,
+html.theme-dark .menu-btn.luck,
+html.theme-dark .game-screen .action-btn.secondary,
+html.theme-dark .game-screen .drawer-toggle-btn {
+  border-width: 2px !important;
+  border-style: solid !important;
+}
+
+html.theme-dark .action-btn.soft,
+html.theme-dark .popup-btn,
+html.theme-dark .menu-btn.physical,
+html.theme-dark .game-screen .action-btn.soft,
+html.theme-dark .game-screen .popup-btn {
+  border-width: 2px !important;
+  border-style: solid !important;
+}
+
+html.theme-dark .back-btn,
+html.theme-dark .sim-info-btn,
+html.theme-dark .sim-arena-zoom-btn,
+html.theme-dark .utility-btn,
+html.theme-dark .utility-volume-panel,
+html.theme-dark .game-screen .back-btn,
+html.theme-dark .game-screen .sim-info-btn,
+html.theme-dark .game-screen .sim-arena-zoom-btn,
+html.theme-dark .game-screen .utility-btn,
+html.theme-dark .game-screen .utility-volume-panel {
+  border-width: 2px !important;
+  border-style: solid !important;
+}
+
+html.theme-dark .game-item,
+html.theme-dark .game-item.game-launch,
+html.theme-dark .physical-game-item,
+html.theme-dark .menu-btn {
+  border-width: 2px !important;
+  border-style: solid !important;
+}
+
+html.theme-dark .game-num,
+html.theme-dark .game-item .game-num,
+html.theme-dark .physical-game-item .game-num {
+  width: 62px !important;
+  height: 62px !important;
+  font-size: 2rem !important;
+  line-height: 1 !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+}
+
+html.theme-dark .game-meta-row,
+html.theme-dark .input-card input,
+html.theme-dark .key-react-key-card,
+html.theme-dark .battle-row,
+html.theme-dark .battle-slot,
+html.theme-dark .race-ranking-item,
+html.theme-dark .battle-ranking-item,
+html.theme-dark .stock-player-tab,
+html.theme-dark .stock-allocation-row,
+html.theme-dark .naval-log-item,
+html.theme-dark .game-screen .input-card input,
+html.theme-dark .game-screen .game-meta-row,
+html.theme-dark .game-screen .slot-box,
+html.theme-dark .game-screen .battle-row,
+html.theme-dark .game-screen .battle-slot,
+html.theme-dark .game-screen .race-ranking-item,
+html.theme-dark .game-screen .battle-ranking-item,
+html.theme-dark .game-screen .stock-player-tab,
+html.theme-dark .game-screen .stock-allocation-row,
+html.theme-dark .game-screen .naval-log-item,
+html.theme-dark .game-screen .naval-ranking-item,
+html.theme-dark .game-screen .naval-player-chip,
+html.theme-dark .game-screen .naval-elimination-item,
+html.theme-dark .game-screen .sim-empty-state,
+html.theme-dark .game-screen .sim-player-row,
+html.theme-dark .game-screen .key-react-key-card {
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+
+html.theme-dark .small-badge,
+html.theme-dark .game-mini-badge,
+html.theme-dark .physical-compat-badge,
+html.theme-dark .game-ff-badge,
+html.theme-dark .battle-deck-label,
+html.theme-dark .sim-phase-badge,
+html.theme-dark .naval-phase-badge,
+html.theme-dark .stock-ready-badge,
+html.theme-dark .legend-chip,
+html.theme-dark .game-screen .small-badge,
+html.theme-dark .game-screen .game-mini-badge,
+html.theme-dark .game-screen .physical-compat-badge,
+html.theme-dark .game-screen .battle-deck-label,
+html.theme-dark .game-screen .legend-chip,
+html.theme-dark .game-screen .sim-phase-badge {
+  border-width: 2px !important;
+  border-style: solid !important;
+}
+
+html.theme-dark .game-screen .controls-wrap,
+html.theme-dark .game-screen .scoreboard-card,
+html.theme-dark .game-screen .game-board-card,
+html.theme-dark .game-screen .race-panel,
+html.theme-dark .game-screen .battle-panel,
+html.theme-dark .game-screen .sim-setup-card,
+html.theme-dark .game-screen .sim-arena-card,
+html.theme-dark .game-screen .sim-battle-summary-card,
+html.theme-dark .game-screen .naval-board-card,
+html.theme-dark .game-screen .stock-portfolio-card,
+html.theme-dark .game-screen .bear-find-stage-card,
+html.theme-dark .game-screen .balloon-stage-card,
+html.theme-dark .game-screen .bomb-pass-stage-card,
+html.theme-dark .game-screen .circle-tap-stage-card,
+html.theme-dark .game-screen .key-react-stage-card,
+html.theme-dark .game-screen .ladder-stage-card,
+html.theme-dark .game-screen .roulette-stage-card,
+html.theme-dark .game-screen .game-sidebar,
+html.theme-dark .game-screen .race-sidebar,
+html.theme-dark .game-screen .battle-sidebar,
+html.theme-dark .game-screen .sim-sidebar,
+html.theme-dark .game-screen .naval-sidebar,
+html.theme-dark .game-screen .balloon-sidebar,
+html.theme-dark .game-screen .circle-tap-sidebar,
+html.theme-dark .game-screen .key-react-sidebar,
+html.theme-dark .game-screen .bear-find-sidebar {
+  border-width: 2px !important;
+  border-style: solid !important;
+}
+
+html.theme-dark .game-canvas-wrap,
+html.theme-dark .race-track-wrap,
+html.theme-dark .sim-arena-wrap,
+html.theme-dark .sim-arena-zoom-stage,
+html.theme-dark .naval-board-wrap,
+html.theme-dark .game-screen .game-canvas-wrap,
+html.theme-dark .game-screen .race-track-wrap,
+html.theme-dark .game-screen .sim-arena-wrap,
+html.theme-dark .game-screen .sim-arena-zoom-stage,
+html.theme-dark .game-screen .naval-board-wrap {
+  border-width: 3px !important;
+  border-style: solid !important;
+}
+
+html.theme-dark .race-horse,
+html.theme-dark .game-screen .race-horse,
+html.theme-dark .battle-card-front,
+html.theme-dark .sim-stat-card-front,
+html.theme-dark .game-screen .battle-card-front,
+html.theme-dark .game-screen .sim-stat-card-front {
+  border-width: 2px !important;
+  border-style: solid !important;
+}
