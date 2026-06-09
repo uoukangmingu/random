@@ -25703,3 +25703,504 @@ html.theme-dark body::after {
     linear-gradient(180deg, transparent 0%, rgba(105,216,255,0.035) 60%, rgba(10,18,34,0.16) 100%) !important;
   opacity: 0.72 !important;
 }
+
+
+/* =========================================================
+   DAY MODE CONTRAST REBALANCE
+   요청 팔레트: #FFD233 / #F7F7F9 / #59B4E3 / #76B947 / #FF8C42
+   원칙: 단색 중심, 낮 모드 가독성 강화, 게임 카드 컬러 분리
+========================================================= */
+html:not(.theme-dark) {
+  --day-bright-yellow: #FFD233;
+  --day-cloud-dancer: #F7F7F9;
+  --day-sky-blue: #59B4E3;
+  --day-moss-green: #76B947;
+  --day-coral-orange: #FF8C42;
+  --day-ink: #17384B;
+  --day-ink-soft: #4B6777;
+  --day-outline: rgba(23, 56, 75, 0.16);
+  --day-shadow-strong: 0 16px 30px rgba(33, 90, 124, 0.14);
+  --day-shadow-soft: 0 10px 18px rgba(33, 90, 124, 0.10);
+
+  --bg: var(--day-sky-blue) !important;
+  --bg2: #9bd1ee !important;
+  --card: rgba(247, 247, 249, 0.96) !important;
+  --card-strong: #F7F7F9 !important;
+  --brown: var(--day-ink) !important;
+  --soft-brown: var(--day-ink) !important;
+  --pink: var(--day-coral-orange) !important;
+  --mint: var(--day-moss-green) !important;
+  --sky: var(--day-sky-blue) !important;
+  --lavender: #B9C8F7 !important;
+  --yellow: var(--day-bright-yellow) !important;
+  --peach: var(--day-coral-orange) !important;
+  --shadow: var(--day-shadow-strong) !important;
+}
+
+html:not(.theme-dark) body {
+  color: var(--day-ink) !important;
+  background: linear-gradient(180deg, #59B4E3 0%, #97D1EF 54%, #F7F7F9 100%) !important;
+}
+
+html:not(.theme-dark) body::before {
+  background:
+    radial-gradient(ellipse at 18% 18%, rgba(247,247,249,0.92) 0 10%, transparent 24%),
+    radial-gradient(ellipse at 76% 20%, rgba(247,247,249,0.72) 0 9%, transparent 22%),
+    linear-gradient(180deg, rgba(247,247,249,0.00), rgba(247,247,249,0.20)) !important;
+  opacity: 0.88 !important;
+}
+
+html:not(.theme-dark) body::after {
+  background: linear-gradient(180deg, transparent 0%, rgba(255, 210, 51, 0.18) 100%) !important;
+}
+
+html:not(.theme-dark) .card,
+html:not(.theme-dark) .controls-wrap,
+html:not(.theme-dark) .scoreboard-card,
+html:not(.theme-dark) .game-board-card,
+html:not(.theme-dark) .race-panel,
+html:not(.theme-dark) .battle-table-card,
+html:not(.theme-dark) .battle-panel,
+html:not(.theme-dark) .sim-setup-card,
+html:not(.theme-dark) .sim-arena-card,
+html:not(.theme-dark) .sim-battle-summary-card,
+html:not(.theme-dark) .naval-board-card,
+html:not(.theme-dark) .stock-portfolio-card,
+html:not(.theme-dark) .bear-find-stage-card,
+html:not(.theme-dark) .balloon-stage-card,
+html:not(.theme-dark) .bomb-pass-stage-card,
+html:not(.theme-dark) .circle-tap-stage-card,
+html:not(.theme-dark) .key-react-stage-card,
+html:not(.theme-dark) .ladder-stage-card,
+html:not(.theme-dark) .roulette-stage-card,
+html:not(.theme-dark) .popup,
+html:not(.theme-dark) .orientation-lock-card,
+html:not(.theme-dark) .game-sidebar,
+html:not(.theme-dark) .race-sidebar,
+html:not(.theme-dark) .battle-sidebar,
+html:not(.theme-dark) .sim-sidebar,
+html:not(.theme-dark) .naval-sidebar,
+html:not(.theme-dark) .balloon-sidebar,
+html:not(.theme-dark) .circle-tap-sidebar,
+html:not(.theme-dark) .key-react-sidebar,
+html:not(.theme-dark) .bear-find-sidebar {
+  background: #F7F7F9 !important;
+  color: var(--day-ink) !important;
+  border: 2px solid rgba(255,255,255,0.86) !important;
+  box-shadow: var(--day-shadow-strong) !important;
+}
+
+html:not(.theme-dark) .main-card,
+html:not(.theme-dark) .menu-card,
+html:not(.theme-dark) .luck-card,
+html:not(.theme-dark) .physical-card {
+  background: #F7F7F9 !important;
+}
+
+html:not(.theme-dark) .main-card h1,
+html:not(.theme-dark) .menu-card h2,
+html:not(.theme-dark) .luck-card h2,
+html:not(.theme-dark) .physical-card h2,
+html:not(.theme-dark) .game-card h2,
+html:not(.theme-dark) .popup h3,
+html:not(.theme-dark) .sidebar-title,
+html:not(.theme-dark) .game-item h3,
+html:not(.theme-dark) .physical-game-item h3 {
+  color: var(--day-ink) !important;
+}
+
+html:not(.theme-dark) .sub-text,
+html:not(.theme-dark) .helper-text,
+html:not(.theme-dark) .status-text,
+html:not(.theme-dark) #totalInfo,
+html:not(.theme-dark) .game-item p,
+html:not(.theme-dark) .popup-message,
+html:not(.theme-dark) .race-track-stage-desc,
+html:not(.theme-dark) .game-board-head span,
+html:not(.theme-dark) .orientation-lock-card p,
+html:not(.theme-dark) .horse-status,
+html:not(.theme-dark) .battle-rank-formula,
+html:not(.theme-dark) .battle-player-sub,
+html:not(.theme-dark) .sim-player-sub {
+  color: var(--day-ink-soft) !important;
+}
+
+html:not(.theme-dark) .small-badge,
+html:not(.theme-dark) .game-mini-badge,
+html:not(.theme-dark) .physical-compat-badge,
+html:not(.theme-dark) .game-ff-badge,
+html:not(.theme-dark) .battle-deck-label,
+html:not(.theme-dark) .sim-phase-badge,
+html:not(.theme-dark) .naval-phase-badge,
+html:not(.theme-dark) .stock-ready-badge,
+html:not(.theme-dark) .legend-chip {
+  background: #F7F7F9 !important;
+  color: var(--day-ink) !important;
+  border: 2px solid rgba(89, 180, 227, 0.32) !important;
+  box-shadow: var(--day-shadow-soft) !important;
+}
+
+html:not(.theme-dark) .main-btn,
+html:not(.theme-dark) .action-btn.primary {
+  background: #FF8C42 !important;
+  color: #17384B !important;
+  border: 2px solid rgba(255,255,255,0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 140, 66, 0.26) !important;
+  text-shadow: none !important;
+}
+
+html:not(.theme-dark) .action-btn.secondary,
+html:not(.theme-dark) .drawer-toggle-btn,
+html:not(.theme-dark) .menu-btn.luck {
+  background: #59B4E3 !important;
+  color: #17384B !important;
+  border: 2px solid rgba(255,255,255,0.86) !important;
+  box-shadow: 0 12px 22px rgba(89, 180, 227, 0.22) !important;
+}
+
+html:not(.theme-dark) .action-btn.soft,
+html:not(.theme-dark) .popup-btn,
+html:not(.theme-dark) .menu-btn.physical {
+  background: #FFD233 !important;
+  color: #17384B !important;
+  border: 2px solid rgba(255,255,255,0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 210, 51, 0.20) !important;
+}
+
+html:not(.theme-dark) .back-btn,
+html:not(.theme-dark) .sim-info-btn,
+html:not(.theme-dark) .sim-arena-zoom-btn,
+html:not(.theme-dark) .utility-btn,
+html:not(.theme-dark) .utility-volume-panel {
+  background: #F7F7F9 !important;
+  color: #17384B !important;
+  border: 2px solid rgba(89, 180, 227, 0.26) !important;
+  box-shadow: var(--day-shadow-soft) !important;
+}
+
+html:not(.theme-dark) .game-item,
+html:not(.theme-dark) .game-item.game-launch,
+html:not(.theme-dark) .physical-game-item,
+html:not(.theme-dark) .menu-btn {
+  background: #F7F7F9 !important;
+  color: var(--day-ink) !important;
+  border: 2px solid rgba(255,255,255,0.88) !important;
+  box-shadow: var(--day-shadow-soft) !important;
+}
+
+html:not(.theme-dark) .game-item:nth-child(5n+1),
+html:not(.theme-dark) .physical-game-item:nth-child(5n+1) {
+  background: #FFD233 !important;
+}
+
+html:not(.theme-dark) .game-item:nth-child(5n+2),
+html:not(.theme-dark) .physical-game-item:nth-child(5n+2) {
+  background: #59B4E3 !important;
+}
+
+html:not(.theme-dark) .game-item:nth-child(5n+3),
+html:not(.theme-dark) .physical-game-item:nth-child(5n+3) {
+  background: #F7F7F9 !important;
+}
+
+html:not(.theme-dark) .game-item:nth-child(5n+4),
+html:not(.theme-dark) .physical-game-item:nth-child(5n+4) {
+  background: #76B947 !important;
+}
+
+html:not(.theme-dark) .game-item:nth-child(5n),
+html:not(.theme-dark) .physical-game-item:nth-child(5n) {
+  background: #FF8C42 !important;
+}
+
+html:not(.theme-dark) .game-item h3,
+html:not(.theme-dark) .game-item p,
+html:not(.theme-dark) .physical-game-item h3,
+html:not(.theme-dark) .physical-game-item p {
+  color: var(--day-ink) !important;
+}
+
+html:not(.theme-dark) .game-num {
+  width: 62px !important;
+  height: 62px !important;
+  background: #F7F7F9 !important;
+  color: var(--day-ink) !important;
+  border: 2px solid rgba(23, 56, 75, 0.14) !important;
+  box-shadow: 0 8px 14px rgba(33, 90, 124, 0.10) !important;
+  font-size: 2rem !important;
+  line-height: 1 !important;
+  text-shadow: none !important;
+}
+
+html:not(.theme-dark) .game-meta-row,
+html:not(.theme-dark) .input-card input,
+html:not(.theme-dark) .key-react-key-card,
+html:not(.theme-dark) .battle-row,
+html:not(.theme-dark) .battle-slot,
+html:not(.theme-dark) .race-ranking-item,
+html:not(.theme-dark) .battle-ranking-item,
+html:not(.theme-dark) .stock-player-tab,
+html:not(.theme-dark) .stock-allocation-row,
+html:not(.theme-dark) .naval-log-item {
+  background: rgba(247, 247, 249, 0.92) !important;
+  color: var(--day-ink) !important;
+  border: 1px solid rgba(23, 56, 75, 0.10) !important;
+}
+
+html:not(.theme-dark) .game-meta-label,
+html:not(.theme-dark) .input-card label {
+  color: #355769 !important;
+}
+
+html:not(.theme-dark) .game-meta-value,
+html:not(.theme-dark) .slot-name,
+html:not(.theme-dark) .slot-meta,
+html:not(.theme-dark) .horse-name,
+html:not(.theme-dark) .battle-player-name,
+html:not(.theme-dark) .sim-player-name,
+html:not(.theme-dark) .battle-rank-name,
+html:not(.theme-dark) .race-lane-label,
+html:not(.theme-dark) .stock-player-name,
+html:not(.theme-dark) .stock-summary-title {
+  color: var(--day-ink) !important;
+}
+
+html:not(.theme-dark) .game-canvas-wrap,
+html:not(.theme-dark) .race-track-wrap,
+html:not(.theme-dark) .sim-arena-wrap,
+html:not(.theme-dark) .sim-arena-zoom-stage,
+html:not(.theme-dark) .naval-board-wrap {
+  background: #F7F7F9 !important;
+  border: 3px solid rgba(255,255,255,0.90) !important;
+  box-shadow: var(--day-shadow-strong) !important;
+}
+
+html:not(.theme-dark) .race-lane {
+  background:
+    repeating-linear-gradient(90deg, rgba(247,247,249,0.32) 0px, rgba(247,247,249,0.32) 28px, rgba(247,247,249,0.14) 28px, rgba(247,247,249,0.14) 56px),
+    #76B947 !important;
+}
+
+html:not(.theme-dark) .race-horse {
+  background: #F7F7F9 !important;
+  color: var(--day-ink) !important;
+  border: 2px solid rgba(255,255,255,0.90) !important;
+}
+
+
+/* =========================================================
+   DAY MODE DISTINCT GAME COLORS PASS
+   목적: 각 게임의 낮모드 요소가 덜 하얗고, 더 잘 구분되게 조정
+========================================================= */
+html:not(.theme-dark) .game-item,
+html:not(.theme-dark) .physical-game-item {
+  --tile-bg: #F7F7F9;
+  --tile-surface: #EEF4F8;
+  --tile-accent: #59B4E3;
+}
+
+html:not(.theme-dark) .game-item:nth-child(5n+1),
+html:not(.theme-dark) .physical-game-item:nth-child(5n+1) {
+  --tile-bg: #FFD233;
+  --tile-surface: #FFF0A8;
+  --tile-accent: #FF8C42;
+}
+
+html:not(.theme-dark) .game-item:nth-child(5n+2),
+html:not(.theme-dark) .physical-game-item:nth-child(5n+2) {
+  --tile-bg: #59B4E3;
+  --tile-surface: #CDEBFA;
+  --tile-accent: #17384B;
+}
+
+html:not(.theme-dark) .game-item:nth-child(5n+3),
+html:not(.theme-dark) .physical-game-item:nth-child(5n+3) {
+  --tile-bg: #F7F7F9;
+  --tile-surface: #E8F0F5;
+  --tile-accent: #59B4E3;
+}
+
+html:not(.theme-dark) .game-item:nth-child(5n+4),
+html:not(.theme-dark) .physical-game-item:nth-child(5n+4) {
+  --tile-bg: #76B947;
+  --tile-surface: #D8EDC9;
+  --tile-accent: #17384B;
+}
+
+html:not(.theme-dark) .game-item:nth-child(5n),
+html:not(.theme-dark) .physical-game-item:nth-child(5n) {
+  --tile-bg: #FF8C42;
+  --tile-surface: #FFD8BE;
+  --tile-accent: #17384B;
+}
+
+html:not(.theme-dark) .game-item,
+html:not(.theme-dark) .game-item.game-launch,
+html:not(.theme-dark) .physical-game-item {
+  background: var(--tile-bg) !important;
+  border-color: rgba(255,255,255,0.92) !important;
+}
+
+html:not(.theme-dark) .game-item .game-num,
+html:not(.theme-dark) .physical-game-item .game-num {
+  background: var(--tile-surface) !important;
+  color: var(--day-ink) !important;
+  border-color: rgba(23, 56, 75, 0.16) !important;
+}
+
+html:not(.theme-dark) .game-item .game-meta-row,
+html:not(.theme-dark) .physical-game-item .game-meta-row,
+html:not(.theme-dark) .game-item .physical-compat-badge,
+html:not(.theme-dark) .physical-game-item .physical-compat-badge {
+  background: var(--tile-surface) !important;
+  border-color: rgba(23, 56, 75, 0.10) !important;
+  color: var(--day-ink) !important;
+}
+
+html:not(.theme-dark) .game-item .game-meta-label,
+html:not(.theme-dark) .physical-game-item .game-meta-label {
+  color: rgba(23, 56, 75, 0.76) !important;
+}
+
+html:not(.theme-dark) .game-item .game-meta-value,
+html:not(.theme-dark) .physical-game-item .game-meta-value {
+  color: var(--day-ink) !important;
+}
+
+html:not(.theme-dark) .game-screen {
+  --screen-accent: #59B4E3;
+  --screen-surface: #DDEFF9;
+  --screen-surface-2: #C8E6F6;
+  --screen-stage: #F7F7F9;
+}
+
+html:not(.theme-dark) #game1Screen,
+html:not(.theme-dark) #physicalBearFindScreen {
+  --screen-accent: #FF8C42;
+  --screen-surface: #FFE1CE;
+  --screen-surface-2: #FFD2B6;
+  --screen-stage: #FFF1E7;
+}
+
+html:not(.theme-dark) #game2Screen,
+html:not(.theme-dark) #game7Screen,
+html:not(.theme-dark) #physicalKeyReactScreen {
+  --screen-accent: #76B947;
+  --screen-surface: #E0F0D4;
+  --screen-surface-2: #D1E8C0;
+  --screen-stage: #F2F9EC;
+}
+
+html:not(.theme-dark) #game3Screen,
+html:not(.theme-dark) #game6Screen,
+html:not(.theme-dark) #physicalCircleScreen {
+  --screen-accent: #59B4E3;
+  --screen-surface: #DDEFF9;
+  --screen-surface-2: #C8E6F6;
+  --screen-stage: #EEF7FC;
+}
+
+html:not(.theme-dark) #game4Screen,
+html:not(.theme-dark) #physicalBombScreen {
+  --screen-accent: #FFD233;
+  --screen-surface: #FFF0B3;
+  --screen-surface-2: #FFE78D;
+  --screen-stage: #FFF8D9;
+}
+
+html:not(.theme-dark) #game5Screen,
+html:not(.theme-dark) #physicalBalloonScreen {
+  --screen-accent: #FF8C42;
+  --screen-surface: #FFE1CE;
+  --screen-surface-2: #FFD2B6;
+  --screen-stage: #FFF1E7;
+}
+
+html:not(.theme-dark) .game-screen .controls-wrap,
+html:not(.theme-dark) .game-screen .scoreboard-card,
+html:not(.theme-dark) .game-screen .game-board-card,
+html:not(.theme-dark) .game-screen .race-panel,
+html:not(.theme-dark) .game-screen .battle-panel,
+html:not(.theme-dark) .game-screen .sim-setup-card,
+html:not(.theme-dark) .game-screen .sim-arena-card,
+html:not(.theme-dark) .game-screen .sim-battle-summary-card,
+html:not(.theme-dark) .game-screen .naval-board-card,
+html:not(.theme-dark) .game-screen .stock-portfolio-card,
+html:not(.theme-dark) .game-screen .bear-find-stage-card,
+html:not(.theme-dark) .game-screen .balloon-stage-card,
+html:not(.theme-dark) .game-screen .bomb-pass-stage-card,
+html:not(.theme-dark) .game-screen .circle-tap-stage-card,
+html:not(.theme-dark) .game-screen .key-react-stage-card,
+html:not(.theme-dark) .game-screen .ladder-stage-card,
+html:not(.theme-dark) .game-screen .roulette-stage-card,
+html:not(.theme-dark) .game-screen .game-sidebar,
+html:not(.theme-dark) .game-screen .race-sidebar,
+html:not(.theme-dark) .game-screen .battle-sidebar,
+html:not(.theme-dark) .game-screen .sim-sidebar,
+html:not(.theme-dark) .game-screen .naval-sidebar,
+html:not(.theme-dark) .game-screen .balloon-sidebar,
+html:not(.theme-dark) .game-screen .circle-tap-sidebar,
+html:not(.theme-dark) .game-screen .key-react-sidebar,
+html:not(.theme-dark) .game-screen .bear-find-sidebar {
+  background: var(--screen-surface) !important;
+  border: 2px solid rgba(255,255,255,0.88) !important;
+  box-shadow: var(--day-shadow-soft) !important;
+}
+
+html:not(.theme-dark) .game-screen .small-badge,
+html:not(.theme-dark) .game-screen .game-mini-badge,
+html:not(.theme-dark) .game-screen .sim-phase-badge,
+html:not(.theme-dark) .game-screen .battle-deck-label,
+html:not(.theme-dark) .game-screen .legend-chip,
+html:not(.theme-dark) .game-screen .physical-compat-badge {
+  background: var(--screen-surface-2) !important;
+  border-color: rgba(23,56,75,0.10) !important;
+  color: var(--day-ink) !important;
+}
+
+html:not(.theme-dark) .game-screen .input-card input,
+html:not(.theme-dark) .game-screen .game-meta-row,
+html:not(.theme-dark) .game-screen .slot-box,
+html:not(.theme-dark) .game-screen .battle-row,
+html:not(.theme-dark) .game-screen .battle-slot,
+html:not(.theme-dark) .game-screen .race-ranking-item,
+html:not(.theme-dark) .game-screen .battle-ranking-item,
+html:not(.theme-dark) .game-screen .stock-player-tab,
+html:not(.theme-dark) .game-screen .stock-allocation-row,
+html:not(.theme-dark) .game-screen .naval-log-item,
+html:not(.theme-dark) .game-screen .naval-ranking-item,
+html:not(.theme-dark) .game-screen .naval-player-chip,
+html:not(.theme-dark) .game-screen .naval-elimination-item,
+html:not(.theme-dark) .game-screen .sim-empty-state {
+  background: var(--screen-stage) !important;
+  border-color: rgba(23,56,75,0.10) !important;
+  color: var(--day-ink) !important;
+}
+
+html:not(.theme-dark) .game-screen .game-board-head,
+html:not(.theme-dark) .game-screen .scoreboard-head,
+html:not(.theme-dark) .game-screen .battle-panel-head,
+html:not(.theme-dark) .game-screen .stock-panel-head,
+html:not(.theme-dark) .game-screen .race-track-stage-head {
+  background: var(--screen-surface-2) !important;
+  border-radius: 18px !important;
+  padding: 12px 14px !important;
+}
+
+html:not(.theme-dark) .game-screen .game-canvas-wrap,
+html:not(.theme-dark) .game-screen .race-track-wrap,
+html:not(.theme-dark) .game-screen .sim-arena-wrap,
+html:not(.theme-dark) .game-screen .sim-arena-zoom-stage,
+html:not(.theme-dark) .game-screen .naval-board-wrap {
+  background: var(--screen-stage) !important;
+  border: 3px solid rgba(255,255,255,0.90) !important;
+}
+
+html:not(.theme-dark) .game-screen .back-btn,
+html:not(.theme-dark) .game-screen .drawer-toggle-btn,
+html:not(.theme-dark) .game-screen .sim-info-btn,
+html:not(.theme-dark) .game-screen .sim-arena-zoom-btn {
+  background: var(--screen-surface-2) !important;
+  color: var(--day-ink) !important;
+  border-color: rgba(23,56,75,0.12) !important;
+}
