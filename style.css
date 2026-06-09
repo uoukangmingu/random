@@ -6349,6 +6349,100 @@ input,
   opacity: 0.82;
 }
 
+.utility-volume-panel {
+  width: 232px;
+  display: grid;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border-radius: 22px;
+  pointer-events: auto;
+  background: rgba(255, 250, 245, 0.94);
+  color: var(--soft-brown);
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  box-shadow: 0 12px 24px rgba(90, 70, 60, 0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.volume-control {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.volume-control-text,
+.volume-control-value {
+  white-space: nowrap;
+}
+
+.volume-control-value {
+  text-align: right;
+  color: #9b7d6b;
+  font-variant-numeric: tabular-nums;
+}
+
+.volume-range {
+  width: 100%;
+  height: 18px;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.volume-range::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(246, 201, 215, 0.98) 0%, rgba(246, 201, 215, 0.98) var(--volume-progress, 50%), rgba(235, 222, 211, 0.96) var(--volume-progress, 50%), rgba(235, 222, 211, 0.96) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+}
+
+.volume-range::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(235, 222, 211, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+}
+
+.volume-range::-moz-range-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(246, 201, 215, 0.98);
+}
+
+.volume-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: #fffaf5;
+  border: 3px solid rgba(185, 126, 153, 0.86);
+  box-shadow: 0 6px 12px rgba(90, 70, 60, 0.14);
+}
+
+.volume-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fffaf5;
+  border: 3px solid rgba(185, 126, 153, 0.86);
+  box-shadow: 0 6px 12px rgba(90, 70, 60, 0.14);
+}
+
+.volume-range:focus-visible {
+  outline: 3px solid rgba(227, 217, 255, 0.75);
+  outline-offset: 4px;
+  border-radius: 999px;
+}
+
 .utility-audio-btn.is-audio-off {
   opacity: 0.78;
   background: rgba(245, 239, 235, 0.92);
@@ -6441,6 +6535,38 @@ html.theme-dark .utility-btn {
   color: #f4e9df;
   border-color: rgba(255, 255, 255, 0.07);
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+}
+
+html.theme-dark .utility-volume-panel {
+  background: rgba(40, 32, 48, 0.94);
+  color: #f4e9df;
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+}
+
+html.theme-dark .volume-control-value {
+  color: rgba(240, 231, 223, 0.72);
+}
+
+html.theme-dark .volume-range::-webkit-slider-runnable-track {
+  background:
+    linear-gradient(90deg, rgba(255, 159, 192, 0.94) 0%, rgba(255, 159, 192, 0.94) var(--volume-progress, 50%), rgba(255, 255, 255, 0.12) var(--volume-progress, 50%), rgba(255, 255, 255, 0.12) 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.theme-dark .volume-range::-moz-range-track {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.theme-dark .volume-range::-moz-range-progress {
+  background: rgba(255, 159, 192, 0.94);
+}
+
+html.theme-dark .volume-range::-webkit-slider-thumb,
+html.theme-dark .volume-range::-moz-range-thumb {
+  background: #2e2537;
+  border-color: rgba(255, 159, 192, 0.86);
 }
 
 html.theme-dark .main-btn {
@@ -21350,4 +21476,4230 @@ html.theme-dark body.physical-bearfind-mode .bear-find-panel-head h3,
 html.theme-dark body.physical-bearfind-mode .bear-find-player-card .scoreboard-head h3,
 html.theme-dark body.physical-bearfind-mode .bear-find-sidebar .input-card label {
   color: #ffd8e7;
+}
+
+/* volume controls patch */
+@media (max-width: 1024px) {
+  .utility-volume-panel {
+    width: 218px;
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .volume-control {
+    grid-template-columns: 46px minmax(0, 1fr) 38px;
+    gap: 8px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .utility-volume-panel {
+    width: 172px;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .volume-control {
+    grid-template-columns: 42px minmax(0, 1fr) 34px;
+    gap: 7px;
+    font-size: 0.72rem;
+  }
+
+  .volume-range::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+    margin-top: -5px;
+  }
+
+  .volume-range::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .utility-controls {
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .utility-volume-panel {
+    width: min(164px, calc(100vw - 20px));
+  }
+
+  .volume-control {
+    grid-template-columns: 38px minmax(0, 1fr) 32px;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 767px) {
+  body.physical-balloon-mode .utility-volume-panel,
+  body.physical-bomb-mode .utility-volume-panel,
+  body.physical-circle-mode .utility-volume-panel {
+    width: 168px;
+  }
+}
+
+/* restore game5 bottom information panels */
+#game5Screen .roulette-bottom-grid .naval-log-panel,
+#game5Screen .roulette-bottom-grid .naval-ranking-panel {
+  display: block;
+}
+
+#game5Screen .roulette-bottom-grid {
+  margin-top: 16px;
+}
+
+.stock-bottom-grid {
+  margin-top: 16px;
+}
+
+/* =========================
+   stability/layout patch: runtime panels + unified game cards
+   목적: 누락된 UI 타깃 복구, 게임별 하단 정보 패널 톤 통일, 모바일 겹침 완화
+========================= */
+.game-progress-meter {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 560px);
+  margin: 12px auto 0;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 250, 245, 0.88);
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.07);
+}
+
+.game-progress-meter-label {
+  font-size: 0.84rem;
+  font-weight: 900;
+  color: var(--soft-brown);
+  white-space: nowrap;
+}
+
+.game-progress-meter-track {
+  position: relative;
+  display: block;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(230, 216, 205, 0.82);
+  box-shadow: inset 0 2px 5px rgba(120, 90, 70, 0.12);
+}
+
+.game-progress-meter-fill {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #bfe8d8 0%, #f9db8f 72%, #ff9b85 100%);
+  transition: width 0.12s linear, filter 0.12s ease;
+}
+
+.game-progress-meter-fill.is-warning {
+  filter: saturate(1.12) brightness(1.02);
+}
+
+.game-progress-meter-fill.is-danger {
+  filter: saturate(1.35) brightness(0.95);
+}
+
+.balloon-pressure-label {
+  display: block;
+  margin-top: 2px;
+  font-size: clamp(0.74rem, 1.8vw, 0.9rem);
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 2px rgba(80, 38, 54, 0.32);
+  line-height: 1;
+}
+
+.balloon-visual.is-warning .balloon-body {
+  filter: saturate(1.12) brightness(1.04);
+}
+
+.balloon-visual.is-danger .balloon-body {
+  filter: saturate(1.25) brightness(0.98);
+}
+
+.circle-tap-runtime-panel {
+  width: min(100%, 420px);
+  margin: 12px auto 0;
+  padding: 12px 14px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(255, 250, 245, 0.88);
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 18px rgba(120, 90, 70, 0.07);
+  color: var(--soft-brown);
+}
+
+.circle-tap-runtime-panel span {
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.circle-tap-runtime-panel strong {
+  min-width: 64px;
+  text-align: right;
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--brown);
+}
+
+.sim-ranking-card,
+.naval-ranking-panel,
+.naval-log-panel,
+.stock-portfolio-card.controls-wrap {
+  background: var(--card-strong);
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  border-radius: 24px;
+  box-shadow: 0 10px 22px rgba(130, 100, 80, 0.06);
+}
+
+.sim-ranking-card {
+  margin-top: 16px;
+}
+
+.sim-ranking-list,
+.roulette-ranking-list,
+.roulette-log-list,
+.stock-ranking-list,
+.stock-portfolio-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.sim-ranking-item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 11px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  box-shadow: 0 6px 14px rgba(120, 90, 70, 0.05);
+}
+
+.sim-ranking-item.top {
+  background: linear-gradient(180deg, rgba(255, 248, 226, 0.96) 0%, rgba(255, 241, 205, 0.9) 100%);
+}
+
+.sim-ranking-item.is-out {
+  opacity: 0.66;
+  filter: grayscale(0.25);
+}
+
+.sim-ranking-num {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: var(--brown);
+  background: linear-gradient(135deg, var(--lavender), var(--sky));
+}
+
+.sim-ranking-main {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.sim-ranking-name {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  color: var(--brown);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sim-ranking-dot {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8);
+}
+
+.sim-ranking-hp-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(226, 213, 201, 0.9);
+}
+
+.sim-ranking-hp-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #cfeadf 0%, #f9db8f 70%, #ff9b85 100%);
+  transition: width 0.18s linear;
+}
+
+.sim-ranking-state {
+  white-space: nowrap;
+  font-size: 0.86rem;
+  font-weight: 900;
+  color: #8f7363;
+}
+
+.sim-ranking-empty,
+.roulette-ranking-empty,
+.roulette-log-empty,
+.stock-empty-state,
+.stock-holder-empty {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #8c7262;
+  line-height: 1.55;
+}
+
+#game4Screen .sim-panel-head,
+#game5Screen .naval-panel-head,
+#game6Screen .stock-portfolio-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+#game4Screen .sim-panel-head h3,
+#game5Screen .naval-panel-head h3,
+#game6Screen .stock-portfolio-head h4 {
+  font-family: 'Gaegu', cursive;
+  color: var(--soft-brown);
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+html.theme-dark .game-progress-meter,
+html.theme-dark .circle-tap-runtime-panel,
+html.theme-dark .sim-ranking-card,
+html.theme-dark .naval-ranking-panel,
+html.theme-dark .naval-log-panel,
+html.theme-dark .stock-portfolio-card.controls-wrap {
+  background: rgba(16, 24, 36, 0.82);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.22);
+}
+
+html.theme-dark .game-progress-meter-track,
+html.theme-dark .sim-ranking-hp-track {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+html.theme-dark .circle-tap-runtime-panel,
+html.theme-dark .circle-tap-runtime-panel strong,
+html.theme-dark .game-progress-meter-label,
+html.theme-dark .sim-ranking-name,
+html.theme-dark .sim-ranking-num,
+html.theme-dark #game4Screen .sim-panel-head h3,
+html.theme-dark #game5Screen .naval-panel-head h3,
+html.theme-dark #game6Screen .stock-portfolio-head h4 {
+  color: #f1ded2;
+}
+
+html.theme-dark .sim-ranking-item,
+html.theme-dark .sim-ranking-empty,
+html.theme-dark .roulette-ranking-empty,
+html.theme-dark .roulette-log-empty,
+html.theme-dark .stock-empty-state,
+html.theme-dark .stock-holder-empty {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(241, 222, 210, 0.82);
+}
+
+html.theme-dark .sim-ranking-item.top {
+  background: linear-gradient(180deg, rgba(64, 54, 30, 0.88) 0%, rgba(46, 39, 25, 0.86) 100%);
+}
+
+@media (max-width: 760px) {
+  .game-progress-meter,
+  .circle-tap-runtime-panel {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px 12px;
+  }
+
+  .sim-ranking-item {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .sim-ranking-state {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .sim-ranking-card,
+  .naval-ranking-panel,
+  .naval-log-panel,
+  .stock-portfolio-card.controls-wrap {
+    border-radius: 22px;
+  }
+}
+
+/* =====================================================================
+   UNIFIED DESIGN PASS v2
+   기능은 건드리지 않고, 화면 전반의 시각 언어만 하나로 정리한다.
+   방향: 검은 복도 배너와 어울리는 블루프린트/느와르 기반 UI + 게임 색상은 기능성 유지.
+===================================================================== */
+
+:root {
+  --ui-bg: #f3f2ec;
+  --ui-bg-2: #e8e1d6;
+  --ui-surface: rgba(250, 248, 242, 0.92);
+  --ui-surface-2: rgba(239, 235, 226, 0.90);
+  --ui-surface-3: rgba(255, 255, 255, 0.72);
+  --ui-line: rgba(19, 61, 122, 0.18);
+  --ui-line-strong: rgba(19, 61, 122, 0.32);
+  --ui-text: #121723;
+  --ui-text-soft: #2c3546;
+  --ui-muted: #6c7482;
+  --ui-blue: #133d7a;
+  --ui-blue-2: #0f2b54;
+  --ui-cream: #f3f2ec;
+  --ui-gold: #c9aa72;
+  --ui-red: #a8463a;
+  --ui-green: #2d7569;
+  --ui-shadow: 0 24px 70px rgba(18, 26, 42, 0.13);
+  --ui-shadow-soft: 0 14px 36px rgba(18, 26, 42, 0.10);
+  --ui-radius-xl: 28px;
+  --ui-radius-lg: 22px;
+  --ui-radius-md: 16px;
+  --ui-grid-line: rgba(19, 61, 122, 0.055);
+}
+
+html.theme-dark {
+  --ui-bg: #05070b;
+  --ui-bg-2: #0b1019;
+  --ui-surface: rgba(13, 19, 30, 0.90);
+  --ui-surface-2: rgba(18, 27, 42, 0.88);
+  --ui-surface-3: rgba(26, 39, 60, 0.76);
+  --ui-line: rgba(243, 242, 236, 0.12);
+  --ui-line-strong: rgba(84, 142, 218, 0.38);
+  --ui-text: #f3f2ec;
+  --ui-text-soft: #dce5f2;
+  --ui-muted: #9ba9bf;
+  --ui-blue: #1f66c2;
+  --ui-blue-2: #133d7a;
+  --ui-cream: #f3f2ec;
+  --ui-gold: #d8c39a;
+  --ui-red: #d45b4e;
+  --ui-green: #6dd4be;
+  --ui-shadow: 0 28px 80px rgba(0, 0, 0, 0.46);
+  --ui-shadow-soft: 0 18px 44px rgba(0, 0, 0, 0.32);
+  --ui-grid-line: rgba(243, 242, 236, 0.045);
+}
+
+html,
+body {
+  background: var(--ui-bg) !important;
+}
+
+body {
+  color: var(--ui-text) !important;
+  font-family: 'Pretendard', system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  letter-spacing: -0.015em;
+  background:
+    linear-gradient(var(--ui-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ui-grid-line) 1px, transparent 1px),
+    radial-gradient(circle at 12% 10%, rgba(19, 61, 122, 0.16), transparent 28%),
+    radial-gradient(circle at 92% 88%, rgba(201, 170, 114, 0.16), transparent 30%),
+    linear-gradient(180deg, var(--ui-bg) 0%, var(--ui-bg-2) 100%) !important;
+  background-size: 32px 32px, 32px 32px, auto, auto, auto !important;
+}
+
+html.theme-dark body {
+  background:
+    linear-gradient(var(--ui-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ui-grid-line) 1px, transparent 1px),
+    radial-gradient(circle at 10% 8%, rgba(19, 61, 122, 0.38), transparent 30%),
+    radial-gradient(circle at 92% 82%, rgba(201, 170, 114, 0.12), transparent 32%),
+    linear-gradient(180deg, var(--ui-bg) 0%, var(--ui-bg-2) 100%) !important;
+  background-size: 34px 34px, 34px 34px, auto, auto, auto !important;
+}
+
+.background-deco {
+  display: none !important;
+}
+
+.app {
+  padding: clamp(18px, 2.4vw, 36px) clamp(12px, 2vw, 28px) !important;
+}
+
+.screen {
+  max-width: 1220px;
+}
+
+.card,
+.controls-wrap,
+.scoreboard-card,
+.game-board-card,
+.race-panel,
+.race-track-wrap,
+.battle-table-card,
+.battle-panel,
+.sim-setup-card,
+.sim-arena-card,
+.sim-battle-summary-card,
+.naval-board-card,
+.stock-portfolio-card,
+.bear-find-stage-card,
+.bear-find-sidebar,
+.popup,
+.orientation-lock-card,
+.game-sidebar,
+.race-sidebar,
+.battle-sidebar,
+.sim-sidebar,
+.naval-sidebar,
+.balloon-sidebar,
+.circle-tap-sidebar,
+.key-react-sidebar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+    var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  border: 1px solid var(--ui-line) !important;
+  border-radius: var(--ui-radius-xl) !important;
+  box-shadow: var(--ui-shadow) !important;
+  backdrop-filter: blur(18px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(120%) !important;
+}
+
+html.theme-dark .card,
+html.theme-dark .controls-wrap,
+html.theme-dark .scoreboard-card,
+html.theme-dark .game-board-card,
+html.theme-dark .race-panel,
+html.theme-dark .race-track-wrap,
+html.theme-dark .battle-table-card,
+html.theme-dark .battle-panel,
+html.theme-dark .sim-setup-card,
+html.theme-dark .sim-arena-card,
+html.theme-dark .sim-battle-summary-card,
+html.theme-dark .naval-board-card,
+html.theme-dark .stock-portfolio-card,
+html.theme-dark .bear-find-stage-card,
+html.theme-dark .bear-find-sidebar,
+html.theme-dark .popup,
+html.theme-dark .orientation-lock-card,
+html.theme-dark .game-sidebar,
+html.theme-dark .race-sidebar,
+html.theme-dark .battle-sidebar,
+html.theme-dark .sim-sidebar,
+html.theme-dark .naval-sidebar,
+html.theme-dark .balloon-sidebar,
+html.theme-dark .circle-tap-sidebar,
+html.theme-dark .key-react-sidebar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent),
+    var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  border-color: var(--ui-line) !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.card::before,
+.game-card::before,
+.main-card::before,
+.menu-card::before,
+.luck-card::before,
+.physical-card::before {
+  content: '';
+  display: block;
+  height: 3px;
+  width: min(210px, 45%);
+  margin: -3px auto clamp(16px, 2vw, 22px);
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--ui-blue), var(--ui-gold), transparent);
+  opacity: 0.92;
+}
+
+.main-card,
+.menu-card {
+  max-width: 720px;
+  padding: clamp(34px, 5vw, 58px) clamp(22px, 4vw, 48px) !important;
+}
+
+.main-card h1,
+.menu-card h2,
+.luck-card h2,
+.physical-card h2,
+.game-card h2,
+.popup h3,
+.sidebar-title,
+#game4Screen .sim-panel-head h3,
+#game5Screen .naval-panel-head h3,
+#game6Screen .stock-portfolio-head h4,
+.physical-header h2,
+.bear-find-card-screen h2 {
+  font-family: 'Pretendard', system-ui, sans-serif !important;
+  color: var(--ui-text) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.06em !important;
+  line-height: 1.05 !important;
+}
+
+.main-card h1 {
+  font-size: clamp(2.55rem, 5.6vw, 5.2rem) !important;
+}
+
+.menu-card h2,
+.luck-card h2,
+.physical-card h2,
+.game-card h2 {
+  font-size: clamp(2rem, 4vw, 3.65rem) !important;
+}
+
+.sub-text,
+.helper-text,
+.status-text,
+#totalInfo,
+.game-item p,
+.popup-message,
+.orientation-lock-card p,
+.game-board-head span,
+.race-track-stage-desc,
+.bomb-pass-status-text,
+.bomb-pass-device-text,
+.balloon-stage-hint,
+.circle-tap-stage-hint,
+.bear-find-stage-hint {
+  color: var(--ui-muted) !important;
+  line-height: 1.65 !important;
+}
+
+.small-badge,
+.game-mini-badge,
+.physical-compat-badge,
+.game-ff-badge,
+.battle-deck-label,
+.sim-phase-badge,
+.naval-phase-badge,
+.stock-ready-badge,
+.ladder-reveal-badge,
+.balloon-turn-badge,
+.bomb-pass-state-badge,
+.circle-tap-turn-badge,
+.key-react-phase-badge,
+.bear-find-phase-badge {
+  min-height: 0 !important;
+  padding: 8px 12px !important;
+  border-radius: 999px !important;
+  background: rgba(19, 61, 122, 0.10) !important;
+  border: 1px solid var(--ui-line-strong) !important;
+  color: var(--ui-blue) !important;
+  font-family: 'Pretendard', system-ui, sans-serif !important;
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  box-shadow: none !important;
+}
+
+html.theme-dark .small-badge,
+html.theme-dark .game-mini-badge,
+html.theme-dark .physical-compat-badge,
+html.theme-dark .game-ff-badge,
+html.theme-dark .battle-deck-label,
+html.theme-dark .sim-phase-badge,
+html.theme-dark .naval-phase-badge,
+html.theme-dark .stock-ready-badge,
+html.theme-dark .ladder-reveal-badge,
+html.theme-dark .balloon-turn-badge,
+html.theme-dark .bomb-pass-state-badge,
+html.theme-dark .circle-tap-turn-badge,
+html.theme-dark .key-react-phase-badge,
+html.theme-dark .bear-find-phase-badge {
+  background: rgba(31, 102, 194, 0.16) !important;
+  border-color: rgba(84, 142, 218, 0.36) !important;
+  color: #9bc6ff !important;
+}
+
+.main-btn,
+.action-btn,
+.back-btn,
+.popup-btn,
+.menu-btn,
+.utility-btn,
+.drawer-toggle-btn,
+.sim-info-btn,
+.sim-arena-zoom-btn,
+.race-track-zoom-btn,
+.roulette-stage-zoom-btn {
+  border-radius: 999px !important;
+  font-family: 'Pretendard', system-ui, sans-serif !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.025em;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease !important;
+}
+
+.main-btn,
+.action-btn.primary {
+  background: linear-gradient(135deg, var(--ui-blue), #2762aa) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 14px 32px rgba(19, 61, 122, 0.28) !important;
+}
+
+.action-btn.secondary,
+.menu-btn,
+.drawer-toggle-btn,
+.sim-info-btn,
+.sim-arena-zoom-btn,
+.race-track-zoom-btn,
+.roulette-stage-zoom-btn {
+  background: var(--ui-surface-2) !important;
+  color: var(--ui-text) !important;
+  border: 1px solid var(--ui-line) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+.action-btn.soft,
+.back-btn,
+.popup-btn,
+.utility-btn {
+  background: rgba(201, 170, 114, 0.12) !important;
+  color: var(--ui-text) !important;
+  border: 1px solid rgba(201, 170, 114, 0.34) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+.main-btn:hover,
+.action-btn:hover,
+.menu-btn:hover,
+.game-item:hover,
+.back-btn:hover,
+.popup-btn:hover,
+.drawer-toggle-btn:hover,
+.utility-btn:hover {
+  transform: translateY(-2px) !important;
+}
+
+.action-btn:disabled,
+.action-btn.is-game-running,
+.main-btn:disabled,
+button[aria-disabled='true'] {
+  opacity: 0.48 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+  filter: saturate(0.65) !important;
+}
+
+.input-card input,
+input:disabled,
+select,
+textarea {
+  background: rgba(255, 255, 255, 0.58) !important;
+  color: var(--ui-text) !important;
+  border: 1px solid var(--ui-line) !important;
+  border-radius: 16px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+html.theme-dark .input-card input,
+html.theme-dark input:disabled,
+html.theme-dark select,
+html.theme-dark textarea {
+  background: rgba(5, 8, 13, 0.78) !important;
+  color: var(--ui-text) !important;
+  border-color: rgba(243, 242, 236, 0.14) !important;
+}
+
+.input-card input:focus {
+  border-color: var(--ui-blue) !important;
+  box-shadow: 0 0 0 4px rgba(31, 102, 194, 0.16) !important;
+}
+
+.menu-buttons {
+  gap: 14px !important;
+}
+
+.menu-btn {
+  min-height: 150px !important;
+  flex: 1 1 220px;
+  overflow: hidden;
+  position: relative;
+}
+
+.menu-btn::after,
+.game-item::after {
+  content: '';
+  position: absolute;
+  inset: auto 16px 14px auto;
+  width: 46px;
+  height: 46px;
+  border-right: 1px solid var(--ui-line-strong);
+  border-bottom: 1px solid var(--ui-line-strong);
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+.menu-btn .emoji {
+  font-size: 2.2rem !important;
+  filter: saturate(0.86);
+}
+
+.luck-card,
+.physical-card,
+.game-card {
+  padding: clamp(20px, 2.6vw, 34px) !important;
+}
+
+.luck-header,
+.physical-header,
+.game-main-header,
+.race-main-header,
+.battle-main-header,
+.sim-main-header,
+.naval-main-header,
+.stock-main-header,
+.ladder-main-header,
+.balloon-main-header,
+.bomb-pass-main-header,
+.circle-tap-main-header,
+.key-react-main-header,
+.bear-find-main-header {
+  margin-bottom: clamp(14px, 2vw, 22px) !important;
+}
+
+.game-grid,
+.physical-game-grid {
+  gap: 14px !important;
+}
+
+.game-item,
+.game-item.game-launch,
+.physical-game-item,
+html.theme-dark .game-item,
+html.theme-dark .game-item.game-launch,
+html.theme-dark .physical-game-item,
+html.theme-dark .game-item:nth-child(2),
+html.theme-dark .game-item:nth-child(3),
+html.theme-dark .game-item:nth-child(4),
+html.theme-dark .game-item:nth-child(5),
+html.theme-dark .game-item:nth-child(6),
+html.theme-dark .game-item:nth-child(7),
+html.theme-dark .game-item:nth-child(8) {
+  min-height: 214px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+    var(--ui-surface-2) !important;
+  color: var(--ui-text) !important;
+  border: 1px solid var(--ui-line) !important;
+  border-radius: var(--ui-radius-lg) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+  text-align: left !important;
+}
+
+.game-item h3,
+.game-num,
+.game-meta-label,
+.game-meta-value,
+.scoreboard-head h3,
+.input-card label,
+.race-panel-head h3,
+.battle-panel-head h3,
+.sim-panel-head h3,
+.naval-panel-head h3,
+.stock-portfolio-head h4,
+.ladder-panel-head h3,
+.balloon-panel-head h3,
+.bomb-pass-panel-head h3,
+.circle-tap-panel-head h3,
+.key-react-panel-head h3,
+.bear-find-panel-head h3 {
+  font-family: 'Pretendard', system-ui, sans-serif !important;
+  color: var(--ui-text) !important;
+  letter-spacing: -0.035em !important;
+}
+
+.game-item h3 {
+  font-size: 1.34rem !important;
+  font-weight: 900 !important;
+  margin-bottom: 8px !important;
+}
+
+.game-num,
+.battle-rank-num {
+  width: 42px !important;
+  height: 42px !important;
+  margin: 0 0 14px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, var(--ui-blue), var(--ui-blue-2)) !important;
+  color: #fff !important;
+  font-size: 1.1rem !important;
+  font-weight: 900 !important;
+  box-shadow: 0 10px 24px rgba(19, 61, 122, 0.22);
+}
+
+.game-meta-row {
+  min-height: 38px !important;
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.42) !important;
+  border: 1px solid var(--ui-line) !important;
+  box-shadow: none !important;
+}
+
+html.theme-dark .game-meta-row {
+  background: rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(243, 242, 236, 0.10) !important;
+}
+
+.game-meta-label {
+  color: var(--ui-muted) !important;
+  font-size: 0.74rem !important;
+  font-weight: 800 !important;
+}
+
+.game-meta-value {
+  color: var(--ui-text) !important;
+  font-size: 0.86rem !important;
+  font-weight: 900 !important;
+}
+
+/* game play stage panels */
+.game-canvas-wrap,
+.race-track-wrap,
+.sim-arena-wrap,
+.sim-arena-zoom-stage,
+.naval-board-wrap,
+.battle-table-card,
+.stock-board,
+.ladder-board,
+.balloon-stage-card,
+.bomb-pass-stage-card,
+.circle-tap-stage-card,
+.key-react-stage-card,
+.bear-find-stage-card,
+.bear-find-stage-button {
+  background:
+    linear-gradient(var(--ui-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ui-grid-line) 1px, transparent 1px),
+    linear-gradient(180deg, var(--ui-surface-2), rgba(255, 255, 255, 0.42)) !important;
+  background-size: 24px 24px, 24px 24px, auto !important;
+  border: 1px solid var(--ui-line) !important;
+  border-radius: var(--ui-radius-lg) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+html.theme-dark .game-canvas-wrap,
+html.theme-dark .race-track-wrap,
+html.theme-dark .sim-arena-wrap,
+html.theme-dark .sim-arena-zoom-stage,
+html.theme-dark .naval-board-wrap,
+html.theme-dark .battle-table-card,
+html.theme-dark .stock-board,
+html.theme-dark .ladder-board,
+html.theme-dark .balloon-stage-card,
+html.theme-dark .bomb-pass-stage-card,
+html.theme-dark .circle-tap-stage-card,
+html.theme-dark .key-react-stage-card,
+html.theme-dark .bear-find-stage-card,
+html.theme-dark .bear-find-stage-button {
+  background:
+    linear-gradient(var(--ui-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ui-grid-line) 1px, transparent 1px),
+    radial-gradient(circle at 50% 0%, rgba(31, 102, 194, 0.14), transparent 38%),
+    linear-gradient(180deg, rgba(10, 16, 25, 0.96), rgba(6, 9, 14, 0.96)) !important;
+  background-size: 26px 26px, 26px 26px, auto, auto !important;
+  border-color: rgba(243, 242, 236, 0.12) !important;
+}
+
+.controls-wrap,
+.scoreboard-card,
+.game-progress-meter,
+.circle-tap-runtime-panel,
+.sim-ranking-card,
+.naval-ranking-panel,
+.naval-log-panel,
+.stock-portfolio-card.controls-wrap,
+.key-react-live-card,
+.key-react-key-card,
+.bear-find-result-card {
+  border-radius: var(--ui-radius-lg) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+.legend-chip,
+.race-ranking-item,
+.battle-ranking-item,
+.battle-ranking-empty,
+.sim-empty-state,
+.naval-log-item,
+.naval-ranking-item,
+.naval-player-chip,
+.naval-elimination-item,
+.sim-ranking-item,
+.sim-ranking-empty,
+.roulette-ranking-empty,
+.roulette-log-empty,
+.stock-empty-state,
+.stock-holder-empty,
+.balloon-player-item,
+.circle-tap-player-item,
+.key-react-player-item,
+.key-react-key-row,
+.bear-find-player-item,
+.bear-find-player-empty,
+.ladder-check-item,
+.stock-roster-item,
+.stock-player-tab,
+.stock-portfolio-item {
+  background: rgba(255, 255, 255, 0.46) !important;
+  border: 1px solid var(--ui-line) !important;
+  color: var(--ui-text) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+html.theme-dark .legend-chip,
+html.theme-dark .race-ranking-item,
+html.theme-dark .battle-ranking-item,
+html.theme-dark .battle-ranking-empty,
+html.theme-dark .sim-empty-state,
+html.theme-dark .naval-log-item,
+html.theme-dark .naval-ranking-item,
+html.theme-dark .naval-player-chip,
+html.theme-dark .naval-elimination-item,
+html.theme-dark .sim-ranking-item,
+html.theme-dark .sim-ranking-empty,
+html.theme-dark .roulette-ranking-empty,
+html.theme-dark .roulette-log-empty,
+html.theme-dark .stock-empty-state,
+html.theme-dark .stock-holder-empty,
+html.theme-dark .balloon-player-item,
+html.theme-dark .circle-tap-player-item,
+html.theme-dark .key-react-player-item,
+html.theme-dark .key-react-key-row,
+html.theme-dark .bear-find-player-item,
+html.theme-dark .bear-find-player-empty,
+html.theme-dark .ladder-check-item,
+html.theme-dark .stock-roster-item,
+html.theme-dark .stock-player-tab,
+html.theme-dark .stock-portfolio-item {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(243, 242, 236, 0.10) !important;
+  color: var(--ui-text) !important;
+}
+
+/* Preserve functional color cues for current/win/finish states while matching the system. */
+.race-ranking-item.top,
+.battle-ranking-item.top,
+.sim-ranking-item.top,
+.naval-ranking-item.top,
+.bear-find-player-item.is-panda,
+.key-react-ranking-item.is-valid,
+.key-react-popup-item.is-valid,
+html.theme-dark .race-ranking-item.top,
+html.theme-dark .battle-ranking-item.top,
+html.theme-dark .sim-ranking-item.top,
+html.theme-dark .naval-ranking-item.top,
+html.theme-dark .bear-find-player-item.is-panda,
+html.theme-dark .key-react-ranking-item.is-valid,
+html.theme-dark .key-react-popup-item.is-valid {
+  background: linear-gradient(180deg, rgba(45, 117, 105, 0.22), rgba(45, 117, 105, 0.10)) !important;
+  border-color: rgba(45, 117, 105, 0.46) !important;
+}
+
+/* Home: landing card and ad banner are treated as one product page. */
+#homeScreen .home-screen-stack {
+  gap: clamp(18px, 2.6vw, 28px) !important;
+}
+
+#homeScreen .main-card {
+  position: relative;
+  overflow: hidden;
+}
+
+#homeScreen .main-card::after {
+  content: 'RANDOM GAME PORTAL';
+  position: absolute;
+  right: 24px;
+  bottom: 20px;
+  color: var(--ui-line-strong);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  pointer-events: none;
+}
+
+#homeScreen .home-banner-link {
+  width: min(100%, 620px) !important;
+  max-width: 620px !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(243, 242, 236, 0.14) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+  opacity: 1 !important;
+  filter: saturate(0.94) brightness(0.98) !important;
+}
+
+#homeScreen .home-banner-link:hover {
+  transform: translateY(-2px) !important;
+  filter: saturate(1.02) brightness(1.02) !important;
+}
+
+/* Utility controls: same material as the app, less cute, less noisy. */
+.utility-controls {
+  right: clamp(12px, 2vw, 24px) !important;
+  bottom: calc(clamp(12px, 2vw, 24px) + env(safe-area-inset-bottom)) !important;
+  gap: 8px !important;
+}
+
+.utility-btn {
+  min-width: 118px !important;
+  min-height: 44px !important;
+  padding: 0 14px !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+.utility-volume-panel {
+  width: 220px !important;
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-line) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+  border-radius: 18px !important;
+}
+
+html.theme-dark .utility-volume-panel {
+  background: var(--ui-surface) !important;
+  border-color: var(--ui-line) !important;
+}
+
+.volume-range::-webkit-slider-runnable-track {
+  background:
+    linear-gradient(90deg, var(--ui-blue) 0%, var(--ui-blue) var(--volume-progress, 50%), rgba(127, 137, 151, 0.25) var(--volume-progress, 50%), rgba(127, 137, 151, 0.25) 100%) !important;
+}
+
+.volume-range::-moz-range-progress {
+  background: var(--ui-blue) !important;
+}
+
+.volume-range::-webkit-slider-thumb,
+.volume-range::-moz-range-thumb {
+  border-color: var(--ui-blue) !important;
+}
+
+/* Race track, slots and gameplay surfaces keep readability but use the same structural palette. */
+.race-lane,
+html.theme-dark .race-lane {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0 26px, rgba(255,255,255,0.035) 26px 52px),
+    linear-gradient(180deg, rgba(19, 61, 122, 0.30), rgba(15, 43, 84, 0.32)) !important;
+  border-color: var(--ui-line) !important;
+}
+
+.race-horse,
+.horse-finished,
+.battle-card-face,
+.battle-result-pill,
+.battle-final-rank,
+.battle-final-result-box,
+.stock-sector-card,
+.stock-allocation-card,
+.stock-chart-panel,
+.ladder-path-label,
+.ladder-result-pill {
+  border-color: rgba(255, 255, 255, 0.26) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+/* Bear find: the Christmas gift asset is kept, but the surrounding UI stops looking like a separate theme. */
+.bear-find-poster,
+.bear-find-video,
+.bear-find-still-frame,
+.bear-find-stage-media {
+  border-radius: 18px !important;
+}
+
+.bear-find-stage-button {
+  overflow: hidden;
+}
+
+.bear-find-current-label,
+#bearFindCurrentLabel {
+  background: rgba(19, 61, 122, 0.14) !important;
+  color: var(--ui-text) !important;
+  border: 1px solid var(--ui-line) !important;
+  border-radius: 999px !important;
+}
+
+/* Popups */
+.popup-overlay {
+  background: rgba(5, 7, 11, 0.62) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.popup {
+  max-width: 420px;
+}
+
+.popup-icon {
+  filter: saturate(0.8);
+}
+
+/* Mobile carousel and compact screens inherit the unified material. */
+@media (max-width: 720px) {
+  .app {
+    padding: max(14px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .main-card,
+  .menu-card,
+  .luck-card,
+  .physical-card,
+  .game-card {
+    border-radius: 24px !important;
+  }
+
+  .game-grid,
+  .physical-game-grid {
+    gap: 12px !important;
+  }
+
+  .game-item,
+  .physical-game-item,
+  html.theme-dark .game-item,
+  html.theme-dark .physical-game-item {
+    min-height: 188px !important;
+    padding: 18px 14px !important;
+  }
+
+  .game-item[data-ff-state] {
+    padding-top: 52px !important;
+  }
+
+  .game-num {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 12px !important;
+    font-size: 1rem !important;
+  }
+
+  .button-row,
+  body.game2-mobile-layout #game2Screen .button-row {
+    gap: 8px !important;
+  }
+
+  .action-btn,
+  .back-btn {
+    min-height: 46px !important;
+  }
+
+  .utility-controls {
+    right: 10px !important;
+    bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .utility-volume-panel,
+  .utility-btn-label {
+    display: none !important;
+  }
+
+  .utility-btn {
+    min-width: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+  }
+
+  #homeScreen .home-banner-link {
+    width: min(92vw, 480px) !important;
+    border-radius: 16px !important;
+  }
+
+  #homeScreen .main-card::after {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) and (pointer: coarse) and (orientation: portrait) {
+  body.game2-mobile-layout #game2Screen .race-lane {
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.14) 0 26px, rgba(255,255,255,0.035) 26px 52px),
+      linear-gradient(90deg, rgba(19, 61, 122, 0.32), rgba(15, 43, 84, 0.34)) !important;
+  }
+
+  body.game2-mobile-layout #game2Screen .race-horse {
+    border: 1px solid rgba(255, 255, 255, 0.34) !important;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.20) !important;
+  }
+}
+
+/* Keep high-contrast game states intact. */
+.key-react-stage.is-countdown,
+.key-react-stage.is-stay,
+.key-react-stage.is-click,
+html.theme-dark .key-react-stage.is-countdown,
+html.theme-dark .key-react-stage.is-stay,
+html.theme-dark .key-react-stage.is-click {
+  border-width: 1px !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+/* Reduce the old pastel randomness that made screens feel unrelated. */
+.game-item:nth-child(2),
+.game-item:nth-child(3),
+.game-item:nth-child(4),
+.game-item:nth-child(5),
+.game-item:nth-child(6),
+.game-item:nth-child(7),
+.game-item:nth-child(8),
+.menu-btn.physical,
+.menu-btn.luck {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+    var(--ui-surface-2) !important;
+}
+
+/* =====================================================================
+   FIX v3: game1(Damara) layout correction
+   원인: UNIFIED DESIGN PASS의 .card::before 장식선이 #game1Screen .game-card-full의
+   CSS grid 자식으로 참여하면서 담아라 화면의 사이드바/보드 배치를 밀어냈다.
+   해결: game1 카드에서는 장식선을 absolute overlay로 바꿔 grid flow에서 제외한다.
+===================================================================== */
+#game1Screen .game-card-full {
+  position: relative !important;
+}
+
+#game1Screen .game-card-full::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 12px !important;
+  left: 50% !important;
+  display: block !important;
+  width: min(210px, 45%) !important;
+  height: 3px !important;
+  margin: 0 !important;
+  transform: translateX(-50%) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, transparent, var(--ui-blue), var(--ui-gold), transparent) !important;
+  opacity: 0.92 !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+/* game1 보드는 물리 캔버스가 핵심이므로, 통일 디자인용 전역 스테이지 배경이
+   과하게 덮이지 않도록 담아라 전용 보드 배경을 다시 지정한다. */
+#game1Screen .game-canvas-wrap {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(31, 102, 194, 0.10), transparent 34%),
+    linear-gradient(180deg, rgba(239, 235, 226, 0.94), rgba(250, 248, 242, 0.92)) !important;
+  background-size: auto !important;
+}
+
+html.theme-dark #game1Screen .game-canvas-wrap {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(122, 190, 255, 0.10), transparent 32%),
+    radial-gradient(circle at 50% 100%, rgba(106, 149, 220, 0.08), transparent 26%),
+    linear-gradient(180deg, #071120 0%, #030a16 100%) !important;
+  background-size: auto !important;
+  border: 2px solid rgba(118, 179, 239, 0.34) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(214, 236, 255, 0.06),
+    inset 0 16px 28px rgba(88, 151, 219, 0.06),
+    0 14px 30px rgba(0, 0, 0, 0.34) !important;
+}
+
+/* =====================================================================
+   CUTE POP STYLE PASS v4
+   기능/레이아웃 JS는 유지하고, 통일 디자인을 귀염 뽀짝 파스텔 톤으로 재정리한다.
+   핵심: 밝은 파스텔 배경, 둥근 카드, 말랑한 버튼, 통일된 선/그림자.
+===================================================================== */
+:root {
+  --ui-bg: #fff5fb !important;
+  --ui-bg-2: #fff8e9 !important;
+  --ui-surface: rgba(255, 255, 255, 0.86) !important;
+  --ui-surface-2: rgba(255, 248, 252, 0.90) !important;
+  --ui-surface-3: rgba(255, 255, 255, 0.76) !important;
+  --ui-line: rgba(255, 158, 195, 0.42) !important;
+  --ui-line-strong: rgba(255, 122, 174, 0.62) !important;
+  --ui-text: #6f4e62 !important;
+  --ui-text-soft: #8b6478 !important;
+  --ui-muted: #9f7d8f !important;
+  --ui-blue: #8bcfff !important;
+  --ui-blue-2: #b7e3ff !important;
+  --ui-cream: #fff8e9 !important;
+  --ui-gold: #ffd76f !important;
+  --ui-red: #ff77a7 !important;
+  --ui-green: #8de8cc !important;
+  --ui-shadow: 0 18px 42px rgba(220, 125, 168, 0.18) !important;
+  --ui-shadow-soft: 0 10px 24px rgba(220, 125, 168, 0.13) !important;
+  --ui-radius-xl: 32px !important;
+  --ui-radius-lg: 26px !important;
+  --ui-radius-md: 20px !important;
+  --ui-grid-line: rgba(255, 160, 200, 0.14) !important;
+
+  --bg: #fff5fb !important;
+  --bg2: #fff8e9 !important;
+  --card: rgba(255, 255, 255, 0.86) !important;
+  --card-strong: rgba(255, 252, 247, 0.94) !important;
+  --brown: #6f4e62 !important;
+  --soft-brown: #9a5f7b !important;
+  --pink: #ffc6dd !important;
+  --mint: #c6f4e4 !important;
+  --sky: #cdeeff !important;
+  --lavender: #ded5ff !important;
+  --yellow: #ffefad !important;
+  --peach: #ffd6bd !important;
+  --shadow: 0 18px 42px rgba(220, 125, 168, 0.18) !important;
+  --radius-xl: 32px !important;
+  --radius-lg: 26px !important;
+}
+
+html.theme-dark {
+  --ui-bg: #221a33 !important;
+  --ui-bg-2: #2d2342 !important;
+  --ui-surface: rgba(48, 37, 69, 0.88) !important;
+  --ui-surface-2: rgba(58, 45, 82, 0.88) !important;
+  --ui-surface-3: rgba(72, 56, 98, 0.76) !important;
+  --ui-line: rgba(255, 192, 222, 0.26) !important;
+  --ui-line-strong: rgba(255, 157, 204, 0.42) !important;
+  --ui-text: #fff2fa !important;
+  --ui-text-soft: #ffd8eb !important;
+  --ui-muted: #dbc6da !important;
+  --ui-blue: #98d9ff !important;
+  --ui-blue-2: #b9e7ff !important;
+  --ui-cream: #fff4d6 !important;
+  --ui-gold: #ffe28a !important;
+  --ui-red: #ff8fbd !important;
+  --ui-green: #a8f0dc !important;
+  --ui-shadow: 0 22px 50px rgba(9, 5, 18, 0.42) !important;
+  --ui-shadow-soft: 0 14px 32px rgba(9, 5, 18, 0.30) !important;
+  --ui-grid-line: rgba(255, 202, 228, 0.07) !important;
+
+  --bg: #221a33 !important;
+  --bg2: #2d2342 !important;
+  --card: rgba(48, 37, 69, 0.88) !important;
+  --card-strong: rgba(58, 45, 82, 0.90) !important;
+  --brown: #fff2fa !important;
+  --soft-brown: #ffd8eb !important;
+}
+
+html,
+body {
+  background: var(--ui-bg) !important;
+}
+
+body,
+html.theme-dark body {
+  color: var(--ui-text) !important;
+  font-family: 'Pretendard', system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  letter-spacing: -0.02em !important;
+  background:
+    radial-gradient(circle at 9% 12%, rgba(255, 198, 221, 0.56), transparent 20%),
+    radial-gradient(circle at 88% 14%, rgba(198, 244, 228, 0.52), transparent 22%),
+    radial-gradient(circle at 16% 88%, rgba(205, 238, 255, 0.50), transparent 22%),
+    radial-gradient(circle at 86% 84%, rgba(255, 239, 173, 0.52), transparent 23%),
+    linear-gradient(135deg, var(--ui-bg) 0%, var(--ui-bg-2) 100%) !important;
+  background-size: auto !important;
+}
+
+html.theme-dark body {
+  background:
+    radial-gradient(circle at 12% 14%, rgba(255, 143, 189, 0.18), transparent 26%),
+    radial-gradient(circle at 88% 14%, rgba(152, 217, 255, 0.16), transparent 26%),
+    radial-gradient(circle at 16% 86%, rgba(168, 240, 220, 0.12), transparent 24%),
+    linear-gradient(135deg, var(--ui-bg) 0%, var(--ui-bg-2) 100%) !important;
+}
+
+.background-deco {
+  display: block !important;
+  opacity: 0.74 !important;
+  filter: blur(0.5px) !important;
+  box-shadow: 0 14px 28px rgba(255, 150, 194, 0.14) !important;
+}
+
+.deco1 { background: #ffd5e6 !important; }
+.deco2 { background: #c9f6e7 !important; }
+.deco3 { background: #ddd6ff !important; }
+.deco4 { background: #fff0b1 !important; }
+
+.app {
+  padding: clamp(18px, 2.4vw, 34px) clamp(12px, 2vw, 28px) !important;
+}
+
+.screen { max-width: 1220px !important; }
+
+.card,
+.controls-wrap,
+.scoreboard-card,
+.game-board-card,
+.race-panel,
+.race-track-wrap,
+.battle-table-card,
+.battle-panel,
+.sim-setup-card,
+.sim-arena-card,
+.sim-battle-summary-card,
+.naval-board-card,
+.stock-portfolio-card,
+.bear-find-stage-card,
+.bear-find-sidebar,
+.popup,
+.orientation-lock-card,
+.game-sidebar,
+.race-sidebar,
+.battle-sidebar,
+.sim-sidebar,
+.naval-sidebar,
+.balloon-sidebar,
+.circle-tap-sidebar,
+.key-react-sidebar,
+.bomb-pass-stage-card,
+.balloon-stage-card,
+.circle-tap-stage-card,
+.key-react-stage-card,
+.bear-find-stage-button {
+  position: relative !important;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.78), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 248, 253, 0.88)) !important;
+  color: var(--ui-text) !important;
+  border: 2px solid rgba(255, 255, 255, 0.78) !important;
+  outline: 1px solid var(--ui-line) !important;
+  border-radius: var(--ui-radius-xl) !important;
+  box-shadow: var(--ui-shadow) !important;
+  backdrop-filter: blur(16px) saturate(128%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(128%) !important;
+}
+
+html.theme-dark .card,
+html.theme-dark .controls-wrap,
+html.theme-dark .scoreboard-card,
+html.theme-dark .game-board-card,
+html.theme-dark .race-panel,
+html.theme-dark .race-track-wrap,
+html.theme-dark .battle-table-card,
+html.theme-dark .battle-panel,
+html.theme-dark .sim-setup-card,
+html.theme-dark .sim-arena-card,
+html.theme-dark .sim-battle-summary-card,
+html.theme-dark .naval-board-card,
+html.theme-dark .stock-portfolio-card,
+html.theme-dark .bear-find-stage-card,
+html.theme-dark .bear-find-sidebar,
+html.theme-dark .popup,
+html.theme-dark .orientation-lock-card,
+html.theme-dark .game-sidebar,
+html.theme-dark .race-sidebar,
+html.theme-dark .battle-sidebar,
+html.theme-dark .sim-sidebar,
+html.theme-dark .naval-sidebar,
+html.theme-dark .balloon-sidebar,
+html.theme-dark .circle-tap-sidebar,
+html.theme-dark .key-react-sidebar,
+html.theme-dark .bomb-pass-stage-card,
+html.theme-dark .balloon-stage-card,
+html.theme-dark .circle-tap-stage-card,
+html.theme-dark .key-react-stage-card,
+html.theme-dark .bear-find-stage-button {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.10), transparent 36%),
+    linear-gradient(180deg, rgba(58, 45, 82, 0.92), rgba(43, 34, 62, 0.88)) !important;
+  border-color: rgba(255, 235, 247, 0.18) !important;
+  outline-color: var(--ui-line) !important;
+  color: var(--ui-text) !important;
+}
+
+/* 기존 통일 디자인의 장식선이 grid/flex 레이아웃을 밀지 않도록 전체를 absolute 장식으로 교체 */
+.card::before,
+.game-card::before,
+.main-card::before,
+.menu-card::before,
+.luck-card::before,
+.physical-card::before,
+#game1Screen .game-card-full::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 14px !important;
+  left: 50% !important;
+  display: block !important;
+  width: min(180px, 42%) !important;
+  height: 8px !important;
+  margin: 0 !important;
+  transform: translateX(-50%) !important;
+  border-radius: 999px !important;
+  background:
+    radial-gradient(circle, #fff 0 28%, transparent 30%) 0 50% / 18px 18px repeat-x,
+    linear-gradient(90deg, #ffc6dd, #ffefad, #c6f4e4, #cdeeff, #ded5ff) !important;
+  opacity: 0.96 !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+.card::after,
+.main-card::after,
+.menu-card::after,
+.luck-card::after,
+.physical-card::after,
+.game-card::after {
+  content: '✦' !important;
+  position: absolute !important;
+  right: 18px !important;
+  top: 16px !important;
+  color: rgba(255, 122, 174, 0.36) !important;
+  font-size: 1.25rem !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+}
+
+.main-card,
+.menu-card {
+  max-width: 720px !important;
+  padding: clamp(38px, 5vw, 62px) clamp(22px, 4vw, 48px) !important;
+}
+
+.main-card h1,
+.menu-card h2,
+.luck-card h2,
+.physical-card h2,
+.game-card h2,
+.popup h3,
+.sidebar-title,
+#game4Screen .sim-panel-head h3,
+#game5Screen .naval-panel-head h3,
+#game6Screen .stock-portfolio-head h4,
+.physical-header h2,
+.bear-find-card-screen h2 {
+  font-family: 'Gaegu', 'Pretendard', cursive !important;
+  color: var(--soft-brown) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.04 !important;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+html.theme-dark .main-card h1,
+html.theme-dark .menu-card h2,
+html.theme-dark .luck-card h2,
+html.theme-dark .physical-card h2,
+html.theme-dark .game-card h2,
+html.theme-dark .popup h3,
+html.theme-dark .sidebar-title,
+html.theme-dark #game4Screen .sim-panel-head h3,
+html.theme-dark #game5Screen .naval-panel-head h3,
+html.theme-dark #game6Screen .stock-portfolio-head h4,
+html.theme-dark .physical-header h2,
+html.theme-dark .bear-find-card-screen h2 {
+  color: var(--ui-text-soft) !important;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18) !important;
+}
+
+.main-card h1 { font-size: clamp(2.7rem, 5.8vw, 5.2rem) !important; }
+.menu-card h2,
+.luck-card h2,
+.physical-card h2,
+.game-card h2 { font-size: clamp(2.15rem, 4.2vw, 3.7rem) !important; }
+
+.sub-text,
+.helper-text,
+.status-text,
+#totalInfo,
+.game-item p,
+.popup-message,
+.orientation-lock-card p,
+.game-board-head span,
+.race-track-stage-desc,
+.bomb-pass-status-text,
+.bomb-pass-device-text,
+.balloon-stage-hint,
+.circle-tap-stage-hint,
+.bear-find-stage-hint {
+  color: var(--ui-muted) !important;
+  line-height: 1.68 !important;
+}
+
+.small-badge,
+.game-mini-badge,
+.physical-compat-badge,
+.game-ff-badge,
+.battle-deck-label,
+.sim-phase-badge,
+.naval-phase-badge,
+.stock-ready-badge,
+.ladder-reveal-badge,
+.balloon-turn-badge,
+.bomb-pass-state-badge,
+.circle-tap-turn-badge,
+.key-react-phase-badge,
+.bear-find-phase-badge,
+.race-lane-label,
+.ff-guide-chip {
+  background: linear-gradient(135deg, rgba(255, 235, 246, 0.98), rgba(255, 249, 220, 0.96)) !important;
+  color: #a25b7c !important;
+  border: 2px dashed rgba(255, 147, 190, 0.56) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 8px 18px rgba(220, 125, 168, 0.12) !important;
+  font-weight: 800 !important;
+}
+
+html.theme-dark .small-badge,
+html.theme-dark .game-mini-badge,
+html.theme-dark .physical-compat-badge,
+html.theme-dark .game-ff-badge,
+html.theme-dark .battle-deck-label,
+html.theme-dark .sim-phase-badge,
+html.theme-dark .naval-phase-badge,
+html.theme-dark .stock-ready-badge,
+html.theme-dark .ladder-reveal-badge,
+html.theme-dark .balloon-turn-badge,
+html.theme-dark .bomb-pass-state-badge,
+html.theme-dark .circle-tap-turn-badge,
+html.theme-dark .key-react-phase-badge,
+html.theme-dark .bear-find-phase-badge,
+html.theme-dark .race-lane-label,
+html.theme-dark .ff-guide-chip {
+  background: linear-gradient(135deg, rgba(255, 153, 199, 0.16), rgba(152, 217, 255, 0.14)) !important;
+  color: #ffd8eb !important;
+  border-color: rgba(255, 198, 221, 0.32) !important;
+}
+
+.main-btn,
+.menu-btn,
+.action-btn,
+.back-btn,
+.popup-btn,
+.drawer-toggle-btn,
+.utility-btn,
+.utility-prevstep-btn,
+.race-track-zoom-btn,
+.sim-info-btn,
+.sim-arena-zoom-btn,
+.roulette-stage-zoom-btn {
+  border-radius: 999px !important;
+  border: 2px solid rgba(255, 255, 255, 0.82) !important;
+  outline: 1px solid rgba(255, 150, 194, 0.42) !important;
+  color: #764b61 !important;
+  background: linear-gradient(135deg, #ffc6dd 0%, #ffefad 100%) !important;
+  box-shadow: 0 10px 22px rgba(220, 125, 168, 0.18), inset 0 1px 0 rgba(255,255,255,0.72) !important;
+  font-weight: 900 !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease !important;
+}
+
+.main-btn:hover,
+.menu-btn:hover,
+.action-btn:hover,
+.back-btn:hover,
+.popup-btn:hover,
+.drawer-toggle-btn:hover,
+.utility-btn:hover,
+.utility-prevstep-btn:hover,
+.game-item:hover,
+.physical-game-item:hover {
+  transform: translateY(-3px) scale(1.015) !important;
+  filter: saturate(1.04) brightness(1.015) !important;
+}
+
+.action-btn.primary,
+.main-btn {
+  background: linear-gradient(135deg, #ff9fc8 0%, #ffd6e8 46%, #ffe98f 100%) !important;
+}
+.action-btn.secondary,
+.drawer-toggle-btn,
+.race-track-zoom-btn,
+.sim-info-btn,
+.sim-arena-zoom-btn,
+.roulette-stage-zoom-btn {
+  background: linear-gradient(135deg, #b7e3ff 0%, #ded5ff 100%) !important;
+}
+.action-btn.soft,
+.back-btn,
+.popup-btn {
+  background: linear-gradient(135deg, #fff0ad 0%, #ffd6bd 100%) !important;
+}
+.action-btn.is-game-running,
+.action-btn:disabled,
+button:disabled {
+  opacity: 0.58 !important;
+  filter: grayscale(0.10) !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5) !important;
+}
+
+html.theme-dark .main-btn,
+html.theme-dark .menu-btn,
+html.theme-dark .action-btn,
+html.theme-dark .back-btn,
+html.theme-dark .popup-btn,
+html.theme-dark .drawer-toggle-btn,
+html.theme-dark .utility-btn,
+html.theme-dark .utility-prevstep-btn,
+html.theme-dark .race-track-zoom-btn,
+html.theme-dark .sim-info-btn,
+html.theme-dark .sim-arena-zoom-btn,
+html.theme-dark .roulette-stage-zoom-btn {
+  color: #44243a !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.input-card input,
+select,
+textarea,
+html.theme-dark .input-card input,
+html.theme-dark input:disabled,
+html.theme-dark select,
+html.theme-dark textarea {
+  background: rgba(255, 255, 255, 0.78) !important;
+  color: #764b61 !important;
+  border: 2px solid rgba(255, 177, 210, 0.52) !important;
+  border-radius: 20px !important;
+  box-shadow: inset 0 2px 6px rgba(220, 125, 168, 0.07) !important;
+}
+
+html.theme-dark .input-card input,
+html.theme-dark input:disabled,
+html.theme-dark select,
+html.theme-dark textarea {
+  background: rgba(255, 242, 250, 0.12) !important;
+  color: #fff2fa !important;
+}
+
+.input-card input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(255, 122, 174, 0.72) !important;
+  box-shadow: 0 0 0 5px rgba(255, 198, 221, 0.32) !important;
+}
+
+.game-grid,
+.physical-game-grid { gap: 18px !important; }
+
+.game-item,
+.physical-game-item,
+html.theme-dark .game-item,
+html.theme-dark .physical-game-item,
+.game-item.game-launch,
+html.theme-dark .game-item.game-launch {
+  background:
+    radial-gradient(circle at 20% 14%, rgba(255, 255, 255, 0.72), transparent 30%),
+    linear-gradient(180deg, #fffafd 0%, #fff1f8 100%) !important;
+  color: var(--ui-text) !important;
+  border: 2px solid rgba(255, 255, 255, 0.82) !important;
+  outline: 1px solid rgba(255, 166, 203, 0.34) !important;
+  border-radius: 28px !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+  padding-top: 22px !important;
+}
+
+.game-item[data-ff-state] { padding-top: 56px !important; }
+
+.game-grid > .game-item:nth-child(1),
+.physical-game-grid > .physical-game-item:nth-child(1) { background: linear-gradient(180deg, #fffafd, #ffeef7) !important; }
+.game-grid > .game-item:nth-child(2),
+.physical-game-grid > .physical-game-item:nth-child(2) { background: linear-gradient(180deg, #f4fffb, #e9fff6) !important; }
+.game-grid > .game-item:nth-child(3),
+.physical-game-grid > .physical-game-item:nth-child(3) { background: linear-gradient(180deg, #f7f5ff, #eeeaff) !important; }
+.game-grid > .game-item:nth-child(4),
+.physical-game-grid > .physical-game-item:nth-child(4) { background: linear-gradient(180deg, #fffaf0, #fff0c5) !important; }
+.game-grid > .game-item:nth-child(5),
+.physical-game-grid > .physical-game-item:nth-child(5) { background: linear-gradient(180deg, #fff5ef, #ffe5d6) !important; }
+.game-grid > .game-item:nth-child(6) { background: linear-gradient(180deg, #f3fffa, #e2fff4) !important; }
+.game-grid > .game-item:nth-child(7) { background: linear-gradient(180deg, #fbf5ff, #f1e4ff) !important; }
+.game-grid > .game-item:nth-child(8) { background: linear-gradient(180deg, #f1fbff, #e5f6ff) !important; }
+
+html.theme-dark .game-grid > .game-item,
+html.theme-dark .physical-game-grid > .physical-game-item {
+  background: linear-gradient(180deg, rgba(255, 242, 250, 0.10), rgba(255, 198, 221, 0.08)) !important;
+}
+
+.game-num {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 20px !important;
+  background: linear-gradient(135deg, #ffc6dd 0%, #cdeeff 100%) !important;
+  color: #764b61 !important;
+  font-family: 'Gaegu', cursive !important;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.68), 0 8px 14px rgba(220, 125, 168, 0.14) !important;
+}
+
+.game-item h3,
+.physical-game-item h3 {
+  font-family: 'Gaegu', 'Pretendard', cursive !important;
+  color: var(--soft-brown) !important;
+  font-weight: 700 !important;
+  font-size: 1.85rem !important;
+}
+
+.game-meta-row,
+html.theme-dark .game-meta-row {
+  background: rgba(255, 255, 255, 0.66) !important;
+  border: 1px solid rgba(255, 176, 210, 0.32) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.74) !important;
+}
+
+html.theme-dark .game-meta-row {
+  background: rgba(255, 242, 250, 0.10) !important;
+}
+
+.game-meta-label { color: #b16082 !important; }
+.game-meta-value { color: var(--ui-text) !important; }
+
+.legend-chip,
+.race-ranking-item,
+.battle-ranking-item,
+.battle-ranking-empty,
+.sim-empty-state,
+.naval-log-item,
+.naval-ranking-item,
+.naval-player-chip,
+.naval-elimination-item,
+.sim-ranking-item,
+.sim-ranking-empty,
+.roulette-ranking-empty,
+.roulette-log-empty,
+.stock-empty-state,
+.stock-holder-empty,
+.balloon-player-item,
+.circle-tap-player-item,
+.key-react-player-item,
+.key-react-key-row,
+.bear-find-player-item,
+.bear-find-player-empty,
+.ladder-check-item,
+.stock-roster-item,
+.stock-player-tab,
+html.theme-dark .legend-chip,
+html.theme-dark .race-ranking-item,
+html.theme-dark .battle-ranking-item,
+html.theme-dark .battle-ranking-empty,
+html.theme-dark .sim-empty-state,
+html.theme-dark .naval-log-item,
+html.theme-dark .naval-ranking-item,
+html.theme-dark .naval-player-chip,
+html.theme-dark .naval-elimination-item,
+html.theme-dark .sim-ranking-item,
+html.theme-dark .sim-ranking-empty,
+html.theme-dark .roulette-ranking-empty,
+html.theme-dark .roulette-log-empty,
+html.theme-dark .stock-empty-state,
+html.theme-dark .stock-holder-empty,
+html.theme-dark .balloon-player-item,
+html.theme-dark .circle-tap-player-item,
+html.theme-dark .key-react-player-item,
+html.theme-dark .key-react-key-row,
+html.theme-dark .bear-find-player-item,
+html.theme-dark .bear-find-player-empty,
+html.theme-dark .ladder-check-item,
+html.theme-dark .stock-roster-item,
+html.theme-dark .stock-player-tab,
+html.theme-dark .stock-portfolio-item {
+  background: rgba(255, 255, 255, 0.66) !important;
+  color: var(--ui-text) !important;
+  border: 1px solid rgba(255, 176, 210, 0.36) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+html.theme-dark .legend-chip,
+html.theme-dark .race-ranking-item,
+html.theme-dark .battle-ranking-item,
+html.theme-dark .battle-ranking-empty,
+html.theme-dark .sim-empty-state,
+html.theme-dark .naval-log-item,
+html.theme-dark .naval-ranking-item,
+html.theme-dark .naval-player-chip,
+html.theme-dark .naval-elimination-item,
+html.theme-dark .sim-ranking-item,
+html.theme-dark .sim-ranking-empty,
+html.theme-dark .roulette-ranking-empty,
+html.theme-dark .roulette-log-empty,
+html.theme-dark .stock-empty-state,
+html.theme-dark .stock-holder-empty,
+html.theme-dark .balloon-player-item,
+html.theme-dark .circle-tap-player-item,
+html.theme-dark .key-react-player-item,
+html.theme-dark .key-react-key-row,
+html.theme-dark .bear-find-player-item,
+html.theme-dark .bear-find-player-empty,
+html.theme-dark .ladder-check-item,
+html.theme-dark .stock-roster-item,
+html.theme-dark .stock-player-tab,
+html.theme-dark .stock-portfolio-item {
+  background: rgba(255, 242, 250, 0.10) !important;
+}
+
+.race-ranking-item.top,
+.battle-ranking-item.top,
+.sim-ranking-item.top,
+.naval-ranking-item.top,
+.bear-find-player-item.is-panda,
+.key-react-ranking-item.is-valid,
+.key-react-popup-item.is-valid,
+html.theme-dark .race-ranking-item.top,
+html.theme-dark .battle-ranking-item.top,
+html.theme-dark .sim-ranking-item.top,
+html.theme-dark .naval-ranking-item.top,
+html.theme-dark .bear-find-player-item.is-panda,
+html.theme-dark .key-react-ranking-item.is-valid,
+html.theme-dark .key-react-popup-item.is-valid {
+  background: linear-gradient(135deg, rgba(255, 239, 173, 0.92), rgba(255, 214, 232, 0.86)) !important;
+  border-color: rgba(255, 214, 111, 0.72) !important;
+}
+
+.game-canvas-wrap,
+.race-track-wrap,
+.sim-arena-wrap,
+.sim-arena-zoom-stage,
+.naval-board-wrap,
+.battle-table-card,
+.stock-board,
+.ladder-board,
+.balloon-stage-card,
+.bomb-pass-stage-card,
+.circle-tap-stage-card,
+.key-react-stage-card,
+.bear-find-stage-card,
+.bear-find-stage-button,
+html.theme-dark .game-canvas-wrap,
+html.theme-dark .race-track-wrap,
+html.theme-dark .sim-arena-wrap,
+html.theme-dark .sim-arena-zoom-stage,
+html.theme-dark .naval-board-wrap,
+html.theme-dark .battle-table-card,
+html.theme-dark .stock-board,
+html.theme-dark .ladder-board,
+html.theme-dark .balloon-stage-card,
+html.theme-dark .bomb-pass-stage-card,
+html.theme-dark .circle-tap-stage-card,
+html.theme-dark .key-react-stage-card,
+html.theme-dark .bear-find-stage-card,
+html.theme-dark .bear-find-stage-button {
+  background:
+    radial-gradient(circle at 16px 16px, rgba(255, 198, 221, 0.24) 0 4px, transparent 5px) 0 0 / 34px 34px,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 248, 236, 0.82)) !important;
+  border: 2px solid rgba(255,255,255,0.78) !important;
+  outline: 1px solid rgba(255, 176, 210, 0.38) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+html.theme-dark .game-canvas-wrap,
+html.theme-dark .race-track-wrap,
+html.theme-dark .sim-arena-wrap,
+html.theme-dark .sim-arena-zoom-stage,
+html.theme-dark .naval-board-wrap,
+html.theme-dark .battle-table-card,
+html.theme-dark .stock-board,
+html.theme-dark .ladder-board,
+html.theme-dark .balloon-stage-card,
+html.theme-dark .bomb-pass-stage-card,
+html.theme-dark .circle-tap-stage-card,
+html.theme-dark .key-react-stage-card,
+html.theme-dark .bear-find-stage-card,
+html.theme-dark .bear-find-stage-button {
+  background:
+    radial-gradient(circle at 16px 16px, rgba(255, 198, 221, 0.10) 0 4px, transparent 5px) 0 0 / 34px 34px,
+    linear-gradient(180deg, rgba(58, 45, 82, 0.84), rgba(43, 34, 62, 0.82)) !important;
+}
+
+#game1Screen .game-canvas-wrap,
+html.theme-dark #game1Screen .game-canvas-wrap {
+  background:
+    radial-gradient(circle at 18px 18px, rgba(255, 198, 221, 0.24) 0 4px, transparent 5px) 0 0 / 36px 36px,
+    linear-gradient(180deg, #fffafd 0%, #fff4e9 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.84) !important;
+  outline: 1px solid rgba(255, 176, 210, 0.48) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.52), var(--ui-shadow-soft) !important;
+}
+
+html.theme-dark #game1Screen .game-canvas-wrap {
+  background:
+    radial-gradient(circle at 18px 18px, rgba(255, 198, 221, 0.11) 0 4px, transparent 5px) 0 0 / 36px 36px,
+    linear-gradient(180deg, rgba(58, 45, 82, 0.90), rgba(37, 30, 54, 0.90)) !important;
+}
+
+.race-lane,
+html.theme-dark .race-lane,
+body.game2-mobile-layout #game2Screen .race-lane,
+body.game2-mobile-layout #game2Screen .race-track-lanes.is-vertical-track .race-lane {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.32) 0 24px, rgba(255,255,255,0.12) 24px 48px),
+    linear-gradient(180deg, #ffd6bd 0%, #ffc6dd 100%) !important;
+  border-color: rgba(255,255,255,0.76) !important;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.25) !important;
+}
+
+@media (max-width: 1024px) and (pointer: coarse) and (orientation: portrait) {
+  body.game2-mobile-layout #game2Screen .race-lane,
+  body.game2-mobile-layout #game2Screen .race-track-lanes.is-vertical-track .race-lane {
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.32) 0 24px, rgba(255,255,255,0.12) 24px 48px),
+      linear-gradient(90deg, #ffd6bd 0%, #ffc6dd 100%) !important;
+  }
+}
+
+.race-start-line,
+.race-finish-line {
+  border-radius: 999px !important;
+}
+.race-horse,
+.horse-finished,
+.battle-card-face,
+.battle-result-pill,
+.battle-final-rank,
+.battle-final-result-box,
+.stock-sector-card,
+.stock-allocation-card,
+.stock-chart-panel,
+.ladder-path-label,
+.ladder-result-pill {
+  border-color: rgba(255,255,255,0.80) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+.battle-card-back {
+  background: linear-gradient(145deg, #ffc6dd 0%, #ded5ff 50%, #c6f4e4 100%) !important;
+}
+.battle-card.type-operator .battle-card-back {
+  background: linear-gradient(145deg, #ffefad 0%, #ffd6bd 52%, #ffc6dd 100%) !important;
+}
+.battle-card.type-result .battle-card-back {
+  background: linear-gradient(145deg, #fff0ad 0%, #ffd6bd 52%, #fff8e9 100%) !important;
+}
+.battle-card-front,
+.battle-card.type-operator .battle-card-front,
+.battle-card.type-result .battle-card-front {
+  background: linear-gradient(180deg, #fffdf8 0%, #fff1f8 100%) !important;
+  color: var(--ui-text) !important;
+}
+
+.balloon-body {
+  background: radial-gradient(circle at 35% 26%, rgba(255,255,255,0.82), transparent 22%), linear-gradient(135deg, #ff9fc8, #ffc6dd) !important;
+  box-shadow: 0 16px 30px rgba(255, 122, 174, 0.26) !important;
+}
+.balloon-knot { border-top-color: #ff9fc8 !important; }
+.bomb-pass-body {
+  background: radial-gradient(circle at 35% 22%, rgba(255,255,255,0.42), transparent 24%), linear-gradient(135deg, #6f4e62, #a25b7c) !important;
+}
+.circle-tap-target {
+  box-shadow: 0 14px 26px rgba(255, 122, 174, 0.26), inset 0 4px 0 rgba(255,255,255,0.36) !important;
+}
+
+.home-screen-stack { gap: 20px !important; }
+.home-banner-link,
+#homeScreen .home-banner-link {
+  border-radius: 24px !important;
+  border: 3px solid rgba(255, 255, 255, 0.80) !important;
+  outline: 1px solid rgba(255, 176, 210, 0.46) !important;
+  box-shadow: 0 18px 40px rgba(220, 125, 168, 0.20) !important;
+  background: linear-gradient(135deg, #fffafd, #fff0f7) !important;
+  padding: 6px !important;
+}
+.home-banner-link img,
+#homeScreen .home-banner-link img {
+  border-radius: 18px !important;
+  display: block !important;
+}
+
+.popup-overlay,
+html.theme-dark .popup-overlay {
+  background: rgba(143, 88, 118, 0.25) !important;
+  backdrop-filter: blur(10px) saturate(120%) !important;
+}
+.popup-icon { filter: saturate(1.2) !important; }
+
+.utility-controls { gap: 9px !important; }
+.utility-volume-panel,
+html.theme-dark .utility-volume-panel {
+  background: var(--ui-surface) !important;
+  border: 2px solid rgba(255, 255, 255, 0.72) !important;
+  outline: 1px solid rgba(255, 176, 210, 0.34) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+.volume-range::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, #ff9fc8 0%, #ff9fc8 var(--volume-progress, 50%), rgba(255, 198, 221, 0.42) var(--volume-progress, 50%), rgba(255, 198, 221, 0.42) 100%) !important;
+}
+.volume-range::-moz-range-progress { background: #ff9fc8 !important; }
+.volume-range::-webkit-slider-thumb,
+.volume-range::-moz-range-thumb { border-color: #ff9fc8 !important; }
+
+.key-react-stage.is-countdown,
+.key-react-stage.is-stay,
+.key-react-stage.is-click,
+html.theme-dark .key-react-stage.is-countdown,
+html.theme-dark .key-react-stage.is-stay,
+html.theme-dark .key-react-stage.is-click {
+  border-width: 2px !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+/* 모바일에서도 같은 귀여운 톤을 유지하되, 기존 공간 절약 규칙은 유지 */
+@media (max-width: 720px) {
+  .app {
+    padding: max(12px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom)) !important;
+  }
+  .main-card,
+  .menu-card,
+  .luck-card,
+  .physical-card,
+  .game-card {
+    border-radius: 26px !important;
+  }
+  .game-grid,
+  .physical-game-grid { gap: 12px !important; }
+  .game-item,
+  .physical-game-item,
+  html.theme-dark .game-item,
+  html.theme-dark .physical-game-item {
+    min-height: 188px !important;
+    padding: 18px 14px !important;
+  }
+  .game-item[data-ff-state] { padding-top: 52px !important; }
+  .game-num {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 16px !important;
+    font-size: 1.25rem !important;
+  }
+  .action-btn,
+  .back-btn { min-height: 46px !important; }
+  .utility-controls {
+    right: 10px !important;
+    bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+  }
+  .utility-volume-panel,
+  .utility-btn-label { display: none !important; }
+  .utility-btn {
+    min-width: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+  }
+  #homeScreen .home-banner-link {
+    width: min(92vw, 480px) !important;
+    border-radius: 20px !important;
+  }
+  .card::after,
+  .main-card::after,
+  .menu-card::after,
+  .luck-card::after,
+  .physical-card::after,
+  .game-card::after {
+    display: none !important;
+  }
+}
+
+/* =========================================================
+   COLOR BALANCE PATCH v2
+   Adobe Color inspired cute palette + golden-ratio color use
+   Day: clear daylight / Night: clear midnight concept
+   Ratio target: dominant 61.8% · support 23.6% · accent 9% · spark 5.6%
+========================================================= */
+:root {
+  --day-dominant: #fff4d6;
+  --day-dominant-2: #fff9ec;
+  --day-support: #bdeaff;
+  --day-support-2: #e6f7ff;
+  --day-accent: #ff6fa8;
+  --day-accent-2: #ff9a7a;
+  --day-spark: #ffd84d;
+  --day-mint: #58d7b5;
+  --day-lavender: #a98cff;
+  --day-ink: #3f342b;
+  --day-ink-soft: #6c594c;
+  --day-line: rgba(99, 75, 52, 0.16);
+
+  --night-dominant: #081225;
+  --night-dominant-2: #0e1a33;
+  --night-support: #173b6d;
+  --night-support-2: #1f4d88;
+  --night-accent: #ff6fb1;
+  --night-accent-2: #8bd3ff;
+  --night-spark: #ffd966;
+  --night-mint: #70e3cf;
+  --night-ink: #fff7e6;
+  --night-ink-soft: #c9d8ef;
+  --night-line: rgba(139, 211, 255, 0.25);
+}
+
+html:not(.theme-dark) {
+  color-scheme: light;
+  --bg: var(--day-dominant);
+  --bg2: var(--day-support-2);
+  --card: rgba(255, 255, 251, 0.92);
+  --card-strong: rgba(255, 253, 246, 0.97);
+  --brown: var(--day-ink);
+  --soft-brown: #5a4c8a;
+  --pink: var(--day-accent);
+  --mint: var(--day-mint);
+  --sky: #6fc7ff;
+  --lavender: var(--day-lavender);
+  --yellow: var(--day-spark);
+  --peach: var(--day-accent-2);
+  --shadow: 0 18px 34px rgba(90, 67, 44, 0.13);
+}
+
+html:not(.theme-dark) body {
+  color: var(--day-ink);
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255, 216, 77, 0.38) 0 8%, transparent 23%),
+    radial-gradient(circle at 84% 16%, rgba(189, 234, 255, 0.88) 0 15%, transparent 34%),
+    radial-gradient(circle at 92% 84%, rgba(255, 111, 168, 0.20) 0 10%, transparent 28%),
+    linear-gradient(135deg, var(--day-dominant) 0%, var(--day-dominant-2) 58%, var(--day-support-2) 100%);
+}
+
+html:not(.theme-dark) body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.32) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255,255,255,0.28) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.55), transparent 72%);
+  opacity: 0.42;
+}
+
+html:not(.theme-dark) .background-deco {
+  opacity: 0.52;
+  filter: blur(4px) saturate(1.08);
+}
+
+html:not(.theme-dark) .card,
+html:not(.theme-dark) .controls-wrap,
+html:not(.theme-dark) .scoreboard-card,
+html:not(.theme-dark) .game-board-card,
+html:not(.theme-dark) .race-panel,
+html:not(.theme-dark) .battle-table-card,
+html:not(.theme-dark) .battle-panel,
+html:not(.theme-dark) .sim-setup-card,
+html:not(.theme-dark) .sim-arena-card,
+html:not(.theme-dark) .sim-battle-summary-card,
+html:not(.theme-dark) .naval-board-card,
+html:not(.theme-dark) .popup,
+html:not(.theme-dark) .orientation-lock-card,
+html:not(.theme-dark) .game-sidebar,
+html:not(.theme-dark) .race-sidebar,
+html:not(.theme-dark) .battle-sidebar,
+html:not(.theme-dark) .sim-sidebar,
+html:not(.theme-dark) .naval-sidebar {
+  background:
+    radial-gradient(circle at top left, rgba(255,255,255,0.90), rgba(255,255,255,0.18) 42%, transparent 68%),
+    linear-gradient(180deg, rgba(255,255,251,0.96) 0%, rgba(255,250,232,0.92) 100%);
+  color: var(--day-ink);
+  border-color: rgba(255,255,255,0.86);
+  box-shadow:
+    0 16px 32px rgba(90, 67, 44, 0.12),
+    inset 0 0 0 1px rgba(255,255,255,0.62);
+}
+
+html:not(.theme-dark) .main-card,
+html:not(.theme-dark) .menu-card,
+html:not(.theme-dark) .luck-card,
+html:not(.theme-dark) .physical-card {
+  border-color: rgba(255,255,255,0.92);
+}
+
+html:not(.theme-dark) .main-card h1,
+html:not(.theme-dark) .menu-card h2,
+html:not(.theme-dark) .luck-card h2,
+html:not(.theme-dark) .physical-card h2,
+html:not(.theme-dark) .game-card h2,
+html:not(.theme-dark) .popup h3,
+html:not(.theme-dark) .sidebar-title,
+html:not(.theme-dark) .scoreboard-head h3,
+html:not(.theme-dark) .game-board-head h3,
+html:not(.theme-dark) .race-track-stage-title,
+html:not(.theme-dark) .battle-panel-head h3 {
+  color: #4b407d;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.86);
+}
+
+html:not(.theme-dark) .sub-text,
+html:not(.theme-dark) .helper-text,
+html:not(.theme-dark) .status-text,
+html:not(.theme-dark) #totalInfo,
+html:not(.theme-dark) .game-item p,
+html:not(.theme-dark) .popup-message,
+html:not(.theme-dark) .race-track-stage-desc,
+html:not(.theme-dark) .game-board-head span,
+html:not(.theme-dark) .orientation-lock-card p {
+  color: var(--day-ink-soft) !important;
+}
+
+html:not(.theme-dark) .small-badge,
+html:not(.theme-dark) .game-mini-badge,
+html:not(.theme-dark) .battle-deck-label,
+html:not(.theme-dark) .legend-chip,
+html:not(.theme-dark) .race-ranking-item,
+html:not(.theme-dark) .battle-ranking-item,
+html:not(.theme-dark) .battle-ranking-empty,
+html:not(.theme-dark) .sim-empty-state,
+html:not(.theme-dark) .naval-log-item,
+html:not(.theme-dark) .naval-ranking-item,
+html:not(.theme-dark) .naval-player-chip,
+html:not(.theme-dark) .naval-elimination-item {
+  background: linear-gradient(180deg, #ffffff 0%, #fff3d0 100%);
+  color: #5c4778;
+  border-color: rgba(255, 216, 77, 0.48);
+  box-shadow: 0 8px 18px rgba(90, 67, 44, 0.08);
+}
+
+html:not(.theme-dark) .small-badge::first-letter {
+  color: var(--day-accent);
+}
+
+html:not(.theme-dark) .main-btn,
+html:not(.theme-dark) .action-btn.primary {
+  background: linear-gradient(135deg, #ff5f9f 0%, #ff8f70 100%);
+  color: #fffdf8;
+  border: 2px solid rgba(255,255,255,0.92);
+  box-shadow: 0 12px 24px rgba(255, 95, 159, 0.28);
+  text-shadow: 0 1px 1px rgba(92, 35, 65, 0.22);
+}
+
+html:not(.theme-dark) .action-btn.secondary,
+html:not(.theme-dark) .drawer-toggle-btn,
+html:not(.theme-dark) .menu-btn.luck {
+  background: linear-gradient(135deg, #74cbff 0%, #58d7b5 100%);
+  color: #183f4b;
+  border: 2px solid rgba(255,255,255,0.88);
+}
+
+html:not(.theme-dark) .action-btn.soft,
+html:not(.theme-dark) .popup-btn,
+html:not(.theme-dark) .menu-btn.physical {
+  background: linear-gradient(135deg, #ffd84d 0%, #ffb36b 100%);
+  color: #49351d;
+  border: 2px solid rgba(255,255,255,0.9);
+}
+
+html:not(.theme-dark) .back-btn,
+html:not(.theme-dark) .sim-info-btn,
+html:not(.theme-dark) .sim-arena-zoom-btn,
+html:not(.theme-dark) .utility-btn,
+html:not(.theme-dark) .utility-volume-panel {
+  background: rgba(255, 255, 251, 0.94);
+  color: #4b407d;
+  border: 2px solid rgba(112, 199, 255, 0.38);
+  box-shadow: 0 12px 24px rgba(90, 67, 44, 0.12);
+}
+
+html:not(.theme-dark) .game-item,
+html:not(.theme-dark) .game-item.game-launch,
+html:not(.theme-dark) .physical-game-item {
+  background:
+    radial-gradient(circle at 16% 12%, rgba(255,255,255,0.86), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #fff5de 100%);
+  color: var(--day-ink);
+  border: 2px solid rgba(255, 216, 77, 0.42);
+  box-shadow: 0 12px 22px rgba(90, 67, 44, 0.10);
+}
+
+html:not(.theme-dark) .game-item:nth-child(2),
+html:not(.theme-dark) .physical-game-item:nth-child(2) {
+  background: linear-gradient(180deg, #ffffff 0%, #e4f8ff 100%);
+  border-color: rgba(111, 199, 255, 0.48);
+}
+
+html:not(.theme-dark) .game-item:nth-child(3),
+html:not(.theme-dark) .physical-game-item:nth-child(3) {
+  background: linear-gradient(180deg, #ffffff 0%, #f0eaff 100%);
+  border-color: rgba(169, 140, 255, 0.42);
+}
+
+html:not(.theme-dark) .game-item:nth-child(4),
+html:not(.theme-dark) .physical-game-item:nth-child(4) {
+  background: linear-gradient(180deg, #ffffff 0%, #e9fff7 100%);
+  border-color: rgba(88, 215, 181, 0.42);
+}
+
+html:not(.theme-dark) .game-item:nth-child(5),
+html:not(.theme-dark) .physical-game-item:nth-child(5) {
+  background: linear-gradient(180deg, #ffffff 0%, #ffeaf3 100%);
+  border-color: rgba(255, 111, 168, 0.42);
+}
+
+html:not(.theme-dark) .game-item:nth-child(6) {
+  background: linear-gradient(180deg, #ffffff 0%, #fff1df 100%);
+  border-color: rgba(255, 154, 122, 0.42);
+}
+
+html:not(.theme-dark) .game-item:nth-child(7) {
+  background: linear-gradient(180deg, #ffffff 0%, #eef9ff 100%);
+  border-color: rgba(111, 199, 255, 0.42);
+}
+
+html:not(.theme-dark) .game-item:nth-child(8) {
+  background: linear-gradient(180deg, #ffffff 0%, #fff7c6 100%);
+  border-color: rgba(255, 216, 77, 0.58);
+}
+
+html:not(.theme-dark) .game-num,
+html:not(.theme-dark) .battle-rank-num {
+  background: linear-gradient(135deg, #ff6fa8 0%, #ffd84d 100%);
+  color: #fffdf7;
+  box-shadow: 0 8px 16px rgba(255, 111, 168, 0.24);
+  text-shadow: 0 1px 1px rgba(84, 42, 61, 0.22);
+}
+
+html:not(.theme-dark) .game-meta-row {
+  background: rgba(255,255,255,0.84);
+  border-color: rgba(255, 216, 77, 0.32);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.82), 0 7px 14px rgba(90, 67, 44, 0.06);
+}
+
+html:not(.theme-dark) .game-meta-label {
+  color: #7254a7;
+}
+
+html:not(.theme-dark) .game-meta-value,
+html:not(.theme-dark) .slot-name,
+html:not(.theme-dark) .slot-meta,
+html:not(.theme-dark) .horse-name,
+html:not(.theme-dark) .battle-player-name,
+html:not(.theme-dark) .sim-player-name,
+html:not(.theme-dark) .battle-rank-name {
+  color: var(--day-ink);
+}
+
+html:not(.theme-dark) .input-card input,
+html:not(.theme-dark) input:disabled {
+  background: #fffef8;
+  color: var(--day-ink);
+  border-color: rgba(112, 199, 255, 0.44);
+}
+
+html:not(.theme-dark) .input-card input:focus {
+  border-color: rgba(255, 111, 168, 0.72);
+  box-shadow: 0 0 0 5px rgba(255, 111, 168, 0.16);
+}
+
+html:not(.theme-dark) .game-canvas-wrap,
+html:not(.theme-dark) .race-track-wrap,
+html:not(.theme-dark) .sim-arena-wrap,
+html:not(.theme-dark) .sim-arena-zoom-stage,
+html:not(.theme-dark) .naval-board-wrap {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255,255,255,0.86), transparent 28%),
+    linear-gradient(180deg, #fffdf1 0%, #e6f7ff 100%);
+  border-color: rgba(255,255,255,0.88);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55), 0 16px 28px rgba(90, 67, 44, 0.10);
+}
+
+html:not(.theme-dark) .race-lane {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.30) 0 28px, rgba(255,255,255,0.12) 28px 56px),
+    linear-gradient(180deg, #ffd995 0%, #ffba75 100%);
+  border-color: rgba(255,255,255,0.68);
+}
+
+html:not(.theme-dark) .race-lane-label {
+  background: rgba(255,255,251,0.94);
+  color: #4b407d;
+}
+
+html:not(.theme-dark) .popup-overlay {
+  background: rgba(65, 49, 38, 0.26);
+}
+
+html:not(.theme-dark) .volume-control-value {
+  color: var(--day-ink-soft);
+}
+
+html:not(.theme-dark) .volume-range::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, rgba(255, 111, 168, 0.94) 0%, rgba(255, 111, 168, 0.94) var(--volume-progress, 50%), rgba(189, 234, 255, 0.88) var(--volume-progress, 50%), rgba(189, 234, 255, 0.88) 100%);
+  border-color: rgba(255,255,255,0.72);
+}
+
+html:not(.theme-dark) .volume-range::-moz-range-track {
+  background: rgba(189, 234, 255, 0.88);
+  border-color: rgba(255,255,255,0.72);
+}
+
+html:not(.theme-dark) .volume-range::-moz-range-progress {
+  background: rgba(255, 111, 168, 0.94);
+}
+
+html:not(.theme-dark) .volume-range::-webkit-slider-thumb,
+html:not(.theme-dark) .volume-range::-moz-range-thumb {
+  background: #fffef8;
+  border-color: rgba(255, 111, 168, 0.88);
+}
+
+html.theme-dark {
+  color-scheme: dark;
+  --bg: var(--night-dominant);
+  --bg2: #030713;
+  --card: rgba(12, 24, 46, 0.92);
+  --card-strong: rgba(15, 30, 57, 0.96);
+  --brown: var(--night-ink);
+  --soft-brown: #cfe8ff;
+  --pink: var(--night-accent);
+  --mint: var(--night-mint);
+  --sky: var(--night-accent-2);
+  --lavender: #9f8cff;
+  --yellow: var(--night-spark);
+  --peach: #ffad75;
+  --shadow: 0 18px 38px rgba(0, 0, 0, 0.45);
+  --night-surface-1: #081225;
+  --night-surface-2: #0e1a33;
+  --night-surface-3: #173b6d;
+  --night-surface-4: #1f4d88;
+  --night-border: rgba(139, 211, 255, 0.25);
+  --night-border-strong: rgba(139, 211, 255, 0.52);
+  --night-text: var(--night-ink);
+  --night-text-2: var(--night-ink-soft);
+  --night-text-3: #9eb2d3;
+  --night-muted-chip: #122849;
+}
+
+html.theme-dark body {
+  color: var(--night-ink);
+  background:
+    radial-gradient(circle at 14% 8%, rgba(255, 217, 102, 0.22) 0 4%, transparent 18%),
+    radial-gradient(circle at 78% 18%, rgba(139, 211, 255, 0.20) 0 13%, transparent 34%),
+    radial-gradient(circle at 18% 84%, rgba(255, 111, 177, 0.16) 0 9%, transparent 28%),
+    linear-gradient(145deg, #081225 0%, #0e1a33 58%, #030713 100%);
+}
+
+html.theme-dark body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.72) 0 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(255,217,102,0.72) 0 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(139,211,255,0.64) 0 1px, transparent 1.6px);
+  background-size: 88px 88px, 132px 132px, 170px 170px;
+  background-position: 12px 18px, 64px 44px, 22px 86px;
+  opacity: 0.42;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.76), rgba(0,0,0,0.24) 78%, transparent);
+}
+
+html.theme-dark .background-deco {
+  opacity: 0.18;
+  filter: blur(12px) saturate(1.2);
+}
+
+html.theme-dark .card,
+html.theme-dark .controls-wrap,
+html.theme-dark .scoreboard-card,
+html.theme-dark .game-board-card,
+html.theme-dark .race-panel,
+html.theme-dark .battle-table-card,
+html.theme-dark .battle-panel,
+html.theme-dark .sim-setup-card,
+html.theme-dark .sim-arena-card,
+html.theme-dark .sim-battle-summary-card,
+html.theme-dark .naval-board-card,
+html.theme-dark .popup,
+html.theme-dark .orientation-lock-card,
+html.theme-dark .game-sidebar,
+html.theme-dark .race-sidebar,
+html.theme-dark .battle-sidebar,
+html.theme-dark .sim-sidebar,
+html.theme-dark .naval-sidebar {
+  background:
+    radial-gradient(circle at top left, rgba(139,211,255,0.12), transparent 42%),
+    linear-gradient(180deg, rgba(12, 24, 46, 0.97) 0%, rgba(7, 14, 29, 0.95) 100%);
+  color: var(--night-ink);
+  border-color: var(--night-line);
+  box-shadow:
+    0 18px 38px rgba(0,0,0,0.48),
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 0 0 1px rgba(139,211,255,0.05);
+}
+
+html.theme-dark .main-card h1,
+html.theme-dark .menu-card h2,
+html.theme-dark .luck-card h2,
+html.theme-dark .physical-card h2,
+html.theme-dark .game-card h2,
+html.theme-dark .popup h3,
+html.theme-dark .sidebar-title,
+html.theme-dark .scoreboard-head h3,
+html.theme-dark .game-board-head h3,
+html.theme-dark .race-track-stage-title,
+html.theme-dark .battle-panel-head h3 {
+  color: #cfe8ff;
+  text-shadow: 0 0 16px rgba(139, 211, 255, 0.18);
+}
+
+html.theme-dark .sub-text,
+html.theme-dark .helper-text,
+html.theme-dark .status-text,
+html.theme-dark #totalInfo,
+html.theme-dark .game-item p,
+html.theme-dark .popup-message,
+html.theme-dark .horse-status,
+html.theme-dark .battle-rank-formula,
+html.theme-dark .battle-player-sub,
+html.theme-dark .sim-player-sub,
+html.theme-dark .game-board-head span,
+html.theme-dark .orientation-lock-card p,
+html.theme-dark .race-track-stage-desc,
+html.theme-dark .race-ranking-item div {
+  color: var(--night-ink-soft) !important;
+}
+
+html.theme-dark .small-badge,
+html.theme-dark .game-mini-badge,
+html.theme-dark .battle-deck-label,
+html.theme-dark .legend-chip,
+html.theme-dark .race-ranking-item,
+html.theme-dark .battle-ranking-item,
+html.theme-dark .battle-ranking-empty,
+html.theme-dark .sim-empty-state,
+html.theme-dark .naval-log-item,
+html.theme-dark .naval-ranking-item,
+html.theme-dark .naval-player-chip,
+html.theme-dark .naval-elimination-item {
+  background: linear-gradient(180deg, rgba(23, 59, 109, 0.88) 0%, rgba(12, 28, 54, 0.96) 100%);
+  color: var(--night-ink);
+  border-color: rgba(139, 211, 255, 0.24);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+html.theme-dark .main-btn,
+html.theme-dark .action-btn.primary {
+  background: linear-gradient(135deg, #ff6fb1 0%, #8bd3ff 100%);
+  color: #061020;
+  border: 2px solid rgba(255,255,255,0.26);
+  box-shadow: 0 0 0 1px rgba(255,111,177,0.22), 0 14px 28px rgba(255,111,177,0.22);
+  text-shadow: none;
+}
+
+html.theme-dark .action-btn.secondary,
+html.theme-dark .drawer-toggle-btn,
+html.theme-dark .menu-btn.luck {
+  background: linear-gradient(135deg, #173b6d 0%, #1f4d88 100%);
+  color: #f3f9ff;
+  border-color: rgba(139,211,255,0.36);
+}
+
+html.theme-dark .action-btn.soft,
+html.theme-dark .popup-btn,
+html.theme-dark .menu-btn.physical {
+  background: linear-gradient(135deg, #ffd966 0%, #ffad75 100%);
+  color: #17110b;
+  border-color: rgba(255,255,255,0.24);
+}
+
+html.theme-dark .back-btn,
+html.theme-dark .sim-info-btn,
+html.theme-dark .sim-arena-zoom-btn,
+html.theme-dark .utility-btn,
+html.theme-dark .utility-volume-panel {
+  background: rgba(10, 24, 48, 0.94);
+  color: #f6fbff;
+  border-color: rgba(139, 211, 255, 0.32);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.42);
+}
+
+html.theme-dark .game-item,
+html.theme-dark .game-item.game-launch,
+html.theme-dark .physical-game-item,
+html.theme-dark .menu-btn.physical,
+html.theme-dark .menu-btn.luck {
+  background:
+    radial-gradient(circle at top left, rgba(139,211,255,0.14), transparent 40%),
+    linear-gradient(180deg, rgba(15, 35, 66, 0.98) 0%, rgba(8, 18, 37, 0.98) 100%);
+  color: var(--night-ink);
+  border: 2px solid rgba(139, 211, 255, 0.24);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.42);
+}
+
+html.theme-dark .game-item:nth-child(2),
+html.theme-dark .game-item:nth-child(3),
+html.theme-dark .game-item:nth-child(4),
+html.theme-dark .game-item:nth-child(5),
+html.theme-dark .game-item:nth-child(6),
+html.theme-dark .game-item:nth-child(7),
+html.theme-dark .game-item:nth-child(8),
+html.theme-dark .physical-game-item:nth-child(2),
+html.theme-dark .physical-game-item:nth-child(3),
+html.theme-dark .physical-game-item:nth-child(4),
+html.theme-dark .physical-game-item:nth-child(5) {
+  background:
+    radial-gradient(circle at top left, rgba(255,111,177,0.10), transparent 36%),
+    linear-gradient(180deg, rgba(17, 39, 74, 0.98) 0%, rgba(8, 18, 37, 0.98) 100%);
+  border-color: rgba(139, 211, 255, 0.24);
+}
+
+html.theme-dark .game-num,
+html.theme-dark .battle-rank-num {
+  background: linear-gradient(135deg, #ff6fb1 0%, #ffd966 100%);
+  color: #061020;
+  box-shadow: 0 0 18px rgba(255, 111, 177, 0.22);
+  text-shadow: none;
+}
+
+html.theme-dark .game-meta-row {
+  background: rgba(6, 16, 32, 0.74);
+  border-color: rgba(139, 211, 255, 0.20);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 8px 16px rgba(0,0,0,0.24);
+}
+
+html.theme-dark .game-meta-label {
+  color: #8bd3ff;
+}
+
+html.theme-dark .game-meta-value,
+html.theme-dark .slot-name,
+html.theme-dark .slot-meta,
+html.theme-dark .horse-name,
+html.theme-dark .battle-player-name,
+html.theme-dark .sim-player-name,
+html.theme-dark .battle-rank-name,
+html.theme-dark .race-lane-label {
+  color: var(--night-ink);
+}
+
+html.theme-dark .input-card input,
+html.theme-dark input:disabled {
+  background: rgba(3, 8, 18, 0.88);
+  color: var(--night-ink);
+  border-color: rgba(139, 211, 255, 0.26);
+}
+
+html.theme-dark .input-card input:focus {
+  border-color: rgba(255, 111, 177, 0.74);
+  box-shadow: 0 0 0 5px rgba(255, 111, 177, 0.15);
+}
+
+html.theme-dark .game-canvas-wrap,
+html.theme-dark .race-track-wrap,
+html.theme-dark .sim-arena-wrap,
+html.theme-dark .sim-arena-zoom-stage,
+html.theme-dark .naval-board-wrap,
+html.theme-dark .battle-table-card {
+  background:
+    radial-gradient(circle at top left, rgba(139,211,255,0.10), transparent 28%),
+    linear-gradient(180deg, #0b1c37 0%, #061020 100%);
+  border-color: rgba(139, 211, 255, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 18px 30px rgba(0,0,0,0.42);
+}
+
+html.theme-dark .race-lane {
+  background:
+    repeating-linear-gradient(90deg, rgba(139,211,255,0.09) 0 28px, rgba(255,255,255,0.025) 28px 56px),
+    linear-gradient(180deg, #183b6d 0%, #0e1a33 100%);
+  border-color: rgba(139,211,255,0.20);
+}
+
+html.theme-dark .race-lane-label {
+  background: rgba(6, 16, 32, 0.86);
+  color: var(--night-ink);
+}
+
+html.theme-dark .popup-overlay {
+  background: rgba(0, 4, 12, 0.72);
+}
+
+html.theme-dark .volume-control-value {
+  color: rgba(201, 216, 239, 0.86);
+}
+
+html.theme-dark .volume-range::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, rgba(255, 111, 177, 0.96) 0%, rgba(255, 111, 177, 0.96) var(--volume-progress, 50%), rgba(139, 211, 255, 0.20) var(--volume-progress, 50%), rgba(139, 211, 255, 0.20) 100%);
+  border-color: rgba(139, 211, 255, 0.18);
+}
+
+html.theme-dark .volume-range::-moz-range-track {
+  background: rgba(139, 211, 255, 0.20);
+  border-color: rgba(139, 211, 255, 0.18);
+}
+
+html.theme-dark .volume-range::-moz-range-progress {
+  background: rgba(255, 111, 177, 0.96);
+}
+
+html.theme-dark .volume-range::-webkit-slider-thumb,
+html.theme-dark .volume-range::-moz-range-thumb {
+  background: #061020;
+  border-color: rgba(255, 111, 177, 0.92);
+}
+
+html:not(.theme-dark) .action-btn:disabled,
+html:not(.theme-dark) .action-btn.is-game-running,
+html:not(.theme-dark) .main-btn:disabled,
+html:not(.theme-dark) .main-btn.is-game-running,
+html:not(.theme-dark) .game-item:disabled,
+html:not(.theme-dark) .game-item.is-game-running,
+html.theme-dark .action-btn:disabled,
+html.theme-dark .action-btn.is-game-running,
+html.theme-dark .main-btn:disabled,
+html.theme-dark .main-btn.is-game-running,
+html.theme-dark .game-item:disabled,
+html.theme-dark .game-item.is-game-running {
+  opacity: 0.62;
+  cursor: not-allowed;
+  transform: none !important;
+  filter: saturate(0.74) brightness(0.96);
+}
+
+html:not(.theme-dark) .action-btn:focus-visible,
+html:not(.theme-dark) .main-btn:focus-visible,
+html:not(.theme-dark) .back-btn:focus-visible,
+html:not(.theme-dark) .game-item:focus-visible,
+html:not(.theme-dark) .menu-btn:focus-visible {
+  outline: 4px solid rgba(255, 111, 168, 0.36);
+  outline-offset: 4px;
+}
+
+html.theme-dark .action-btn:focus-visible,
+html.theme-dark .main-btn:focus-visible,
+html.theme-dark .back-btn:focus-visible,
+html.theme-dark .game-item:focus-visible,
+html.theme-dark .menu-btn:focus-visible {
+  outline: 4px solid rgba(139, 211, 255, 0.32);
+  outline-offset: 4px;
+}
+
+html:not(.theme-dark) .slot-legend::-webkit-scrollbar-thumb,
+html:not(.theme-dark) .race-ranking-list::-webkit-scrollbar-thumb,
+html:not(.theme-dark) .race-track-lanes::-webkit-scrollbar-thumb {
+  background: rgba(255, 111, 168, 0.38);
+}
+
+html.theme-dark .slot-legend::-webkit-scrollbar-thumb,
+html.theme-dark .race-ranking-list::-webkit-scrollbar-thumb,
+html.theme-dark .race-track-lanes::-webkit-scrollbar-thumb {
+  background: rgba(139, 211, 255, 0.35);
+}
+
+/* =========================================================
+   FINAL VISIBILITY THEME PASS
+   낮: 푸른 하늘 + 파스텔 / 밤: 어두운 밤 + 네온 사인
+   비율 원칙: dominant 61.8 / surface 23.6 / accent 9 / point 5.6
+   기능 레이아웃은 건드리지 않고 색상·가독성만 재정리.
+========================================================= */
+
+html:not(.theme-dark) {
+  color-scheme: light;
+  --sky-day-main: #9fd7ff;
+  --sky-day-deep: #64b8f3;
+  --sky-day-cloud: #f8fcff;
+  --sky-day-cream: #fff6dc;
+  --sky-day-surface: rgba(255, 253, 247, 0.92);
+  --sky-day-surface-solid: #fffdf7;
+  --sky-day-surface-2: #edf8ff;
+  --sky-day-line: rgba(58, 133, 184, 0.24);
+  --sky-day-line-strong: rgba(44, 121, 179, 0.42);
+  --sky-day-text: #24384a;
+  --sky-day-text-2: #4f6373;
+  --sky-day-text-3: #6c7b88;
+  --sky-day-accent: #ff6f9f;
+  --sky-day-accent-2: #ff9f7a;
+  --sky-day-point: #ffd166;
+  --sky-day-mint: #69d9ba;
+  --sky-day-lavender: #b9a7ff;
+  --sky-day-shadow: 0 18px 34px rgba(53, 119, 166, 0.16);
+
+  --bg: var(--sky-day-main) !important;
+  --bg2: #dff4ff !important;
+  --card: var(--sky-day-surface) !important;
+  --card-strong: rgba(255, 255, 252, 0.96) !important;
+  --brown: var(--sky-day-text) !important;
+  --soft-brown: #2e5f86 !important;
+  --pink: var(--sky-day-accent) !important;
+  --mint: var(--sky-day-mint) !important;
+  --sky: #bfe8ff !important;
+  --lavender: var(--sky-day-lavender) !important;
+  --yellow: var(--sky-day-point) !important;
+  --peach: #ffbd94 !important;
+  --shadow: var(--sky-day-shadow) !important;
+}
+
+html:not(.theme-dark) body {
+  color: var(--sky-day-text) !important;
+  background:
+    radial-gradient(circle at 12% 9%, rgba(255, 255, 255, 0.92) 0 5%, transparent 18%),
+    radial-gradient(circle at 78% 13%, rgba(255, 255, 255, 0.72) 0 9%, transparent 25%),
+    radial-gradient(circle at 18% 82%, rgba(255, 209, 102, 0.24) 0 11%, transparent 27%),
+    linear-gradient(180deg, #86ccff 0%, #bfe8ff 42%, #fff4d6 100%) !important;
+}
+
+html:not(.theme-dark) body::before {
+  content: '' !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(ellipse at 18% 24%, rgba(255,255,255,0.72) 0 8%, transparent 19%),
+    radial-gradient(ellipse at 31% 20%, rgba(255,255,255,0.56) 0 7%, transparent 18%),
+    radial-gradient(ellipse at 84% 34%, rgba(255,255,255,0.58) 0 8%, transparent 20%),
+    linear-gradient(180deg, rgba(255,255,255,0.0), rgba(255,255,255,0.18)) !important;
+  opacity: 0.9 !important;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.92), rgba(0,0,0,0.48) 72%, transparent 100%) !important;
+}
+
+html:not(.theme-dark) body::after {
+  content: '' !important;
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 38vh !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(255, 246, 220, 0.36) 100%) !important;
+}
+
+html.theme-dark {
+  color-scheme: dark;
+  --night-main: #050b16;
+  --night-deep: #020612;
+  --night-surface: rgba(10, 20, 36, 0.92);
+  --night-surface-solid: #0b172a;
+  --night-surface-2: #102542;
+  --night-surface-3: #17375e;
+  --night-line: rgba(105, 216, 255, 0.26);
+  --night-line-strong: rgba(105, 216, 255, 0.46);
+  --night-text: #edf8ff;
+  --night-text-2: #b9cce0;
+  --night-text-3: #8fa7bd;
+  --night-neon-cyan: #69d8ff;
+  --night-neon-blue: #4d8dff;
+  --night-neon-pink: #ff5fa2;
+  --night-neon-purple: #b58cff;
+  --night-neon-yellow: #ffe66d;
+  --night-shadow: 0 20px 42px rgba(0, 0, 0, 0.52);
+
+  --bg: var(--night-main) !important;
+  --bg2: var(--night-deep) !important;
+  --card: var(--night-surface) !important;
+  --card-strong: rgba(14, 28, 50, 0.97) !important;
+  --brown: var(--night-text) !important;
+  --soft-brown: #d7efff !important;
+  --pink: var(--night-neon-pink) !important;
+  --mint: #63e6be !important;
+  --sky: var(--night-neon-cyan) !important;
+  --lavender: var(--night-neon-purple) !important;
+  --yellow: var(--night-neon-yellow) !important;
+  --peach: #ffad75 !important;
+  --shadow: var(--night-shadow) !important;
+}
+
+html.theme-dark body {
+  color: var(--night-text) !important;
+  background:
+    radial-gradient(circle at 16% 10%, rgba(255, 230, 109, 0.16) 0 4%, transparent 15%),
+    radial-gradient(circle at 76% 18%, rgba(105, 216, 255, 0.18) 0 10%, transparent 31%),
+    radial-gradient(circle at 18% 82%, rgba(255, 95, 162, 0.13) 0 10%, transparent 28%),
+    linear-gradient(180deg, #071326 0%, #050b16 54%, #020612 100%) !important;
+}
+
+html.theme-dark body::before {
+  content: '' !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background-image:
+    radial-gradient(circle, rgba(237,248,255,0.76) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(105,216,255,0.62) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(255,230,109,0.50) 0 1px, transparent 1.5px),
+    linear-gradient(90deg, transparent 0 48%, rgba(105,216,255,0.12) 49%, transparent 51%);
+  background-size: 92px 92px, 142px 142px, 188px 188px, 100% 100%;
+  background-position: 12px 18px, 64px 44px, 22px 86px, center;
+  opacity: 0.48 !important;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.86), rgba(0,0,0,0.42) 76%, transparent 100%) !important;
+}
+
+html.theme-dark body::after {
+  content: '' !important;
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 44vh !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background:
+    linear-gradient(90deg, transparent 0 5%, rgba(105,216,255,0.20) 5% 5.4%, transparent 5.4% 13%, rgba(255,95,162,0.20) 13% 13.45%, transparent 13.45% 24%, rgba(255,230,109,0.16) 24% 24.38%, transparent 24.38%),
+    linear-gradient(180deg, transparent 0%, rgba(105,216,255,0.06) 54%, rgba(255,95,162,0.08) 100%) !important;
+  opacity: 0.82 !important;
+}
+
+html:not(.theme-dark) .background-deco.deco1 { background: #ffffff !important; opacity: 0.42 !important; filter: blur(8px) !important; }
+html:not(.theme-dark) .background-deco.deco2 { background: #bfe8ff !important; opacity: 0.52 !important; filter: blur(10px) !important; }
+html:not(.theme-dark) .background-deco.deco3 { background: #fff2bf !important; opacity: 0.54 !important; filter: blur(12px) !important; }
+html:not(.theme-dark) .background-deco.deco4 { background: #ffd6e6 !important; opacity: 0.50 !important; filter: blur(10px) !important; }
+
+html.theme-dark .background-deco.deco1 { background: var(--night-neon-cyan) !important; opacity: 0.16 !important; filter: blur(16px) !important; }
+html.theme-dark .background-deco.deco2 { background: var(--night-neon-pink) !important; opacity: 0.14 !important; filter: blur(18px) !important; }
+html.theme-dark .background-deco.deco3 { background: var(--night-neon-purple) !important; opacity: 0.15 !important; filter: blur(18px) !important; }
+html.theme-dark .background-deco.deco4 { background: var(--night-neon-yellow) !important; opacity: 0.11 !important; filter: blur(18px) !important; }
+
+html:not(.theme-dark) .card,
+html:not(.theme-dark) .controls-wrap,
+html:not(.theme-dark) .scoreboard-card,
+html:not(.theme-dark) .game-board-card,
+html:not(.theme-dark) .race-panel,
+html:not(.theme-dark) .battle-table-card,
+html:not(.theme-dark) .battle-panel,
+html:not(.theme-dark) .sim-setup-card,
+html:not(.theme-dark) .sim-arena-card,
+html:not(.theme-dark) .sim-battle-summary-card,
+html:not(.theme-dark) .naval-board-card,
+html:not(.theme-dark) .stock-portfolio-card,
+html:not(.theme-dark) .bear-find-stage-card,
+html:not(.theme-dark) .balloon-stage-card,
+html:not(.theme-dark) .bomb-pass-stage-card,
+html:not(.theme-dark) .circle-tap-stage-card,
+html:not(.theme-dark) .key-react-stage-card,
+html:not(.theme-dark) .ladder-stage-card,
+html:not(.theme-dark) .roulette-stage-card,
+html:not(.theme-dark) .popup,
+html:not(.theme-dark) .orientation-lock-card,
+html:not(.theme-dark) .game-sidebar,
+html:not(.theme-dark) .race-sidebar,
+html:not(.theme-dark) .battle-sidebar,
+html:not(.theme-dark) .sim-sidebar,
+html:not(.theme-dark) .naval-sidebar,
+html:not(.theme-dark) .balloon-sidebar,
+html:not(.theme-dark) .circle-tap-sidebar,
+html:not(.theme-dark) .key-react-sidebar,
+html:not(.theme-dark) .bear-find-sidebar {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255,255,255,0.88), transparent 32%),
+    linear-gradient(180deg, rgba(255,255,252,0.96) 0%, rgba(246,251,255,0.91) 100%) !important;
+  color: var(--sky-day-text) !important;
+  border: 2px solid rgba(255,255,255,0.82) !important;
+  box-shadow: 0 16px 32px rgba(48, 111, 158, 0.15), inset 0 1px 0 rgba(255,255,255,0.85) !important;
+}
+
+html.theme-dark .card,
+html.theme-dark .controls-wrap,
+html.theme-dark .scoreboard-card,
+html.theme-dark .game-board-card,
+html.theme-dark .race-panel,
+html.theme-dark .battle-table-card,
+html.theme-dark .battle-panel,
+html.theme-dark .sim-setup-card,
+html.theme-dark .sim-arena-card,
+html.theme-dark .sim-battle-summary-card,
+html.theme-dark .naval-board-card,
+html.theme-dark .stock-portfolio-card,
+html.theme-dark .bear-find-stage-card,
+html.theme-dark .balloon-stage-card,
+html.theme-dark .bomb-pass-stage-card,
+html.theme-dark .circle-tap-stage-card,
+html.theme-dark .key-react-stage-card,
+html.theme-dark .ladder-stage-card,
+html.theme-dark .roulette-stage-card,
+html.theme-dark .popup,
+html.theme-dark .orientation-lock-card,
+html.theme-dark .game-sidebar,
+html.theme-dark .race-sidebar,
+html.theme-dark .battle-sidebar,
+html.theme-dark .sim-sidebar,
+html.theme-dark .naval-sidebar,
+html.theme-dark .balloon-sidebar,
+html.theme-dark .circle-tap-sidebar,
+html.theme-dark .key-react-sidebar,
+html.theme-dark .bear-find-sidebar {
+  background:
+    radial-gradient(circle at 13% 0%, rgba(105,216,255,0.11), transparent 35%),
+    linear-gradient(180deg, rgba(13, 27, 48, 0.96) 0%, rgba(6, 14, 28, 0.96) 100%) !important;
+  color: var(--night-text) !important;
+  border: 1px solid rgba(105,216,255,0.24) !important;
+  box-shadow:
+    0 22px 44px rgba(0,0,0,0.50),
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 0 0 1px rgba(105,216,255,0.05) !important;
+}
+
+html:not(.theme-dark) .card::before,
+html:not(.theme-dark) .game-card::before,
+html:not(.theme-dark) .main-card::before,
+html:not(.theme-dark) .menu-card::before,
+html:not(.theme-dark) .luck-card::before,
+html:not(.theme-dark) .physical-card::before,
+html:not(.theme-dark) #game1Screen .game-card-full::before {
+  background:
+    radial-gradient(circle, #ffffff 0 28%, transparent 30%) 0 50% / 18px 18px repeat-x,
+    linear-gradient(90deg, transparent, #8fd3ff, #ffd166, #ff9fbe, transparent) !important;
+  box-shadow: none !important;
+  opacity: 0.86 !important;
+}
+
+html.theme-dark .card::before,
+html.theme-dark .game-card::before,
+html.theme-dark .main-card::before,
+html.theme-dark .menu-card::before,
+html.theme-dark .luck-card::before,
+html.theme-dark .physical-card::before,
+html.theme-dark #game1Screen .game-card-full::before {
+  background:
+    linear-gradient(90deg, transparent, rgba(105,216,255,0.0), rgba(105,216,255,0.95), rgba(255,95,162,0.74), rgba(255,230,109,0.48), transparent) !important;
+  height: 4px !important;
+  box-shadow: 0 0 12px rgba(105,216,255,0.42), 0 0 22px rgba(255,95,162,0.14) !important;
+  opacity: 0.72 !important;
+}
+
+html:not(.theme-dark) .main-card h1,
+html:not(.theme-dark) .menu-card h2,
+html:not(.theme-dark) .luck-card h2,
+html:not(.theme-dark) .physical-card h2,
+html:not(.theme-dark) .game-card h2,
+html:not(.theme-dark) .popup h3,
+html:not(.theme-dark) .sidebar-title,
+html:not(.theme-dark) .scoreboard-head h3,
+html:not(.theme-dark) .game-board-head h3,
+html:not(.theme-dark) .race-track-stage-title,
+html:not(.theme-dark) .battle-panel-head h3,
+html:not(.theme-dark) .game-item h3,
+html:not(.theme-dark) .physical-game-item h3 {
+  color: #255b83 !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.64) !important;
+}
+
+html.theme-dark .main-card h1,
+html.theme-dark .menu-card h2,
+html.theme-dark .luck-card h2,
+html.theme-dark .physical-card h2,
+html.theme-dark .game-card h2,
+html.theme-dark .popup h3,
+html.theme-dark .sidebar-title,
+html.theme-dark .scoreboard-head h3,
+html.theme-dark .game-board-head h3,
+html.theme-dark .race-track-stage-title,
+html.theme-dark .battle-panel-head h3,
+html.theme-dark .game-item h3,
+html.theme-dark .physical-game-item h3 {
+  color: #eaf8ff !important;
+  text-shadow: 0 0 10px rgba(105,216,255,0.20) !important;
+}
+
+html:not(.theme-dark) .sub-text,
+html:not(.theme-dark) .helper-text,
+html:not(.theme-dark) .status-text,
+html:not(.theme-dark) #totalInfo,
+html:not(.theme-dark) .game-item p,
+html:not(.theme-dark) .popup-message,
+html:not(.theme-dark) .horse-status,
+html:not(.theme-dark) .battle-rank-formula,
+html:not(.theme-dark) .battle-player-sub,
+html:not(.theme-dark) .sim-player-sub,
+html:not(.theme-dark) .game-board-head span,
+html:not(.theme-dark) .orientation-lock-card p,
+html:not(.theme-dark) .race-track-stage-desc,
+html:not(.theme-dark) .race-ranking-item div,
+html:not(.theme-dark) .bomb-pass-status-text,
+html:not(.theme-dark) .bomb-pass-device-text,
+html:not(.theme-dark) .balloon-stage-hint,
+html:not(.theme-dark) .circle-tap-stage-hint,
+html:not(.theme-dark) .bear-find-stage-hint {
+  color: var(--sky-day-text-2) !important;
+}
+
+html.theme-dark .sub-text,
+html.theme-dark .helper-text,
+html.theme-dark .status-text,
+html.theme-dark #totalInfo,
+html.theme-dark .game-item p,
+html.theme-dark .popup-message,
+html.theme-dark .horse-status,
+html.theme-dark .battle-rank-formula,
+html.theme-dark .battle-player-sub,
+html.theme-dark .sim-player-sub,
+html.theme-dark .game-board-head span,
+html.theme-dark .orientation-lock-card p,
+html.theme-dark .race-track-stage-desc,
+html.theme-dark .race-ranking-item div,
+html.theme-dark .bomb-pass-status-text,
+html.theme-dark .bomb-pass-device-text,
+html.theme-dark .balloon-stage-hint,
+html.theme-dark .circle-tap-stage-hint,
+html.theme-dark .bear-find-stage-hint {
+  color: var(--night-text-2) !important;
+}
+
+html:not(.theme-dark) .small-badge,
+html:not(.theme-dark) .game-mini-badge,
+html:not(.theme-dark) .physical-compat-badge,
+html:not(.theme-dark) .game-ff-badge,
+html:not(.theme-dark) .battle-deck-label,
+html:not(.theme-dark) .sim-phase-badge,
+html:not(.theme-dark) .naval-phase-badge,
+html:not(.theme-dark) .stock-ready-badge,
+html:not(.theme-dark) .legend-chip,
+html:not(.theme-dark) .race-ranking-item,
+html:not(.theme-dark) .battle-ranking-item,
+html:not(.theme-dark) .battle-ranking-empty,
+html:not(.theme-dark) .sim-empty-state,
+html:not(.theme-dark) .naval-log-item,
+html:not(.theme-dark) .naval-ranking-item,
+html:not(.theme-dark) .naval-player-chip,
+html:not(.theme-dark) .naval-elimination-item {
+  background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(235,248,255,0.92) 100%) !important;
+  color: var(--sky-day-text) !important;
+  border-color: rgba(94, 174, 229, 0.30) !important;
+  box-shadow: 0 8px 16px rgba(53,119,166,0.10) !important;
+}
+
+html.theme-dark .small-badge,
+html.theme-dark .game-mini-badge,
+html.theme-dark .physical-compat-badge,
+html.theme-dark .game-ff-badge,
+html.theme-dark .battle-deck-label,
+html.theme-dark .sim-phase-badge,
+html.theme-dark .naval-phase-badge,
+html.theme-dark .stock-ready-badge,
+html.theme-dark .legend-chip,
+html.theme-dark .race-ranking-item,
+html.theme-dark .battle-ranking-item,
+html.theme-dark .battle-ranking-empty,
+html.theme-dark .sim-empty-state,
+html.theme-dark .naval-log-item,
+html.theme-dark .naval-ranking-item,
+html.theme-dark .naval-player-chip,
+html.theme-dark .naval-elimination-item {
+  background: linear-gradient(180deg, rgba(18,45,76,0.94) 0%, rgba(9,20,38,0.96) 100%) !important;
+  color: var(--night-text) !important;
+  border-color: rgba(105,216,255,0.28) !important;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.34), 0 0 12px rgba(105,216,255,0.06) !important;
+}
+
+html:not(.theme-dark) .main-btn,
+html:not(.theme-dark) .action-btn.primary {
+  background: linear-gradient(135deg, #ff6f9f 0%, #ff9f7a 100%) !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(255,255,255,0.90) !important;
+  box-shadow: 0 12px 22px rgba(255,111,159,0.24), 0 2px 0 rgba(133,75,98,0.12) !important;
+  text-shadow: 0 1px 1px rgba(75,40,58,0.22) !important;
+}
+
+html.theme-dark .main-btn,
+html.theme-dark .action-btn.primary {
+  background: linear-gradient(135deg, #ff5fa2 0%, #69d8ff 100%) !important;
+  color: #06111f !important;
+  border: 1px solid rgba(237,248,255,0.24) !important;
+  box-shadow: 0 0 14px rgba(255,95,162,0.20), 0 0 24px rgba(105,216,255,0.14), 0 12px 28px rgba(0,0,0,0.34) !important;
+  text-shadow: none !important;
+}
+
+html:not(.theme-dark) .action-btn.secondary,
+html:not(.theme-dark) .drawer-toggle-btn,
+html:not(.theme-dark) .menu-btn.luck {
+  background: linear-gradient(135deg, #c9ecff 0%, #8ee6cd 100%) !important;
+  color: #183f4b !important;
+  border-color: rgba(255,255,255,0.90) !important;
+}
+
+html.theme-dark .action-btn.secondary,
+html.theme-dark .drawer-toggle-btn,
+html.theme-dark .menu-btn.luck {
+  background: linear-gradient(135deg, #12345a 0%, #104866 100%) !important;
+  color: #edf8ff !important;
+  border-color: rgba(105,216,255,0.34) !important;
+  box-shadow: 0 0 12px rgba(105,216,255,0.10), 0 12px 24px rgba(0,0,0,0.34) !important;
+}
+
+html:not(.theme-dark) .action-btn.soft,
+html:not(.theme-dark) .popup-btn,
+html:not(.theme-dark) .menu-btn.physical {
+  background: linear-gradient(135deg, #ffdc7a 0%, #ffc19e 100%) !important;
+  color: #4a3520 !important;
+  border-color: rgba(255,255,255,0.92) !important;
+}
+
+html.theme-dark .action-btn.soft,
+html.theme-dark .popup-btn,
+html.theme-dark .menu-btn.physical {
+  background: linear-gradient(135deg, #ffe66d 0%, #ffad75 100%) !important;
+  color: #15100a !important;
+  border-color: rgba(255,255,255,0.20) !important;
+  box-shadow: 0 0 14px rgba(255,230,109,0.16), 0 12px 24px rgba(0,0,0,0.34) !important;
+}
+
+html:not(.theme-dark) .back-btn,
+html:not(.theme-dark) .sim-info-btn,
+html:not(.theme-dark) .sim-arena-zoom-btn,
+html:not(.theme-dark) .utility-btn,
+html:not(.theme-dark) .utility-volume-panel {
+  background: rgba(255,255,255,0.94) !important;
+  color: #255b83 !important;
+  border: 2px solid rgba(100,184,243,0.30) !important;
+  box-shadow: 0 10px 20px rgba(53,119,166,0.12) !important;
+}
+
+html.theme-dark .back-btn,
+html.theme-dark .sim-info-btn,
+html.theme-dark .sim-arena-zoom-btn,
+html.theme-dark .utility-btn,
+html.theme-dark .utility-volume-panel {
+  background: rgba(7,18,34,0.94) !important;
+  color: #edf8ff !important;
+  border: 1px solid rgba(105,216,255,0.30) !important;
+  box-shadow: 0 0 12px rgba(105,216,255,0.08), 0 12px 26px rgba(0,0,0,0.42) !important;
+}
+
+html:not(.theme-dark) .game-item,
+html:not(.theme-dark) .game-item.game-launch,
+html:not(.theme-dark) .physical-game-item,
+html:not(.theme-dark) .menu-btn {
+  background:
+    radial-gradient(circle at 16% 10%, rgba(255,255,255,0.85), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #edf8ff 100%) !important;
+  color: var(--sky-day-text) !important;
+  border-color: rgba(94, 174, 229, 0.28) !important;
+  box-shadow: 0 12px 22px rgba(53,119,166,0.13) !important;
+}
+
+html:not(.theme-dark) .game-item:nth-child(2),
+html:not(.theme-dark) .physical-game-item:nth-child(2) { background: linear-gradient(180deg, #ffffff 0%, #e9fbff 100%) !important; }
+html:not(.theme-dark) .game-item:nth-child(3),
+html:not(.theme-dark) .physical-game-item:nth-child(3) { background: linear-gradient(180deg, #ffffff 0%, #f1edff 100%) !important; }
+html:not(.theme-dark) .game-item:nth-child(4),
+html:not(.theme-dark) .physical-game-item:nth-child(4) { background: linear-gradient(180deg, #ffffff 0%, #eafbf5 100%) !important; }
+html:not(.theme-dark) .game-item:nth-child(5),
+html:not(.theme-dark) .physical-game-item:nth-child(5) { background: linear-gradient(180deg, #ffffff 0%, #ffeaf3 100%) !important; }
+html:not(.theme-dark) .game-item:nth-child(6) { background: linear-gradient(180deg, #ffffff 0%, #fff1e6 100%) !important; }
+html:not(.theme-dark) .game-item:nth-child(7) { background: linear-gradient(180deg, #ffffff 0%, #eaf6ff 100%) !important; }
+html:not(.theme-dark) .game-item:nth-child(8) { background: linear-gradient(180deg, #ffffff 0%, #fff7d6 100%) !important; }
+
+html.theme-dark .game-item,
+html.theme-dark .game-item.game-launch,
+html.theme-dark .physical-game-item,
+html.theme-dark .menu-btn {
+  background:
+    radial-gradient(circle at 14% 8%, rgba(105,216,255,0.12), transparent 37%),
+    linear-gradient(180deg, #102542 0%, #081426 100%) !important;
+  color: var(--night-text) !important;
+  border-color: rgba(105,216,255,0.24) !important;
+  box-shadow: 0 16px 30px rgba(0,0,0,0.42), 0 0 0 1px rgba(105,216,255,0.05) !important;
+}
+
+html.theme-dark .game-item:nth-child(2),
+html.theme-dark .physical-game-item:nth-child(2) { background: linear-gradient(180deg, #123152 0%, #081426 100%) !important; }
+html.theme-dark .game-item:nth-child(3),
+html.theme-dark .physical-game-item:nth-child(3) { background: linear-gradient(180deg, #191f49 0%, #081426 100%) !important; }
+html.theme-dark .game-item:nth-child(4),
+html.theme-dark .physical-game-item:nth-child(4) { background: linear-gradient(180deg, #123b45 0%, #081426 100%) !important; }
+html.theme-dark .game-item:nth-child(5),
+html.theme-dark .physical-game-item:nth-child(5) { background: linear-gradient(180deg, #3a1834 0%, #081426 100%) !important; }
+html.theme-dark .game-item:nth-child(6) { background: linear-gradient(180deg, #39251a 0%, #081426 100%) !important; }
+html.theme-dark .game-item:nth-child(7) { background: linear-gradient(180deg, #102542 0%, #081426 100%) !important; }
+html.theme-dark .game-item:nth-child(8) { background: linear-gradient(180deg, #303018 0%, #081426 100%) !important; }
+
+html:not(.theme-dark) .game-num,
+html:not(.theme-dark) .battle-rank-num {
+  background: linear-gradient(135deg, #ff7eaa 0%, #ffd166 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 16px rgba(255,111,159,0.22) !important;
+  text-shadow: 0 1px 1px rgba(70,40,55,0.20) !important;
+}
+
+html.theme-dark .game-num,
+html.theme-dark .battle-rank-num {
+  background: linear-gradient(135deg, #ff5fa2 0%, #69d8ff 100%) !important;
+  color: #06111f !important;
+  box-shadow: 0 0 14px rgba(105,216,255,0.20), 0 0 18px rgba(255,95,162,0.13) !important;
+  text-shadow: none !important;
+}
+
+html:not(.theme-dark) .game-meta-row,
+html:not(.theme-dark) .input-card input,
+html:not(.theme-dark) .key-react-key-card,
+html:not(.theme-dark) .battle-row,
+html:not(.theme-dark) .battle-slot,
+html:not(.theme-dark) .race-ranking-item,
+html:not(.theme-dark) .battle-ranking-item,
+html:not(.theme-dark) .stock-player-tab,
+html:not(.theme-dark) .stock-allocation-row,
+html:not(.theme-dark) .naval-log-item {
+  background: rgba(255,255,255,0.88) !important;
+  color: var(--sky-day-text) !important;
+  border-color: rgba(94,174,229,0.24) !important;
+}
+
+html.theme-dark .game-meta-row,
+html.theme-dark .input-card input,
+html.theme-dark .key-react-key-card,
+html.theme-dark .battle-row,
+html.theme-dark .battle-slot,
+html.theme-dark .race-ranking-item,
+html.theme-dark .battle-ranking-item,
+html.theme-dark .stock-player-tab,
+html.theme-dark .stock-allocation-row,
+html.theme-dark .naval-log-item {
+  background: rgba(5,12,24,0.72) !important;
+  color: var(--night-text) !important;
+  border-color: rgba(105,216,255,0.18) !important;
+}
+
+html:not(.theme-dark) .game-meta-label,
+html:not(.theme-dark) .input-card label {
+  color: #2c6f9e !important;
+}
+
+html.theme-dark .game-meta-label,
+html.theme-dark .input-card label {
+  color: var(--night-neon-cyan) !important;
+}
+
+html:not(.theme-dark) .game-meta-value,
+html:not(.theme-dark) .slot-name,
+html:not(.theme-dark) .slot-meta,
+html:not(.theme-dark) .horse-name,
+html:not(.theme-dark) .battle-player-name,
+html:not(.theme-dark) .sim-player-name,
+html:not(.theme-dark) .battle-rank-name,
+html:not(.theme-dark) .race-lane-label,
+html:not(.theme-dark) .stock-player-name,
+html:not(.theme-dark) .stock-summary-title {
+  color: var(--sky-day-text) !important;
+}
+
+html.theme-dark .game-meta-value,
+html.theme-dark .slot-name,
+html.theme-dark .slot-meta,
+html.theme-dark .horse-name,
+html.theme-dark .battle-player-name,
+html.theme-dark .sim-player-name,
+html.theme-dark .battle-rank-name,
+html.theme-dark .race-lane-label,
+html.theme-dark .stock-player-name,
+html.theme-dark .stock-summary-title {
+  color: var(--night-text) !important;
+}
+
+html:not(.theme-dark) .game-canvas-wrap,
+html:not(.theme-dark) .race-track-wrap,
+html:not(.theme-dark) .sim-arena-wrap,
+html:not(.theme-dark) .sim-arena-zoom-stage,
+html:not(.theme-dark) .naval-board-wrap,
+html:not(.theme-dark) .battle-table-card,
+html:not(.theme-dark) .bear-find-stage-button,
+html:not(.theme-dark) .bomb-pass-stage,
+html:not(.theme-dark) .circle-tap-stage,
+html:not(.theme-dark) .key-react-stage,
+html:not(.theme-dark) .balloon-press-area {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255,255,255,0.86), transparent 28%),
+    linear-gradient(180deg, #fffdf3 0%, #e8f7ff 100%) !important;
+  border-color: rgba(255,255,255,0.88) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.56), 0 14px 26px rgba(53,119,166,0.13) !important;
+}
+
+html.theme-dark .game-canvas-wrap,
+html.theme-dark .race-track-wrap,
+html.theme-dark .sim-arena-wrap,
+html.theme-dark .sim-arena-zoom-stage,
+html.theme-dark .naval-board-wrap,
+html.theme-dark .battle-table-card,
+html.theme-dark .bear-find-stage-button,
+html.theme-dark .bomb-pass-stage,
+html.theme-dark .circle-tap-stage,
+html.theme-dark .key-react-stage,
+html.theme-dark .balloon-press-area {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(105,216,255,0.10), transparent 28%),
+    linear-gradient(180deg, #0c2038 0%, #050d1b 100%) !important;
+  border-color: rgba(105,216,255,0.22) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.035), 0 18px 30px rgba(0,0,0,0.44), 0 0 18px rgba(105,216,255,0.04) !important;
+}
+
+html:not(.theme-dark) .race-lane {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.32) 0 28px, rgba(255,255,255,0.12) 28px 56px),
+    linear-gradient(180deg, #ffdca0 0%, #ffbe7f 100%) !important;
+  border-color: rgba(255,255,255,0.72) !important;
+}
+
+html.theme-dark .race-lane {
+  background:
+    repeating-linear-gradient(90deg, rgba(105,216,255,0.08) 0 28px, rgba(255,255,255,0.025) 28px 56px),
+    linear-gradient(180deg, #17375e 0%, #081426 100%) !important;
+  border-color: rgba(105,216,255,0.20) !important;
+}
+
+html:not(.theme-dark) .race-start-line { background: repeating-linear-gradient(180deg, #ffffff 0 8px, #ff7eaa 8px 16px) !important; }
+html:not(.theme-dark) .race-finish-line { background: repeating-linear-gradient(180deg, #ffffff 0 8px, #34556f 8px 16px) !important; }
+html.theme-dark .race-start-line { background: repeating-linear-gradient(180deg, #69d8ff 0 8px, #0b172a 8px 16px) !important; box-shadow: 0 0 10px rgba(105,216,255,0.22) !important; }
+html.theme-dark .race-finish-line { background: repeating-linear-gradient(180deg, #edf8ff 0 8px, #ff5fa2 8px 16px) !important; box-shadow: 0 0 10px rgba(255,95,162,0.20) !important; }
+
+html:not(.theme-dark) .popup-overlay { background: rgba(47,103,143,0.28) !important; }
+html.theme-dark .popup-overlay { background: rgba(1,5,12,0.74) !important; }
+
+html:not(.theme-dark) .action-btn:disabled,
+html:not(.theme-dark) .action-btn.is-game-running,
+html:not(.theme-dark) .main-btn:disabled,
+html:not(.theme-dark) .main-btn.is-game-running,
+html:not(.theme-dark) .game-item:disabled,
+html:not(.theme-dark) .game-item.is-game-running,
+html.theme-dark .action-btn:disabled,
+html.theme-dark .action-btn.is-game-running,
+html.theme-dark .main-btn:disabled,
+html.theme-dark .main-btn.is-game-running,
+html.theme-dark .game-item:disabled,
+html.theme-dark .game-item.is-game-running {
+  opacity: 0.66 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  filter: saturate(0.72) brightness(0.94) !important;
+}
+
+html:not(.theme-dark) .action-btn:focus-visible,
+html:not(.theme-dark) .main-btn:focus-visible,
+html:not(.theme-dark) .back-btn:focus-visible,
+html:not(.theme-dark) .game-item:focus-visible,
+html:not(.theme-dark) .menu-btn:focus-visible,
+html:not(.theme-dark) input:focus-visible {
+  outline: 4px solid rgba(44, 121, 179, 0.28) !important;
+  outline-offset: 4px !important;
+}
+
+html.theme-dark .action-btn:focus-visible,
+html.theme-dark .main-btn:focus-visible,
+html.theme-dark .back-btn:focus-visible,
+html.theme-dark .game-item:focus-visible,
+html.theme-dark .menu-btn:focus-visible,
+html.theme-dark input:focus-visible {
+  outline: 4px solid rgba(105,216,255,0.34) !important;
+  outline-offset: 4px !important;
+}
+
+html:not(.theme-dark) .volume-range::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, #ff6f9f 0%, #ff6f9f var(--volume-progress, 50%), rgba(159,215,255,0.76) var(--volume-progress, 50%), rgba(159,215,255,0.76) 100%) !important;
+  border-color: rgba(255,255,255,0.74) !important;
+}
+
+html.theme-dark .volume-range::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, #69d8ff 0%, #69d8ff var(--volume-progress, 50%), rgba(105,216,255,0.18) var(--volume-progress, 50%), rgba(105,216,255,0.18) 100%) !important;
+  border-color: rgba(105,216,255,0.20) !important;
+}
+
+html:not(.theme-dark) .slot-legend::-webkit-scrollbar-thumb,
+html:not(.theme-dark) .race-ranking-list::-webkit-scrollbar-thumb,
+html:not(.theme-dark) .race-track-lanes::-webkit-scrollbar-thumb { background: rgba(77, 156, 214, 0.36) !important; }
+html.theme-dark .slot-legend::-webkit-scrollbar-thumb,
+html.theme-dark .race-ranking-list::-webkit-scrollbar-thumb,
+html.theme-dark .race-track-lanes::-webkit-scrollbar-thumb { background: rgba(105, 216, 255, 0.34) !important; }
+
+/* =========================================================
+   2026-06 palette refinement
+   Day mode: sunny coastal pastel palette with strong readability
+   Night mode: neon cyberpunk palette with soft contrast for eye comfort
+   ========================================================= */
+
+:root {
+  --bg: #dff3ff;
+  --bg2: #fff7ee;
+  --card: rgba(255, 255, 255, 0.88);
+  --card-strong: rgba(255, 255, 255, 0.94);
+  --brown: #274b67;
+  --soft-brown: #456680;
+  --pink: #ffb8c9;
+  --mint: #a9efe4;
+  --sky: #8ed8ff;
+  --lavender: #c8cbff;
+  --yellow: #ffe18f;
+  --peach: #ffc4a8;
+  --shadow: 0 18px 34px rgba(74, 117, 151, 0.14);
+}
+
+body {
+  background:
+    radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 18%),
+    radial-gradient(circle at 84% 16%, rgba(164, 232, 255, 0.36) 0%, rgba(164, 232, 255, 0) 24%),
+    radial-gradient(circle at 22% 88%, rgba(255, 231, 150, 0.26) 0%, rgba(255, 231, 150, 0) 22%),
+    linear-gradient(180deg, #cfeeff 0%, #e9f7ff 34%, #f9fcff 62%, #fff7ee 100%);
+  color: var(--brown);
+}
+
+.background-deco {
+  opacity: 0.62;
+  filter: blur(3px);
+}
+
+.deco1 { background: #ccecff; }
+.deco2 { background: #b9f3e6; }
+.deco3 { background: #ffe6a8; }
+.deco4 { background: #ffd0b8; }
+
+.card,
+.controls-wrap,
+.scoreboard-card,
+.game-board-card,
+.race-panel,
+.battle-table-card,
+.battle-panel,
+.sim-setup-card,
+.sim-arena-card,
+.sim-battle-summary-card,
+.naval-board-card,
+.popup,
+.orientation-lock-card,
+.game-sidebar,
+.race-sidebar,
+.battle-sidebar,
+.sim-sidebar,
+.naval-sidebar {
+  background: linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,253,255,0.92) 54%, rgba(255,250,245,0.92) 100%);
+  border-color: rgba(255,255,255,0.82);
+  box-shadow:
+    0 18px 34px rgba(74, 117, 151, 0.14),
+    inset 0 1px 0 rgba(255,255,255,0.72);
+}
+
+.small-badge,
+.battle-deck-label,
+.sim-phase-badge,
+.legend-chip,
+.race-ranking-item,
+.battle-ranking-item,
+.battle-ranking-empty,
+.sim-empty-state,
+.naval-log-item,
+.naval-ranking-item,
+.naval-player-chip,
+.naval-elimination-item {
+  background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(241,250,255,0.92) 100%);
+  color: #486887;
+  border-color: rgba(196, 228, 246, 0.82);
+}
+
+.small-badge {
+  background: linear-gradient(180deg, #ffffff 0%, #f0fbff 100%);
+  color: #4f7290;
+  border-color: #b9e8f7;
+}
+
+.sub-text,
+.helper-text,
+.status-text,
+#totalInfo,
+.game-item p,
+.popup-message,
+.horse-status,
+.battle-rank-formula,
+.battle-player-sub,
+.sim-player-sub,
+.game-board-head span,
+.orientation-lock-card p,
+.race-ranking-item div,
+.slot-meta {
+  color: #5f7e97;
+}
+
+.main-card h1,
+.menu-card h2,
+.luck-card h2,
+.game-card h2,
+.popup h3,
+.sidebar-title,
+.game-item h3,
+.game-board-head h3,
+.scoreboard-head h3,
+.input-card label {
+  color: #385a77;
+}
+
+.main-btn {
+  background: linear-gradient(135deg, #8ed8ff 0%, #a9efe4 48%, #ffe18f 100%);
+  color: #21445f;
+  box-shadow: 0 16px 28px rgba(120, 203, 241, 0.3);
+}
+
+.back-btn,
+.popup-btn,
+.sim-info-btn,
+.sim-arena-zoom-btn,
+.utility-btn {
+  background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(240,249,255,0.94) 100%);
+  color: #456680;
+  border: 2px solid rgba(196, 228, 246, 0.82);
+  box-shadow: 0 10px 20px rgba(89, 136, 170, 0.12);
+}
+
+.utility-volume-panel {
+  background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(240,249,255,0.94) 100%);
+  color: #456680;
+  border: 2px solid rgba(196, 228, 246, 0.82);
+  box-shadow: 0 12px 24px rgba(89, 136, 170, 0.12);
+}
+
+.volume-control-value {
+  color: #6887a2;
+}
+
+.volume-range::-webkit-slider-runnable-track {
+  background:
+    linear-gradient(90deg, rgba(142,216,255,1) 0%, rgba(142,216,255,1) var(--volume-progress, 50%), rgba(226,239,246,1) var(--volume-progress, 50%), rgba(226,239,246,1) 100%);
+  border-color: rgba(201, 225, 237, 0.84);
+}
+
+.volume-range::-moz-range-track {
+  background: rgba(226,239,246,1);
+  border-color: rgba(201, 225, 237, 0.84);
+}
+
+.volume-range::-moz-range-progress {
+  background: rgba(142,216,255,1);
+}
+
+.volume-range::-webkit-slider-thumb,
+.volume-range::-moz-range-thumb {
+  background: #ffffff;
+  border-color: rgba(95, 161, 201, 0.88);
+}
+
+.menu-btn.physical {
+  background: linear-gradient(135deg, #a9efe4 0%, #d8fff8 100%);
+}
+
+.menu-btn.luck {
+  background: linear-gradient(135deg, #8ed8ff 0%, #d8efff 100%);
+}
+
+.game-item,
+.game-item.game-launch,
+.action-btn.secondary,
+.drawer-toggle-btn {
+  background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(241,250,255,0.96) 100%);
+  border-color: rgba(198, 227, 243, 0.88);
+  color: #345873;
+}
+
+.game-item:nth-child(2) { background: linear-gradient(180deg, #f5fffd 0%, #e5fbf6 100%); }
+.game-item:nth-child(3) { background: linear-gradient(180deg, #f5fbff 0%, #eaf4ff 100%); }
+.game-item:nth-child(4) { background: linear-gradient(180deg, #fffdf3 0%, #fff3c8 100%); }
+.game-item:nth-child(5) { background: linear-gradient(180deg, #fff7f2 0%, #ffe3d3 100%); }
+.game-item:nth-child(6) { background: linear-gradient(180deg, #fcfff8 0%, #eefbdd 100%); }
+.game-item:nth-child(7) { background: linear-gradient(180deg, #f8f7ff 0%, #ecebff 100%); }
+.game-item:nth-child(8) { background: linear-gradient(180deg, #f4fcff 0%, #ddf4ff 100%); }
+
+.game-num,
+.battle-rank-num {
+  background: linear-gradient(135deg, #8ed8ff 0%, #c8cbff 100%);
+  color: #21445f;
+}
+
+.game-meta-row {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.82), transparent 36%),
+    linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(243,250,255,0.95) 100%);
+  border-color: rgba(214, 234, 246, 0.82);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    0 8px 16px rgba(89, 136, 170, 0.08);
+}
+
+.game-meta-label {
+  color: #6487a2;
+}
+
+.game-meta-value,
+.slot-name,
+.horse-name,
+.battle-player-name,
+.sim-player-name,
+.battle-rank-name,
+.race-lane-label {
+  color: #315270;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #8ed8ff 0%, #a9efe4 58%, #ffe18f 100%);
+  color: #21445f;
+}
+
+.action-btn.secondary {
+  background: linear-gradient(135deg, #dff2ff 0%, #f2f8ff 100%);
+  color: #365a75;
+}
+
+.action-btn.soft {
+  background: linear-gradient(135deg, #ffe18f 0%, #ffd0b8 100%);
+  color: #5d5330;
+}
+
+.input-card input {
+  background: rgba(255,255,255,0.98);
+  color: #2f536f;
+  border-color: rgba(196, 228, 246, 0.88);
+}
+
+.input-card input:focus {
+  border-color: rgba(105, 190, 236, 0.9);
+  box-shadow: 0 0 0 5px rgba(142, 216, 255, 0.22);
+}
+
+.game-canvas-wrap,
+.race-track-wrap,
+.sim-arena-wrap,
+.sim-arena-zoom-stage,
+.naval-board-wrap,
+.battle-table-card {
+  background:
+    radial-gradient(circle at top left, rgba(255,255,255,0.58), transparent 24%),
+    linear-gradient(180deg, #f9fdff 0%, #edf8ff 56%, #fff9f1 100%);
+  border-color: rgba(203, 228, 242, 0.9);
+}
+
+.race-lane {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.34) 0px,
+      rgba(255,255,255,0.34) 28px,
+      rgba(255,255,255,0.14) 28px,
+      rgba(255,255,255,0.14) 56px
+    ),
+    linear-gradient(180deg, #9cd3f0 0%, #7bc2e8 100%);
+  border-color: rgba(255,255,255,0.6);
+}
+
+.race-horse,
+.battle-row,
+.sim-player-row,
+.battle-slot,
+.battle-card-front,
+.sim-stat-card-front {
+  box-shadow: 0 10px 20px rgba(96, 141, 174, 0.16);
+}
+
+.popup-overlay {
+  background: rgba(129, 180, 214, 0.18);
+}
+
+.orientation-lock-overlay {
+  background: rgba(226, 243, 255, 0.94);
+}
+
+/* ---------- night mode : neon cyberpunk, readable and low-strain ---------- */
+html.theme-dark {
+  color-scheme: dark;
+  --bg: #08101f;
+  --bg2: #0f1831;
+  --card: rgba(15, 24, 49, 0.9);
+  --card-strong: rgba(17, 28, 56, 0.95);
+  --brown: #eef7ff;
+  --soft-brown: #b7cae9;
+  --pink: #ff5bc8;
+  --mint: #52e6ff;
+  --sky: #67b4ff;
+  --lavender: #a780ff;
+  --yellow: #ffd36b;
+  --peach: #ff967c;
+  --shadow: 0 20px 40px rgba(2, 8, 20, 0.5);
+  --night-surface-1: #0a1125;
+  --night-surface-2: #101936;
+  --night-surface-3: #162347;
+  --night-surface-4: #1d2d59;
+  --night-border: rgba(82, 230, 255, 0.24);
+  --night-border-strong: rgba(118, 196, 255, 0.38);
+  --night-text: #eef7ff;
+  --night-text-2: #c1d2f0;
+  --night-text-3: #89a1c8;
+  --night-muted-chip: #101936;
+}
+
+html.theme-dark body {
+  background:
+    radial-gradient(circle at 15% 16%, rgba(82, 230, 255, 0.11) 0%, rgba(82, 230, 255, 0) 20%),
+    radial-gradient(circle at 82% 14%, rgba(255, 91, 200, 0.12) 0%, rgba(255, 91, 200, 0) 18%),
+    radial-gradient(circle at 58% 88%, rgba(167, 128, 255, 0.11) 0%, rgba(167, 128, 255, 0) 24%),
+    linear-gradient(180deg, #07111f 0%, #0b1430 36%, #0e1a3c 72%, #07111d 100%);
+  color: var(--night-text);
+}
+
+html.theme-dark .background-deco {
+  opacity: 0.36;
+  filter: blur(10px);
+}
+
+html.theme-dark .deco1 { background: rgba(82, 230, 255, 0.4); }
+html.theme-dark .deco2 { background: rgba(255, 91, 200, 0.34); }
+html.theme-dark .deco3 { background: rgba(167, 128, 255, 0.34); }
+html.theme-dark .deco4 { background: rgba(103, 180, 255, 0.34); }
+
+html.theme-dark .card,
+html.theme-dark .controls-wrap,
+html.theme-dark .scoreboard-card,
+html.theme-dark .game-board-card,
+html.theme-dark .race-panel,
+html.theme-dark .battle-table-card,
+html.theme-dark .battle-panel,
+html.theme-dark .sim-setup-card,
+html.theme-dark .sim-arena-card,
+html.theme-dark .sim-battle-summary-card,
+html.theme-dark .naval-board-card,
+html.theme-dark .popup,
+html.theme-dark .orientation-lock-card,
+html.theme-dark .game-sidebar,
+html.theme-dark .race-sidebar,
+html.theme-dark .battle-sidebar,
+html.theme-dark .sim-sidebar,
+html.theme-dark .naval-sidebar {
+  background: linear-gradient(180deg, rgba(12, 20, 43, 0.95) 0%, rgba(9, 16, 36, 0.95) 100%);
+  border-color: rgba(100, 188, 255, 0.16);
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.42),
+    inset 0 0 0 1px rgba(82, 230, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+html.theme-dark .small-badge,
+html.theme-dark .battle-deck-label,
+html.theme-dark .sim-phase-badge,
+html.theme-dark .battle-result-pill,
+html.theme-dark .battle-final-rank,
+html.theme-dark .battle-final-result-box,
+html.theme-dark .legend-chip,
+html.theme-dark .race-ranking-item,
+html.theme-dark .battle-ranking-item,
+html.theme-dark .battle-ranking-empty,
+html.theme-dark .sim-empty-state,
+html.theme-dark .naval-log-item,
+html.theme-dark .naval-ranking-item,
+html.theme-dark .naval-player-chip,
+html.theme-dark .naval-elimination-item {
+  background: linear-gradient(180deg, rgba(19, 31, 63, 0.96) 0%, rgba(15, 25, 52, 0.96) 100%);
+  color: var(--night-text);
+  border-color: rgba(102, 177, 255, 0.18);
+}
+
+html.theme-dark .small-badge {
+  color: #d7f8ff;
+  border-color: rgba(82, 230, 255, 0.34);
+}
+
+html.theme-dark .back-btn,
+html.theme-dark .popup-btn,
+html.theme-dark .sim-info-btn,
+html.theme-dark .sim-arena-zoom-btn,
+html.theme-dark .utility-btn {
+  background: linear-gradient(180deg, rgba(17, 27, 55, 0.96) 0%, rgba(12, 21, 44, 0.96) 100%);
+  color: var(--night-text);
+  border-color: rgba(102, 177, 255, 0.18);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(82, 230, 255, 0.06) inset;
+}
+
+html.theme-dark .utility-volume-panel {
+  background: linear-gradient(180deg, rgba(17, 27, 55, 0.96) 0%, rgba(12, 21, 44, 0.96) 100%);
+  color: var(--night-text);
+  border-color: rgba(102, 177, 255, 0.18);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(82, 230, 255, 0.06) inset;
+}
+
+html.theme-dark .volume-control-value {
+  color: var(--night-text-3);
+}
+
+html.theme-dark .volume-range::-webkit-slider-runnable-track {
+  background:
+    linear-gradient(90deg, rgba(82,230,255,0.96) 0%, rgba(82,230,255,0.96) var(--volume-progress, 50%), rgba(255,255,255,0.1) var(--volume-progress, 50%), rgba(255,255,255,0.1) 100%);
+  border-color: rgba(102, 177, 255, 0.16);
+}
+
+html.theme-dark .volume-range::-moz-range-track {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(102, 177, 255, 0.16);
+}
+
+html.theme-dark .volume-range::-moz-range-progress {
+  background: rgba(82,230,255,0.96);
+}
+
+html.theme-dark .volume-range::-webkit-slider-thumb,
+html.theme-dark .volume-range::-moz-range-thumb {
+  background: #0e1732;
+  border-color: rgba(82,230,255,0.84);
+  box-shadow: 0 0 0 3px rgba(82,230,255,0.12);
+}
+
+html.theme-dark .main-btn {
+  background: linear-gradient(135deg, #52e6ff 0%, #67b4ff 50%, #ff5bc8 100%);
+  color: #061120;
+  box-shadow: 0 14px 30px rgba(82, 230, 255, 0.18), 0 0 18px rgba(255, 91, 200, 0.12);
+}
+
+html.theme-dark .menu-btn.physical,
+html.theme-dark .menu-btn.luck,
+html.theme-dark .game-item,
+html.theme-dark .game-item.game-launch,
+html.theme-dark .action-btn.secondary,
+html.theme-dark .drawer-toggle-btn {
+  background: linear-gradient(180deg, rgba(16, 26, 54, 0.97) 0%, rgba(11, 19, 40, 0.97) 100%);
+  color: var(--night-text);
+  border-color: rgba(102, 177, 255, 0.16);
+}
+
+html.theme-dark .game-item:nth-child(2) { background: linear-gradient(180deg, rgba(13, 27, 52, 0.97) 0%, rgba(10, 20, 40, 0.97) 100%); }
+html.theme-dark .game-item:nth-child(3) { background: linear-gradient(180deg, rgba(15, 29, 58, 0.97) 0%, rgba(11, 20, 44, 0.97) 100%); }
+html.theme-dark .game-item:nth-child(4) { background: linear-gradient(180deg, rgba(25, 26, 52, 0.97) 0%, rgba(14, 18, 40, 0.97) 100%); }
+html.theme-dark .game-item:nth-child(5) { background: linear-gradient(180deg, rgba(32, 22, 48, 0.97) 0%, rgba(18, 14, 33, 0.97) 100%); }
+html.theme-dark .game-item:nth-child(6) { background: linear-gradient(180deg, rgba(13, 31, 49, 0.97) 0%, rgba(9, 21, 36, 0.97) 100%); }
+html.theme-dark .game-item:nth-child(7) { background: linear-gradient(180deg, rgba(21, 21, 58, 0.97) 0%, rgba(13, 14, 38, 0.97) 100%); }
+html.theme-dark .game-item:nth-child(8) { background: linear-gradient(180deg, rgba(12, 28, 56, 0.97) 0%, rgba(10, 19, 42, 0.97) 100%); }
+
+html.theme-dark .action-btn.primary {
+  background: linear-gradient(135deg, #52e6ff 0%, #67b4ff 55%, #ff5bc8 100%);
+  color: #061120;
+}
+
+html.theme-dark .action-btn.secondary {
+  background: linear-gradient(135deg, rgba(18, 33, 68, 0.98) 0%, rgba(14, 26, 56, 0.98) 100%);
+  color: var(--night-text);
+}
+
+html.theme-dark .action-btn.soft {
+  background: linear-gradient(135deg, #ffd36b 0%, #ff967c 100%);
+  color: #2a1d10;
+}
+
+html.theme-dark .sub-text,
+html.theme-dark .helper-text,
+html.theme-dark .status-text,
+html.theme-dark #totalInfo,
+html.theme-dark .game-item p,
+html.theme-dark .popup-message,
+html.theme-dark .horse-status,
+html.theme-dark .battle-rank-formula,
+html.theme-dark .battle-player-sub,
+html.theme-dark .sim-player-sub,
+html.theme-dark .game-board-head span,
+html.theme-dark .orientation-lock-card p,
+html.theme-dark .race-ranking-item div,
+html.theme-dark .slot-meta {
+  color: var(--night-text-2) !important;
+}
+
+html.theme-dark .game-num,
+html.theme-dark .battle-rank-num {
+  background: linear-gradient(135deg, rgba(82,230,255,0.96) 0%, rgba(167,128,255,0.96) 100%);
+  color: #08111f;
+  box-shadow: 0 0 0 1px rgba(82,230,255,0.18), 0 0 14px rgba(82,230,255,0.14);
+}
+
+html.theme-dark .slot-name,
+html.theme-dark .horse-name,
+html.theme-dark .battle-player-name,
+html.theme-dark .sim-player-name,
+html.theme-dark .battle-rank-name,
+html.theme-dark .race-lane-label,
+html.theme-dark .game-meta-value,
+html.theme-dark .main-card h1,
+html.theme-dark .menu-card h2,
+html.theme-dark .luck-card h2,
+html.theme-dark .game-card h2,
+html.theme-dark .popup h3,
+html.theme-dark .sidebar-title,
+html.theme-dark .game-item h3,
+html.theme-dark .game-board-head h3,
+html.theme-dark .scoreboard-head h3,
+html.theme-dark .input-card label {
+  color: var(--night-text);
+}
+
+html.theme-dark .game-meta-row {
+  background:
+    radial-gradient(circle at top left, rgba(255,255,255,0.06), transparent 36%),
+    linear-gradient(180deg, rgba(18,31,63,0.98) 0%, rgba(12,24,50,0.98) 100%);
+  border-color: rgba(102, 177, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 8px 16px rgba(0,0,0,0.2);
+}
+
+html.theme-dark .game-meta-label {
+  color: var(--night-text-3);
+}
+
+html.theme-dark .input-card input,
+html.theme-dark input:disabled {
+  background: rgba(7, 14, 31, 0.96);
+  color: var(--night-text);
+  border-color: rgba(102, 177, 255, 0.18);
+}
+
+html.theme-dark .input-card input:focus {
+  border-color: rgba(82,230,255,0.84);
+  box-shadow: 0 0 0 5px rgba(82,230,255,0.14);
+}
+
+html.theme-dark .game-canvas-wrap,
+html.theme-dark .race-track-wrap,
+html.theme-dark .sim-arena-wrap,
+html.theme-dark .sim-arena-zoom-stage,
+html.theme-dark .naval-board-wrap,
+html.theme-dark .battle-table-card {
+  background:
+    radial-gradient(circle at top left, rgba(82,230,255,0.06), transparent 22%),
+    linear-gradient(180deg, #111b37 0%, #0b1430 54%, #081222 100%);
+  border-color: rgba(102, 177, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 18px 28px rgba(0,0,0,0.28);
+}
+
+html.theme-dark .race-lane {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.08) 0px,
+      rgba(255, 255, 255, 0.08) 28px,
+      rgba(255, 255, 255, 0.03) 28px,
+      rgba(255, 255, 255, 0.03) 56px
+    ),
+    linear-gradient(180deg, #1b2b55 0%, #132041 100%);
+  border-color: rgba(102, 177, 255, 0.14);
+}
+
+html.theme-dark .race-horse,
+html.theme-dark .battle-row,
+html.theme-dark .sim-player-row,
+html.theme-dark .battle-slot,
+html.theme-dark .battle-card-front,
+html.theme-dark .sim-stat-card-front {
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(82,230,255,0.04) inset;
+}
+
+html.theme-dark .popup-overlay {
+  background: rgba(4, 8, 18, 0.72);
+}
+
+html.theme-dark .orientation-lock-overlay {
+  background: rgba(5, 10, 22, 0.92);
+}
+
+/* 2026-06 hotfix: remove unintended neon pillars in dark mode bottom-left */
+html.theme-dark body::after {
+  content: '' !important;
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 42vh !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(circle at 16% 86%, rgba(255,95,162,0.10) 0, rgba(255,95,162,0.06) 9%, transparent 24%),
+    radial-gradient(circle at 84% 88%, rgba(255,230,109,0.06) 0, rgba(255,230,109,0.03) 8%, transparent 18%),
+    linear-gradient(180deg, transparent 0%, rgba(105,216,255,0.035) 60%, rgba(10,18,34,0.16) 100%) !important;
+  opacity: 0.72 !important;
 }

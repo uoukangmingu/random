@@ -116,6 +116,10 @@ const fullscreenToggleLabel = fullscreenToggleBtn?.querySelector('.utility-btn-l
 const audioToggleBtn = document.getElementById('audioToggleBtn')
 const audioToggleIcon = audioToggleBtn?.querySelector('.utility-btn-icon') || null
 const audioToggleLabel = audioToggleBtn?.querySelector('.utility-btn-label') || null
+const bgmVolumeRange = document.getElementById('bgmVolumeRange')
+const sfxVolumeRange = document.getElementById('sfxVolumeRange')
+const bgmVolumeValue = document.getElementById('bgmVolumeValue')
+const sfxVolumeValue = document.getElementById('sfxVolumeValue')
 const desktopPrevStepBtn = document.getElementById('desktopPrevStepBtn')
 const mobilePrevStepBtn = document.getElementById('mobilePrevStepBtn')
 
@@ -126,6 +130,11 @@ document.body.classList.toggle('menu-screen-mode', screens.menu?.classList.conta
 document.body.classList.toggle('physical-screen-mode', screens.physical?.classList.contains('active'))
 document.body.classList.toggle('luck-screen-mode', screens.luck?.classList.contains('active'))
 const AUDIO_STORAGE_KEY = 'roulette-audio-preference'
+const BGM_VOLUME_STORAGE_KEY = 'roulette-bgm-volume'
+const SFX_VOLUME_STORAGE_KEY = 'roulette-sfx-volume'
+const AUDIO_MASTER_GAIN_VALUE = 1.35
+const AUDIO_DEFAULT_BGM_VOLUME = 0.32
+const AUDIO_DEFAULT_SFX_VOLUME = 0.72
 
 const configInput = document.getElementById('configInput')
 const shuffleBtn = document.getElementById('shuffleBtn')
@@ -278,6 +287,7 @@ const ladderRevealBadge = document.getElementById('ladderRevealBadge')
 const ladderCardScreen = document.querySelector('#game7Screen .ladder-card-screen')
 
 
+const matterApi = window.Matter || {}
 const {
   Engine,
   Render,
@@ -287,7 +297,19 @@ const {
   Composite,
   World,
   Events
-} = Matter
+} = matterApi
+
+function canUseMatterPhysics() {
+  return Boolean(window.Matter && Engine && Render && Runner && Bodies && Body && Composite && World && Events)
+}
+
+function showMatterUnavailablePopup() {
+  showPopup(
+    '물리 엔진 로드 실패',
+    '이 게임은 Matter.js 물리 엔진이 필요해. 네트워크가 막혀 있거나 CDN을 불러오지 못하면 담아라!와 볼 배틀은 실행할 수 없어. 인터넷 연결을 확인하거나 Matter.js를 로컬 파일로 포함해야 해.',
+    { icon: '⚠️' }
+  )
+}
 
 const MAX_SLOT_COUNT = 20
 const BOMB_COUNT = 20
@@ -1221,20 +1243,55 @@ function getSavedAudioPreference() {
   }
 }
 
+function normalizeAudioVolume(value, fallback) {
+  const numericValue = Number(value)
+
+  if (!Number.isFinite(numericValue)) {
+    return fallback
+  }
+
+  return Math.min(1, Math.max(0, numericValue))
+}
+
+function getSavedVolumePreference(storageKey, fallback) {
+  try {
+    const savedVolume = localStorage.getItem(storageKey)
+
+    if (savedVolume === null) {
+      return fallback
+    }
+
+    return normalizeAudioVolume(savedVolume, fallback)
+  } catch (error) {
+    return fallback
+  }
+}
+
+function saveVolumePreference(storageKey, value) {
+  try {
+    localStorage.setItem(storageKey, String(normalizeAudioVolume(value, 0)))
+  } catch (error) {}
+}
+
 const siteAudio = {
   ctx: null,
   masterGain: null,
   bgmGain: null,
   sfxGain: null,
+  outputLimiter: null,
   bgmFilter: null,
   bgmTimer: null,
   bgmProfileKey: '',
   bgmStep: 0,
+  bgmVolume: getSavedVolumePreference(BGM_VOLUME_STORAGE_KEY, AUDIO_DEFAULT_BGM_VOLUME),
+  sfxVolume: getSavedVolumePreference(SFX_VOLUME_STORAGE_KEY, AUDIO_DEFAULT_SFX_VOLUME),
   enabled: getSavedAudioPreference() !== 'off',
   unlocked: false,
   hoverReadyAt: 0,
   lastHoverTarget: null,
-  sfxLastAt: Object.create(null)
+  sfxLastAt: Object.create(null),
+  currentSfxMix: 1,
+  bgmDuckTimer: null
 }
 
 const SFX_THROTTLE_MS = {
@@ -1258,6 +1315,64 @@ const SFX_THROTTLE_MS = {
   circleHit: 70,
   keyHit: 80,
   bear: 280
+}
+
+
+const SFX_MIX_LEVELS = {
+  hover: 0.52,
+  tap: 0.72,
+  tick: 0.58,
+  screen: 0.72,
+  marbleDrop: 0.66,
+  marbleHit: 0.52,
+  countdown: 0.72,
+  chainExplosion: 0.88,
+  raceHoof: 0.48,
+  raceStumble: 0.86,
+  card: 0.62,
+  simImpact: 0.50,
+  simDecay: 0.72,
+  rouletteSpin: 0.58,
+  rouletteEmpty: 0.72,
+  stockTick: 0.40,
+  stockUp: 0.68,
+  stockDown: 0.66,
+  ladderStep: 0.54,
+  ladderDraw: 0.72,
+  balloonInflate: 0.54,
+  balloonWarning: 0.82,
+  bombFuse: 0.52,
+  bombPassWarning: 0.86,
+  circleHit: 0.68,
+  stayBeep: 0.70,
+  keyHit: 0.74,
+  bear: 0.74,
+  giftOpen: 0.84,
+  rouletteShot: 1.12,
+  bombExplosion: 1.10,
+  balloonPop: 1.06,
+  pandaWin: 1.04,
+  result: 1.02
+}
+
+const SFX_DUCKING_PROFILES = {
+  result: { level: 0.56, duration: 620 },
+  chainExplosion: { level: 0.62, duration: 520 },
+  raceFinish: { level: 0.58, duration: 680 },
+  battleFinal: { level: 0.55, duration: 720 },
+  simWin: { level: 0.50, duration: 760 },
+  rouletteShot: { level: 0.44, duration: 720 },
+  rouletteFirework: { level: 0.55, duration: 620 },
+  rouletteEliminate: { level: 0.54, duration: 620 },
+  stockCrash: { level: 0.52, duration: 560 },
+  stockFinal: { level: 0.54, duration: 720 },
+  ladderWin: { level: 0.56, duration: 720 },
+  balloonPop: { level: 0.46, duration: 760 },
+  bombExplosion: { level: 0.38, duration: 900 },
+  circleMiss: { level: 0.56, duration: 520 },
+  falseStart: { level: 0.58, duration: 520 },
+  clickSignal: { level: 0.62, duration: 480 },
+  pandaWin: { level: 0.52, duration: 780 }
 }
 
 const SCREEN_BGM_PROFILES = {
@@ -1431,23 +1546,31 @@ function ensureAudioContext() {
   const bgmGain = ctx.createGain()
   const sfxGain = ctx.createGain()
   const bgmFilter = ctx.createBiquadFilter()
+  const outputLimiter = ctx.createDynamicsCompressor()
 
-  masterGain.gain.value = 0.9
-  bgmGain.gain.value = 0.26
-  sfxGain.gain.value = 0.58
+  masterGain.gain.value = AUDIO_MASTER_GAIN_VALUE
+  bgmGain.gain.value = siteAudio.bgmVolume
+  sfxGain.gain.value = siteAudio.sfxVolume
   bgmFilter.type = 'lowpass'
   bgmFilter.frequency.value = 2600
   bgmFilter.Q.value = 0.7
+  outputLimiter.threshold.value = -5
+  outputLimiter.knee.value = 8
+  outputLimiter.ratio.value = 4
+  outputLimiter.attack.value = 0.003
+  outputLimiter.release.value = 0.18
 
   bgmGain.connect(bgmFilter)
   bgmFilter.connect(masterGain)
   sfxGain.connect(masterGain)
-  masterGain.connect(ctx.destination)
+  masterGain.connect(outputLimiter)
+  outputLimiter.connect(ctx.destination)
 
   siteAudio.ctx = ctx
   siteAudio.masterGain = masterGain
   siteAudio.bgmGain = bgmGain
   siteAudio.sfxGain = sfxGain
+  siteAudio.outputLimiter = outputLimiter
   siteAudio.bgmFilter = bgmFilter
   return ctx
 }
@@ -1469,6 +1592,133 @@ function updateAudioToggleButton() {
 
   if (audioToggleLabel) {
     audioToggleLabel.textContent = label
+  }
+}
+
+function formatVolumePercent(value) {
+  return `${Math.round(normalizeAudioVolume(value, 0) * 100)}%`
+}
+
+function syncAudioVolumeControls() {
+  if (bgmVolumeRange) {
+    bgmVolumeRange.value = String(Math.round(siteAudio.bgmVolume * 100))
+    bgmVolumeRange.style.setProperty('--volume-progress', `${Math.round(siteAudio.bgmVolume * 100)}%`)
+  }
+
+  if (sfxVolumeRange) {
+    sfxVolumeRange.value = String(Math.round(siteAudio.sfxVolume * 100))
+    sfxVolumeRange.style.setProperty('--volume-progress', `${Math.round(siteAudio.sfxVolume * 100)}%`)
+  }
+
+  if (bgmVolumeValue) {
+    bgmVolumeValue.textContent = formatVolumePercent(siteAudio.bgmVolume)
+  }
+
+  if (sfxVolumeValue) {
+    sfxVolumeValue.textContent = formatVolumePercent(siteAudio.sfxVolume)
+  }
+}
+
+
+function getSfxMixLevel(name) {
+  const baseLevel = SFX_MIX_LEVELS[name] ?? 1
+
+  if (window.matchMedia('(pointer: coarse)').matches) {
+    if (/Hoof|Tick|Hit|Fuse|Step|Inflate/.test(name)) {
+      return baseLevel * 0.88
+    }
+  }
+
+  return baseLevel
+}
+
+function getCurrentSfxOutputScale(destination) {
+  if (destination && destination !== siteAudio.sfxGain) {
+    return 1
+  }
+
+  const scale = Number(siteAudio.currentSfxMix)
+  return Number.isFinite(scale) && scale > 0 ? scale : 1
+}
+
+function duckBgmForSfx(name) {
+  if (!siteAudio.bgmGain || !siteAudio.enabled) return
+
+  const profile = SFX_DUCKING_PROFILES[name]
+  if (!profile) return
+
+  const ctx = ensureAudioContext()
+  if (!ctx) return
+
+  const targetLevel = Math.max(0.12, Math.min(1, profile.level || 0.55))
+  const duckedGain = siteAudio.bgmVolume * targetLevel
+
+  if (siteAudio.bgmDuckTimer) {
+    window.clearTimeout(siteAudio.bgmDuckTimer)
+    siteAudio.bgmDuckTimer = null
+  }
+
+  siteAudio.bgmGain.gain.cancelScheduledValues(ctx.currentTime)
+  siteAudio.bgmGain.gain.setTargetAtTime(duckedGain, ctx.currentTime, 0.018)
+
+  siteAudio.bgmDuckTimer = window.setTimeout(() => {
+    if (!siteAudio.bgmGain || !siteAudio.enabled) return
+    siteAudio.bgmGain.gain.setTargetAtTime(siteAudio.bgmVolume, ctx.currentTime, 0.06)
+    siteAudio.bgmDuckTimer = null
+  }, profile.duration || 620)
+}
+
+function setAudioCategoryVolume(category, rawValue, options = {}) {
+  const value = normalizeAudioVolume(rawValue, category === 'bgm' ? siteAudio.bgmVolume : siteAudio.sfxVolume)
+  const { persist = true, preview = false } = options
+  const ctx = ensureAudioContext()
+
+  if (category === 'bgm') {
+    siteAudio.bgmVolume = value
+
+    if (siteAudio.bgmGain) {
+      siteAudio.bgmGain.gain.setTargetAtTime(value, ctx?.currentTime || 0, 0.015)
+    }
+
+    if (persist) {
+      saveVolumePreference(BGM_VOLUME_STORAGE_KEY, value)
+    }
+  }
+
+  if (category === 'sfx') {
+    siteAudio.sfxVolume = value
+
+    if (siteAudio.sfxGain) {
+      siteAudio.sfxGain.gain.setTargetAtTime(value, ctx?.currentTime || 0, 0.015)
+    }
+
+    if (persist) {
+      saveVolumePreference(SFX_VOLUME_STORAGE_KEY, value)
+    }
+
+    if (preview && siteAudio.enabled && siteAudio.unlocked && value > 0) {
+      playSfx('tick')
+    }
+  }
+
+  syncAudioVolumeControls()
+}
+
+function handleBgmVolumeInput(event) {
+  const value = normalizeAudioVolume(Number(event.target.value) / 100, siteAudio.bgmVolume)
+  setAudioCategoryVolume('bgm', value)
+
+  if (siteAudio.enabled && !siteAudio.unlocked) {
+    unlockSiteAudio()
+  }
+}
+
+function handleSfxVolumeInput(event) {
+  const value = normalizeAudioVolume(Number(event.target.value) / 100, siteAudio.sfxVolume)
+  setAudioCategoryVolume('sfx', value, { preview: true })
+
+  if (siteAudio.enabled && !siteAudio.unlocked) {
+    unlockSiteAudio()
   }
 }
 
@@ -1507,7 +1757,8 @@ function playTone(freq, options = {}) {
     oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), startTime + Math.max(0.03, duration * 0.85))
   }
 
-  scheduleGain(toneGain, 0.0001, gain, 0.0001, startTime, attack, Math.max(0.035, release))
+  const outputGain = gain * getCurrentSfxOutputScale(destination)
+  scheduleGain(toneGain, 0.0001, outputGain, 0.0001, startTime, attack, Math.max(0.035, release))
   oscillator.connect(toneGain)
   toneGain.connect(destination || siteAudio.sfxGain)
   oscillator.start(startTime)
@@ -1546,7 +1797,8 @@ function playNoise(options = {}) {
   filter.type = filterType
   filter.frequency.value = filterFreq
   filter.Q.value = filterQ
-  scheduleGain(noiseGain, 0.0001, gain, 0.0001, startTime, 0.005, duration)
+  const outputGain = gain * getCurrentSfxOutputScale(siteAudio.sfxGain)
+  scheduleGain(noiseGain, 0.0001, outputGain, 0.0001, startTime, 0.005, duration)
 
   source.connect(filter)
   filter.connect(noiseGain)
@@ -1625,7 +1877,12 @@ function playSfx(name) {
     ctx.resume().catch(() => {})
   }
 
-  switch (name) {
+  const previousSfxMix = siteAudio.currentSfxMix
+  siteAudio.currentSfxMix = getSfxMixLevel(name)
+  duckBgmForSfx(name)
+
+  try {
+    switch (name) {
     case 'tap':
       playTone(740, { duration: 0.055, gain: 0.055, type: 'triangle', release: 0.06 })
       break
@@ -1900,6 +2157,9 @@ function playSfx(name) {
       break
     default:
       playTone(620, { duration: 0.07, gain: 0.04, type: 'triangle', release: 0.07 })
+    }
+  } finally {
+    siteAudio.currentSfxMix = previousSfxMix
   }
 }
 
@@ -2062,6 +2322,18 @@ function installSiteAudioInteractions() {
     audioToggleBtn.addEventListener('click', toggleSiteAudio)
   }
 
+  if (bgmVolumeRange) {
+    bgmVolumeRange.addEventListener('input', handleBgmVolumeInput)
+    bgmVolumeRange.addEventListener('change', handleBgmVolumeInput)
+  }
+
+  if (sfxVolumeRange) {
+    sfxVolumeRange.addEventListener('input', handleSfxVolumeInput)
+    sfxVolumeRange.addEventListener('change', handleSfxVolumeInput)
+  }
+
+  syncAudioVolumeControls()
+
   document.addEventListener('visibilitychange', () => {
     if (!siteAudio.ctx) return
 
@@ -2103,7 +2375,7 @@ function getSavedThemePreference() {
       return savedTheme
     }
 
-    return 'dark'
+    return 'light'
   } catch (error) {
     return documentRoot.classList.contains('theme-dark') ? 'dark' : 'light'
   }
@@ -4109,6 +4381,11 @@ function fitGameCanvasViewport() {
 }
 
 function ensureGameReady() {
+  if (!canUseMatterPhysics()) {
+    showMatterUnavailablePopup()
+    return false
+  }
+
   if (!engine) {
     initMatterWorld()
   }
@@ -4129,10 +4406,16 @@ function ensureGameReady() {
   syncGame1MobileLayout()
   fitGameCanvasViewport()
   buildBoard()
+  return true
 }
 
 function initMatterWorld() {
-  if (!gameCanvasWrap) return
+  if (!canUseMatterPhysics()) {
+    showMatterUnavailablePopup()
+    return false
+  }
+
+  if (!gameCanvasWrap) return false
 
   boardWidth = gameCanvasWrap.clientWidth
   boardHeight = gameCanvasWrap.clientHeight
@@ -4165,6 +4448,7 @@ function initMatterWorld() {
   Events.on(engine, 'beforeUpdate', animateMovingBodies)
   Events.on(engine, 'afterUpdate', scheduleRefreshCounts)
   Events.on(engine, 'collisionStart', handleGame1CollisionAudio)
+  return true
 }
 
 function handleGame1CollisionAudio(event) {
@@ -5187,6 +5471,11 @@ function clearBallsOnly() {
 function startRound() {
   if (typeof hasLiveRound === 'function' && hasLiveRound()) return
   if (!configInput) return
+
+  if (!canUseMatterPhysics()) {
+    showMatterUnavailablePopup()
+    return
+  }
 
   const parsed = parseConfigToSlots(configInput.value)
 
@@ -7763,6 +8052,30 @@ function renderSimStatsBoard(players = simPlayers, { reveal = false, dealt = fal
 }
 
 function renderSimRanking(ranking = []) {
+  if (!simRankingList) return ranking
+
+  if (!ranking.length) {
+    simRankingList.innerHTML = '<div class="sim-ranking-empty">전투가 시작되면 생존 순위가 여기에 표시된다.</div>'
+    return ranking
+  }
+
+  simRankingList.innerHTML = ranking.map((player, index) => {
+    const hp = Number.isFinite(player.currentHp) ? Math.max(0, Math.round(player.currentHp)) : 0
+    const maxHp = Number.isFinite(player.maxHp) ? Math.max(1, Math.round(player.maxHp)) : 1
+    const hpRatio = clampValue((hp / maxHp) * 100, 0, 100)
+    const isOut = !player.isAlive
+    return `
+      <div class="sim-ranking-item${index === 0 ? ' top' : ''}${isOut ? ' is-out' : ''}">
+        <div class="sim-ranking-num">${index + 1}</div>
+        <div class="sim-ranking-main">
+          <div class="sim-ranking-name"><span class="sim-ranking-dot" style="background:${player.color};"></span>${escapeHtml(player.label)}</div>
+          <div class="sim-ranking-hp-track"><i style="width:${hpRatio}%"></i></div>
+        </div>
+        <div class="sim-ranking-state">${escapeHtml(player.rankLabel || (isOut ? '탈락' : '생존'))}</div>
+      </div>
+    `
+  }).join('')
+
   return ranking
 }
 
@@ -9074,16 +9387,19 @@ function getSimRankingData() {
     })
     .map((player) => ({ ...player, rankLabel: '생존' }))
 
-  const dead = [...simEliminationOrder]
-    .reverse()
-    .map((player, index) => ({
-      ...player,
-      rankLabel: simBattleFinished && index === dead.length - 1 ? '우승' : `${player.eliminationRank}번째 탈락`
-    }))
+  const eliminated = [...simEliminationOrder].reverse()
+  const dead = eliminated.map((player) => ({
+    ...player,
+    rankLabel: `${player.eliminationRank || '-'}번째 탈락`
+  }))
 
   if (simBattleFinished && alive.length === 1) {
     const winner = alive[0]
     winner.rankLabel = '우승'
+  }
+
+  if (simBattleFinished && !alive.length && dead.length) {
+    dead[0].rankLabel = '마지막 생존자'
   }
 
   return [...alive, ...dead]
@@ -9459,6 +9775,11 @@ function showSimFinalResults(options = {}) {
 
 async function startSimBattle() {
   if (!simSetupDone || simBattleRunning || !simRoundPlayers.length) return
+
+  if (!canUseMatterPhysics()) {
+    showMatterUnavailablePopup()
+    return
+  }
 
   simRoundPlayers = simRoundPlayers.map((player) => ({
     ...player,
@@ -13487,6 +13808,22 @@ function updateBalloonVisual() {
     balloonPressureNumber.textContent = displayPressure
   }
 
+  const pressurePercent = getBalloonPressurePercent()
+  if (balloonPressureLabel) {
+    balloonPressureLabel.textContent = balloonPopped ? '터짐' : `${Math.round(pressurePercent)}%`
+  }
+
+  if (balloonPressureFill) {
+    balloonPressureFill.style.width = `${pressurePercent}%`
+    balloonPressureFill.classList.toggle('is-warning', pressurePercent >= 72 && pressurePercent < 90)
+    balloonPressureFill.classList.toggle('is-danger', pressurePercent >= 90 || balloonPopped)
+  }
+
+  if (balloonVisual) {
+    balloonVisual.classList.toggle('is-warning', pressurePercent >= 72 && pressurePercent < 90)
+    balloonVisual.classList.toggle('is-danger', pressurePercent >= 90 || balloonPopped)
+  }
+
   if (balloonPressArea) {
     balloonPressArea.classList.toggle('is-disabled', !balloonGameStarted || balloonPopped)
     balloonPressArea.classList.toggle('is-holding', balloonHolding)
@@ -14070,6 +14407,10 @@ function updateCircleTapVisual() {
     circleTapTarget.style.setProperty('--circle-tap-current-color', currentColor)
     circleTapTarget.classList.toggle('is-active', circleTapStarted && !circleTapFinished)
     circleTapTarget.classList.toggle('is-finished', circleTapFinished)
+  }
+
+  if (circleTapCount) {
+    circleTapCount.textContent = `${circleTapSuccessCount}회`
   }
 
 }

@@ -8,12 +8,10 @@
     (function () {
       try {
         const savedTheme = localStorage.getItem('roulette-theme-preference')
-        if (savedTheme !== 'light') {
+        if (savedTheme === 'dark') {
           document.documentElement.classList.add('theme-dark')
         }
-      } catch (error) {
-        document.documentElement.classList.add('theme-dark')
-      }
+      } catch (error) {}
     })()
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -154,6 +152,11 @@
               <div id="circleTapStage" class="circle-tap-stage" aria-label="작아지는 원 터치 스테이지">
                 <div id="circleTapTarget" class="circle-tap-target" aria-hidden="true"></div>
                 <div id="circleTapMissEffect" class="circle-tap-miss-effect" aria-hidden="true">탈락!</div>
+              </div>
+
+              <div class="circle-tap-runtime-panel" aria-live="polite">
+                <span>성공 터치</span>
+                <strong id="circleTapCount">0회</strong>
               </div>
 
               <p id="circleTapStageHint" class="circle-tap-stage-hint">시작을 누른 뒤, 현재 휴대폰을 든 사람이 색상 원 안쪽을 정확히 눌러줘.</p>
@@ -410,6 +413,7 @@
                 <div id="balloonVisual" class="balloon-visual">
                   <div class="balloon-body">
                     <span id="balloonPressureNumber" class="balloon-pressure-number">0.000</span>
+                    <span id="balloonPressureLabel" class="balloon-pressure-label">압력</span>
                   </div>
                   <div class="balloon-knot"></div>
                   <div class="balloon-string"></div>
@@ -417,6 +421,10 @@
                 <div id="balloonPopEffect" class="balloon-pop-effect" aria-hidden="true">💥</div>
               </button>
 
+              <div class="game-progress-meter balloon-pressure-meter" aria-hidden="true">
+                <span class="game-progress-meter-label">현재 압력</span>
+                <span class="game-progress-meter-track"><i id="balloonPressureFill" class="game-progress-meter-fill"></i></span>
+              </div>
 
               <p id="balloonStageHint" class="balloon-stage-hint">시작을 누른 뒤, 현재 휴대폰을 든 사람이 풍선을 길게 눌러줘.</p>
             </div>
@@ -999,6 +1007,14 @@
               <div id="simBattleSummary" class="sim-battle-summary"></div>
             </div>
 
+            <div class="sim-ranking-card controls-wrap">
+              <div class="sim-panel-head">
+                <h3>생존 순위</h3>
+                <p class="sub-text">전투 중 체력과 탈락 순서를 기준으로 정렬한다.</p>
+              </div>
+              <div id="simRankingList" class="sim-ranking-list"></div>
+            </div>
+
             <div class="sim-mobile-reset-slot" aria-hidden="true"></div>
           </div>
         </div>
@@ -1038,6 +1054,7 @@
                 </div>
 
                 <div class="button-row roulette-button-row">
+                  <button id="shuffleNavalBtn" class="action-btn secondary is-hidden-control" type="button" hidden>셔플</button>
                   <button id="startNavalBtn" class="action-btn primary" type="button">시작</button>
                   <button id="resetNavalBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
@@ -1092,6 +1109,22 @@
                   <strong id="rouletteChamberCount">30/30</strong>
                 </div>
                 <div id="rouletteBulletTrack" class="roulette-bullet-track" aria-hidden="true"></div>
+              </div>
+            </div>
+
+            <div class="roulette-bottom-grid">
+              <div class="naval-ranking-panel controls-wrap">
+                <div class="naval-panel-head">
+                  <h3>생존 순위</h3>
+                </div>
+                <div id="navalRankingList" class="roulette-ranking-list"></div>
+              </div>
+
+              <div class="naval-log-panel controls-wrap">
+                <div class="naval-panel-head">
+                  <h3>발사 기록</h3>
+                </div>
+                <div id="navalLogList" class="roulette-log-list"></div>
               </div>
             </div>
 
@@ -1207,6 +1240,28 @@
                 </div>
               </div>
               <div id="stockBoard" class="stock-board"></div>
+
+              <div class="stock-bottom-grid">
+                <div class="stock-portfolio-card controls-wrap">
+                  <div class="stock-portfolio-head">
+                    <div>
+                      <h4>보유 현황</h4>
+                      <p>참가자별 종목 보유와 평가 손익</p>
+                    </div>
+                  </div>
+                  <div id="stockPortfolioList" class="stock-portfolio-list"></div>
+                </div>
+
+                <div class="stock-portfolio-card controls-wrap">
+                  <div class="stock-portfolio-head">
+                    <div>
+                      <h4>실시간 순위</h4>
+                      <p>총자산 기준 자동 정렬</p>
+                    </div>
+                  </div>
+                  <div id="stockRankingList" class="stock-ranking-list"></div>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -1243,6 +1298,7 @@
                 </div>
 
                 <div class="button-row ladder-button-row">
+                  <button id="shuffleLadderBtn" class="action-btn secondary is-hidden-control" type="button" hidden>셔플</button>
                   <button id="startLadderBtn" class="action-btn primary" type="button">시작</button>
                   <button id="resetLadderBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
@@ -1303,6 +1359,18 @@
       <span class="utility-btn-icon" aria-hidden="true">🔊</span>
       <span class="utility-btn-label">사운드 켬</span>
     </button>
+    <div class="utility-volume-panel" aria-label="게임 음량 조절">
+      <label class="volume-control" for="bgmVolumeRange">
+        <span class="volume-control-text">배경음</span>
+        <input id="bgmVolumeRange" class="volume-range" type="range" min="0" max="100" value="32" step="1" aria-label="배경음 음량" />
+        <span id="bgmVolumeValue" class="volume-control-value">32%</span>
+      </label>
+      <label class="volume-control" for="sfxVolumeRange">
+        <span class="volume-control-text">효과음</span>
+        <input id="sfxVolumeRange" class="volume-range" type="range" min="0" max="100" value="72" step="1" aria-label="효과음 음량" />
+        <span id="sfxVolumeValue" class="volume-control-value">72%</span>
+      </label>
+    </div>
     <button id="desktopPrevStepBtn" class="utility-btn utility-prevstep-btn utility-desktop-only" type="button" aria-label="이전으로" title="이전으로">
       <span class="utility-btn-icon" aria-hidden="true">↩</span>
       <span class="utility-btn-label">이전으로</span>
