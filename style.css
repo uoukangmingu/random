@@ -27011,3 +27011,29 @@ html.theme-dark .balloon-turn-badge {
   border-color: color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 48%, #69d8ff) !important;
   color: #ffffff !important;
 }
+
+/* =========================================================
+   FINAL HOTFIX 2026-06-10-5
+   밤모드 경마 말 색상 복구.
+   기존 밤모드 공통 game-screen 패치가 .race-horse 배경을
+   var(--dark-screen-stage)로 덮어써 참가자별 색상이 사라지는 문제 수정.
+========================================================= */
+html.theme-dark #game2Screen .race-horse,
+html.theme-dark .game-screen #game2Screen .race-horse,
+html.theme-dark body.game2-mode #game2Screen .race-horse {
+  background: var(--horse-color, #80d8ff) !important;
+  border-color: rgba(255, 255, 255, 0.72) !important;
+  color: #0f1b34 !important;
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -10px 16px rgba(8, 16, 31, 0.08) !important;
+}
+
+html.theme-dark #game2Screen .race-horse .horse-name {
+  color: #0f1b34 !important;
+}
+
+html.theme-dark #game2Screen .race-horse .horse-status {
+  color: rgba(15, 27, 52, 0.72) !important;
+}

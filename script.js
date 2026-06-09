@@ -132,9 +132,9 @@ document.body.classList.toggle('luck-screen-mode', screens.luck?.classList.conta
 const AUDIO_STORAGE_KEY = 'roulette-audio-preference'
 const BGM_VOLUME_STORAGE_KEY = 'roulette-bgm-volume'
 const SFX_VOLUME_STORAGE_KEY = 'roulette-sfx-volume'
-const AUDIO_MASTER_GAIN_VALUE = 1.35
-const AUDIO_DEFAULT_BGM_VOLUME = 0.32
-const AUDIO_DEFAULT_SFX_VOLUME = 0.72
+const AUDIO_MASTER_GAIN_VALUE = 1.68
+const AUDIO_DEFAULT_BGM_VOLUME = 0.44
+const AUDIO_DEFAULT_SFX_VOLUME = 0.9
 
 const configInput = document.getElementById('configInput')
 const shuffleBtn = document.getElementById('shuffleBtn')
@@ -772,6 +772,7 @@ let worldBodies = []
 let ballBodies = []
 let movingBodies = []
 let spawnTimers = []
+let game1SpawnSessionId = 0
 let countTimer = null
 let resizeTimer = null
 let countRefreshQueued = false
@@ -1323,40 +1324,40 @@ const SFX_THROTTLE_MS = {
 
 
 const SFX_MIX_LEVELS = {
-  hover: 0.52,
-  tap: 0.72,
-  tick: 0.58,
-  screen: 0.72,
-  marbleDrop: 0.66,
-  marbleHit: 0.52,
-  countdown: 0.72,
-  chainExplosion: 0.88,
-  raceHoof: 0.48,
-  raceStumble: 0.86,
-  card: 0.62,
-  simImpact: 0.50,
-  simDecay: 0.72,
-  rouletteSpin: 0.58,
-  rouletteEmpty: 0.72,
-  stockTick: 0.40,
-  stockUp: 0.68,
-  stockDown: 0.66,
-  ladderStep: 0.54,
-  ladderDraw: 0.72,
-  balloonInflate: 0.54,
-  balloonWarning: 0.82,
-  bombFuse: 0.52,
-  bombPassWarning: 0.86,
-  circleHit: 0.68,
-  stayBeep: 0.70,
-  keyHit: 0.74,
-  bear: 0.74,
-  giftOpen: 0.84,
-  rouletteShot: 1.12,
-  bombExplosion: 1.10,
-  balloonPop: 1.06,
-  pandaWin: 1.04,
-  result: 1.02
+  hover: 0.62,
+  tap: 0.86,
+  tick: 0.76,
+  screen: 0.88,
+  marbleDrop: 0.92,
+  marbleHit: 0.76,
+  countdown: 0.94,
+  chainExplosion: 1.08,
+  raceHoof: 0.84,
+  raceStumble: 1.02,
+  card: 0.82,
+  simImpact: 0.92,
+  simDecay: 0.96,
+  rouletteSpin: 0.88,
+  rouletteEmpty: 0.9,
+  stockTick: 0.78,
+  stockUp: 0.94,
+  stockDown: 0.92,
+  ladderStep: 0.82,
+  ladderDraw: 0.9,
+  balloonInflate: 0.78,
+  balloonWarning: 0,
+  bombFuse: 0.86,
+  bombPassWarning: 1.0,
+  circleHit: 0.9,
+  stayBeep: 0.9,
+  keyHit: 0.96,
+  bear: 0.92,
+  giftOpen: 1.0,
+  rouletteShot: 1.2,
+  bombExplosion: 1.18,
+  balloonPop: 1.16,
+  pandaWin: 1.15,
+  result: 1.12
 }
 
 const SFX_DUCKING_PROFILES = {
@@ -1382,44 +1383,44 @@ const SFX_DUCKING_PROFILES = {
 const SCREEN_BGM_PROFILES = {
   home: {
     key: 'home',
-    interval: 960,
-    gain: 0.052,
+    interval: 840,
+    gain: 0.068,
     wave: 'sine',
-    notes: [329.63, 392.0, 493.88, 587.33, 493.88, 392.0],
+    notes: [329.63, 392.0, 493.88, 587.33, 659.25, 493.88],
     chords: [[164.81, 246.94], [196.0, 293.66], [220.0, 329.63], [196.0, 293.66]],
     chordEvery: 4
   },
   menu: {
     key: 'menu',
-    interval: 780,
-    gain: 0.055,
+    interval: 700,
+    gain: 0.07,
     wave: 'triangle',
-    notes: [261.63, 329.63, 392.0, 523.25, 392.0, 329.63],
-    chords: [[130.81, 196.0], [146.83, 220.0], [164.81, 246.94], [146.83, 220.0]],
+    notes: [261.63, 329.63, 392.0, 523.25, 659.25, 392.0],
+    chords: [[130.81, 196.0], [164.81, 246.94], [196.0, 293.66], [164.81, 246.94]],
     chordEvery: 4
   },
   physical: {
     key: 'physical',
-    interval: 640,
-    gain: 0.048,
+    interval: 520,
+    gain: 0.066,
     wave: 'triangle',
-    notes: [196.0, 246.94, 293.66, 329.63, 293.66, 246.94],
-    chords: [[98.0, 196.0], [110.0, 220.0], [123.47, 246.94], [110.0, 220.0]],
+    notes: [196.0, 246.94, 293.66, 392.0, 293.66, 246.94],
+    chords: [[98.0, 196.0], [123.47, 246.94], [146.83, 293.66], [123.47, 246.94]],
     chordEvery: 5
   },
   luck: {
     key: 'luck',
-    interval: 700,
-    gain: 0.052,
+    interval: 560,
+    gain: 0.07,
     wave: 'sine',
-    notes: [392.0, 493.88, 587.33, 659.25, 587.33, 493.88],
-    chords: [[196.0, 293.66], [220.0, 329.63], [246.94, 369.99], [220.0, 329.63]],
+    notes: [392.0, 493.88, 587.33, 783.99, 659.25, 493.88],
+    chords: [[196.0, 293.66], [246.94, 369.99], [293.66, 440.0], [246.94, 369.99]],
     chordEvery: 4
   },
   calmGame: {
     key: 'calmGame',
-    interval: 820,
-    gain: 0.046,
+    interval: 760,
+    gain: 0.06,
     wave: 'sine',
     notes: [293.66, 349.23, 440.0, 523.25, 440.0, 349.23],
     chords: [[146.83, 220.0], [174.61, 261.63], [196.0, 293.66], [174.61, 261.63]],
@@ -1427,110 +1428,110 @@ const SCREEN_BGM_PROFILES = {
   },
   suspense: {
     key: 'suspense',
-    interval: 1120,
-    gain: 0.04,
+    interval: 900,
+    gain: 0.058,
     wave: 'sine',
-    notes: [146.83, 155.56, 174.61, 155.56, 196.0, 174.61],
-    chords: [[73.42, 146.83], [77.78, 155.56], [87.31, 174.61]],
+    notes: [98.0, 103.83, 116.54, 110.0, 87.31, 92.5],
+    chords: [[49.0, 98.0], [51.91, 103.83], [43.65, 87.31]],
     chordEvery: 3
   },
   race: {
     key: 'race',
-    interval: 520,
-    gain: 0.047,
+    interval: 420,
+    gain: 0.07,
     wave: 'triangle',
-    notes: [220.0, 293.66, 349.23, 440.0, 349.23, 293.66],
-    chords: [[110.0, 220.0], [146.83, 293.66]],
+    notes: [164.81, 220.0, 246.94, 329.63, 246.94, 220.0, 196.0, 246.94],
+    chords: [[82.41, 164.81], [110.0, 220.0], [123.47, 246.94]],
     chordEvery: 6
   },
   stock: {
     key: 'stock',
-    interval: 760,
-    gain: 0.044,
+    interval: 480,
+    gain: 0.064,
     wave: 'square',
-    notes: [523.25, 493.88, 587.33, 554.37, 659.25, 622.25],
-    chords: [[130.81, 261.63], [164.81, 329.63], [146.83, 293.66]],
+    notes: [880.0, 987.77, 1174.66, 1046.5, 1318.51, 932.33],
+    chords: [[220.0, 440.0], [246.94, 493.88], [196.0, 392.0]],
     chordEvery: 5
   },
   marble: {
     key: 'marble',
-    interval: 560,
-    gain: 0.042,
+    interval: 430,
+    gain: 0.065,
     wave: 'triangle',
-    notes: [659.25, 587.33, 493.88, 392.0, 493.88, 587.33],
-    chords: [[164.81, 246.94], [196.0, 293.66]],
+    notes: [783.99, 659.25, 587.33, 493.88, 659.25, 880.0],
+    chords: [[196.0, 293.66], [246.94, 369.99], [293.66, 440.0]],
     chordEvery: 6
   },
   cardBattle: {
     key: 'cardBattle',
-    interval: 680,
-    gain: 0.043,
+    interval: 620,
+    gain: 0.064,
     wave: 'triangle',
-    notes: [329.63, 392.0, 466.16, 523.25, 466.16, 392.0],
-    chords: [[164.81, 246.94], [174.61, 261.63], [196.0, 293.66]],
+    notes: [220.0, 261.63, 329.63, 392.0, 329.63, 261.63],
+    chords: [[110.0, 164.81], [130.81, 196.0], [164.81, 246.94]],
     chordEvery: 5
   },
   arena: {
     key: 'arena',
-    interval: 610,
-    gain: 0.038,
+    interval: 500,
+    gain: 0.06,
     wave: 'sawtooth',
-    notes: [196.0, 220.0, 246.94, 293.66, 246.94, 220.0],
-    chords: [[98.0, 196.0], [110.0, 220.0]],
-    chordEvery: 6
+    notes: [98.0, 110.0, 130.81, 164.81, 130.81, 110.0],
+    chords: [[49.0, 98.0], [55.0, 110.0], [65.41, 130.81]],
+    chordEvery: 4
   },
   ladder: {
     key: 'ladder',
-    interval: 740,
-    gain: 0.043,
+    interval: 620,
+    gain: 0.064,
     wave: 'sine',
-    notes: [392.0, 440.0, 523.25, 587.33, 523.25, 440.0],
-    chords: [[196.0, 293.66], [220.0, 329.63], [246.94, 369.99]],
+    notes: [392.0, 493.88, 587.33, 659.25, 783.99, 587.33],
+    chords: [[196.0, 293.66], [246.94, 369.99], [293.66, 440.0]],
     chordEvery: 4
   },
   balloon: {
     key: 'balloon',
-    interval: 620,
-    gain: 0.04,
+    interval: 650,
+    gain: 0.06,
     wave: 'sine',
-    notes: [392.0, 440.0, 493.88, 587.33, 493.88, 440.0],
-    chords: [[196.0, 293.66], [220.0, 329.63]],
+    notes: [349.23, 392.0, 440.0, 493.88, 440.0, 392.0],
+    chords: [[174.61, 261.63], [196.0, 293.66]],
     chordEvery: 5
   },
   bombPass: {
     key: 'bombPass',
-    interval: 920,
-    gain: 0.038,
+    interval: 720,
+    gain: 0.06,
     wave: 'triangle',
-    notes: [196.0, 184.99, 174.61, 164.81, 174.61, 184.99],
-    chords: [[98.0, 146.83], [92.5, 138.59]],
+    notes: [196.0, 184.99, 174.61, 155.56, 146.83, 138.59],
+    chords: [[98.0, 146.83], [92.5, 138.59], [77.78, 116.54]],
     chordEvery: 3
   },
   precision: {
     key: 'precision',
-    interval: 690,
-    gain: 0.04,
+    interval: 460,
+    gain: 0.064,
     wave: 'triangle',
-    notes: [523.25, 587.33, 659.25, 587.33, 523.25, 493.88],
-    chords: [[261.63, 392.0], [246.94, 369.99]],
+    notes: [659.25, 783.99, 987.77, 880.0, 783.99, 659.25],
+    chords: [[329.63, 493.88], [392.0, 587.33]],
     chordEvery: 4
   },
   keyReact: {
     key: 'keyReact',
-    interval: 520,
-    gain: 0.038,
+    interval: 380,
+    gain: 0.062,
     wave: 'square',
-    notes: [440.0, 440.0, 523.25, 440.0, 659.25, 523.25],
-    chords: [[110.0, 220.0], [130.81, 261.63]],
+    notes: [440.0, 440.0, 659.25, 440.0, 880.0, 659.25],
+    chords: [[110.0, 220.0], [164.81, 329.63]],
     chordEvery: 6
   },
   bearFind: {
     key: 'bearFind',
-    interval: 780,
-    gain: 0.044,
+    interval: 660,
+    gain: 0.062,
     wave: 'sine',
-    notes: [329.63, 392.0, 493.88, 659.25, 493.88, 392.0],
-    chords: [[164.81, 246.94], [196.0, 293.66]],
+    notes: [523.25, 659.25, 783.99, 1046.5, 783.99, 659.25],
+    chords: [[261.63, 392.0], [329.63, 493.88]],
     chordEvery: 4
   }
 }
@@ -1556,11 +1557,11 @@ function ensureAudioContext() {
   bgmGain.gain.value = siteAudio.bgmVolume
   sfxGain.gain.value = siteAudio.sfxVolume
   bgmFilter.type = 'lowpass'
-  bgmFilter.frequency.value = 2600
+  bgmFilter.frequency.value = 3400
   bgmFilter.Q.value = 0.7
-  outputLimiter.threshold.value = -5
+  outputLimiter.threshold.value = -4
   outputLimiter.knee.value = 8
-  outputLimiter.ratio.value = 4
+  outputLimiter.ratio.value = 4.6
   outputLimiter.attack.value = 0.003
   outputLimiter.release.value = 0.18
 
@@ -1939,13 +1940,13 @@ function playSfx(name) {
       playNoise({ duration: 0.32, gain: 0.1, filterFreq: 420, filterType: 'lowpass', filterQ: 0.4 })
       break
     case 'card':
-      playNoise({ duration: 0.055, gain: 0.04, filterFreq: 2100, filterType: 'bandpass', filterQ: 1.4 })
-      playTone(900, { duration: 0.05, gain: 0.028, type: 'triangle', release: 0.05 })
+      playNoise({ duration: 0.075, gain: 0.052, filterFreq: 2400, filterType: 'bandpass', filterQ: 1.6 })
+      playTone(1100, { duration: 0.05, gain: 0.038, type: 'triangle', release: 0.045 })
       break
     case 'raceFinish':
-      playTone(587.33, { duration: 0.08, gain: 0.055, type: 'square', release: 0.08 })
-      playTone(783.99, { duration: 0.12, gain: 0.052, type: 'square', delay: 0.07, release: 0.1 })
-      playTone(987.77, { duration: 0.18, gain: 0.05, type: 'square', delay: 0.16, release: 0.16 })
+      playTone(523.25, { duration: 0.08, gain: 0.07, type: 'square', release: 0.08 })
+      playTone(659.25, { duration: 0.1, gain: 0.066, type: 'square', delay: 0.07, release: 0.09 })
+      playTone(1046.5, { duration: 0.22, gain: 0.065, type: 'square', delay: 0.15, release: 0.18 })
       break
     case 'bearOpen':
       playTone(250, { duration: 0.08, gain: 0.055, type: 'triangle', slideTo: 420, release: 0.08 })
@@ -1960,15 +1961,15 @@ function playSfx(name) {
       playTone(1180, { duration: 0.035, gain: 0.028, type: 'square', release: 0.035 })
       break
     case 'marbleStart':
-      playNoise({ duration: 0.12, gain: 0.035, filterFreq: 2600, filterType: 'highpass' })
-      playTone(392, { duration: 0.08, gain: 0.05, type: 'triangle', release: 0.07 })
-      playTone(587.33, { duration: 0.1, gain: 0.045, type: 'triangle', delay: 0.06, release: 0.1 })
+      playNoise({ duration: 0.12, gain: 0.05, filterFreq: 3200, filterType: 'highpass' })
+      playTone(523.25, { duration: 0.07, gain: 0.065, type: 'triangle', release: 0.06 })
+      playTone(783.99, { duration: 0.1, gain: 0.058, type: 'triangle', delay: 0.055, release: 0.09 })
       break
     case 'marbleDrop':
-      playTone(rand(720, 1040), { duration: 0.045, gain: 0.022, type: 'triangle', release: 0.04 })
+      playTone(rand(880, 1320), { duration: 0.04, gain: 0.036, type: 'triangle', release: 0.035 })
       break
     case 'marbleHit':
-      playTone(rand(520, 920), { duration: 0.035, gain: 0.018, type: 'sine', release: 0.035 })
+      playTone(rand(620, 1040), { duration: 0.032, gain: 0.028, type: 'sine', release: 0.03 })
       break
     case 'countdown':
       playTone(880, { duration: 0.055, gain: 0.052, type: 'square', release: 0.045 })
@@ -1979,85 +1980,87 @@ function playSfx(name) {
       playNoise({ duration: 0.24, gain: 0.074, filterFreq: 520, filterType: 'lowpass', filterQ: 0.55 })
       break
     case 'slotSettle':
-      playRandomToneCluster(740, 4, { gap: 0.055, spread: 0.08, gain: 0.03, type: 'triangle', duration: 0.075 })
+      playRandomToneCluster(880, 5, { gap: 0.048, spread: 0.08, gain: 0.042, type: 'triangle', duration: 0.07 })
       break
     case 'shuffle':
       playNoise({ duration: 0.18, gain: 0.04, filterFreq: 1600, filterType: 'bandpass', filterQ: 1.5 })
       playRandomToneCluster(620, 3, { gap: 0.04, spread: 0.18, gain: 0.026, type: 'triangle', duration: 0.06 })
       break
     case 'raceStart':
-      playTone(392, { duration: 0.1, gain: 0.058, type: 'square', release: 0.1 })
-      playTone(523.25, { duration: 0.1, gain: 0.055, type: 'square', delay: 0.08, release: 0.1 })
-      playTone(783.99, { duration: 0.2, gain: 0.054, type: 'square', delay: 0.16, release: 0.18 })
+      playTone(196, { duration: 0.075, gain: 0.07, type: 'square', release: 0.07 })
+      playTone(246.94, { duration: 0.075, gain: 0.066, type: 'square', delay: 0.07, release: 0.07 })
+      playTone(329.63, { duration: 0.16, gain: 0.066, type: 'square', delay: 0.14, release: 0.14 })
+      playNoise({ duration: 0.18, gain: 0.032, delay: 0.12, filterFreq: 760, filterType: 'bandpass', filterQ: 2.4 })
       break
     case 'raceHoof':
-      playTone(180, { duration: 0.032, gain: 0.034, type: 'square', release: 0.028 })
-      playTone(140, { duration: 0.03, gain: 0.026, type: 'square', delay: 0.052, release: 0.026 })
-      playNoise({ duration: 0.035, gain: 0.014, delay: 0.02, filterFreq: 650, filterType: 'bandpass', filterQ: 2 })
+      playTone(150, { duration: 0.032, gain: 0.048, type: 'square', release: 0.026 })
+      playTone(112, { duration: 0.03, gain: 0.038, type: 'square', delay: 0.052, release: 0.024 })
+      playNoise({ duration: 0.04, gain: 0.026, delay: 0.018, filterFreq: 580, filterType: 'bandpass', filterQ: 2.4 })
       break
     case 'raceStumble':
-      playTone(260, { duration: 0.08, gain: 0.045, type: 'sawtooth', slideTo: 150, release: 0.08 })
-      playNoise({ duration: 0.12, gain: 0.04, filterFreq: 520, filterType: 'lowpass' })
+      playTone(260, { duration: 0.09, gain: 0.065, type: 'sawtooth', slideTo: 120, release: 0.085 })
+      playNoise({ duration: 0.16, gain: 0.056, filterFreq: 420, filterType: 'lowpass' })
       break
     case 'battleShuffle':
-      playNoise({ duration: 0.22, gain: 0.05, filterFreq: 2400, filterType: 'bandpass', filterQ: 1.8 })
-      playRandomToneCluster(740, 5, { gap: 0.03, spread: 0.22, gain: 0.024, type: 'triangle', duration: 0.045 })
+      playNoise({ duration: 0.24, gain: 0.064, filterFreq: 2600, filterType: 'bandpass', filterQ: 1.9 })
+      playRandomToneCluster(880, 6, { gap: 0.028, spread: 0.24, gain: 0.032, type: 'triangle', duration: 0.045 })
       break
     case 'battleFormula':
-      playTone(440, { duration: 0.07, gain: 0.04, type: 'triangle', release: 0.07 })
-      playTone(554.37, { duration: 0.08, gain: 0.038, type: 'triangle', delay: 0.06, release: 0.08 })
-      playTone(659.25, { duration: 0.11, gain: 0.04, type: 'triangle', delay: 0.13, release: 0.1 })
+      playTone(349.23, { duration: 0.065, gain: 0.052, type: 'triangle', release: 0.06 })
+      playTone(440, { duration: 0.075, gain: 0.048, type: 'triangle', delay: 0.055, release: 0.07 })
+      playTone(523.25, { duration: 0.1, gain: 0.05, type: 'triangle', delay: 0.12, release: 0.09 })
       break
     case 'battleFinal':
-      playTone(523.25, { duration: 0.08, gain: 0.06, type: 'triangle', release: 0.08 })
-      playTone(659.25, { duration: 0.08, gain: 0.058, type: 'triangle', delay: 0.075, release: 0.08 })
-      playTone(783.99, { duration: 0.22, gain: 0.058, type: 'triangle', delay: 0.15, release: 0.2 })
+      playTone(392.0, { duration: 0.08, gain: 0.072, type: 'triangle', release: 0.07 })
+      playTone(587.33, { duration: 0.08, gain: 0.068, type: 'triangle', delay: 0.075, release: 0.07 })
+      playTone(783.99, { duration: 0.24, gain: 0.07, type: 'triangle', delay: 0.15, release: 0.2 })
       break
     case 'simShuffle':
-      playNoise({ duration: 0.18, gain: 0.04, filterFreq: 1700, filterType: 'bandpass', filterQ: 1.3 })
-      playTone(330, { duration: 0.08, gain: 0.034, type: 'triangle', release: 0.07 })
-      playTone(494, { duration: 0.09, gain: 0.034, type: 'triangle', delay: 0.07, release: 0.08 })
+      playNoise({ duration: 0.2, gain: 0.054, filterFreq: 1700, filterType: 'bandpass', filterQ: 1.4 })
+      playTone(246.94, { duration: 0.08, gain: 0.046, type: 'triangle', release: 0.07 })
+      playTone(369.99, { duration: 0.09, gain: 0.044, type: 'triangle', delay: 0.07, release: 0.08 })
       break
     case 'arenaStart':
-      playTone(196, { duration: 0.13, gain: 0.06, type: 'sawtooth', slideTo: 330, release: 0.12 })
-      playTone(392, { duration: 0.18, gain: 0.046, type: 'triangle', delay: 0.08, release: 0.16 })
+      playTone(130.81, { duration: 0.16, gain: 0.076, type: 'sawtooth', slideTo: 261.63, release: 0.14 })
+      playTone(392, { duration: 0.18, gain: 0.058, type: 'triangle', delay: 0.08, release: 0.16 })
+      playNoise({ duration: 0.18, gain: 0.038, delay: 0.04, filterFreq: 700, filterType: 'lowpass' })
       break
     case 'simImpact':
-      playTone(rand(130, 220), { duration: 0.055, gain: 0.046, type: 'square', slideTo: rand(70, 110), release: 0.05 })
-      playNoise({ duration: 0.075, gain: 0.034, filterFreq: 520, filterType: 'lowpass' })
+      playTone(rand(95, 170), { duration: 0.06, gain: 0.064, type: 'square', slideTo: rand(55, 95), release: 0.05 })
+      playNoise({ duration: 0.085, gain: 0.052, filterFreq: 460, filterType: 'lowpass' })
       break
     case 'simDecay':
-      playTone(260, { duration: 0.08, gain: 0.044, type: 'sawtooth', slideTo: 155, release: 0.08 })
-      playTone(190, { duration: 0.1, gain: 0.034, type: 'sine', delay: 0.045, slideTo: 96, release: 0.1 })
-      playNoise({ duration: 0.16, gain: 0.035, filterFreq: 520, filterType: 'lowpass', filterQ: 0.7 })
+      playTone(220, { duration: 0.08, gain: 0.058, type: 'sawtooth', slideTo: 120, release: 0.08 })
+      playTone(150, { duration: 0.11, gain: 0.044, type: 'sine', delay: 0.045, slideTo: 72, release: 0.1 })
+      playNoise({ duration: 0.17, gain: 0.046, filterFreq: 460, filterType: 'lowpass', filterQ: 0.7 })
       break
     case 'simEliminate':
-      playTone(240, { duration: 0.12, gain: 0.052, type: 'sawtooth', slideTo: 90, release: 0.11 })
-      playTone(120, { duration: 0.18, gain: 0.04, type: 'sine', delay: 0.08, release: 0.18 })
+      playTone(196, { duration: 0.14, gain: 0.068, type: 'sawtooth', slideTo: 70, release: 0.12 })
+      playTone(98, { duration: 0.2, gain: 0.052, type: 'sine', delay: 0.08, release: 0.18 })
       break
     case 'simWin':
-      playTone(392, { duration: 0.08, gain: 0.055, type: 'triangle', release: 0.08 })
-      playTone(587.33, { duration: 0.08, gain: 0.054, type: 'triangle', delay: 0.075, release: 0.08 })
-      playTone(783.99, { duration: 0.2, gain: 0.055, type: 'triangle', delay: 0.15, release: 0.18 })
+      playTone(329.63, { duration: 0.08, gain: 0.07, type: 'triangle', release: 0.08 })
+      playTone(493.88, { duration: 0.08, gain: 0.068, type: 'triangle', delay: 0.075, release: 0.08 })
+      playTone(659.25, { duration: 0.22, gain: 0.07, type: 'triangle', delay: 0.15, release: 0.18 })
       break
     case 'rouletteReload':
-      playNoise({ duration: 0.11, gain: 0.046, filterFreq: 950, filterType: 'bandpass', filterQ: 2.2 })
-      playTone(260, { duration: 0.06, gain: 0.036, type: 'triangle', delay: 0.045, slideTo: 210, release: 0.055 })
+      playNoise({ duration: 0.13, gain: 0.06, filterFreq: 850, filterType: 'bandpass', filterQ: 2.4 })
+      playTone(220, { duration: 0.07, gain: 0.046, type: 'triangle', delay: 0.045, slideTo: 170, release: 0.06 })
       break
     case 'rouletteSpin':
-      playRandomToneCluster(300, 4, { gap: 0.045, spread: 0.28, gain: 0.026, type: 'square', duration: 0.04 })
+      playRandomToneCluster(220, 5, { gap: 0.045, spread: 0.3, gain: 0.036, type: 'square', duration: 0.04 })
       break
     case 'rouletteAim':
-      playTone(300, { duration: 0.09, gain: 0.035, type: 'triangle', slideTo: 210, release: 0.08 })
+      playTone(220, { duration: 0.11, gain: 0.048, type: 'triangle', slideTo: 150, release: 0.09 })
       break
     case 'rouletteEmpty':
-      playTone(520, { duration: 0.042, gain: 0.044, type: 'square', release: 0.04 })
-      playNoise({ duration: 0.035, gain: 0.015, filterFreq: 2600, filterType: 'highpass' })
+      playTone(520, { duration: 0.045, gain: 0.058, type: 'square', release: 0.04 })
+      playNoise({ duration: 0.04, gain: 0.024, filterFreq: 2600, filterType: 'highpass' })
       break
     case 'rouletteShot':
-      playTone(90, { duration: 0.12, gain: 0.085, type: 'sine', slideTo: 45, release: 0.12 })
-      playNoise({ duration: 0.22, gain: 0.095, filterFreq: 620, filterType: 'lowpass', filterQ: 0.65 })
-      playNoise({ duration: 0.075, gain: 0.05, filterFreq: 2600, filterType: 'highpass', delay: 0.015 })
+      playTone(78, { duration: 0.14, gain: 0.1, type: 'sine', slideTo: 38, release: 0.13 })
+      playNoise({ duration: 0.26, gain: 0.112, filterFreq: 560, filterType: 'lowpass', filterQ: 0.65 })
+      playNoise({ duration: 0.08, gain: 0.06, filterFreq: 2900, filterType: 'highpass', delay: 0.012 })
       break
     case 'rouletteFirework':
       playTone(740, { duration: 0.06, gain: 0.048, type: 'triangle', release: 0.06 })
@@ -2068,96 +2071,96 @@ function playSfx(name) {
       playTone(155, { duration: 0.14, gain: 0.055, type: 'sawtooth', slideTo: 65, release: 0.13 })
       break
     case 'stockBell':
-      playTone(880, { duration: 0.09, gain: 0.055, type: 'triangle', release: 0.08 })
-      playTone(1320, { duration: 0.12, gain: 0.045, type: 'triangle', delay: 0.055, release: 0.12 })
+      playTone(1046.5, { duration: 0.075, gain: 0.07, type: 'square', release: 0.07 })
+      playTone(1567.98, { duration: 0.1, gain: 0.056, type: 'square', delay: 0.055, release: 0.1 })
       break
     case 'stockTick':
-      playTone(880, { duration: 0.032, gain: 0.022, type: 'square', release: 0.028 })
+      playTone(rand(860, 1320), { duration: 0.03, gain: 0.036, type: 'square', release: 0.026 })
       break
     case 'stockUp':
-      playTone(560, { duration: 0.05, gain: 0.032, type: 'triangle', release: 0.05 })
-      playTone(840, { duration: 0.07, gain: 0.026, type: 'triangle', delay: 0.045, release: 0.065 })
+      playTone(659.25, { duration: 0.045, gain: 0.045, type: 'triangle', release: 0.04 })
+      playTone(987.77, { duration: 0.065, gain: 0.038, type: 'triangle', delay: 0.04, release: 0.06 })
       break
     case 'stockDown':
-      playTone(540, { duration: 0.06, gain: 0.03, type: 'triangle', slideTo: 280, release: 0.06 })
+      playTone(659.25, { duration: 0.06, gain: 0.044, type: 'triangle', slideTo: 329.63, release: 0.055 })
       break
     case 'stockCrash':
-      playTone(260, { duration: 0.12, gain: 0.052, type: 'sawtooth', slideTo: 120, release: 0.11 })
-      playNoise({ duration: 0.16, gain: 0.044, filterFreq: 480, filterType: 'lowpass' })
+      playTone(220, { duration: 0.13, gain: 0.068, type: 'sawtooth', slideTo: 86, release: 0.12 })
+      playNoise({ duration: 0.18, gain: 0.06, filterFreq: 420, filterType: 'lowpass' })
       break
     case 'stockFinal':
-      playTone(659.25, { duration: 0.08, gain: 0.055, type: 'triangle', release: 0.08 })
-      playTone(880, { duration: 0.16, gain: 0.052, type: 'triangle', delay: 0.075, release: 0.14 })
+      playTone(880, { duration: 0.08, gain: 0.07, type: 'square', release: 0.08 })
+      playTone(1318.51, { duration: 0.16, gain: 0.064, type: 'square', delay: 0.075, release: 0.14 })
       break
     case 'ladderDraw':
-      playNoise({ duration: 0.11, gain: 0.035, filterFreq: 1900, filterType: 'bandpass', filterQ: 1.7 })
-      playTone(410, { duration: 0.08, gain: 0.026, type: 'triangle', release: 0.075 })
+      playNoise({ duration: 0.11, gain: 0.046, filterFreq: 2100, filterType: 'bandpass', filterQ: 1.8 })
+      playTone(493.88, { duration: 0.075, gain: 0.036, type: 'triangle', release: 0.07 })
       break
     case 'ladderStep':
-      playTone(620, { duration: 0.035, gain: 0.024, type: 'triangle', release: 0.035 })
+      playTone(523.25 + Math.random() * 260, { duration: 0.034, gain: 0.036, type: 'triangle', release: 0.032 })
       break
     case 'ladderReveal':
-      playRandomToneCluster(740, 5, { gap: 0.055, spread: 0.1, gain: 0.032, type: 'triangle', duration: 0.065 })
+      playRandomToneCluster(880, 6, { gap: 0.052, spread: 0.1, gain: 0.044, type: 'triangle', duration: 0.06 })
       break
     case 'ladderWin':
-      playTone(523.25, { duration: 0.08, gain: 0.05, type: 'triangle', release: 0.08 })
-      playTone(783.99, { duration: 0.18, gain: 0.048, type: 'triangle', delay: 0.08, release: 0.16 })
+      playTone(523.25, { duration: 0.08, gain: 0.068, type: 'triangle', release: 0.08 })
+      playTone(783.99, { duration: 0.18, gain: 0.064, type: 'triangle', delay: 0.08, release: 0.16 })
       break
     case 'balloonInflate':
-      playTone(180 + balloonPressure * 2.4, { duration: 0.055, gain: 0.028, type: 'sine', slideTo: 220 + balloonPressure * 2.7, release: 0.05 })
+      playTone(rand(260, 340), { duration: 0.052, gain: 0.034, type: 'sine', slideTo: rand(310, 390), release: 0.048 })
+      playNoise({ duration: 0.055, gain: 0.012, filterFreq: 900, filterType: 'bandpass', filterQ: 0.7 })
       break
     case 'balloonWarning':
-      playTone(520, { duration: 0.05, gain: 0.032, type: 'square', release: 0.05 })
-      playTone(400, { duration: 0.05, gain: 0.024, type: 'square', delay: 0.045, release: 0.05 })
+      // 풍선 터짐 시점을 예측하지 못하도록 경고음은 intentionally muted.
       break
     case 'balloonPop':
-      playTone(160, { duration: 0.12, gain: 0.095, type: 'sine', slideTo: 55, release: 0.12 })
-      playNoise({ duration: 0.24, gain: 0.085, filterFreq: 1400, filterType: 'bandpass' })
+      playTone(130, { duration: 0.13, gain: 0.105, type: 'sine', slideTo: 48, release: 0.12 })
+      playNoise({ duration: 0.25, gain: 0.098, filterFreq: 1500, filterType: 'bandpass' })
       break
     case 'bombFuse':
-      playNoise({ duration: 0.05, gain: 0.026, filterFreq: 3600, filterType: 'highpass', filterQ: 0.9 })
-      playTone(980, { duration: 0.035, gain: 0.02, type: 'sine', release: 0.03 })
+      playNoise({ duration: 0.06, gain: 0.036, filterFreq: 3800, filterType: 'highpass', filterQ: 0.9 })
+      playTone(980, { duration: 0.038, gain: 0.03, type: 'sine', release: 0.032 })
       break
     case 'bombPassWarning':
-      playTone(260, { duration: 0.06, gain: 0.034, type: 'square', release: 0.055 })
+      playTone(220, { duration: 0.065, gain: 0.052, type: 'square', release: 0.055 })
       break
     case 'bombExplosion':
-      playTone(120, { duration: 0.18, gain: 0.095, type: 'sine', slideTo: 42, release: 0.2 })
-      playNoise({ duration: 0.36, gain: 0.11, filterFreq: 420, filterType: 'lowpass', filterQ: 0.4 })
+      playTone(96, { duration: 0.2, gain: 0.11, type: 'sine', slideTo: 38, release: 0.2 })
+      playNoise({ duration: 0.38, gain: 0.12, filterFreq: 400, filterType: 'lowpass', filterQ: 0.4 })
       break
     case 'circleHit':
-      playTone(760, { duration: 0.035, gain: 0.036, type: 'triangle', release: 0.032 })
+      playTone(987.77, { duration: 0.034, gain: 0.05, type: 'triangle', release: 0.03 })
       break
     case 'circleMiss':
-      playTone(220, { duration: 0.12, gain: 0.06, type: 'sawtooth', slideTo: 80, release: 0.12 })
-      playNoise({ duration: 0.1, gain: 0.035, filterFreq: 360, filterType: 'lowpass' })
+      playTone(196, { duration: 0.13, gain: 0.075, type: 'sawtooth', slideTo: 70, release: 0.12 })
+      playNoise({ duration: 0.11, gain: 0.045, filterFreq: 340, filterType: 'lowpass' })
       break
     case 'stayBeep':
-      playTone(440, { duration: 0.055, gain: 0.036, type: 'square', release: 0.045 })
+      playTone(440, { duration: 0.055, gain: 0.052, type: 'square', release: 0.044 })
       break
     case 'clickSignal':
-      playTone(880, { duration: 0.08, gain: 0.068, type: 'square', release: 0.07 })
-      playTone(1320, { duration: 0.11, gain: 0.05, type: 'square', delay: 0.055, release: 0.1 })
+      playTone(1174.66, { duration: 0.08, gain: 0.08, type: 'square', release: 0.07 })
+      playTone(1760, { duration: 0.1, gain: 0.062, type: 'square', delay: 0.05, release: 0.09 })
       break
     case 'keyHit':
-      playTone(1040, { duration: 0.035, gain: 0.038, type: 'square', release: 0.032 })
+      playTone(1320, { duration: 0.032, gain: 0.052, type: 'square', release: 0.03 })
       break
     case 'falseStart':
-      playTone(190, { duration: 0.14, gain: 0.06, type: 'sawtooth', slideTo: 110, release: 0.13 })
+      playTone(165, { duration: 0.15, gain: 0.075, type: 'sawtooth', slideTo: 88, release: 0.13 })
       break
     case 'giftOpen':
-      playTone(240, { duration: 0.07, gain: 0.052, type: 'triangle', slideTo: 470, release: 0.07 })
-      playNoise({ duration: 0.14, gain: 0.04, filterFreq: 2100, filterType: 'bandpass', filterQ: 1.3 })
+      playTone(261.63, { duration: 0.065, gain: 0.066, type: 'triangle', slideTo: 523.25, release: 0.065 })
+      playNoise({ duration: 0.14, gain: 0.052, filterFreq: 2300, filterType: 'bandpass', filterQ: 1.3 })
       break
     case 'bear':
-      playTone(330, { duration: 0.08, gain: 0.04, type: 'sine', release: 0.08 })
-      playTone(392, { duration: 0.1, gain: 0.034, type: 'sine', delay: 0.07, release: 0.1 })
+      playTone(392, { duration: 0.08, gain: 0.052, type: 'sine', release: 0.08 })
+      playTone(523.25, { duration: 0.1, gain: 0.044, type: 'sine', delay: 0.07, release: 0.1 })
       break
     case 'pandaWin':
-      playTone(523.25, { duration: 0.08, gain: 0.06, type: 'sine', release: 0.08 })
-      playTone(659.25, { duration: 0.08, gain: 0.058, type: 'sine', delay: 0.065, release: 0.08 })
-      playTone(1046.5, { duration: 0.22, gain: 0.06, type: 'sine', delay: 0.14, release: 0.2 })
-      playNoise({ duration: 0.18, gain: 0.03, delay: 0.14, filterFreq: 3500, filterType: 'highpass' })
+      playTone(523.25, { duration: 0.08, gain: 0.074, type: 'sine', release: 0.08 })
+      playTone(783.99, { duration: 0.08, gain: 0.07, type: 'sine', delay: 0.065, release: 0.08 })
+      playTone(1046.5, { duration: 0.23, gain: 0.074, type: 'sine', delay: 0.14, release: 0.2 })
+      playNoise({ duration: 0.18, gain: 0.04, delay: 0.14, filterFreq: 3600, filterType: 'highpass' })
       break
     default:
       playTone(620, { duration: 0.07, gain: 0.04, type: 'triangle', release: 0.07 })
@@ -2476,6 +2479,7 @@ function refreshExtendedThemeVisuals() {
     raceHorses.forEach((horse) => {
       if (horse?.runnerEl) {
         horse.runnerEl.style.setProperty('--horse-color', horse.color)
+        horse.runnerEl.style.setProperty('background', horse.color, 'important')
       }
     })
     renderRaceRanking()
@@ -4053,9 +4057,7 @@ function showScreen(target, options = {}) {
   document.body.classList.toggle('key-react-compact-mode', target === 'physicalKeyReact')
 
   if (target !== 'game1') {
-    clearSpawnTimers()
-    setGame1InputLock(false)
-    setGame1ShuffleLock(false)
+    stopGame1LiveRound()
     document.body.classList.remove('game1-mode')
     setDrawerState(false)
   } else {
@@ -4456,6 +4458,7 @@ function initMatterWorld() {
 }
 
 function handleGame1CollisionAudio(event) {
+  if (!isGame1ActiveScreen()) return
   if (!roundSpawnComplete && !ballBodies.length) return
   if (!event?.pairs?.length) return
 
@@ -4463,6 +4466,29 @@ function handleGame1CollisionAudio(event) {
   if (hasBallCollision) {
     playThrottledSfx('marbleHit', SFX_THROTTLE_MS.marbleHit)
   }
+}
+
+function isGame1ActiveScreen() {
+  return screens.game1?.classList.contains('active') === true
+}
+
+function stopGame1LiveRound() {
+  game1SpawnSessionId += 1
+  clearSpawnTimers()
+  clearCountdownTimers()
+  clearSettleWatcher()
+  clearFinalWatcher()
+  resetRoundState()
+  countRefreshQueued = false
+
+  if (ballBodies.length && world) {
+    ballBodies.forEach((body) => Composite.remove(world, body))
+    ballBodies = []
+    refreshCounts()
+  }
+
+  setGame1InputLock(false)
+  setGame1ShuffleLock(false)
 }
 
 function clearCountdownTimers() {
@@ -5402,6 +5428,8 @@ function createBall(x, y, options = {}) {
 function spawnBalls() {
   clearSpawnTimers()
   resetRoundState()
+  game1SpawnSessionId += 1
+  const spawnSessionId = game1SpawnSessionId
 
   const normalBallCount = getCurrentNormalBallCount()
   const totalDropCount = getCurrentTotalDropCount()
@@ -5417,6 +5445,7 @@ function spawnBalls() {
 
   const scheduleNextSpawn = (delay = 0) => {
     const timer = setTimeout(() => {
+      if (spawnSessionId !== game1SpawnSessionId || !isGame1ActiveScreen()) return
       if (nextIndex >= mixedOrder.length) return
 
       const isBomb = mixedOrder[nextIndex]
@@ -5467,8 +5496,11 @@ function refreshCounts() {
 }
 
 function clearBallsOnly() {
+  game1SpawnSessionId += 1
   clearSpawnTimers()
-  ballBodies.forEach((body) => Composite.remove(world, body))
+  if (world) {
+    ballBodies.forEach((body) => Composite.remove(world, body))
+  }
   ballBodies = []
 }
 
@@ -5984,6 +6016,7 @@ function renderRaceTracks() {
 
     if (horse.runnerEl) {
       horse.runnerEl.style.setProperty('--horse-color', horse.color)
+        horse.runnerEl.style.setProperty('background', horse.color, 'important')
     }
 
     laneStack.appendChild(lane)
