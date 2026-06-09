@@ -494,6 +494,8 @@ const CIRCLE_TAP_START_RADIUS = 142
 const CIRCLE_TAP_MIN_RADIUS = 3
 const CIRCLE_TAP_SHRINK_MIN = 0.055
 const CIRCLE_TAP_SHRINK_MAX = 0.095
+const CIRCLE_TAP_EDGE_PADDING = 12
+const CIRCLE_TAP_MIN_RANDOM_MOVE_RATIO = 0.18
 
 let circleTapPlayers = []
 let circleTapStarted = false
@@ -501,6 +503,8 @@ let circleTapFinished = false
 let circleTapCurrentIndex = 0
 let circleTapRadius = CIRCLE_TAP_START_RADIUS
 let circleTapSuccessCount = 0
+let circleTapTargetX = 50
+let circleTapTargetY = 50
 let circleTapLastValidConfigText = circleTapConfigInput ? circleTapConfigInput.value : ''
 let circleTapLastAppliedRawText = circleTapConfigInput ? circleTapConfigInput.value : ''
 
@@ -13795,8 +13799,6 @@ function updateBalloonVisual() {
   const scale = clampValue(1 + balloonPressure * 0.0105, 1, 2.55)
   const currentPlayer = getCurrentBalloonPlayer()
   const currentColor = currentPlayer?.color || getCommonPlayerPaletteByTheme()[0] || '#ff6f9f'
-  const displayPressure = Number(balloonPressure).toFixed(3)
-
   if (balloonVisual) {
     balloonVisual.style.setProperty('--balloon-scale', scale.toFixed(3))
     balloonVisual.style.setProperty('--balloon-current-color', currentColor)
@@ -13805,23 +13807,16 @@ function updateBalloonVisual() {
   }
 
   if (balloonPressureNumber) {
-    balloonPressureNumber.textContent = displayPressure
+    balloonPressureNumber.textContent = balloonPopped ? 'POP!' : (balloonHolding ? 'HOLD' : 'READY')
   }
 
-  const pressurePercent = getBalloonPressurePercent()
   if (balloonPressureLabel) {
-    balloonPressureLabel.textContent = balloonPopped ? '터짐' : `${Math.round(pressurePercent)}%`
+    balloonPressureLabel.textContent = balloonPopped ? '터짐' : (balloonGameStarted ? '언제 터질까?' : '꾹 누르기')
   }
 
   if (balloonPressureFill) {
-    balloonPressureFill.style.width = `${pressurePercent}%`
-    balloonPressureFill.classList.toggle('is-warning', pressurePercent >= 72 && pressurePercent < 90)
-    balloonPressureFill.classList.toggle('is-danger', pressurePercent >= 90 || balloonPopped)
-  }
-
-  if (balloonVisual) {
-    balloonVisual.classList.toggle('is-warning', pressurePercent >= 72 && pressurePercent < 90)
-    balloonVisual.classList.toggle('is-danger', pressurePercent >= 90 || balloonPopped)
+    balloonPressureFill.style.width = '0%'
+    balloonPressureFill.classList.remove('is-warning', 'is-danger')
   }
 
   if (balloonPressArea) {
@@ -13869,6 +13864,7 @@ function renderBalloonGame() {
   }
 
   if (balloonTurnBadge) {
+    balloonTurnBadge.style.setProperty('--balloon-current-color', currentColor)
     if (passMode) {
       if (balloonPopped) {
         balloonTurnBadge.textContent = '당첨'
@@ -14083,9 +14079,6 @@ function inflateBalloonOnce() {
 
   balloonPressure += rand(BALLOON_MIN_PRESSURE_STEP, BALLOON_MAX_PRESSURE_STEP)
   playThrottledSfx('balloonInflate', SFX_THROTTLE_MS.balloonInflate)
-  if (balloonBurstPressure && balloonPressure / balloonBurstPressure > 0.72) {
-    playThrottledSfx('balloonWarning', 520)
-  }
 
   if (balloonPressure >= balloonBurstPressure) {
     balloonPressure = balloonBurstPressure
@@ -14389,6 +14382,52 @@ function getCurrentCircleTapPlayer() {
   return circleTapPlayers[circleTapCurrentIndex] || null
 }
 
+function resetCircleTapTargetPosition() {
+  circleTapTargetX = 50
+  circleTapTargetY = 50
+}
+
+function randomizeCircleTapTargetPosition() {
+  if (!circleTapStage) {
+    resetCircleTapTargetPosition()
+    return
+  }
+
+  const stageRect = circleTapStage.getBoundingClientRect()
+  const safeRadius = clampValue(circleTapRadius, CIRCLE_TAP_MIN_RADIUS, CIRCLE_TAP_START_RADIUS)
+
+  if (!stageRect.width || !stageRect.height) {
+    resetCircleTapTargetPosition()
+    return
+  }
+
+  const minX = safeRadius + CIRCLE_TAP_EDGE_PADDING
+  const maxX = Math.max(minX, stageRect.width - safeRadius - CIRCLE_TAP_EDGE_PADDING)
+  const minY = safeRadius + CIRCLE_TAP_EDGE_PADDING
+  const maxY = Math.max(minY, stageRect.height - safeRadius - CIRCLE_TAP_EDGE_PADDING)
+  const previousX = (circleTapTargetX / 100) * stageRect.width
+  const previousY = (circleTapTargetY / 100) * stageRect.height
+  const minMove = Math.min(stageRect.width, stageRect.height) * CIRCLE_TAP_MIN_RANDOM_MOVE_RATIO
+
+  let nextX = rand(minX, maxX)
+  let nextY = rand(minY, maxY)
+
+  if (maxX > minX && maxY > minY) {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const candidateX = rand(minX, maxX)
+      const candidateY = rand(minY, maxY)
+      if (Math.hypot(candidateX - previousX, candidateY - previousY) >= minMove) {
+        nextX = candidateX
+        nextY = candidateY
+        break
+      }
+    }
+  }
+
+  circleTapTargetX = clampValue((nextX / stageRect.width) * 100, 0, 100)
+  circleTapTargetY = clampValue((nextY / stageRect.height) * 100, 0, 100)
+}
+
 function updateCircleTapVisual() {
   const currentPlayer = getCurrentCircleTapPlayer()
   const currentColor = currentPlayer?.color || getCommonPlayerPaletteByTheme()[0] || '#ff82ad'
@@ -14405,6 +14444,8 @@ function updateCircleTapVisual() {
   if (circleTapTarget) {
     circleTapTarget.style.setProperty('--circle-tap-size', `${diameter}px`)
     circleTapTarget.style.setProperty('--circle-tap-current-color', currentColor)
+    circleTapTarget.style.setProperty('--circle-tap-x', `${circleTapTargetX}%`)
+    circleTapTarget.style.setProperty('--circle-tap-y', `${circleTapTargetY}%`)
     circleTapTarget.classList.toggle('is-active', circleTapStarted && !circleTapFinished)
     circleTapTarget.classList.toggle('is-finished', circleTapFinished)
   }
@@ -14535,6 +14576,7 @@ function startCircleTapGame() {
   circleTapCurrentIndex = 0
   circleTapRadius = CIRCLE_TAP_START_RADIUS
   circleTapSuccessCount = 0
+  randomizeCircleTapTargetPosition()
 
   if (circleTapMissEffect) {
     circleTapMissEffect.classList.remove('is-active')
@@ -14566,6 +14608,7 @@ function resetCircleTapGame() {
   circleTapCurrentIndex = 0
   circleTapRadius = CIRCLE_TAP_START_RADIUS
   circleTapSuccessCount = 0
+  resetCircleTapTargetPosition()
   setCircleTapInputLock(false)
 
   if (passMode) {
@@ -14608,6 +14651,7 @@ function shrinkCircleTapTarget() {
   const shrinkAmount = Math.max(0.75, circleTapRadius * shrinkRatio)
   circleTapRadius = Math.max(CIRCLE_TAP_MIN_RADIUS, circleTapRadius - shrinkAmount)
   circleTapSuccessCount += 1
+  randomizeCircleTapTargetPosition()
 }
 
 function failCircleTapGame() {

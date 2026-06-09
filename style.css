@@ -26905,3 +26905,109 @@ html:not(.theme-dark) #luckScreen .luck-card .game-item .game-meta {
 body:not(.luck-carousel-mode) #luckScreen .luck-card .game-item[data-clone] {
   display: none !important;
 }
+
+/* 2026-06-10 physical tweak: 풍선 터짐 기준 노출 방지 */
+.balloon-pressure-meter {
+  display: none !important;
+}
+
+.balloon-visual.is-warning .balloon-body,
+.balloon-visual.is-danger .balloon-body {
+  animation: none !important;
+  filter: none !important;
+}
+
+/* 2026-06-10 physical tweak: 작아지는 원 랜덤 위치 이동 */
+.circle-tap-stage {
+  display: block !important;
+}
+
+.circle-tap-target {
+  position: absolute !important;
+  left: var(--circle-tap-x, 50%) !important;
+  top: var(--circle-tap-y, 50%) !important;
+  transform: translate(-50%, -50%) scale(1);
+  transition:
+    left 0.18s ease,
+    top 0.18s ease,
+    width 0.18s ease,
+    height 0.18s ease,
+    transform 0.14s ease,
+    opacity 0.16s ease;
+}
+
+.circle-tap-target.is-finished {
+  transform: translate(-50%, -50%) scale(0.82);
+}
+
+@keyframes circleTapBreathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.025); }
+}
+
+@keyframes circleTapHit {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  45% { transform: translate(-50%, -50%) scale(0.92); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+
+/* =========================================================
+   FINAL HOTFIX 2026-06-10-7
+   풍선 불기: 풍선 색을 현재 차례 참가자 색으로 동기화
+   - 기존 스카이데이 고정 핑크 풍선 오버라이드를 다시 CSS 변수 기반으로 되돌린다.
+   - 현재 차례 배지도 같은 색 계열로 표시해 누가 누를 차례인지 더 명확하게 보이게 한다.
+========================================================= */
+.balloon-press-area,
+.balloon-turn-badge,
+.balloon-visual {
+  --balloon-current-color: #ff6f9f;
+}
+
+.balloon-body {
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.82) 0 12%, transparent 13%),
+    radial-gradient(circle at 62% 76%, rgba(0, 0, 0, 0.14), transparent 28%),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 58%, #ffffff) 0%,
+      var(--balloon-current-color, #ff6f9f) 52%,
+      color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 82%, #000000) 100%
+    ) !important;
+  box-shadow:
+    inset -14px -16px 24px rgba(0, 0, 0, 0.12),
+    inset 9px 9px 18px rgba(255, 255, 255, 0.28),
+    0 16px 24px color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 34%, transparent) !important;
+}
+
+.balloon-knot {
+  background:
+    linear-gradient(
+      180deg,
+      var(--balloon-current-color, #ff6f9f) 0%,
+      color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 78%, #000000) 100%
+    ) !important;
+  border-color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.balloon-turn-badge {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 18%, #ffffff) 0%,
+      color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 30%, #ffffff) 100%
+    ) !important;
+  border-color: color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 45%, #ffffff) !important;
+  color: color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 72%, #1f2430) !important;
+}
+
+html.theme-dark .balloon-turn-badge {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 30%, #0b1b2e) 0%,
+      color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 20%, #06101d) 100%
+    ) !important;
+  border-color: color-mix(in srgb, var(--balloon-current-color, #ff6f9f) 48%, #69d8ff) !important;
+  color: #ffffff !important;
+}
