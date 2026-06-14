@@ -20274,7 +20274,7 @@ html.theme-dark .bear-find-player-item.is-panda {
   body.game2-mobile-layout #game2Screen .race-horse .horse-emoji {
     font-size: 1.48rem;
     line-height: 1;
-    transform: rotate(90deg);
+    transform: rotate(-90deg);
   }
 
   body.game2-mobile-layout #game2Screen .race-horse.horse-finished {
@@ -27215,4 +27215,226 @@ html.theme-dark #game4Screen .sim-arena-zoom-backdrop {
   width: var(--sim-shrink-display-width, 100%) !important;
   height: var(--sim-shrink-display-height, 100%) !important;
   border-radius: 22px !important;
+}
+
+/* 2026-06-15 fix: force mobile portrait horse race to become a vertical track.
+   This class is set by script.js from viewport shape, so it also works in mobile preview
+   environments where `(pointer: coarse)` media queries are unreliable. */
+body.race-vertical-track-mode #game2Screen .race-track-wrap {
+  padding: 12px !important;
+  border-radius: 22px !important;
+  min-height: clamp(430px, 68vh, 660px) !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-track-stage-head {
+  display: none !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-track-lanes,
+body.race-vertical-track-mode #game2Screen .race-track-lanes.is-vertical-track {
+  display: grid !important;
+  grid-template-columns: repeat(var(--race-lane-count, 3), minmax(38px, 1fr)) !important;
+  grid-auto-flow: column !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  min-height: clamp(390px, 64vh, 610px) !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-lane,
+body.race-vertical-track-mode #game2Screen .race-track-lanes.is-vertical-track .race-lane,
+body.race-vertical-track-mode #game2Screen .race-card.race-track-zoomed .race-lane {
+  position: relative !important;
+  min-width: 0 !important;
+  min-height: inherit !important;
+  height: 100% !important;
+  flex: 1 1 auto !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.32) 0 24px,
+      rgba(255, 255, 255, 0.12) 24px 48px
+    ),
+    linear-gradient(90deg, #ffd6bd 0%, #ffc6dd 100%) !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-lane-label {
+  display: none !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-start-line,
+body.race-vertical-track-mode #game2Screen .race-finish-line {
+  left: 0 !important;
+  right: 0 !important;
+  width: auto !important;
+  height: 8px !important;
+  z-index: 1 !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-start-line {
+  top: 14px !important;
+  bottom: auto !important;
+  background: repeating-linear-gradient(90deg, #fff 0 8px, #ff8f8f 8px 16px) !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-finish-line {
+  top: auto !important;
+  bottom: 14px !important;
+  background: repeating-linear-gradient(90deg, #fff 0 8px, #444 8px 16px) !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-track-inner {
+  position: absolute !important;
+  inset: 34px 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-horse,
+body.race-vertical-track-mode #game2Screen .race-card.race-track-zoomed .race-horse {
+  left: 50% !important;
+  top: var(--race-progress, 0%) !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  transition: top 0.08s linear, transform 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-horse .horse-info {
+  display: none !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-horse .horse-emoji {
+  font-size: 1.48rem !important;
+  line-height: 1 !important;
+  transform: rotate(-90deg) !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-horse.horse-finished {
+  animation: mobileHorseFinishPop 0.7s ease, horseFinishGlow 1.4s ease-in-out infinite alternate !important;
+}
+
+
+/* 2026-06-15 hotfix: vertical horse race without relying on body/game2-mobile-layout.
+   renderRaceTracks() already adds these classes, so portrait mobile now switches immediately
+   even when optional race header/back-button elements are missing or browser pointer media is unreliable. */
+#game2Screen .race-track-wrap.is-vertical-track-wrap {
+  padding: 12px !important;
+  border-radius: 22px !important;
+  min-height: clamp(430px, 68vh, 660px) !important;
+}
+
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-track-stage-head {
+  display: none !important;
+}
+
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-track-lanes.is-vertical-track {
+  display: grid !important;
+  grid-template-columns: repeat(var(--race-lane-count, 3), minmax(38px, 1fr)) !important;
+  grid-auto-flow: column !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  min-height: clamp(390px, 64vh, 610px) !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-track-lanes.is-vertical-track .race-lane {
+  position: relative !important;
+  min-width: 0 !important;
+  min-height: inherit !important;
+  height: 100% !important;
+  flex: 1 1 auto !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.32) 0 24px,
+      rgba(255, 255, 255, 0.12) 24px 48px
+    ),
+    linear-gradient(90deg, #ffd6bd 0%, #ffc6dd 100%) !important;
+}
+
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-lane-label {
+  display: none !important;
+}
+
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-start-line,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-finish-line {
+  left: 0 !important;
+  right: 0 !important;
+  width: auto !important;
+  height: 8px !important;
+  z-index: 1 !important;
+}
+
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-start-line {
+  top: 14px !important;
+  bottom: auto !important;
+  background: repeating-linear-gradient(90deg, #fff 0 8px, #ff8f8f 8px 16px) !important;
+}
+
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-finish-line {
+  top: auto !important;
+  bottom: 14px !important;
+  background: repeating-linear-gradient(90deg, #fff 0 8px, #444 8px 16px) !important;
+}
+
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-track-inner {
+  position: absolute !important;
+  inset: 34px 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-horse {
+  left: 50% !important;
+  top: var(--race-progress, 0%) !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  transition: top 0.08s linear, transform 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-horse .horse-info {
+  display: none !important;
+}
+
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-horse .horse-emoji {
+  font-size: 1.48rem !important;
+  line-height: 1 !important;
+  transform: rotate(-90deg) !important;
+}
+
+
+/* 2026-06-15 fix: remove home banner/ad and point mobile vertical race horse downward. */
+.home-banner-link,
+#homeScreen .home-banner-link {
+  display: none !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-horse .horse-emoji,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-horse .horse-emoji,
+body.game2-mobile-layout #game2Screen .race-horse .horse-emoji {
+  display: inline-block !important;
+  transform: rotate(-90deg) !important;
+  transform-origin: center center !important;
 }

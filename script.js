@@ -33,77 +33,81 @@ const physicalGameLaunchButtons = document.querySelectorAll('.physical-game-laun
 
 
 const EMOJI_FALLBACK_MAP = Object.freeze({
-  '🎀': '*',
-  '✨': '*',
-  '💪': 'PC',
-  '🍀': 'OK',
-  '🎲': 'R',
-  '🫙': 'R',
-  '🏇': 'RUN',
-  '🃏': 'CARD',
-  '🔵': '●',
-  '🔫': 'GAME',
-  '📈': 'UP',
-  '🪜': 'LADDER',
-  '📱': 'MOBILE',
-  '💻': 'PC',
-  '🖥': 'PC',
-  '🎈': 'BALLOON',
-  '💣': 'BOMB',
-  '⭕': '○',
-  '⌨️': 'KEY',
-  '⌨': 'KEY',
-  '🧸': 'BEAR',
-  '🎁': 'BOX',
-  '💥': 'BOOM',
-  '⚔️': 'VS',
-  '⚔': 'VS',
-  '🛠️': 'FIX',
-  '🛠': 'FIX',
-  '⚙': 'SET',
-  '⚠️': '!',
-  '⚠': '!',
-  '🌙': 'NIGHT',
-  '☀️': 'DAY',
-  '☀': 'DAY',
-  '🔊': 'ON',
-  '🔇': 'OFF',
-  '⛶': 'FULL',
-  '🫧': '*',
-  '🏆': 'WIN',
-  '👑': '1st',
-  '💀': 'OUT',
-  '😨': '!',
-  '🙂': ':)',
-  '🎡': 'SPIN',
-  '🎬': 'REC',
-  '🐎': 'HORSE',
-  '🐼': 'PANDA',
-  '👀': 'SEE',
-  '👆': 'TAP',
-  '💄': 'MAKEUP',
-  '📖': 'INFO',
-  '📝': 'NOTE',
-  '🗗': 'ZOOM',
-  '🗺': 'MAP',
-  '🧮': 'CALC',
-  '🛡': 'DEF',
-  '🩺': 'HP',
-  '🪙': 'COIN',
-  '🎆': 'FIRE',
-  '🎯': 'HIT',
-  '🍞': 'BREAD',
-  '⬆️': 'UP',
-  '⬆': 'UP',
-  '★': '★',
-  '✦': '✦',
-  '❤': '♥',
-  '❤️': '♥',
-  '⏩': '>>',
-  '↩': '<',
-  '←': '<',
-  '→': '>',
-  '↓': 'v'
+  '🎀': ['⭐', '*'],
+  '✨': ['★', '*'],
+  '💪': ['👍', 'OK'],
+  '🍀': ['★', 'OK'],
+  '🎲': ['🔢', 'R'],
+  '🫙': ['🎲', 'R'],
+  '🏇': ['🐎', 'HORSE'],
+  '🃏': ['♠', 'CARD'],
+  '🔵': ['●'],
+  '🔫': ['💥', 'GAME'],
+  '📈': ['↑', 'UP'],
+  '🪜': ['↕', 'LADDER'],
+  '📱': ['☎', 'MOBILE'],
+  '💻': ['PC'],
+  '🖥️': ['💻', 'PC'],
+  '🖥': ['💻', 'PC'],
+  '🎈': ['●', 'BALLOON'],
+  '💣': ['●', 'BOMB'],
+  '⭕': ['○'],
+  '⌨️': ['⌨', 'KEY'],
+  '⌨': ['KEY'],
+  '🧸': ['🐻', 'BEAR'],
+  '🎁': ['□', 'BOX'],
+  '💥': ['★', 'BOOM'],
+  '⚔️': ['⚔', 'VS'],
+  '⚔': ['VS'],
+  '🛠️': ['🛠', 'FIX'],
+  '🛠': ['FIX'],
+  '⚙': ['SET'],
+  '⚠️': ['⚠', '!'],
+  '⚠': ['!'],
+  '🌙': ['☾', 'NIGHT'],
+  '☀️': ['☀', 'DAY'],
+  '☀': ['DAY'],
+  '🔊': ['ON'],
+  '🔇': ['OFF'],
+  '⛶': ['□', 'FULL'],
+  '🫧': ['✨', '*'],
+  '🏆': ['★', 'WIN'],
+  '👑': ['★', '1st'],
+  '💀': ['☠', 'OUT'],
+  '😨': ['!', '!!'],
+  '🙂': [':)'],
+  '🎡': ['↻', 'SPIN'],
+  '🎬': ['▶', 'REC'],
+  '🐎': ['HORSE'],
+  '🐼': ['🐻', 'PANDA'],
+  '👀': ['SEE'],
+  '👆': ['TAP'],
+  '💄': ['MAKEUP'],
+  '📖': ['INFO'],
+  '📝': ['NOTE'],
+  '🗗': ['□', 'ZOOM'],
+  '🗺️': ['MAP'],
+  '🗺': ['MAP'],
+  '🧮': ['CALC'],
+  '🛡️': ['🛡', 'DEF'],
+  '🛡': ['DEF'],
+  '🩺': ['♥', 'HP'],
+  '🪙': ['COIN'],
+  '🎆': ['✨', 'FIRE'],
+  '🎯': ['HIT'],
+  '🍞': ['BREAD'],
+  '⬆️': ['↑', 'UP'],
+  '⬆': ['↑', 'UP'],
+  '★': ['*'],
+  '✦': ['*'],
+  '❤': ['♥'],
+  '♥': ['HEART'],
+  '❤️': ['♥'],
+  '⏩': ['>>'],
+  '↩': ['<'],
+  '←': ['<'],
+  '→': ['>'],
+  '↓': ['v']
 })
 
 const EMOJI_FALLBACK_PATTERN = new RegExp(
@@ -114,10 +118,67 @@ const EMOJI_FALLBACK_PATTERN = new RegExp(
   'g'
 )
 
+const EMOJI_SCAN_PATTERN = /(?:[\u{1F000}-\u{1FAFF}]|[\u2190-\u27BF])\uFE0F?(?:\u200D(?:[\u{1F000}-\u{1FAFF}]|[\u2190-\u27BF])\uFE0F?)*/gu
+
+const EMOJI_RISKY_FALLBACK_SET = new Set([
+  '🫙', '🪜', '🫧', '🩺', '🪙', '🧸', '🖥️', '🖥', '🗺️', '🗺', '🗗', '🛡️', '🛡', '⛶', '🏇'
+])
+
 const emojiSupportCache = new Map()
 let emojiFallbackObserver = null
 let emojiFallbackQueued = false
 let emojiFallbackChecking = false
+
+function resetEmojiRegexes() {
+  EMOJI_FALLBACK_PATTERN.lastIndex = 0
+  EMOJI_SCAN_PATTERN.lastIndex = 0
+}
+
+function containsScannableEmoji(text) {
+  if (!text) return false
+  EMOJI_SCAN_PATTERN.lastIndex = 0
+  const result = EMOJI_SCAN_PATTERN.test(text)
+  EMOJI_SCAN_PATTERN.lastIndex = 0
+  return result
+}
+
+function isConservativeEmojiFallbackEnvironment() {
+  const userAgent = String(navigator.userAgent || '').toLowerCase()
+  const isWindows = userAgent.includes('windows')
+  const isAndroid = userAgent.includes('android')
+  const isLinuxDesktop = userAgent.includes('linux') && !isAndroid
+  const isOldWebView = /version\/\d+\.\d+.*chrome\//.test(userAgent) || userAgent.includes('; wv)') || userAgent.includes(' wv')
+
+  return isWindows || isAndroid || isLinuxDesktop || isOldWebView
+}
+
+function shouldUseRiskFallbackForEmoji(emoji) {
+  return EMOJI_RISKY_FALLBACK_SET.has(emoji) && isConservativeEmojiFallbackEnvironment()
+}
+
+function getFallbackCandidates(emoji) {
+  const customFallback = EMOJI_FALLBACK_MAP[emoji]
+
+  if (Array.isArray(customFallback)) {
+    return customFallback
+  }
+
+  if (typeof customFallback === 'string') {
+    return [customFallback]
+  }
+
+  return ['*']
+}
+
+function isReplacementLikelySupported(text) {
+  if (!text || !containsScannableEmoji(text)) return true
+
+  EMOJI_SCAN_PATTERN.lastIndex = 0
+  const matches = Array.from(text.matchAll(EMOJI_SCAN_PATTERN), (match) => match[0])
+  EMOJI_SCAN_PATTERN.lastIndex = 0
+
+  return matches.every((emoji) => isEmojiLikelySupported(emoji) && !shouldUseRiskFallbackForEmoji(emoji))
+}
 
 function isEmojiLikelySupported(emoji) {
   if (!emoji) return true
@@ -130,13 +191,14 @@ function isEmojiLikelySupported(emoji) {
     const context = canvas.getContext('2d', { willReadFrequently: true })
 
     if (context) {
-      const size = 48
+      const size = 56
       canvas.width = size * 2
       canvas.height = size
       context.textBaseline = 'top'
-      context.font = '40px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", sans-serif'
+      context.font = '44px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", "Segoe UI Symbol", sans-serif'
       const emojiWidth = context.measureText(emoji).width
       const missingWidth = context.measureText('□').width
+      const tofuWidth = context.measureText('�').width
 
       context.clearRect(0, 0, canvas.width, canvas.height)
       context.fillText(emoji, 4, 4)
@@ -146,14 +208,25 @@ function isEmojiLikelySupported(emoji) {
       context.fillText('□', 4, 4)
       const missingPixels = context.getImageData(0, 0, canvas.width, canvas.height).data
 
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      context.fillText('�', 4, 4)
+      const tofuPixels = context.getImageData(0, 0, canvas.width, canvas.height).data
+
       let ink = 0
-      let diff = 0
+      let diffFromSquare = 0
+      let diffFromTofu = 0
       for (let index = 3; index < emojiPixels.length; index += 4) {
         if (emojiPixels[index] > 0) ink += 1
-        if (Math.abs(emojiPixels[index] - missingPixels[index]) > 4) diff += 1
+        if (Math.abs(emojiPixels[index] - missingPixels[index]) > 4) diffFromSquare += 1
+        if (Math.abs(emojiPixels[index] - tofuPixels[index]) > 4) diffFromTofu += 1
       }
 
-      supported = ink > 20 && (Math.abs(emojiWidth - missingWidth) > 1 || diff > 120)
+      supported = ink > 24 && (
+        Math.abs(emojiWidth - missingWidth) > 1 ||
+        Math.abs(emojiWidth - tofuWidth) > 1 ||
+        diffFromSquare > 150 ||
+        diffFromTofu > 150
+      )
     }
   } catch (error) {
     supported = true
@@ -164,18 +237,28 @@ function isEmojiLikelySupported(emoji) {
 }
 
 function getSafeEmojiText(emoji) {
-  if (!Object.prototype.hasOwnProperty.call(EMOJI_FALLBACK_MAP, emoji)) return emoji
-  return isEmojiLikelySupported(emoji) ? emoji : EMOJI_FALLBACK_MAP[emoji]
+  const shouldReplace = !isEmojiLikelySupported(emoji) || shouldUseRiskFallbackForEmoji(emoji)
+  if (!shouldReplace) return emoji
+
+  const candidates = getFallbackCandidates(emoji)
+  for (const candidate of candidates) {
+    if (candidate === emoji) continue
+    if (isReplacementLikelySupported(candidate)) return candidate
+  }
+
+  return candidates[candidates.length - 1] || '*'
 }
 
 function replaceUnsupportedEmojiText(text) {
-  if (!text || !EMOJI_FALLBACK_PATTERN.test(text)) {
-    EMOJI_FALLBACK_PATTERN.lastIndex = 0
+  if (!text || !containsScannableEmoji(text)) {
+    resetEmojiRegexes()
     return text
   }
 
-  EMOJI_FALLBACK_PATTERN.lastIndex = 0
-  return text.replace(EMOJI_FALLBACK_PATTERN, (emoji) => getSafeEmojiText(emoji))
+  EMOJI_SCAN_PATTERN.lastIndex = 0
+  const nextText = text.replace(EMOJI_SCAN_PATTERN, (emoji) => getSafeEmojiText(emoji))
+  resetEmojiRegexes()
+  return nextText
 }
 
 function normalizeUnsupportedEmojis(root = document.body) {
@@ -190,11 +273,11 @@ function normalizeUnsupportedEmojis(root = document.body) {
         const parent = node.parentElement
         if (!parent) return NodeFilter.FILTER_REJECT
         if (parent.closest('script, style, textarea, input')) return NodeFilter.FILTER_REJECT
-        if (!node.nodeValue || !EMOJI_FALLBACK_PATTERN.test(node.nodeValue)) {
-          EMOJI_FALLBACK_PATTERN.lastIndex = 0
+        if (!node.nodeValue || !containsScannableEmoji(node.nodeValue)) {
+          resetEmojiRegexes()
           return NodeFilter.FILTER_REJECT
         }
-        EMOJI_FALLBACK_PATTERN.lastIndex = 0
+        resetEmojiRegexes()
         return NodeFilter.FILTER_ACCEPT
       }
     })
@@ -415,7 +498,7 @@ const raceLayout = document.querySelector('#game2Screen .race-layout')
 const raceSidebar = document.querySelector('#game2Screen .race-sidebar')
 const raceMain = document.querySelector('#game2Screen .race-main')
 const raceMainHeader = document.querySelector('#game2Screen .race-main-header')
-const raceHeaderActions = document.querySelector('#game2Screen .race-main-header .game-header-actions')
+const raceHeaderActions = document.querySelector('#game2Screen .race-main-header .game-header-actions, #game2Screen .race-main-header .race-panel-head-actions')
 const raceBackBtn = document.querySelector('#game2Screen .race-main-header .back-btn[data-target="luck"]')
 const raceCardScreen = document.querySelector('#game2Screen .race-card')
 const raceTrackZoomBtn = document.getElementById('raceTrackZoomBtn')
@@ -3087,6 +3170,27 @@ function isPortraitMode() {
   return window.matchMedia('(orientation: portrait)').matches
 }
 
+function shouldUseVerticalRaceTrack() {
+  return window.innerHeight > window.innerWidth && window.innerWidth <= 1024
+}
+
+function syncRaceTrackOrientationClass() {
+  const shouldUseVerticalTrack = shouldUseVerticalRaceTrack()
+  document.body.classList.toggle('race-vertical-track-mode', shouldUseVerticalTrack)
+
+  if (raceTrackWrap) {
+    raceTrackWrap.classList.toggle('is-vertical-track-wrap', shouldUseVerticalTrack)
+    raceTrackWrap.style.setProperty('--race-lane-count', String(Math.max(1, raceHorses.length || 1)))
+  }
+
+  const laneStack = raceTrackWrap?.querySelector('.race-track-lanes')
+  if (laneStack) {
+    laneStack.classList.toggle('is-vertical-track', shouldUseVerticalTrack)
+  }
+
+  raceHorses.forEach((horse) => updateHorsePosition(horse))
+}
+
 function updateOrientationGate() {
   const shouldBlock =
     screens.game1?.classList.contains('active') &&
@@ -3920,19 +4024,16 @@ function syncGame1MobileLayout() {
 }
 
 function syncRaceMobileLayout() {
-  if (
-    !raceLayout ||
-    !raceSidebar ||
-    !raceMain ||
-    !raceMainHeader ||
-    !raceHeaderActions ||
-    !raceBackBtn
-  ) {
+  // Keep the track-orientation sync independent from optional mobile header/back-button DOM.
+  // Some builds do not include a race back button, and an early return here made portrait
+  // phones keep the normal horizontal lanes.
+  syncRaceTrackOrientationClass()
+
+  if (!raceLayout || !raceSidebar || !raceMain || !raceMainHeader) {
     return
   }
 
   const shouldUseMobileLayout = isMobileOrTabletLike()
-
   document.body.classList.toggle('game2-mobile-layout', shouldUseMobileLayout)
 
   if (shouldUseMobileLayout && !raceMobileLayoutApplied) {
@@ -3940,7 +4041,7 @@ function syncRaceMobileLayout() {
       raceLayout.insertBefore(raceMainHeader, raceLayout.firstChild)
     }
 
-    if (raceBackBtn.parentElement !== raceLayout) {
+    if (raceBackBtn && raceBackBtn.parentElement !== raceLayout) {
       raceBackBtn.classList.add('mobile-race-back-btn')
       raceLayout.appendChild(raceBackBtn)
     }
@@ -3954,7 +4055,7 @@ function syncRaceMobileLayout() {
       raceMain.insertBefore(raceMainHeader, raceMain.firstChild)
     }
 
-    if (raceBackBtn.parentElement !== raceHeaderActions) {
+    if (raceBackBtn && raceHeaderActions && raceBackBtn.parentElement !== raceHeaderActions) {
       raceBackBtn.classList.remove('mobile-race-back-btn')
       raceHeaderActions.appendChild(raceBackBtn)
     }
@@ -6228,6 +6329,8 @@ function renderRaceTracks() {
 
   const laneStack = document.createElement('div')
   laneStack.className = 'race-track-lanes'
+  laneStack.classList.toggle('is-vertical-track', shouldUseVerticalRaceTrack())
+  raceTrackWrap.classList.toggle('is-vertical-track-wrap', shouldUseVerticalRaceTrack())
   raceTrackWrap.appendChild(laneStack)
 
   raceHorses.forEach((horse, index) => {
