@@ -33,30 +33,30 @@ const physicalGameLaunchButtons = document.querySelectorAll('.physical-game-laun
 
 
 const EMOJI_FALLBACK_MAP = Object.freeze({
-  '🎀': ['⭐', '*'],
-  '✨': ['★', '*'],
-  '💪': ['👍', 'OK'],
-  '🍀': ['★', 'OK'],
-  '🎲': ['🔢', 'R'],
-  '🫙': ['🎲', 'R'],
-  '🏇': ['🐎', 'HORSE'],
-  '🃏': ['♠', 'CARD'],
-  '🔵': ['●'],
-  '🔫': ['💥', 'GAME'],
-  '📈': ['↑', 'UP'],
-  '🪜': ['↕', 'LADDER'],
-  '📱': ['☎', 'MOBILE'],
+  '🎀': ['✦', '*'],
+  '✨': ['✧', '*'],
+  '💪': ['🏃', 'PHYS'],
+  '🍀': ['🎱', 'LUCK'],
+  '🎲': ['🔀', 'RANDOM'],
+  '🫙': ['🪣', 'BOWL'],
+  '🏇': ['🐴', 'HORSE'],
+  '🃏': ['♠️', 'CARD'],
+  '🔵': ['⚪', 'BALL'],
+  '🔫': ['🎯', 'SHOT'],
+  '📈': ['💹', 'UP'],
+  '🪜': ['↕️', 'LADDER'],
+  '📱': ['☎️', 'MOBILE'],
   '💻': ['PC'],
   '🖥️': ['💻', 'PC'],
   '🖥': ['💻', 'PC'],
-  '🎈': ['●', 'BALLOON'],
-  '💣': ['●', 'BOMB'],
-  '⭕': ['○'],
+  '🎈': ['🔴', 'BALLOON'],
+  '💣': ['⏱️', 'BOMB'],
+  '⭕': ['◎', 'CIRCLE'],
   '⌨️': ['⌨', 'KEY'],
   '⌨': ['KEY'],
   '🧸': ['🐻', 'BEAR'],
-  '🎁': ['□', 'BOX'],
-  '💥': ['★', 'BOOM'],
+  '🎁': ['📦', 'BOX'],
+  '💥': ['✹', 'BOOM'],
   '⚔️': ['⚔', 'VS'],
   '⚔': ['VS'],
   '🛠️': ['🛠', 'FIX'],
@@ -67,19 +67,20 @@ const EMOJI_FALLBACK_MAP = Object.freeze({
   '🌙': ['☾', 'NIGHT'],
   '☀️': ['☀', 'DAY'],
   '☀': ['DAY'],
-  '🔊': ['ON'],
-  '🔇': ['OFF'],
+  '🔊': ['♪', 'ON'],
+  '🔇': ['×', 'OFF'],
   '⛶': ['□', 'FULL'],
-  '🫧': ['✨', '*'],
+  '🫧': ['○', 'BUBBLE'],
   '🏆': ['★', 'WIN'],
-  '👑': ['★', '1st'],
+  '👑': ['♛', '1st'],
   '💀': ['☠', 'OUT'],
   '😨': ['!', '!!'],
   '🙂': [':)'],
   '🎡': ['↻', 'SPIN'],
   '🎬': ['▶', 'REC'],
-  '🐎': ['HORSE'],
-  '🐼': ['🐻', 'PANDA'],
+  '🐎': ['♞', 'HORSE'],
+  '🐴': ['♞', 'HORSE'],
+  '🐼': ['PANDA'],
   '👀': ['SEE'],
   '👆': ['TAP'],
   '💄': ['MAKEUP'],
@@ -92,14 +93,15 @@ const EMOJI_FALLBACK_MAP = Object.freeze({
   '🛡️': ['🛡', 'DEF'],
   '🛡': ['DEF'],
   '🩺': ['♥', 'HP'],
-  '🪙': ['COIN'],
-  '🎆': ['✨', 'FIRE'],
-  '🎯': ['HIT'],
+  '🪙': ['◎', 'COIN'],
+  '🎆': ['✦', 'FIRE'],
+  '🎯': ['⌖', 'HIT'],
   '🍞': ['BREAD'],
   '⬆️': ['↑', 'UP'],
   '⬆': ['↑', 'UP'],
   '★': ['*'],
   '✦': ['*'],
+  '✧': ['*'],
   '❤': ['♥'],
   '♥': ['HEART'],
   '❤️': ['♥'],
@@ -120,9 +122,7 @@ const EMOJI_FALLBACK_PATTERN = new RegExp(
 
 const EMOJI_SCAN_PATTERN = /(?:[\u{1F000}-\u{1FAFF}]|[\u2190-\u27BF])\uFE0F?(?:\u200D(?:[\u{1F000}-\u{1FAFF}]|[\u2190-\u27BF])\uFE0F?)*/gu
 
-const EMOJI_RISKY_FALLBACK_SET = new Set([
-  '🫙', '🪜', '🫧', '🩺', '🪙', '🧸', '🖥️', '🖥', '🗺️', '🗺', '🗗', '🛡️', '🛡', '⛶', '🏇'
-])
+const EMOJI_RISKY_FALLBACK_SET = new Set([])
 
 const emojiSupportCache = new Map()
 let emojiFallbackObserver = null
@@ -153,7 +153,7 @@ function isConservativeEmojiFallbackEnvironment() {
 }
 
 function shouldUseRiskFallbackForEmoji(emoji) {
-  return EMOJI_RISKY_FALLBACK_SET.has(emoji) && isConservativeEmojiFallbackEnvironment()
+  return false
 }
 
 function getFallbackCandidates(emoji) {
