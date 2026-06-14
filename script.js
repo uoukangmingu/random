@@ -31,6 +31,245 @@ const physicalCarouselHud = document.getElementById('physicalCarouselHud')
 const physicalCarouselDots = document.getElementById('physicalCarouselDots')
 const physicalGameLaunchButtons = document.querySelectorAll('.physical-game-launch')
 
+
+const EMOJI_FALLBACK_MAP = Object.freeze({
+  '🎀': '*',
+  '✨': '*',
+  '💪': 'PC',
+  '🍀': 'OK',
+  '🎲': 'R',
+  '🫙': 'R',
+  '🏇': 'RUN',
+  '🃏': 'CARD',
+  '🔵': '●',
+  '🔫': 'GAME',
+  '📈': 'UP',
+  '🪜': 'LADDER',
+  '📱': 'MOBILE',
+  '💻': 'PC',
+  '🖥': 'PC',
+  '🎈': 'BALLOON',
+  '💣': 'BOMB',
+  '⭕': '○',
+  '⌨️': 'KEY',
+  '⌨': 'KEY',
+  '🧸': 'BEAR',
+  '🎁': 'BOX',
+  '💥': 'BOOM',
+  '⚔️': 'VS',
+  '⚔': 'VS',
+  '🛠️': 'FIX',
+  '🛠': 'FIX',
+  '⚙': 'SET',
+  '⚠️': '!',
+  '⚠': '!',
+  '🌙': 'NIGHT',
+  '☀️': 'DAY',
+  '☀': 'DAY',
+  '🔊': 'ON',
+  '🔇': 'OFF',
+  '⛶': 'FULL',
+  '🫧': '*',
+  '🏆': 'WIN',
+  '👑': '1st',
+  '💀': 'OUT',
+  '😨': '!',
+  '🙂': ':)',
+  '🎡': 'SPIN',
+  '🎬': 'REC',
+  '🐎': 'HORSE',
+  '🐼': 'PANDA',
+  '👀': 'SEE',
+  '👆': 'TAP',
+  '💄': 'MAKEUP',
+  '📖': 'INFO',
+  '📝': 'NOTE',
+  '🗗': 'ZOOM',
+  '🗺': 'MAP',
+  '🧮': 'CALC',
+  '🛡': 'DEF',
+  '🩺': 'HP',
+  '🪙': 'COIN',
+  '🎆': 'FIRE',
+  '🎯': 'HIT',
+  '🍞': 'BREAD',
+  '⬆️': 'UP',
+  '⬆': 'UP',
+  '★': '★',
+  '✦': '✦',
+  '❤': '♥',
+  '❤️': '♥',
+  '⏩': '>>',
+  '↩': '<',
+  '←': '<',
+  '→': '>',
+  '↓': 'v'
+})
+
+const EMOJI_FALLBACK_PATTERN = new RegExp(
+  Object.keys(EMOJI_FALLBACK_MAP)
+    .sort((a, b) => b.length - a.length)
+    .map((emoji) => emoji.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|'),
+  'g'
+)
+
+const emojiSupportCache = new Map()
+let emojiFallbackObserver = null
+let emojiFallbackQueued = false
+let emojiFallbackChecking = false
+
+function isEmojiLikelySupported(emoji) {
+  if (!emoji) return true
+  if (emojiSupportCache.has(emoji)) return emojiSupportCache.get(emoji)
+
+  let supported = true
+
+  try {
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+
+    if (context) {
+      const size = 48
+      canvas.width = size * 2
+      canvas.height = size
+      context.textBaseline = 'top'
+      context.font = '40px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", sans-serif'
+      const emojiWidth = context.measureText(emoji).width
+      const missingWidth = context.measureText('□').width
+
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      context.fillText(emoji, 4, 4)
+      const emojiPixels = context.getImageData(0, 0, canvas.width, canvas.height).data
+
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      context.fillText('□', 4, 4)
+      const missingPixels = context.getImageData(0, 0, canvas.width, canvas.height).data
+
+      let ink = 0
+      let diff = 0
+      for (let index = 3; index < emojiPixels.length; index += 4) {
+        if (emojiPixels[index] > 0) ink += 1
+        if (Math.abs(emojiPixels[index] - missingPixels[index]) > 4) diff += 1
+      }
+
+      supported = ink > 20 && (Math.abs(emojiWidth - missingWidth) > 1 || diff > 120)
+    }
+  } catch (error) {
+    supported = true
+  }
+
+  emojiSupportCache.set(emoji, supported)
+  return supported
+}
+
+function getSafeEmojiText(emoji) {
+  if (!Object.prototype.hasOwnProperty.call(EMOJI_FALLBACK_MAP, emoji)) return emoji
+  return isEmojiLikelySupported(emoji) ? emoji : EMOJI_FALLBACK_MAP[emoji]
+}
+
+function replaceUnsupportedEmojiText(text) {
+  if (!text || !EMOJI_FALLBACK_PATTERN.test(text)) {
+    EMOJI_FALLBACK_PATTERN.lastIndex = 0
+    return text
+  }
+
+  EMOJI_FALLBACK_PATTERN.lastIndex = 0
+  return text.replace(EMOJI_FALLBACK_PATTERN, (emoji) => getSafeEmojiText(emoji))
+}
+
+function normalizeUnsupportedEmojis(root = document.body) {
+  if (!root || emojiFallbackChecking) return
+
+  emojiFallbackChecking = true
+  if (emojiFallbackObserver) emojiFallbackObserver.disconnect()
+
+  try {
+    const treeWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement
+        if (!parent) return NodeFilter.FILTER_REJECT
+        if (parent.closest('script, style, textarea, input')) return NodeFilter.FILTER_REJECT
+        if (!node.nodeValue || !EMOJI_FALLBACK_PATTERN.test(node.nodeValue)) {
+          EMOJI_FALLBACK_PATTERN.lastIndex = 0
+          return NodeFilter.FILTER_REJECT
+        }
+        EMOJI_FALLBACK_PATTERN.lastIndex = 0
+        return NodeFilter.FILTER_ACCEPT
+      }
+    })
+
+    const textNodes = []
+    while (treeWalker.nextNode()) {
+      textNodes.push(treeWalker.currentNode)
+    }
+
+    textNodes.forEach((node) => {
+      const nextValue = replaceUnsupportedEmojiText(node.nodeValue)
+      if (nextValue !== node.nodeValue) {
+        node.nodeValue = nextValue
+      }
+    })
+
+    const attrTargets = root.nodeType === Node.ELEMENT_NODE
+      ? [root, ...root.querySelectorAll('[aria-label], [title], [alt]')]
+      : Array.from(document.querySelectorAll('[aria-label], [title], [alt]'))
+
+    attrTargets.forEach((element) => {
+      ;['aria-label', 'title', 'alt'].forEach((attr) => {
+        if (!element.hasAttribute?.(attr)) return
+        const value = element.getAttribute(attr)
+        const nextValue = replaceUnsupportedEmojiText(value)
+        if (nextValue !== value) {
+          element.setAttribute(attr, nextValue)
+        }
+      })
+    })
+  } finally {
+    emojiFallbackChecking = false
+    if (emojiFallbackObserver) {
+      emojiFallbackObserver.observe(document.body, {
+        childList: true,
+        characterData: true,
+        attributes: true,
+        subtree: true,
+        attributeFilter: ['aria-label', 'title', 'alt']
+      })
+    }
+  }
+}
+
+function scheduleUnsupportedEmojiNormalization(root = document.body) {
+  if (emojiFallbackQueued) return
+  emojiFallbackQueued = true
+  const run = () => {
+    emojiFallbackQueued = false
+    normalizeUnsupportedEmojis(root)
+  }
+
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(run)
+  } else {
+    setTimeout(run, 0)
+  }
+}
+
+function installEmojiFallbacks() {
+  normalizeUnsupportedEmojis(document.body)
+
+  if (!('MutationObserver' in window)) return
+  emojiFallbackObserver = new MutationObserver(() => {
+    scheduleUnsupportedEmojiNormalization(document.body)
+  })
+  emojiFallbackObserver.observe(document.body, {
+    childList: true,
+    characterData: true,
+    attributes: true,
+    subtree: true,
+    attributeFilter: ['aria-label', 'title', 'alt']
+  })
+}
+
 const balloonConfigInput = document.getElementById('balloonConfigInput')
 const startBalloonBtn = document.getElementById('startBalloonBtn')
 const resetBalloonBtn = document.getElementById('resetBalloonBtn')
@@ -7796,23 +8035,33 @@ function updateSimArenaZoomScale() {
   if (!simArenaZoomed || !simArenaZoomStage) {
     simArenaWrap.style.removeProperty('--sim-arena-base-width')
     simArenaWrap.style.removeProperty('--sim-arena-base-height')
+    simArenaWrap.style.removeProperty('--sim-arena-display-width')
+    simArenaWrap.style.removeProperty('--sim-arena-display-height')
     simArenaWrap.style.removeProperty('--sim-arena-zoom-scale')
+    simArenaWrap.style.removeProperty('--sim-arena-aspect')
     return
   }
 
+  const renderBaseWidth = simArenaRender?.options?.width || 0
+  const renderBaseHeight = simArenaRender?.options?.height || 0
   const capturedBaseWidth = simArenaZoomBaseRect?.width || 0
   const capturedBaseHeight = simArenaZoomBaseRect?.height || 0
-  const baseWidth = Math.max(1, capturedBaseWidth || simArenaWrap.clientWidth || simArenaMeta?.width || 900)
-  const baseHeight = Math.max(1, capturedBaseHeight || simArenaWrap.clientHeight || simArenaMeta?.height || 460)
+  const baseWidth = Math.max(1, renderBaseWidth || capturedBaseWidth || simArenaMeta?.width || 900)
+  const baseHeight = Math.max(1, renderBaseHeight || capturedBaseHeight || simArenaMeta?.height || 460)
   const stageWidth = Math.max(1, simArenaZoomStage.clientWidth)
   const stageHeight = Math.max(1, simArenaZoomStage.clientHeight)
-  const usableStageWidth = stageWidth * 0.94
-  const usableStageHeight = stageHeight * 0.92
-  const zoomScale = clampValue(Math.min(usableStageWidth / baseWidth, usableStageHeight / baseHeight), 1.12, 2.8)
+  const usableStageWidth = stageWidth * 0.96
+  const usableStageHeight = stageHeight * 0.96
+  const zoomScale = clampValue(Math.min(usableStageWidth / baseWidth, usableStageHeight / baseHeight), 0.35, 2.8)
+  const displayWidth = Math.max(1, Math.floor(baseWidth * zoomScale))
+  const displayHeight = Math.max(1, Math.floor(baseHeight * zoomScale))
 
   simArenaWrap.style.setProperty('--sim-arena-base-width', `${baseWidth}px`)
   simArenaWrap.style.setProperty('--sim-arena-base-height', `${baseHeight}px`)
+  simArenaWrap.style.setProperty('--sim-arena-display-width', `${displayWidth}px`)
+  simArenaWrap.style.setProperty('--sim-arena-display-height', `${displayHeight}px`)
   simArenaWrap.style.setProperty('--sim-arena-zoom-scale', String(zoomScale))
+  simArenaWrap.style.setProperty('--sim-arena-aspect', `${baseWidth} / ${baseHeight}`)
 }
 
 function closeSimArenaZoom() {
@@ -7827,6 +8076,7 @@ function closeSimArenaZoom() {
     simArenaZoomBackdrop.setAttribute('aria-hidden', 'true')
   }
   updateSimArenaZoomScale()
+  updateSimArenaOverlay(true)
   updateSimArenaZoomButton()
 }
 
@@ -7849,11 +8099,13 @@ function openSimArenaZoom() {
 
   requestAnimationFrame(() => {
     updateSimArenaZoomScale()
+    updateSimArenaOverlay(true)
   })
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       updateSimArenaZoomScale()
+      updateSimArenaOverlay(true)
     })
   })
 
@@ -9137,6 +9389,16 @@ function updateSimArenaHazards(now) {
   shrink.zoneEl.style.top = `${top}px`
   shrink.zoneEl.style.width = `${zoneWidth}px`
   shrink.zoneEl.style.height = `${zoneHeight}px`
+
+  const displayWidth = simArenaWrap?.clientWidth || simArenaRender?.options?.width || shrink.fullWidth
+  const displayHeight = simArenaWrap?.clientHeight || simArenaRender?.options?.height || shrink.fullHeight
+  const scaleX = displayWidth / Math.max(1, simArenaRender?.options?.width || shrink.fullWidth)
+  const scaleY = displayHeight / Math.max(1, simArenaRender?.options?.height || shrink.fullHeight)
+  shrink.zoneEl.style.setProperty('--sim-shrink-display-left', `${left * scaleX}px`)
+  shrink.zoneEl.style.setProperty('--sim-shrink-display-top', `${top * scaleY}px`)
+  shrink.zoneEl.style.setProperty('--sim-shrink-display-width', `${zoneWidth * scaleX}px`)
+  shrink.zoneEl.style.setProperty('--sim-shrink-display-height', `${zoneHeight * scaleY}px`)
+
   shrink.rect = { left, top, right: left + zoneWidth, bottom: top + zoneHeight }
 
   simRoundPlayers.forEach((player) => {
@@ -16658,7 +16920,12 @@ if (rouletteStageZoomBackdrop) {
 }
 
 if (simArenaZoomBtn) {
-  simArenaZoomBtn.addEventListener('click', toggleSimArenaZoom)
+  simArenaZoomBtn.addEventListener('pointerdown', stopZoomControlEvent)
+  simArenaZoomBtn.addEventListener('pointerup', stopZoomControlEvent)
+  simArenaZoomBtn.addEventListener('click', (event) => {
+    event.stopPropagation()
+    toggleSimArenaZoom()
+  })
 }
 
 if (simArenaZoomBackdrop) {
@@ -16985,6 +17252,7 @@ updateSimArenaZoomButton()
 updateRouletteStageZoomButton()
 updateOrientationGate()
 initCustomCursor()
+installEmojiFallbacks()
 
 setGame1InputLock(false)
 setGame1ShuffleLock(false)

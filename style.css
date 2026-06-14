@@ -666,7 +666,8 @@ input:disabled {
 .game-canvas-wrap,
 .race-track-wrap,
 .sim-arena-wrap,
-.sim-arena-zoom-stage {
+.sim-arena-zoom-stage,
+#game5Screen .roulette-stage-card {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
@@ -683,7 +684,9 @@ input:disabled {
 .game-canvas-wrap.is-fast-forward-blocked,
 .race-track-wrap.is-fast-forward-blocked,
 .sim-arena-wrap.is-fast-forward-blocked,
-.sim-arena-zoom-stage.is-fast-forward-blocked {
+.sim-arena-zoom-stage.is-fast-forward-blocked,
+#game5Screen .roulette-stage-card.is-fast-forwarding,
+#game5Screen .roulette-stage-card.is-fast-forward-blocked {
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.48),
     0 0 0 4px rgba(255, 225, 149, 0.42),
@@ -697,7 +700,9 @@ input:disabled {
 .game-canvas-wrap.is-fast-forward-blocked::after,
 .race-track-wrap.is-fast-forward-blocked::after,
 .sim-arena-wrap.is-fast-forward-blocked::after,
-.sim-arena-zoom-stage.is-fast-forward-blocked::after {
+.sim-arena-zoom-stage.is-fast-forward-blocked::after,
+#game5Screen .roulette-stage-card.is-fast-forwarding::after,
+#game5Screen .roulette-stage-card.is-fast-forward-blocked::after {
   content: attr(data-fast-forward-label);
   position: absolute;
   top: 12px;
@@ -2727,7 +2732,7 @@ body.orientation-blocked .orientation-lock-overlay {
 }
 
 .battle-slot.is-ghost::before {
-  content: '🂠';
+  content: '□';
   font-size: 1.8rem;
   color: rgba(142, 118, 102, 0.24);
 }
@@ -4567,7 +4572,9 @@ body.sim-arena-zoom-lock {
 }
 
 .sim-arena-zoom-stage.is-fast-forwarding,
-.sim-arena-zoom-stage.is-fast-forward-blocked {
+.sim-arena-zoom-stage.is-fast-forward-blocked,
+#game5Screen .roulette-stage-card.is-fast-forwarding,
+#game5Screen .roulette-stage-card.is-fast-forward-blocked {
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.28);
 }
 
@@ -12311,7 +12318,9 @@ body.app-active-game .orientation-lock-overlay {
   .game-canvas-wrap.is-fast-forward-blocked::after,
   .race-track-wrap.is-fast-forward-blocked::after,
   .sim-arena-wrap.is-fast-forward-blocked::after,
-  .sim-arena-zoom-stage.is-fast-forward-blocked::after {
+  .sim-arena-zoom-stage.is-fast-forward-blocked::after,
+#game5Screen .roulette-stage-card.is-fast-forwarding::after,
+#game5Screen .roulette-stage-card.is-fast-forward-blocked::after {
     animation: none !important;
   }
 }
@@ -14929,6 +14938,7 @@ html.theme-dark .stock-main-header {
 }
 
 #game5Screen .roulette-stage-card {
+  position: relative;
   padding: 18px;
 }
 
@@ -27036,4 +27046,173 @@ html.theme-dark #game2Screen .race-horse .horse-name {
 
 html.theme-dark #game2Screen .race-horse .horse-status {
   color: rgba(15, 27, 52, 0.72) !important;
+}
+
+/* =========================================================
+   FINAL HOTFIX 2026-06-14
+   볼 배틀 크게보기 레이아웃 수정
+   - 기존 transform 확대 방식 때문에 화면 비율/클리핑이 어긋나던 문제를 제거한다.
+   - 경마/러시안 룰렛 크게보기처럼 카드 자체를 고정 확대하고, 경기장은 카드 내부를 100% 채운다.
+   - 버튼 클릭이 빨리감기/경기장 이벤트에 섞이지 않도록 script.js에서도 이벤트 전파를 차단했다.
+========================================================= */
+body.sim-arena-zoom-lock {
+  overflow: hidden !important;
+}
+
+#game4Screen .sim-card-screen.sim-arena-zoomed {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-card {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  z-index: 96 !important;
+  width: min(96vw, 1520px) !important;
+  height: min(92vh, 980px) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 18px 18px 16px !important;
+  transform: translate(-50%, -50%) !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: 14px !important;
+  overflow: hidden !important;
+  border-radius: 28px !important;
+  background: #fffaf6 !important;
+  box-shadow: 0 18px 38px rgba(73, 54, 45, 0.14) !important;
+}
+
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-panel-head {
+  position: relative !important;
+  z-index: 3 !important;
+  margin: 0 !important;
+  align-items: flex-start !important;
+}
+
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-panel-head-actions,
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-zoom-btn {
+  position: relative !important;
+  z-index: 130 !important;
+  pointer-events: auto !important;
+}
+
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-zoom-stage {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: block !important;
+  overflow: hidden !important;
+  border-radius: 24px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-wrap {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  transform: none !important;
+  transform-origin: center center !important;
+  flex: none !important;
+  border-radius: 24px !important;
+}
+
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-wrap canvas,
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-health-overlay,
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-shrink-zone {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+}
+
+#game4Screen .sim-arena-zoom-backdrop {
+  background: rgba(255, 250, 244, 0.04) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+#game4Screen .sim-arena-zoom-backdrop.is-active {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+html.theme-dark #game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-card {
+  background:
+    radial-gradient(circle at top left, rgba(99, 153, 202, 0.18), transparent 32%),
+    linear-gradient(180deg, rgba(24, 35, 50, 0.98) 0%, rgba(16, 24, 36, 0.98) 100%) !important;
+  border-color: rgba(160, 190, 220, 0.32) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42) !important;
+}
+
+html.theme-dark #game4Screen .sim-arena-zoom-backdrop {
+  background: rgba(7, 12, 22, 0.04) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+@media (max-width: 900px) {
+  #game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-card {
+    width: calc(100vw - 14px) !important;
+    height: calc(100vh - 14px) !important;
+    padding: 14px !important;
+    border-radius: 24px !important;
+  }
+
+  #game4Screen .sim-card-screen.sim-arena-zoomed .sim-panel-head {
+    gap: 10px !important;
+  }
+}
+
+
+/* =========================================================
+   FINAL HOTFIX 2026-06-14-2
+   볼 배틀 크게보기 단순 확대
+   - 경기장 비율을 원본 Matter.js 렌더 비율 그대로 유지한다.
+   - 캔버스를 가로/세로 따로 늘리지 않고, JS가 계산한 동일 배율 크기로만 표시한다.
+   - 줄어드는 경기장 빨간선은 확대 배율에 맞춘 CSS 변수로 표시한다.
+========================================================= */
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-zoom-stage {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-wrap {
+  flex: 0 0 auto !important;
+  width: var(--sim-arena-display-width, var(--sim-arena-base-width, 900px)) !important;
+  height: var(--sim-arena-display-height, var(--sim-arena-base-height, 460px)) !important;
+  aspect-ratio: var(--sim-arena-aspect, 900 / 460) !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  transform: none !important;
+  transform-origin: center center !important;
+}
+
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-wrap canvas,
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-health-overlay {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+}
+
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-shrink-zone {
+  left: var(--sim-shrink-display-left, 0px) !important;
+  top: var(--sim-shrink-display-top, 0px) !important;
+  width: var(--sim-shrink-display-width, 100%) !important;
+  height: var(--sim-shrink-display-height, 100%) !important;
+  border-radius: 22px !important;
 }
