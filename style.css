@@ -27635,3 +27635,542 @@ body.game2-mobile-layout #game2Screen .race-horse .horse-emoji {
     display: none !important;
   }
 }
+
+/* =========================
+   hidden hell mode easter egg · HQ CRT version
+   Trigger: theme button 6 taps within 10s
+========================= */
+html.hell-mode {
+  color-scheme: dark;
+  --bg: #070808;
+  --bg2: #030404;
+  --card: rgba(28, 29, 28, 0.91);
+  --card-strong: rgba(36, 37, 35, 0.96);
+  --brown: #ebe7dc;
+  --soft-brown: #e4ded0;
+  --pink: #7b2d32;
+  --mint: #6b7769;
+  --sky: #697078;
+  --lavender: #77717c;
+  --yellow: #b7ad8c;
+  --peach: #8e6b56;
+  --shadow: 0 18px 42px rgba(0, 0, 0, 0.74);
+  --hell-bg-0: #030404;
+  --hell-bg-1: #090a0a;
+  --hell-bg-2: #121313;
+  --hell-panel: rgba(29, 30, 29, 0.94);
+  --hell-panel-2: rgba(43, 43, 40, 0.96);
+  --hell-line: rgba(179, 176, 164, 0.24);
+  --hell-line-strong: rgba(214, 207, 188, 0.38);
+  --hell-text: #f0eee6;
+  --hell-text-2: #d2ccc0;
+  --hell-text-3: #aaa294;
+  --hell-red: #a63d3b;
+  --hell-red-soft: rgba(166, 61, 59, 0.34);
+  --hell-green-sick: #81896d;
+  --hell-glow: rgba(211, 205, 185, 0.12);
+}
+
+html.hell-mode,
+html.hell-mode * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M4 2 L25 16 L16 18 L21 29 L16 31 L11 20 L4 27 Z' fill='%23d7d4ca' stroke='%23060606' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M7 6 L18 14 L13 15 L15 20 L12 21 L10 16 L7 19 Z' fill='%237b2d32' opacity='.95'/%3E%3Ccircle cx='10' cy='10' r='2.4' fill='%23f0eee6'/%3E%3C/svg%3E") 5 4, crosshair !important;
+}
+
+html.hell-mode body {
+  background:
+    radial-gradient(ellipse 48% 34% at 50% 0%, rgba(155, 154, 142, 0.32), transparent 64%),
+    radial-gradient(ellipse 64% 54% at 50% 34%, rgba(92, 93, 88, 0.28), transparent 68%),
+    radial-gradient(circle at 16% 18%, rgba(129, 137, 109, 0.1), transparent 29%),
+    radial-gradient(circle at 86% 78%, rgba(123, 45, 50, 0.15), transparent 32%),
+    linear-gradient(180deg, #0b0c0c 0%, #050606 52%, #020303 100%) !important;
+  color: var(--hell-text) !important;
+  text-rendering: geometricPrecision;
+  animation: hellRoomLightBreath 7.5s ease-in-out infinite;
+}
+
+html.hell-mode::before,
+html.hell-mode::after,
+html.hell-mode body::before,
+html.hell-mode body::after {
+  pointer-events: none;
+}
+
+html.hell-mode::before {
+  content: '';
+  position: fixed;
+  inset: -8%;
+  z-index: 64;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.055) 0px, rgba(255,255,255,0.055) 1px, transparent 1px, transparent 3px),
+    repeating-linear-gradient(90deg, rgba(166,61,59,0.035) 0px, rgba(166,61,59,0.035) 1px, transparent 1px, transparent 17px),
+    radial-gradient(circle at 50% 50%, transparent 0 47%, rgba(0,0,0,0.42) 74%, rgba(0,0,0,0.82) 100%);
+  opacity: 0.36;
+  mix-blend-mode: screen;
+  animation: hellVhsStatic 0.88s steps(5, end) infinite;
+}
+
+html.hell-mode::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  background:
+    linear-gradient(90deg, rgba(166,61,59,0.055), transparent 16%, transparent 84%, rgba(129,137,109,0.052)),
+    repeating-linear-gradient(180deg, rgba(255,255,255,0.042) 0px, rgba(255,255,255,0.042) 1px, rgba(0,0,0,0.12) 2px, transparent 4px),
+    radial-gradient(ellipse 88% 72% at 50% 44%, rgba(255,255,255,0.06), transparent 58%),
+    radial-gradient(ellipse 112% 95% at 50% 50%, transparent 44%, rgba(0,0,0,0.42) 76%, rgba(0,0,0,0.88) 100%);
+  opacity: 0.54;
+  border-radius: 6.5% / 4.8%;
+  box-shadow:
+    inset 0 0 64px rgba(0,0,0,0.48),
+    inset 0 0 150px rgba(0,0,0,0.72),
+    inset 0 0 0 3px rgba(255,255,255,0.025);
+  animation: hellCrtRoll 4.8s linear infinite;
+}
+
+html.hell-mode body::before {
+  content: '';
+  position: fixed;
+  inset: 10px;
+  z-index: 63;
+  border-radius: 7% / 5%;
+  background:
+    radial-gradient(ellipse 78% 60% at 50% 42%, rgba(218,213,196,0.095), transparent 62%),
+    radial-gradient(ellipse 98% 86% at 50% 50%, transparent 45%, rgba(0,0,0,0.36) 78%, rgba(0,0,0,0.68) 100%);
+  box-shadow:
+    inset 0 0 72px rgba(255,255,255,0.035),
+    inset 0 0 170px rgba(0,0,0,0.8),
+    0 0 0 9999px rgba(0,0,0,0.04);
+  transform: translateZ(0);
+}
+
+html.hell-mode body::after {
+  content: '지옥 모드';
+  position: fixed;
+  left: 22px;
+  top: 22px;
+  z-index: 72;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(40, 41, 39, 0.94), rgba(15, 16, 16, 0.94));
+  border: 1px solid rgba(224, 215, 192, 0.36);
+  box-shadow:
+    0 12px 28px rgba(0,0,0,0.52),
+    0 0 28px rgba(166,61,59,0.2),
+    inset 0 0 18px rgba(129,137,109,0.08);
+  color: #f1eee4;
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+  text-shadow:
+    1px 0 rgba(166,61,59,0.72),
+    -1px 0 rgba(129,137,109,0.44),
+    0 0 12px rgba(255,255,255,0.14);
+  animation: hellBadgeTwitch 2.4s steps(2, end) infinite;
+}
+
+html.hell-mode.hell-glitch-hit::before {
+  opacity: 0.62;
+  animation-duration: 0.16s;
+}
+
+html.hell-mode.hell-glitch-hit::after {
+  opacity: 0.72;
+  background-position: 7px -11px, 0 13px, 0 0, 0 0;
+}
+
+html.hell-mode.hell-glitch-deep body {
+  background:
+    radial-gradient(ellipse 48% 34% at 50% 0%, rgba(190, 187, 169, 0.38), transparent 64%),
+    radial-gradient(ellipse 64% 54% at 50% 34%, rgba(92, 93, 88, 0.32), transparent 68%),
+    radial-gradient(circle at 28% 20%, rgba(166, 61, 59, 0.20), transparent 34%),
+    linear-gradient(180deg, #0d0e0e 0%, #030404 52%, #010202 100%) !important;
+}
+
+html.hell-mode .background-deco {
+  opacity: 0.18 !important;
+  filter: blur(22px) grayscale(1) saturate(0.45) !important;
+  mix-blend-mode: screen;
+}
+
+html.hell-mode .app {
+  filter: none !important;
+  transform: none !important;
+  isolation: isolate;
+}
+
+html.hell-mode .screen.active {
+  position: relative;
+}
+
+html.hell-mode.hell-glitch-hit .screen.active {
+  text-shadow:
+    1px 0 rgba(166,61,59,0.28),
+    -1px 0 rgba(129,137,109,0.22);
+}
+
+html.hell-mode .card,
+html.hell-mode .controls-wrap,
+html.hell-mode .scoreboard-card,
+html.hell-mode .game-board-card,
+html.hell-mode .race-panel,
+html.hell-mode .battle-table-card,
+html.hell-mode .battle-panel,
+html.hell-mode .sim-setup-card,
+html.hell-mode .sim-arena-card,
+html.hell-mode .sim-battle-summary-card,
+html.hell-mode .naval-board-card,
+html.hell-mode .stock-setup-card,
+html.hell-mode .stock-live-card,
+html.hell-mode .stock-panel,
+html.hell-mode .stock-market-preview-card,
+html.hell-mode .stock-allocation-card,
+html.hell-mode .game-sidebar,
+html.hell-mode .race-sidebar,
+html.hell-mode .battle-sidebar,
+html.hell-mode .sim-sidebar,
+html.hell-mode .naval-sidebar,
+html.hell-mode .stock-sidebar,
+html.hell-mode .popup,
+html.hell-mode .orientation-lock-card {
+  background:
+    radial-gradient(ellipse 72% 52% at 50% -14%, rgba(218,213,196,0.09), transparent 68%),
+    linear-gradient(180deg, rgba(45,46,43,0.96), rgba(20,21,20,0.98)) !important;
+  border-color: var(--hell-line) !important;
+  color: var(--hell-text) !important;
+  box-shadow:
+    0 18px 44px rgba(0,0,0,0.64),
+    0 0 0 1px rgba(255,255,255,0.025),
+    inset 0 0 0 1px rgba(255,255,255,0.026),
+    inset 0 0 28px rgba(0,0,0,0.32) !important;
+}
+
+html.hell-mode .main-card,
+html.hell-mode .menu-card,
+html.hell-mode .luck-card,
+html.hell-mode .physical-card,
+html.hell-mode .game-card {
+  animation: none !important;
+}
+
+html.hell-mode h1,
+html.hell-mode h2,
+html.hell-mode h3,
+html.hell-mode .sidebar-title,
+html.hell-mode .game-item h3,
+html.hell-mode .scoreboard-head h3,
+html.hell-mode .game-board-head h3,
+html.hell-mode .race-panel-head h3,
+html.hell-mode .battle-panel-head h3,
+html.hell-mode .sim-panel-head h3,
+html.hell-mode .naval-panel-head h3,
+html.hell-mode .stock-panel-head h3,
+html.hell-mode .popup h3 {
+  color: var(--hell-text) !important;
+  text-shadow:
+    1px 0 rgba(166,61,59,0.26),
+    -1px 0 rgba(129,137,109,0.18),
+    0 0 20px rgba(226,220,202,0.10) !important;
+}
+
+html.hell-mode .sub-text,
+html.hell-mode .helper-text,
+html.hell-mode .status-text,
+html.hell-mode #totalInfo,
+html.hell-mode .game-item p,
+html.hell-mode .popup-message,
+html.hell-mode .horse-status,
+html.hell-mode .battle-rank-formula,
+html.hell-mode .battle-player-sub,
+html.hell-mode .sim-player-sub,
+html.hell-mode .game-board-head span,
+html.hell-mode .orientation-lock-card p,
+html.hell-mode .race-ranking-item div,
+html.hell-mode .stock-desc,
+html.hell-mode .stock-board-note,
+html.hell-mode .naval-board-meta,
+html.hell-mode .naval-board-meta span {
+  color: var(--hell-text-2) !important;
+}
+
+html.hell-mode .small-badge,
+html.hell-mode .legend-chip,
+html.hell-mode .race-ranking-item,
+html.hell-mode .battle-ranking-item,
+html.hell-mode .battle-ranking-empty,
+html.hell-mode .sim-empty-state,
+html.hell-mode .naval-log-item,
+html.hell-mode .naval-ranking-item,
+html.hell-mode .naval-player-chip,
+html.hell-mode .naval-elimination-item,
+html.hell-mode .battle-result-pill,
+html.hell-mode .battle-final-rank,
+html.hell-mode .battle-final-result-box,
+html.hell-mode .sim-phase-badge,
+html.hell-mode .stock-player-chip,
+html.hell-mode .stock-summary-card,
+html.hell-mode .stock-allocation-row,
+html.hell-mode .stock-ranking-item {
+  background:
+    linear-gradient(180deg, rgba(56,57,53,0.96), rgba(25,26,25,0.96)) !important;
+  color: var(--hell-text) !important;
+  border-color: rgba(214, 207, 188, 0.20) !important;
+  box-shadow:
+    0 8px 20px rgba(0,0,0,0.34),
+    inset 0 0 18px rgba(255,255,255,0.018) !important;
+}
+
+html.hell-mode .game-item,
+html.hell-mode .game-item.game-launch,
+html.hell-mode .menu-btn,
+html.hell-mode .action-btn,
+html.hell-mode .back-btn,
+html.hell-mode .popup-btn,
+html.hell-mode .sim-info-btn,
+html.hell-mode .sim-arena-zoom-btn,
+html.hell-mode .drawer-toggle-btn,
+html.hell-mode .utility-btn,
+html.hell-mode .utility-volume-panel,
+html.hell-mode .stock-tab-btn,
+html.hell-mode .stock-action-btn {
+  background:
+    radial-gradient(ellipse 72% 80% at 50% 0%, rgba(235,230,210,0.07), transparent 65%),
+    linear-gradient(180deg, rgba(48,49,46,0.98), rgba(18,19,18,0.99)) !important;
+  color: var(--hell-text) !important;
+  border-color: rgba(214, 207, 188, 0.28) !important;
+  box-shadow:
+    0 12px 28px rgba(0,0,0,0.48),
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    inset 0 0 18px rgba(0,0,0,0.24) !important;
+}
+
+html.hell-mode .game-item:hover,
+html.hell-mode .menu-btn:hover,
+html.hell-mode .action-btn:hover,
+html.hell-mode .back-btn:hover,
+html.hell-mode .popup-btn:hover,
+html.hell-mode .utility-btn:hover {
+  border-color: var(--hell-line-strong) !important;
+  box-shadow:
+    0 14px 30px rgba(0,0,0,0.55),
+    0 0 22px rgba(166,61,59,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.05) !important;
+}
+
+html.hell-mode .utility-btn.is-hell-locked,
+html.hell-mode .volume-range.is-hell-locked {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M4 2 L25 16 L16 18 L21 29 L16 31 L11 20 L4 27 Z' fill='%23d7d4ca' stroke='%23060606' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M7 6 L18 14 L13 15 L15 20 L12 21 L10 16 L7 19 Z' fill='%237b2d32' opacity='.95'/%3E%3Ccircle cx='10' cy='10' r='2.4' fill='%23f0eee6'/%3E%3C/svg%3E") 5 4, not-allowed !important;
+}
+
+html.hell-mode .utility-theme-btn.is-hell-locked,
+html.hell-mode .utility-audio-btn.is-hell-locked {
+  animation: hellLockedPulse 1.45s steps(2, end) infinite;
+}
+
+html.hell-mode .main-btn,
+html.hell-mode .action-btn.primary {
+  background:
+    linear-gradient(135deg, #6b2427 0%, #252624 48%, #5c6250 100%) !important;
+  color: #fff8ed !important;
+  border-color: rgba(235, 226, 204, 0.34) !important;
+  text-shadow: 0 0 12px rgba(0,0,0,0.78);
+}
+
+html.hell-mode .action-btn.soft,
+html.hell-mode .action-btn.secondary {
+  background:
+    linear-gradient(180deg, rgba(62,63,58,0.98), rgba(27,28,27,0.98)) !important;
+}
+
+html.hell-mode .game-num,
+html.hell-mode .battle-rank-num {
+  background:
+    radial-gradient(circle at 36% 28%, rgba(240,238,226,0.42), transparent 28%),
+    conic-gradient(from 42deg, #5b6050, #252624, #6b2427, #191a19, #5b6050) !important;
+  color: #fff8ed !important;
+  box-shadow:
+    0 0 0 1px rgba(235,226,204,0.18),
+    0 0 18px rgba(0,0,0,0.42) !important;
+}
+
+html.hell-mode .menu-btn .emoji {
+  background: radial-gradient(circle at 34% 28%, rgba(235,232,219,0.86), rgba(88,89,82,0.45) 56%, rgba(26,27,26,0.72) 100%) !important;
+  border-color: rgba(235,226,204,0.28) !important;
+  text-shadow: 1px 0 rgba(166,61,59,0.5), -1px 0 rgba(129,137,109,0.42), 0 0 12px rgba(255,255,255,0.18) !important;
+}
+
+html.hell-mode input,
+html.hell-mode input:disabled,
+html.hell-mode textarea,
+html.hell-mode select {
+  background: rgba(10,11,11,0.96) !important;
+  color: var(--hell-text) !important;
+  border-color: rgba(214,207,188,0.24) !important;
+  box-shadow:
+    inset 0 0 20px rgba(0,0,0,0.36),
+    0 0 0 1px rgba(255,255,255,0.018) !important;
+}
+
+html.hell-mode input:focus,
+html.hell-mode textarea:focus {
+  border-color: rgba(232,226,207,0.48) !important;
+  box-shadow:
+    0 0 0 5px rgba(166,61,59,0.14),
+    inset 0 0 20px rgba(0,0,0,0.36) !important;
+}
+
+html.hell-mode .game-canvas-wrap,
+html.hell-mode .race-track-wrap,
+html.hell-mode .sim-arena-wrap,
+html.hell-mode .sim-arena-zoom-stage,
+html.hell-mode .naval-board-wrap,
+html.hell-mode .battle-table-card,
+html.hell-mode .game-board-card,
+html.hell-mode .stock-chart-shell,
+html.hell-mode .stock-live-board {
+  background:
+    radial-gradient(ellipse 70% 54% at 50% 28%, rgba(210,206,188,0.10), transparent 66%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 5px),
+    linear-gradient(180deg, #1f201e, #090a0a) !important;
+  border-color: rgba(214, 207, 188, 0.24) !important;
+  box-shadow:
+    inset 0 0 80px rgba(0,0,0,0.34),
+    0 16px 34px rgba(0,0,0,0.48) !important;
+}
+
+html.hell-mode .race-lane {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 24px, rgba(0,0,0,0.08) 24px 48px),
+    linear-gradient(180deg, #34352f, #171817) !important;
+  border-color: rgba(214,207,188,0.22) !important;
+}
+
+html.hell-mode .race-start-line,
+html.hell-mode .race-finish-line {
+  filter: grayscale(1) contrast(1.08) brightness(0.82);
+}
+
+html.hell-mode .race-horse,
+html.hell-mode .battle-row,
+html.hell-mode .sim-player-row,
+html.hell-mode .battle-slot,
+html.hell-mode .battle-card-front,
+html.hell-mode .sim-stat-card-front,
+html.hell-mode .slot-box,
+html.hell-mode .stock-card,
+html.hell-mode .stock-investment-row {
+  border-color: rgba(236,229,207,0.20) !important;
+  color: var(--hell-text) !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.34) !important;
+}
+
+html.hell-mode .horse-name,
+html.hell-mode .battle-player-name,
+html.hell-mode .sim-player-name,
+html.hell-mode .battle-rank-name,
+html.hell-mode .race-lane-label,
+html.hell-mode .slot-name,
+html.hell-mode .slot-meta,
+html.hell-mode .stock-player-name,
+html.hell-mode .stock-ranking-name {
+  color: #f2efe6 !important;
+}
+
+html.hell-mode .popup-overlay {
+  background: rgba(0, 0, 0, 0.76) !important;
+}
+
+html.hell-mode .volume-range:disabled {
+  opacity: 0.9;
+  filter: grayscale(1) brightness(0.78);
+}
+
+html.hell-mode .home-qr-card {
+  background:
+    linear-gradient(180deg, rgba(41,42,39,0.94), rgba(13,14,14,0.96)) !important;
+  border-color: rgba(214,207,188,0.30) !important;
+}
+
+html.hell-mode .home-qr-frame {
+  background: #d6d2c5 !important;
+  border-color: rgba(0,0,0,0.45) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.34),
+    0 0 24px rgba(166,61,59,0.16) !important;
+}
+
+html.hell-mode .home-qr-img {
+  filter: grayscale(1) sepia(0.18) contrast(1.16) brightness(0.94);
+}
+
+html.hell-mode .home-qr-title,
+html.hell-mode .home-qr-url,
+html.hell-mode .home-qr-help {
+  color: var(--hell-text) !important;
+}
+
+html.hell-mode .bear-find-poster,
+html.hell-mode .bear-find-video,
+html.hell-mode .bear-find-still-frame {
+  filter: grayscale(0.82) contrast(1.05) brightness(0.84) sepia(0.12);
+}
+
+html.hell-mode .popup.fast-forward-guide-popup .popup-message,
+html.hell-mode .popup.game-info-popup .popup-message,
+html.hell-mode .popup.battle-final-popup .popup-message {
+  scrollbar-color: rgba(214,207,188,0.34) rgba(0,0,0,0.22);
+}
+
+@keyframes hellRoomLightBreath {
+  0%, 100% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+  45% { background-position: 0 8px, -10px 0, 4px -2px, -5px 4px, 0 0; }
+  63% { background-position: 0 -4px, 7px 0, -2px 4px, 4px -3px, 0 0; }
+}
+
+@keyframes hellVhsStatic {
+  0% { transform: translate3d(0,0,0); opacity: 0.25; }
+  20% { transform: translate3d(-8px,5px,0); opacity: 0.40; }
+  45% { transform: translate3d(6px,-3px,0); opacity: 0.31; }
+  70% { transform: translate3d(-3px,8px,0); opacity: 0.48; }
+  100% { transform: translate3d(0,0,0); opacity: 0.28; }
+}
+
+@keyframes hellCrtRoll {
+  0% { background-position: 0 0, 0 0, 0 0, 0 0; }
+  100% { background-position: 0 0, 0 72px, 0 0, 0 0; }
+}
+
+@keyframes hellBadgeTwitch {
+  0%, 88%, 100% { transform: translate(0, 0) skewX(0deg); }
+  9% { transform: translate(1px, -1px) skewX(-3deg); }
+  12% { transform: translate(-2px, 1px) skewX(4deg); }
+  31% { transform: translate(1px, 0) skewX(0deg); }
+}
+
+@keyframes hellLockedPulse {
+  0%, 100% {
+    box-shadow:
+      0 12px 28px rgba(0,0,0,0.48),
+      0 0 12px rgba(166,61,59,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.035) !important;
+  }
+  50% {
+    box-shadow:
+      0 12px 28px rgba(0,0,0,0.54),
+      0 0 26px rgba(166,61,59,0.26),
+      inset 0 0 24px rgba(129,137,109,0.075) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  html.hell-mode body::after {
+    left: 12px;
+    top: 12px;
+    padding: 8px 12px;
+    font-size: 0.86rem;
+  }
+
+  html.hell-mode::after {
+    border-radius: 8% / 5%;
+  }
+}

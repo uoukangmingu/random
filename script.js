@@ -446,6 +446,12 @@ const desktopPrevStepBtn = document.getElementById('desktopPrevStepBtn')
 const mobilePrevStepBtn = document.getElementById('mobilePrevStepBtn')
 
 const THEME_STORAGE_KEY = 'roulette-theme-preference'
+const HORROR_BGM_SESSION_KEY = 'roulette-horror-bgm-easter-egg'
+const HELL_MODE_CLASS = 'hell-mode'
+const HORROR_BGM_TAP_WINDOW_MS = 10000
+const HORROR_BGM_TAP_THRESHOLD = 6
+const HELL_MODE_MIN_BGM_VOLUME = 0.68
+const HELL_MODE_MIN_SFX_VOLUME = 0.92
 
 document.body.classList.toggle('home-screen-mode', screens.home?.classList.contains('active'))
 document.body.classList.toggle('menu-screen-mode', screens.menu?.classList.contains('active'))
@@ -1600,6 +1606,20 @@ function saveVolumePreference(storageKey, value) {
   } catch (error) {}
 }
 
+function getSavedHorrorBgmEasterEggPreference() {
+  try {
+    sessionStorage.removeItem(HORROR_BGM_SESSION_KEY)
+  } catch (error) {}
+  return false
+}
+
+function saveHorrorBgmEasterEggPreference(enabled) {
+  // 지옥 모드는 새로고침하면 반드시 풀려야 하므로 저장하지 않는다.
+  try {
+    sessionStorage.removeItem(HORROR_BGM_SESSION_KEY)
+  } catch (error) {}
+}
+
 const siteAudio = {
   ctx: null,
   masterGain: null,
@@ -1618,7 +1638,15 @@ const siteAudio = {
   lastHoverTarget: null,
   sfxLastAt: Object.create(null),
   currentSfxMix: 1,
-  bgmDuckTimer: null
+  bgmDuckTimer: null,
+  horrorMode: getSavedHorrorBgmEasterEggPreference(),
+  horrorThemeToggleTapTimes: [],
+  horrorProfileCache: new Map(),
+  horrorStingerTimer: null,
+  horrorPulseTimer: null,
+  horrorVisualGlitchTimer: null,
+  horrorTempoState: 'drag',
+  horrorTempoChangeAt: 0
 }
 
 const SFX_THROTTLE_MS = {
@@ -1863,6 +1891,317 @@ const SCREEN_BGM_PROFILES = {
   }
 }
 
+
+function getHorrorBgmProfile(profile) {
+  if (!profile) return profile
+  if (profile.horror) return profile
+
+  const cacheKey = profile.key || JSON.stringify(profile.notes || [])
+  if (siteAudio.horrorProfileCache.has(cacheKey)) {
+    return siteAudio.horrorProfileCache.get(cacheKey)
+  }
+
+  const baseNotes = Array.isArray(profile.notes) && profile.notes.length
+    ? profile.notes
+    : [220, 207.65, 196, 174.61, 155.56]
+
+  const wrongIntervals = [0.1875, 0.229, 0.25, 0.265, 0.318, 0.354, 0.414, 0.471, 0.493, 0.532, 0.707, 1.029]
+  const horrorNotes = baseNotes.map((note, index) => {
+    const interval = wrongIntervals[(index * 5 + baseNotes.length) % wrongIntervals.length]
+    const tapeDrag = index % 3 === 0 ? 0.931 : index % 3 === 1 ? 1.071 : 0.982
+    return clampValue(note * interval * tapeDrag, 18.5, 520)
+  })
+
+  const sourceChords = Array.isArray(profile.chords) && profile.chords.length
+    ? profile.chords
+    : [[82.41, 116.54], [65.41, 92.5], [55, 77.78]]
+
+  const horrorChords = sourceChords.map((chord, chordIndex) => {
+    const seed = Array.isArray(chord) && chord[0] ? chord[0] : 76
+    const root = clampValue(seed * (chordIndex % 2 ? 0.22 : 0.28), 18.5, 96)
+    const flatSecond = root * 1.033
+    const tritone = root * 1.4142
+    const rottenFifth = root * 1.486
+    const detunedOctave = root * 2.018
+    return [root, flatSecond, tritone, rottenFifth, detunedOctave]
+      .map((freq, index) => clampValue(freq * (index % 2 ? 0.974 : 1.019), 18.5, 360))
+  })
+
+  const horrorProfile = {
+    ...profile,
+    key: `${profile.key || 'bgm'}:hell-hq`,
+    interval: Math.round(clampValue((profile.interval || 780) * 0.82, 240, 820)),
+    gain: Math.min((profile.gain || 0.06) * 0.78, 0.058),
+    wave: 'sawtooth',
+    notes: horrorNotes,
+    chords: horrorChords,
+    chordEvery: Math.max(2, Math.min(3, profile.chordEvery || 3)),
+    horror: true,
+    detunePattern: [-211, 97, -144, 263, -318, 41, 188, -89, 376, -251, 129, -33],
+    scrapePattern: [118, 147, 193, 271, 333, 419, 666, 880, 1110, 1440],
+    tempoPattern: [0.16, 0.42, 1.85, 0.08, 0.72, 2.65, 0.28, 1.18]
+  }
+
+  siteAudio.horrorProfileCache.set(cacheKey, horrorProfile)
+  return horrorProfile
+}
+
+function getActiveBgmProfile(profile) {
+  return siteAudio.horrorMode ? getHorrorBgmProfile(profile) : profile
+}
+
+function syncBgmFilterForMode() {
+  if (!siteAudio.bgmFilter) return
+
+  const ctx = siteAudio.ctx
+  const now = ctx?.currentTime || 0
+  const isHell = Boolean(siteAudio.horrorMode)
+  const targetType = isHell ? 'bandpass' : 'lowpass'
+  const targetFrequency = isHell ? 620 : 3400
+  const targetQ = isHell ? 7.8 : 0.7
+
+  try {
+    siteAudio.bgmFilter.type = targetType
+    siteAudio.bgmFilter.frequency.cancelScheduledValues(now)
+    siteAudio.bgmFilter.Q.cancelScheduledValues(now)
+    siteAudio.bgmFilter.frequency.setTargetAtTime(targetFrequency, now, 0.055)
+    siteAudio.bgmFilter.Q.setTargetAtTime(targetQ, now, 0.055)
+  } catch (error) {
+    siteAudio.bgmFilter.type = targetType
+    siteAudio.bgmFilter.frequency.value = targetFrequency
+    siteAudio.bgmFilter.Q.value = targetQ
+  }
+}
+
+function playHorrorBgmUnlockCue() {
+  if (!siteAudio.enabled) return
+  const ctx = ensureAudioContext()
+  if (!ctx) return
+
+  const output = siteAudio.sfxGain || siteAudio.bgmGain
+  playTone(46.25, { duration: 2.4, gain: 0.095, type: 'sawtooth', destination: output, detune: -280, slideTo: 24.5, attack: 0.04, release: 2.25 })
+  playTone(92.5, { duration: 1.9, gain: 0.082, type: 'square', destination: output, delay: 0.015, detune: 193, slideTo: 41.2, attack: 0.02, release: 1.75 })
+  playTone(277.18, { duration: 1.65, gain: 0.052, type: 'sawtooth', destination: output, delay: 0.07, detune: -340, slideTo: 88, attack: 0.014, release: 1.48 })
+  playNoise({ duration: 1.7, gain: 0.09, delay: 0.03, filterFreq: 430, filterType: 'bandpass', filterQ: 16, destination: output })
+  playNoise({ duration: 0.42, gain: 0.07, delay: 0.44, filterFreq: 3200, filterType: 'highpass', filterQ: 0.8, destination: output })
+  playHellModeStinger({ immediate: true, violent: true })
+}
+
+function forceHellModeAudioLock(options = {}) {
+  if (!siteAudio.horrorMode) return
+
+  const { restart = false } = options
+  siteAudio.enabled = true
+  siteAudio.bgmVolume = Math.max(siteAudio.bgmVolume, HELL_MODE_MIN_BGM_VOLUME)
+  siteAudio.sfxVolume = Math.max(siteAudio.sfxVolume, HELL_MODE_MIN_SFX_VOLUME)
+
+  try {
+    localStorage.setItem(AUDIO_STORAGE_KEY, 'on')
+  } catch (error) {}
+
+  if (siteAudio.bgmGain && siteAudio.ctx) {
+    siteAudio.bgmGain.gain.setTargetAtTime(siteAudio.bgmVolume, siteAudio.ctx.currentTime, 0.018)
+  }
+  if (siteAudio.sfxGain && siteAudio.ctx) {
+    siteAudio.sfxGain.gain.setTargetAtTime(siteAudio.sfxVolume, siteAudio.ctx.currentTime, 0.018)
+  }
+
+  syncAudioVolumeControls()
+  updateAudioToggleButton()
+
+  if (restart) {
+    unlockSiteAudio()
+  }
+}
+
+function updateHellModeControls() {
+  const isHell = Boolean(siteAudio.horrorMode)
+
+  documentRoot.classList.toggle(HELL_MODE_CLASS, isHell)
+  if (document.body) {
+    document.body.classList.toggle(HELL_MODE_CLASS, isHell)
+    document.body.classList.toggle('horror-bgm-easter-egg', isHell)
+  }
+
+  if (isHell) {
+    documentRoot.classList.remove('theme-dark')
+    if (document.body) document.body.classList.remove('theme-dark')
+  }
+
+  if (themeToggleBtn && isHell) {
+    themeToggleBtn.setAttribute('aria-pressed', 'true')
+    themeToggleBtn.setAttribute('aria-label', '지옥 모드 잠김')
+    themeToggleBtn.title = '지옥 모드: 새로고침 전까지 해제 불가'
+    themeToggleBtn.classList.add('is-hell-locked')
+    if (themeToggleIcon) themeToggleIcon.textContent = '☠'
+    if (themeToggleLabel) themeToggleLabel.textContent = '지옥 모드'
+  } else if (themeToggleBtn) {
+    themeToggleBtn.classList.remove('is-hell-locked')
+  }
+
+  if (audioToggleBtn) {
+    audioToggleBtn.classList.toggle('is-hell-locked', isHell)
+    if (isHell) {
+      audioToggleBtn.setAttribute('aria-pressed', 'true')
+      audioToggleBtn.setAttribute('aria-label', '지옥 모드에서는 사운드를 끌 수 없음')
+      audioToggleBtn.title = '지옥 모드에서는 사운드를 끌 수 없음'
+      if (audioToggleIcon) audioToggleIcon.textContent = '☊'
+      if (audioToggleLabel) audioToggleLabel.textContent = '사운드 잠김'
+    }
+  }
+
+  ;[bgmVolumeRange, sfxVolumeRange].forEach((range) => {
+    if (!range) return
+    range.disabled = isHell
+    range.setAttribute('aria-disabled', isHell ? 'true' : 'false')
+    range.classList.toggle('is-hell-locked', isHell)
+  })
+}
+
+function stopHellModeVisualGlitches() {
+  if (siteAudio.horrorVisualGlitchTimer) {
+    window.clearTimeout(siteAudio.horrorVisualGlitchTimer)
+    siteAudio.horrorVisualGlitchTimer = null
+  }
+  documentRoot.classList.remove('hell-glitch-hit', 'hell-glitch-deep')
+}
+
+function triggerHellModeVisualGlitch(options = {}) {
+  if (!siteAudio.horrorMode) return
+  const { deep = false, duration = deep ? rand(190, 430) : rand(80, 210) } = options
+  documentRoot.classList.add('hell-glitch-hit')
+  documentRoot.classList.toggle('hell-glitch-deep', Boolean(deep))
+  window.setTimeout(() => {
+    documentRoot.classList.remove('hell-glitch-hit', 'hell-glitch-deep')
+  }, duration)
+}
+
+function scheduleHellModeVisualGlitches() {
+  if (!siteAudio.horrorMode) return
+  stopHellModeVisualGlitches()
+
+  const scheduleNext = () => {
+    if (!siteAudio.horrorMode) return
+    const nextDelay = Math.round(rand(1800, 7200))
+    siteAudio.horrorVisualGlitchTimer = window.setTimeout(() => {
+      triggerHellModeVisualGlitch({ deep: Math.random() < 0.32 })
+      scheduleNext()
+    }, nextDelay)
+  }
+
+  scheduleNext()
+}
+
+function stopHellModeStingers() {
+  if (siteAudio.horrorStingerTimer) {
+    window.clearTimeout(siteAudio.horrorStingerTimer)
+    siteAudio.horrorStingerTimer = null
+  }
+  if (siteAudio.horrorPulseTimer) {
+    window.clearInterval(siteAudio.horrorPulseTimer)
+    siteAudio.horrorPulseTimer = null
+  }
+}
+
+function playHellModeStinger(options = {}) {
+  if (!siteAudio.horrorMode || !siteAudio.enabled || !siteAudio.unlocked) return
+  const ctx = ensureAudioContext()
+  if (!ctx) return
+
+  const { immediate = false, violent = false } = options
+  const output = siteAudio.sfxGain || siteAudio.bgmGain
+  const delay = immediate ? 0 : rand(0.01, 0.28)
+  const screamStart = rand(980, violent ? 2600 : 1900)
+  const screamEnd = rand(86, 320)
+  const duration = violent ? rand(1.15, 2.1) : rand(0.74, 1.55)
+
+  playTone(screamStart, { duration, gain: rand(0.038, violent ? 0.075 : 0.058), type: 'sawtooth', destination: output, delay, detune: rand(-420, 420), slideTo: screamEnd, attack: 0.006, release: duration * rand(0.72, 1.05) })
+  playTone(screamStart * rand(0.485, 0.612), { duration: duration * rand(0.86, 1.2), gain: rand(0.024, violent ? 0.055 : 0.042), type: 'square', destination: output, delay: delay + rand(0.012, 0.038), detune: rand(-260, 310), slideTo: screamEnd * rand(0.52, 1.28), attack: 0.01, release: duration * rand(0.75, 1.22) })
+  playTone(rand(23, 54), { duration: rand(1.65, 3.2), gain: rand(0.032, violent ? 0.07 : 0.052), type: 'sine', destination: output, delay: delay + 0.015, slideTo: rand(18.5, 36), attack: 0.18, release: rand(1.4, 2.8) })
+  playNoise({ duration: rand(0.42, violent ? 1.35 : 0.92), gain: rand(0.026, violent ? 0.07 : 0.048), delay: delay + 0.01, filterFreq: rand(1200, 4800), filterType: 'bandpass', filterQ: rand(8, 22), destination: output })
+  playNoise({ duration: rand(0.11, 0.32), gain: rand(0.018, 0.038), delay: delay + rand(0.04, 0.18), filterFreq: rand(5400, 9200), filterType: 'highpass', filterQ: 0.7, destination: output })
+
+  if (Math.random() < 0.72 || violent) {
+    playTone(rand(520, 920), { duration: rand(0.08, 0.18), gain: rand(0.018, 0.036), type: 'square', destination: output, delay: delay + rand(0.18, 0.42), detune: rand(-500, 500), slideTo: rand(130, 260), attack: 0.004, release: rand(0.08, 0.2) })
+  }
+
+  triggerHellModeVisualGlitch({ deep: violent || Math.random() < 0.42, duration: violent ? rand(260, 560) : rand(120, 300) })
+}
+
+function scheduleHellModeStingers() {
+  if (!siteAudio.horrorMode) return
+  stopHellModeStingers()
+
+  const scheduleNext = () => {
+    if (!siteAudio.horrorMode) return
+    const nextDelay = Math.round(rand(5800, 17000))
+    siteAudio.horrorStingerTimer = window.setTimeout(() => {
+      playHellModeStinger({ violent: Math.random() < 0.26 })
+      scheduleNext()
+    }, nextDelay)
+  }
+
+  scheduleNext()
+  siteAudio.horrorPulseTimer = window.setInterval(() => {
+    if (!siteAudio.horrorMode || !siteAudio.enabled || !siteAudio.unlocked) return
+    const output = Math.random() < 0.52 ? siteAudio.bgmGain : siteAudio.sfxGain
+    if (Math.random() < 0.62) {
+      playNoise({ duration: rand(0.08, 0.42), gain: rand(0.008, 0.026), filterFreq: rand(90, 1600), filterType: 'bandpass', filterQ: rand(4, 15), destination: output })
+    }
+    if (Math.random() < 0.24) {
+      playTone(rand(18.5, 42), { duration: rand(0.5, 1.4), gain: rand(0.012, 0.034), type: 'sine', destination: output, slideTo: rand(18.5, 32), attack: 0.16, release: rand(0.6, 1.2) })
+    }
+  }, 1450)
+}
+
+function setHorrorBgmEasterEggEnabled(enabled, options = {}) {
+  const nextEnabled = Boolean(enabled)
+  const { announce = true } = options
+
+  if (siteAudio.horrorMode === nextEnabled) return
+
+  siteAudio.horrorMode = nextEnabled
+  saveHorrorBgmEasterEggPreference(nextEnabled)
+  siteAudio.horrorProfileCache.clear()
+  updateHellModeControls()
+  syncBgmFilterForMode()
+
+  if (nextEnabled) {
+    forceHellModeAudioLock({ restart: true })
+    playHorrorBgmUnlockCue()
+    if (siteAudio.enabled && siteAudio.unlocked) {
+      stopBgm()
+      startBgmForScreen(currentScreenKey)
+    }
+    scheduleHellModeStingers()
+    scheduleHellModeVisualGlitches()
+    if (announce) {
+      showPopup('지옥 모드', '낮도 밤도 아니다. 화면과 소리는 새로고침하기 전까지 돌아오지 않는다.', { icon: '☠' })
+    }
+    return
+  }
+
+  stopHellModeStingers()
+  stopHellModeVisualGlitches()
+  if (siteAudio.enabled && siteAudio.unlocked) {
+    stopBgm()
+    startBgmForScreen(currentScreenKey)
+  }
+}
+
+function registerThemeHorrorEasterEggTap() {
+  const now = performance.now()
+  siteAudio.horrorThemeToggleTapTimes = siteAudio.horrorThemeToggleTapTimes
+    .filter((time) => now - time <= HORROR_BGM_TAP_WINDOW_MS)
+
+  siteAudio.horrorThemeToggleTapTimes.push(now)
+
+  if (siteAudio.horrorThemeToggleTapTimes.length < HORROR_BGM_TAP_THRESHOLD) return
+
+  siteAudio.horrorThemeToggleTapTimes = []
+  setHorrorBgmEasterEggEnabled(true)
+}
+
 function getAudioContextCtor() {
   return window.AudioContext || window.webkitAudioContext || null
 }
@@ -1883,9 +2222,9 @@ function ensureAudioContext() {
   masterGain.gain.value = AUDIO_MASTER_GAIN_VALUE
   bgmGain.gain.value = siteAudio.bgmVolume
   sfxGain.gain.value = siteAudio.sfxVolume
-  bgmFilter.type = 'lowpass'
-  bgmFilter.frequency.value = 3400
-  bgmFilter.Q.value = 0.7
+  bgmFilter.type = siteAudio.horrorMode ? 'bandpass' : 'lowpass'
+  bgmFilter.frequency.value = siteAudio.horrorMode ? 620 : 3400
+  bgmFilter.Q.value = siteAudio.horrorMode ? 7.8 : 0.7
   outputLimiter.threshold.value = -4
   outputLimiter.knee.value = 8
   outputLimiter.ratio.value = 4.6
@@ -1904,11 +2243,23 @@ function ensureAudioContext() {
   siteAudio.sfxGain = sfxGain
   siteAudio.outputLimiter = outputLimiter
   siteAudio.bgmFilter = bgmFilter
+  syncBgmFilterForMode()
   return ctx
 }
 
 function updateAudioToggleButton() {
   if (!audioToggleBtn) return
+
+  if (siteAudio.horrorMode) {
+    audioToggleBtn.setAttribute('aria-pressed', 'true')
+    audioToggleBtn.setAttribute('aria-label', '지옥 모드에서는 사운드를 끌 수 없음')
+    audioToggleBtn.title = '지옥 모드에서는 사운드를 끌 수 없음'
+    audioToggleBtn.classList.remove('is-audio-off')
+    audioToggleBtn.classList.add('is-hell-locked')
+    if (audioToggleIcon) audioToggleIcon.textContent = '☊'
+    if (audioToggleLabel) audioToggleLabel.textContent = '사운드 잠김'
+    return
+  }
 
   const label = siteAudio.enabled ? '사운드 켬' : '사운드 꺼짐'
   const action = siteAudio.enabled ? '사운드 끄기' : '사운드 켜기'
@@ -1917,6 +2268,7 @@ function updateAudioToggleButton() {
   audioToggleBtn.setAttribute('aria-label', action)
   audioToggleBtn.title = action
   audioToggleBtn.classList.toggle('is-audio-off', !siteAudio.enabled)
+  audioToggleBtn.classList.remove('is-hell-locked')
 
   if (audioToggleIcon) {
     audioToggleIcon.textContent = siteAudio.enabled ? '🔊' : '🔇'
@@ -2037,6 +2389,12 @@ function setAudioCategoryVolume(category, rawValue, options = {}) {
 }
 
 function handleBgmVolumeInput(event) {
+  if (siteAudio.horrorMode) {
+    forceHellModeAudioLock({ restart: true })
+    playHellModeStinger({ immediate: true })
+    return
+  }
+
   const value = normalizeAudioVolume(Number(event.target.value) / 100, siteAudio.bgmVolume)
   setAudioCategoryVolume('bgm', value)
 
@@ -2046,6 +2404,12 @@ function handleBgmVolumeInput(event) {
 }
 
 function handleSfxVolumeInput(event) {
+  if (siteAudio.horrorMode) {
+    forceHellModeAudioLock({ restart: true })
+    playHellModeStinger({ immediate: true })
+    return
+  }
+
   const value = normalizeAudioVolume(Number(event.target.value) / 100, siteAudio.sfxVolume)
   setAudioCategoryVolume('sfx', value, { preview: true })
 
@@ -2108,7 +2472,8 @@ function playNoise(options = {}) {
     delay = 0,
     filterType = 'bandpass',
     filterFreq = 1200,
-    filterQ = 0.8
+    filterQ = 0.8,
+    destination = siteAudio.sfxGain
   } = options
 
   const startTime = ctx.currentTime + delay
@@ -2129,12 +2494,12 @@ function playNoise(options = {}) {
   filter.type = filterType
   filter.frequency.value = filterFreq
   filter.Q.value = filterQ
-  const outputGain = gain * getCurrentSfxOutputScale(siteAudio.sfxGain)
+  const outputGain = gain * getCurrentSfxOutputScale(destination)
   scheduleGain(noiseGain, 0.0001, outputGain, 0.0001, startTime, 0.005, duration)
 
   source.connect(filter)
   filter.connect(noiseGain)
-  noiseGain.connect(siteAudio.sfxGain)
+  noiseGain.connect(destination || siteAudio.sfxGain)
   source.start(startTime)
 }
 
@@ -2201,9 +2566,43 @@ function playUiClickSfx(target = null) {
   }
 }
 
+
+function playHellSfxCorruption(name) {
+  if (!siteAudio.horrorMode || !siteAudio.enabled || !siteAudio.unlocked) return
+  const output = siteAudio.sfxGain || siteAudio.bgmGain
+  const isUi = ['tap', 'hover', 'select', 'start', 'back', 'reset', 'close', 'screen', 'popup'].includes(name)
+  const chance = isUi ? 0.56 : 0.22
+
+  if (Math.random() > chance) return
+
+  playNoise({
+    duration: rand(0.035, isUi ? 0.14 : 0.09),
+    gain: rand(0.006, isUi ? 0.022 : 0.016),
+    filterFreq: rand(420, 4200),
+    filterType: Math.random() < 0.5 ? 'bandpass' : 'highpass',
+    filterQ: rand(2.2, 13),
+    destination: output
+  })
+
+  if (Math.random() < (isUi ? 0.48 : 0.2)) {
+    playTone(rand(58, 240), {
+      duration: rand(0.055, 0.2),
+      gain: rand(0.006, 0.018),
+      type: Math.random() < 0.5 ? 'sawtooth' : 'square',
+      destination: output,
+      detune: rand(-360, 360),
+      slideTo: rand(24, 110),
+      attack: 0.004,
+      release: rand(0.05, 0.18)
+    })
+  }
+}
+
 function playSfx(name) {
   const ctx = ensureAudioContext()
   if (!ctx || !siteAudio.enabled) return
+
+  playHellSfxCorruption(name)
 
   if (ctx.state === 'suspended') {
     ctx.resume().catch(() => {})
@@ -2519,14 +2918,152 @@ function getBgmProfileForScreen(screenKey) {
   return SCREEN_BGM_PROFILES.menu
 }
 
+
+function getHellBgmNextDelay(profile) {
+  const now = performance.now()
+  const baseInterval = Math.max(110, Number(profile?.interval) || 520)
+
+  if (now >= (siteAudio.horrorTempoChangeAt || 0)) {
+    const roll = Math.random()
+    if (roll < 0.19) siteAudio.horrorTempoState = 'panic'
+    else if (roll < 0.34) siteAudio.horrorTempoState = 'stutter'
+    else if (roll < 0.52) siteAudio.horrorTempoState = 'drag'
+    else if (roll < 0.68) siteAudio.horrorTempoState = 'dead'
+    else siteAudio.horrorTempoState = 'crawl'
+    siteAudio.horrorTempoChangeAt = now + rand(900, 4300)
+  }
+
+  switch (siteAudio.horrorTempoState) {
+    case 'panic':
+      return Math.round(clampValue(baseInterval * rand(0.13, 0.34), 58, 240))
+    case 'stutter':
+      return Math.round(Math.random() < 0.58 ? rand(34, 92) : baseInterval * rand(0.42, 0.76))
+    case 'dead':
+      return Math.round(clampValue(baseInterval * rand(2.25, 4.9), 880, 3200))
+    case 'drag':
+      return Math.round(clampValue(baseInterval * rand(1.22, 2.25), 560, 2100))
+    case 'crawl':
+    default:
+      return Math.round(clampValue(baseInterval * rand(0.54, 1.28), 160, 1160))
+  }
+}
+
+function scheduleNextHellBgmStep(profile, options = {}) {
+  if (!siteAudio.horrorMode || !siteAudio.enabled || !siteAudio.unlocked || !profile?.horror) return
+
+  const { immediate = false } = options
+  const delay = immediate ? 0 : getHellBgmNextDelay(profile)
+  siteAudio.bgmTimer = window.setTimeout(() => {
+    if (!siteAudio.horrorMode || !siteAudio.enabled || !siteAudio.unlocked) return
+    playBgmStep(profile)
+    scheduleNextHellBgmStep(profile)
+  }, delay)
+}
+
 function playBgmStep(profile) {
   const ctx = ensureAudioContext()
-  if (!ctx || !siteAudio.enabled || !siteAudio.unlocked) return
+  if (!ctx || !siteAudio.enabled || !siteAudio.unlocked || !profile?.notes?.length) return
 
   const step = siteAudio.bgmStep % profile.notes.length
   const freq = profile.notes[step]
   const noteGain = profile.gain || 0.045
   const isAccent = step % 4 === 0
+
+  if (profile.horror) {
+    const detunePattern = profile.detunePattern || [-211, 97, -144, 263, -318, 41]
+    const detune = detunePattern[siteAudio.bgmStep % detunePattern.length]
+    const scrapePattern = profile.scrapePattern || [118, 147, 193, 271, 333, 419]
+    const tempoState = siteAudio.horrorTempoState || 'drag'
+    const isAccent = step % 4 === 0 || tempoState === 'dead'
+    const isPanic = tempoState === 'panic' || tempoState === 'stutter'
+    const isDeadAir = tempoState === 'dead' && Math.random() < 0.38
+    const slideRatio = isPanic ? rand(0.18, 2.85) : isAccent ? rand(0.34, 0.68) : rand(0.74, 1.42)
+    const secondFreq = clampValue(freq * (siteAudio.bgmStep % 2 === 0 ? 1.4142 : 1.033), 24, 760)
+    const thirdFreq = clampValue(freq * (siteAudio.bgmStep % 3 === 0 ? 2.973 : 0.515), 22, 920)
+
+    if (!isDeadAir) {
+      playTone(freq, {
+        duration: isPanic ? rand(0.16, 0.48) : isAccent ? rand(1.1, 2.4) : rand(0.48, 1.16),
+        gain: noteGain * (isPanic ? rand(0.62, 1.0) : isAccent ? rand(1.18, 1.58) : rand(0.82, 1.12)),
+        type: profile.wave || 'sawtooth',
+        destination: siteAudio.bgmGain,
+        detune,
+        slideTo: clampValue(freq * slideRatio, 18.5, 780),
+        attack: isPanic ? 0.003 : isAccent ? 0.13 : 0.035,
+        release: isPanic ? rand(0.08, 0.24) : isAccent ? rand(1.3, 2.7) : rand(0.58, 1.1)
+      })
+
+      playTone(secondFreq, {
+        duration: isPanic ? rand(0.09, 0.32) : isAccent ? rand(0.9, 1.8) : rand(0.34, 0.84),
+        gain: noteGain * (isPanic ? 0.38 : 0.58),
+        type: 'square',
+        destination: siteAudio.bgmGain,
+        delay: rand(0.004, isPanic ? 0.028 : 0.065),
+        detune: -detune * rand(0.72, 1.18),
+        slideTo: clampValue(secondFreq * rand(0.58, 1.38), 18.5, 840),
+        attack: isPanic ? 0.002 : 0.022,
+        release: isPanic ? rand(0.06, 0.2) : rand(0.42, 1.1)
+      })
+    }
+
+    if (siteAudio.bgmStep % 2 === 1 || isPanic) {
+      playTone(thirdFreq, {
+        duration: isPanic ? rand(0.045, 0.18) : rand(0.16, 0.54),
+        gain: noteGain * (isPanic ? 0.24 : 0.2),
+        type: 'sawtooth',
+        destination: siteAudio.bgmGain,
+        delay: isPanic ? rand(0.006, 0.04) : rand(0.04, 0.12),
+        detune: detunePattern[(siteAudio.bgmStep + 4) % detunePattern.length],
+        slideTo: clampValue(thirdFreq * rand(0.42, 1.72), 18.5, 980),
+        attack: 0.004,
+        release: isPanic ? rand(0.04, 0.16) : rand(0.18, 0.5)
+      })
+    }
+
+    if (profile.chords?.length && profile.chordEvery && siteAudio.bgmStep % profile.chordEvery === 0) {
+      const chord = profile.chords[(siteAudio.bgmStep / profile.chordEvery) % profile.chords.length]
+      chord.forEach((chordFreq, index) => {
+        playTone(chordFreq, {
+          duration: isPanic ? rand(0.22, 0.7) : rand(2.6, 5.2),
+          gain: noteGain * (index === 0 ? 0.66 : 0.28),
+          type: index === 0 ? 'sine' : index % 2 ? 'sawtooth' : 'square',
+          destination: siteAudio.bgmGain,
+          delay: index * rand(0.012, isPanic ? 0.04 : 0.095),
+          detune: detunePattern[(siteAudio.bgmStep + index + 2) % detunePattern.length],
+          slideTo: clampValue(chordFreq * (index % 2 ? rand(0.86, 0.98) : rand(1.05, 1.24)), 18.5, 360),
+          attack: isPanic ? 0.01 : rand(0.18, 0.48),
+          release: isPanic ? rand(0.2, 0.7) : rand(2.1, 4.2)
+        })
+      })
+    }
+
+    if (siteAudio.bgmStep % (isPanic ? 1 : 3) !== 1) {
+      const scrapeFreq = scrapePattern[siteAudio.bgmStep % scrapePattern.length]
+      playNoise({
+        duration: isPanic ? rand(0.06, 0.22) : rand(0.28, 0.96),
+        gain: noteGain * rand(0.16, isPanic ? 0.58 : 0.44),
+        filterFreq: scrapeFreq * rand(0.75, 1.42),
+        filterType: Math.random() < 0.64 ? 'bandpass' : 'highpass',
+        filterQ: rand(7, 24),
+        destination: siteAudio.bgmGain
+      })
+    }
+
+    if (isPanic && Math.random() < 0.36) {
+      playNoise({ duration: rand(0.035, 0.12), gain: noteGain * rand(0.22, 0.48), filterFreq: rand(2600, 8800), filterType: 'highpass', filterQ: 0.7, destination: siteAudio.bgmGain })
+    }
+
+    if (siteAudio.bgmStep % 9 === 5 || (tempoState === 'dead' && Math.random() < 0.18)) {
+      playHellModeStinger({ violent: tempoState === 'dead' && Math.random() < 0.45 })
+    }
+
+    if (siteAudio.bgmStep % 5 === 2) {
+      triggerHellModeVisualGlitch({ deep: Math.random() < 0.22, duration: rand(70, 190) })
+    }
+
+    siteAudio.bgmStep += 1
+    return
+  }
 
   playTone(freq, {
     duration: isAccent ? 0.42 : 0.28,
@@ -2573,15 +3110,21 @@ function startBgmForScreen(screenKey = currentScreenKey) {
     ctx.resume().catch(() => {})
   }
 
-  const profile = getBgmProfileForScreen(screenKey)
+  const profile = getActiveBgmProfile(getBgmProfileForScreen(screenKey))
   if (!profile) return
   if (siteAudio.bgmProfileKey === profile.key && siteAudio.bgmTimer) return
 
   stopBgm()
+  syncBgmFilterForMode()
   siteAudio.bgmProfileKey = profile.key
   siteAudio.bgmStep = 0
   playBgmStep(profile)
-  siteAudio.bgmTimer = window.setInterval(() => playBgmStep(profile), profile.interval || 820)
+
+  if (profile.horror) {
+    scheduleNextHellBgmStep(profile)
+  } else {
+    siteAudio.bgmTimer = window.setInterval(() => playBgmStep(profile), profile.interval || 820)
+  }
 }
 
 function unlockSiteAudio() {
@@ -2592,11 +3135,21 @@ function unlockSiteAudio() {
 
   siteAudio.unlocked = true
   ctx.resume().then(() => {
+    if (siteAudio.horrorMode) {
+      forceHellModeAudioLock()
+      scheduleHellModeStingers()
+    }
     startBgmForScreen(currentScreenKey)
   }).catch(() => {})
 }
 
 function setSiteAudioEnabled(enabled) {
+  if (siteAudio.horrorMode && !enabled) {
+    forceHellModeAudioLock({ restart: true })
+    playHellModeStinger({ immediate: true })
+    return
+  }
+
   siteAudio.enabled = Boolean(enabled)
 
   try {
@@ -2696,6 +3249,7 @@ function handleAudioHover(event) {
 }
 
 function installSiteAudioInteractions() {
+  updateHellModeControls()
   updateAudioToggleButton()
 
   document.addEventListener('pointerdown', handleAudioPointerUnlock, true)
@@ -2938,12 +3492,23 @@ function refreshExtendedThemeVisuals() {
 function updateThemeToggleButton() {
   if (!themeToggleBtn) return
 
+  if (siteAudio.horrorMode) {
+    themeToggleBtn.setAttribute('aria-pressed', 'true')
+    themeToggleBtn.setAttribute('aria-label', '지옥 모드 잠김')
+    themeToggleBtn.title = '지옥 모드: 새로고침 전까지 해제 불가'
+    themeToggleBtn.classList.add('is-hell-locked')
+    if (themeToggleIcon) themeToggleIcon.textContent = '☠'
+    if (themeToggleLabel) themeToggleLabel.textContent = '지옥 모드'
+    return
+  }
+
   const isDark = isDarkThemeEnabled()
   const nextActionText = isDark ? '낮 모드로 전환' : '밤 모드로 전환'
 
   themeToggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false')
   themeToggleBtn.setAttribute('aria-label', nextActionText)
   themeToggleBtn.title = nextActionText
+  themeToggleBtn.classList.remove('is-hell-locked')
 
   if (themeToggleIcon) {
     themeToggleIcon.textContent = isDark ? '☀️' : '🌙'
@@ -2955,6 +3520,11 @@ function updateThemeToggleButton() {
 }
 
 function applyThemePreference(theme, options = {}) {
+  if (siteAudio.horrorMode) {
+    updateHellModeControls()
+    return
+  }
+
   const { persist = true } = options
   const useDarkTheme = theme === 'dark'
 
@@ -2976,6 +3546,14 @@ function applyThemePreference(theme, options = {}) {
 }
 
 function toggleThemePreference() {
+  if (siteAudio.horrorMode) {
+    forceHellModeAudioLock({ restart: true })
+    playHellModeStinger({ immediate: true })
+    return
+  }
+
+  registerThemeHorrorEasterEggTap()
+  if (siteAudio.horrorMode) return
   applyThemePreference(isDarkThemeEnabled() ? 'light' : 'dark')
 }
 
@@ -17438,6 +18016,7 @@ function initCustomCursor() {
 }
 
 applyThemePreference(getSavedThemePreference(), { persist: false })
+updateHellModeControls()
 updateFullscreenToggleButton()
 updatePrevStepButtons()
 installSiteAudioInteractions()
