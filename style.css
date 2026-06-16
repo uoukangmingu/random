@@ -27458,3 +27458,180 @@ body.game2-mobile-layout #game2Screen .race-horse .horse-emoji {
   transform: rotate(-90deg) !important;
   transform-origin: center center !important;
 }
+
+/* =========================================================
+   HOME DESKTOP QR PATCH v2
+   - 데스크톱 홈 메뉴 박스 왼쪽에 QR 기본 노출
+   - 모바일/터치 환경에서는 숨김
+   - 낮/밤 테마별 저자극 고대비 QR 컬러 적용
+   - 낮 모드에서 QR 이미지 2장이 동시에 보이는 문제 방지
+========================================================= */
+#homeScreen .home-qr-card {
+  display: none;
+}
+
+#homeScreen .home-qr-img-dark {
+  display: none !important;
+}
+
+@media (min-width: 1025px) and (pointer: fine) {
+  #homeScreen.home-screen {
+    max-width: 1120px !important;
+  }
+
+  #homeScreen .home-screen-stack {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(24px, 3.2vw, 44px) !important;
+    width: 100% !important;
+  }
+
+  #homeScreen .main-card {
+    margin: 0 !important;
+    flex: 0 1 680px !important;
+  }
+
+  #homeScreen .home-qr-card {
+    order: -1;
+    flex: 0 0 clamp(196px, 17vw, 244px);
+    width: clamp(196px, 17vw, 244px);
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 17px 16px 15px;
+    border-radius: 28px;
+    background:
+      radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.78), transparent 34%),
+      linear-gradient(180deg, rgba(255, 252, 244, 0.94) 0%, rgba(246, 248, 250, 0.94) 100%);
+    border: 2px solid rgba(255, 255, 255, 0.88);
+    box-shadow:
+      0 18px 36px rgba(77, 63, 48, 0.11),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    color: var(--day-ink, #3f342b);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  #homeScreen .home-qr-copy {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 9px;
+    text-align: left;
+  }
+
+  #homeScreen .home-qr-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(189, 234, 255, 0.68);
+    color: #245979;
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1;
+  }
+
+  #homeScreen .home-qr-copy strong {
+    color: #3f342b;
+    font-size: 0.92rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+
+  #homeScreen .home-qr-frame {
+    width: 100%;
+    padding: 11px;
+    border-radius: 24px;
+    background: #fffaf0;
+    border: 1px solid rgba(63, 52, 43, 0.08);
+    box-shadow:
+      0 12px 22px rgba(77, 63, 48, 0.10),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.86);
+  }
+
+  #homeScreen .home-qr-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    border-radius: 15px;
+    image-rendering: pixelated;
+  }
+
+  html:not(.theme-dark) #homeScreen .home-qr-img-light {
+    display: block !important;
+  }
+
+  html:not(.theme-dark) #homeScreen .home-qr-img-dark {
+    display: none !important;
+  }
+
+  #homeScreen .home-qr-help {
+    margin: -1px 0 0;
+    color: rgba(63, 52, 43, 0.70);
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.35;
+  }
+
+  html.theme-dark #homeScreen .home-qr-card {
+    background:
+      radial-gradient(circle at 18% 12%, rgba(139, 211, 255, 0.14), transparent 36%),
+      linear-gradient(180deg, rgba(13, 27, 48, 0.96) 0%, rgba(7, 15, 31, 0.96) 100%);
+    border-color: rgba(139, 211, 255, 0.22);
+    box-shadow:
+      0 22px 44px rgba(0, 0, 0, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 0 0 1px rgba(139, 211, 255, 0.05);
+    color: var(--night-ink, #fff7e6);
+  }
+
+  html.theme-dark #homeScreen .home-qr-eyebrow {
+    background: rgba(139, 211, 255, 0.17);
+    color: #bfe9ff;
+    border: 1px solid rgba(139, 211, 255, 0.20);
+  }
+
+  html.theme-dark #homeScreen .home-qr-copy strong {
+    color: #f4f8ff;
+    text-shadow: 0 0 10px rgba(139, 211, 255, 0.16);
+  }
+
+  html.theme-dark #homeScreen .home-qr-frame {
+    background: #e8eef8;
+    border-color: rgba(139, 211, 255, 0.18);
+    box-shadow:
+      0 14px 26px rgba(0, 0, 0, 0.34),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+  }
+
+  html.theme-dark #homeScreen .home-qr-img-light {
+    display: none !important;
+  }
+
+  html.theme-dark #homeScreen .home-qr-img-dark {
+    display: block !important;
+  }
+
+  html.theme-dark #homeScreen .home-qr-help {
+    color: rgba(226, 238, 252, 0.72);
+  }
+}
+
+@media (max-width: 1024px), (pointer: coarse) {
+  #homeScreen .home-qr-card {
+    display: none !important;
+  }
+}
