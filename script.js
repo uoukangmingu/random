@@ -1682,6 +1682,11 @@ const SFX_MIX_LEVELS = {
   result: 1.12
 }
 
+const UI_TAP_MOVE_THRESHOLD_PX = 12
+const UI_SWIPE_CLICK_SUPPRESS_MS = 450
+let uiAudioPointerState = null
+let uiAudioSuppressClickUntil = 0
+
 const SFX_DUCKING_PROFILES = {
   result: { level: 0.56, duration: 620 },
   chainExplosion: { level: 0.62, duration: 520 },
@@ -2617,10 +2622,59 @@ function toggleSiteAudio() {
 }
 
 function handleAudioPointerUnlock(event) {
+  if (event.isPrimary === false) return
+
+  uiAudioPointerState = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    moved: false
+  }
+
+  unlockSiteAudio()
+}
+
+function handleAudioPointerMove(event) {
+  if (!uiAudioPointerState || event.pointerId !== uiAudioPointerState.pointerId) return
+
+  const distanceX = Math.abs(event.clientX - uiAudioPointerState.startX)
+  const distanceY = Math.abs(event.clientY - uiAudioPointerState.startY)
+
+  if (Math.max(distanceX, distanceY) > UI_TAP_MOVE_THRESHOLD_PX) {
+    uiAudioPointerState.moved = true
+  }
+}
+
+function finishAudioPointerTracking(shouldSuppressClick = false) {
+  if (!uiAudioPointerState) return
+
+  if (uiAudioPointerState.moved || shouldSuppressClick) {
+    uiAudioSuppressClickUntil = performance.now() + UI_SWIPE_CLICK_SUPPRESS_MS
+  }
+
+  uiAudioPointerState = null
+}
+
+function handleAudioPointerEnd(event) {
+  if (!uiAudioPointerState || event.pointerId !== uiAudioPointerState.pointerId) return
+  finishAudioPointerTracking(false)
+}
+
+function handleAudioPointerCancel(event) {
+  if (!uiAudioPointerState || event.pointerId !== uiAudioPointerState.pointerId) return
+  finishAudioPointerTracking(true)
+}
+
+function handleAudioClick(event) {
   const target = event.target instanceof Element ? event.target : null
+
   unlockSiteAudio()
 
   if (target?.closest('#audioToggleBtn')) {
+    return
+  }
+
+  if (performance.now() < uiAudioSuppressClickUntil) {
     return
   }
 
@@ -2645,6 +2699,10 @@ function installSiteAudioInteractions() {
   updateAudioToggleButton()
 
   document.addEventListener('pointerdown', handleAudioPointerUnlock, true)
+  document.addEventListener('pointermove', handleAudioPointerMove, true)
+  document.addEventListener('pointerup', handleAudioPointerEnd, true)
+  document.addEventListener('pointercancel', handleAudioPointerCancel, true)
+  document.addEventListener('click', handleAudioClick, true)
   document.addEventListener('pointerover', handleAudioHover, true)
 
   if (audioToggleBtn) {
@@ -2727,6 +2785,33 @@ function getSimBallStrokeColor() {
   return isDarkThemeEnabled() ? '#ecf7ff' : '#fffaf8'
 }
 
+const SIM_BASE_BALL_RADIUS = 22
+
+function shouldUseCompactSimBallRadius() {
+  return shouldUseSimResponsiveLayout() && isPortraitMode()
+}
+
+function getSimBallRadius(worldWidth = 900, worldHeight = 460) {
+  if (!shouldUseCompactSimBallRadius()) {
+    return SIM_BASE_BALL_RADIUS
+  }
+
+  const arenaScale = Math.min(
+    Math.max(1, worldWidth) / 900,
+    Math.max(1, worldHeight) / 460
+  )
+
+  return Math.round(SIM_BASE_BALL_RADIUS * clampValue(arenaScale, 0.74, 0.82))
+}
+
+function getSimBallLineWidth(radius = SIM_BASE_BALL_RADIUS) {
+  if (radius < SIM_BASE_BALL_RADIUS) {
+    return isDarkThemeEnabled() ? 3 : 2.5
+  }
+
+  return isDarkThemeEnabled() ? 4 : 3
+}
+
 function refreshSimThemeVisuals() {
   const palette = getSimPlayerPalette()
 
@@ -2764,9 +2849,15 @@ function refreshSimThemeVisuals() {
     simRoundPlayers.forEach((player) => {
       const body = simArenaBodyMap.get(player.id)
       if (!body?.render) return
+      const strokeStyle = getSimBallStrokeColor()
+      const lineWidth = getSimBallLineWidth(body.circleRadius || SIM_BASE_BALL_RADIUS)
       body.render.fillStyle = player.color
-      body.render.strokeStyle = getSimBallStrokeColor()
-      body.render.lineWidth = isDarkThemeEnabled() ? 4 : 3
+      body.render.strokeStyle = strokeStyle
+      body.render.lineWidth = lineWidth
+      if (body.plugin) {
+        body.plugin.baseStrokeStyle = strokeStyle
+        body.plugin.baseLineWidth = lineWidth
+      }
     })
   }
 }
@@ -9101,8 +9192,8 @@ function flashSimBallBody(player, { stroke = null, glowStroke = '#fff7a8', lineW
   body.render.strokeStyle = glowStroke
   setTimeout(() => {
     if (!body || !body.render) return
-    body.render.lineWidth = 3
-    body.render.strokeStyle = stroke
+    body.render.lineWidth = body.plugin?.baseLineWidth || getSimBallLineWidth(body.circleRadius || SIM_BASE_BALL_RADIUS)
+    body.render.strokeStyle = body.plugin?.baseStrokeStyle || stroke
   }, duration)
 }
 
@@ -9557,10 +9648,14 @@ function createSimOverlayLabel(player) {
 }
 
 function createSimBody(player, worldWidth, worldHeight) {
-  const radius = 22
+  const radius = getSimBallRadius(worldWidth, worldHeight)
+  const spawnPadding = clampValue(Math.min(worldWidth, worldHeight) * 0.16, radius + 22, 70)
+  const lineWidth = getSimBallLineWidth(radius)
+  const strokeStyle = getSimBallStrokeColor()
+
   const body = Bodies.circle(
-    rand(70, worldWidth - 70),
-    rand(70, worldHeight - 70),
+    rand(spawnPadding, worldWidth - spawnPadding),
+    rand(spawnPadding, worldHeight - spawnPadding),
     radius,
     {
       restitution: 0.98,
@@ -9570,13 +9665,16 @@ function createSimBody(player, worldWidth, worldHeight) {
       inertia: Infinity,
       render: {
         fillStyle: player.color,
-        strokeStyle: getSimBallStrokeColor(),
-        lineWidth: isDarkThemeEnabled() ? 4 : 3
+        strokeStyle,
+        lineWidth
       }
     }
   )
 
   body.plugin.simPlayerId = player.id
+  body.plugin.baseRadius = radius
+  body.plugin.baseStrokeStyle = strokeStyle
+  body.plugin.baseLineWidth = lineWidth
   body.plugin.targetSpeed = 2.42
   body.plugin.nextTurnAt = 0
   body.plugin.lastCollisionAt = 0
@@ -9745,7 +9843,8 @@ function paintSimArenaOverlay() {
 
     const x = body.position.x * scaleX
     const y = body.position.y * scaleY
-    const offsetY = player.isAlive ? -36 : 16
+    const displayRadius = (body.circleRadius || SIM_BASE_BALL_RADIUS) * Math.min(scaleX, scaleY)
+    const offsetY = player.isAlive ? -(displayRadius + 14) : displayRadius * 0.72
     const scale = player.isAlive ? 0.96 : 0.8
     label.style.transform = `translate3d(${x}px, ${y + offsetY}px, 0) translate(-50%, -50%) scale(${scale})`
   })
