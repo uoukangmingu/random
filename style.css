@@ -28324,3 +28324,41 @@ html.perf-low.hell-mode body::before,
 html.perf-low.hell-mode body::after {
   animation: none !important;
 }
+
+/* Ball battle: keep collision feedback legible without costly blur/glow layers. */
+html.perf-constrained #game4Screen .sim-ball-label {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 3px 8px rgba(68, 78, 92, 0.14) !important;
+  transition: opacity 0.12s ease !important;
+  will-change: transform;
+}
+
+html.perf-constrained #game4Screen .sim-ball-label.is-dead {
+  filter: none !important;
+}
+
+html.perf-constrained #game4Screen .sim-hit-burst,
+html.perf-constrained #game4Screen .sim-decay-burst,
+html.perf-constrained #game4Screen .sim-bomb-blast-core,
+html.perf-constrained #game4Screen .sim-bomb-blast-ring {
+  box-shadow: none !important;
+}
+
+html.perf-constrained #game4Screen .sim-arena-wrap.is-sudden-death,
+html.perf-constrained #game4Screen .sim-arena-wrap.is-sudden-death .sim-shrink-zone.is-danger {
+  box-shadow: inset 0 0 0 2px rgba(255, 92, 92, 0.32) !important;
+}
+
+html.perf-mobile #game4Screen .sim-ball-label.is-hit {
+  animation: none !important;
+}
+
+html.perf-mobile #game4Screen .sim-ball-hpbar span,
+html.perf-mobile #game4Screen .sim-shrink-zone {
+  transition: none !important;
+}
+
+html.perf-mobile #game4Screen .sim-bomb-blast-ring {
+  border-width: 3px !important;
+}

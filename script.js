@@ -1236,6 +1236,20 @@ const SIM_SUDDEN_DEATH_INTERVAL_MS = 2600
 const SIM_SUDDEN_DEATH_BASE_DAMAGE = 2
 const SIM_SUDDEN_DEATH_MAX_DAMAGE = 8
 const SIM_SUDDEN_DEATH_DAMAGE_STEP_EVERY = 3
+const SIM_BATTLE_PERFORMANCE = Object.freeze({
+  renderFrameGap: APP_PERFORMANCE_PROFILE.constrained ? 30 : 15,
+  overlayFrameGap: 1000 / (APP_PERFORMANCE_PROFILE.isMobile ? 20 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 25 : 30),
+  rankingInterval: APP_PERFORMANCE_PROFILE.isMobile ? 420 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 280 : 140,
+  effectInterval: APP_PERFORMANCE_PROFILE.isMobile ? 240 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 160 : 80,
+  statusInterval: APP_PERFORMANCE_PROFILE.isMobile ? 280 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 180 : 120,
+  maxTransientEffects: APP_PERFORMANCE_PROFILE.isMobile ? 3 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 5 : 10,
+  showFloatingDamage: !APP_PERFORMANCE_PROFILE.isMobile,
+  canvasPixelRatio: APP_PERFORMANCE_PROFILE.isMobile
+    ? Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 0.7)
+    : APP_PERFORMANCE_PROFILE.isLowEndDesktop
+      ? Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 0.85)
+      : Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 1.1)
+})
 const SIM_STAT_KEYS = ['health', 'attack', 'accuracy', 'defense']
 const SIM_STAT_META = {
   health: { label: '추가 체력', short: '+HP', icon: '❤️' },
@@ -1289,8 +1303,14 @@ let simArenaMeta = null
 let simSelectedMap = 'classic'
 let simArenaZoomed = false
 let simArenaZoomBaseRect = null
+let simRenderRaf = null
+let simRenderLastPaintAt = 0
 let simOverlayRaf = null
 let simOverlayLastPaintAt = 0
+let simRankingRenderTimer = null
+let simRankingLastRenderAt = 0
+let simPendingRanking = null
+let simEffectLastAt = new Map()
 let lastSimValidConfigText = simConfigInput ? simConfigInput.value : ''
 let lastSimAppliedRawText = simConfigInput ? simConfigInput.value : ''
 
@@ -3459,6 +3479,9 @@ function refreshSimThemeVisuals() {
         body.plugin.baseLineWidth = lineWidth
       }
     })
+    if (simBattleFinished) {
+      renderSimCanvasOnce()
+    }
   }
 }
 
@@ -9232,6 +9255,36 @@ function renderSimRanking(ranking = []) {
   return ranking
 }
 
+function flushSimRankingRender(ranking = simPendingRanking || getSimRankingData()) {
+  if (simRankingRenderTimer) {
+    clearTimeout(simRankingRenderTimer)
+    simRankingRenderTimer = null
+  }
+  simPendingRanking = null
+  simRankingLastRenderAt = performance.now()
+  return renderSimRanking(ranking)
+}
+
+function scheduleSimRankingRender({ force = false } = {}) {
+  simPendingRanking = getSimRankingData()
+  const elapsed = performance.now() - simRankingLastRenderAt
+
+  if (force || elapsed >= SIM_BATTLE_PERFORMANCE.rankingInterval) {
+    return flushSimRankingRender(simPendingRanking)
+  }
+
+  if (!simRankingRenderTimer) {
+    simRankingRenderTimer = setTimeout(() => {
+      simRankingRenderTimer = null
+      if (simPendingRanking) {
+        flushSimRankingRender(simPendingRanking)
+      }
+    }, Math.max(16, SIM_BATTLE_PERFORMANCE.rankingInterval - elapsed))
+  }
+
+  return simPendingRanking
+}
+
 function updateSimFromInput({ render = true } = {}) {
   if (!simConfigInput) return false
 
@@ -9624,11 +9677,25 @@ function clearSimArena() {
   resetSimSuddenDeathState()
   closeSimArenaZoom()
 
+  if (simRenderRaf) {
+    cancelAnimationFrame(simRenderRaf)
+    simRenderRaf = null
+  }
+  simRenderLastPaintAt = 0
+
   if (simOverlayRaf) {
     cancelAnimationFrame(simOverlayRaf)
     simOverlayRaf = null
   }
   simOverlayLastPaintAt = 0
+
+  if (simRankingRenderTimer) {
+    clearTimeout(simRankingRenderTimer)
+    simRankingRenderTimer = null
+  }
+  simRankingLastRenderAt = 0
+  simPendingRanking = null
+  simEffectLastAt.clear()
 
   if (simArenaRender) {
     Matter.Render.stop(simArenaRender)
@@ -9639,6 +9706,7 @@ function clearSimArena() {
   }
 
   if (simArenaRunner) {
+    simArenaRunner.enabled = false
     Matter.Runner.stop(simArenaRunner)
   }
 
@@ -9858,13 +9926,25 @@ function flashSimBallBody(player, { stroke = null, glowStroke = '#fff7a8', lineW
   stroke = stroke || getSimBallStrokeColor()
   const body = simArenaBodyMap.get(player?.id)
   if (!body || !body.render) return
+  if (body.plugin?.flashTimer) {
+    clearTimeout(body.plugin.flashTimer)
+  }
   body.render.lineWidth = lineWidth
   body.render.strokeStyle = glowStroke
-  setTimeout(() => {
+  body.plugin.flashTimer = setTimeout(() => {
     if (!body || !body.render) return
     body.render.lineWidth = body.plugin?.baseLineWidth || getSimBallLineWidth(body.circleRadius || SIM_BASE_BALL_RADIUS)
     body.render.strokeStyle = body.plugin?.baseStrokeStyle || stroke
+    body.plugin.flashTimer = null
   }, duration)
+}
+
+function shouldPlaySimTransientEffect(playerId = '') {
+  const now = performance.now()
+  const lastAt = simEffectLastAt.get(playerId) || 0
+  if (now - lastAt < SIM_BATTLE_PERFORMANCE.effectInterval) return false
+  simEffectLastAt.set(playerId, now)
+  return true
 }
 
 function spawnSimFloatingBurst(player, {
@@ -9876,11 +9956,13 @@ function spawnSimFloatingBurst(player, {
   startClass = 'is-active'
 } = {}) {
   if (!simHealthOverlay || !simArenaWrap || !simArenaRender || !player) return
+  const transientCount = Math.max(0, simHealthOverlay.childElementCount - simOverlayMap.size)
+  if (transientCount >= SIM_BATTLE_PERFORMANCE.maxTransientEffects) return
   const body = simArenaBodyMap.get(player.id)
   if (!body) return
 
-  const displayWidth = simArenaWrap.clientWidth || simArenaRender.options.width
-  const displayHeight = simArenaWrap.clientHeight || simArenaRender.options.height
+  const displayWidth = simArenaMeta?.displayWidth || simArenaRender.options.width
+  const displayHeight = simArenaMeta?.displayHeight || simArenaRender.options.height
   const scaleX = displayWidth / simArenaRender.options.width
   const scaleY = displayHeight / simArenaRender.options.height
 
@@ -9897,13 +9979,15 @@ function spawnSimFloatingBurst(player, {
 
 function spawnSimHitEffect(player, damage = 0) {
   if (!player || damage <= 0) return
+  if (!shouldPlaySimTransientEffect(player.id)) return
 
   const label = simOverlayMap.get(player.id)
-  if (label) {
-    label.classList.remove('is-hit')
-    void label.offsetWidth
+  if (label && !APP_PERFORMANCE_PROFILE.isMobile && !label.classList.contains('is-hit')) {
     label.classList.add('is-hit')
-    setTimeout(() => label.classList.remove('is-hit'), 300)
+    label._simHitTimer = setTimeout(() => {
+      label.classList.remove('is-hit')
+      label._simHitTimer = null
+    }, 300)
   }
 
   flashSimBallBody(player, {
@@ -9912,23 +9996,27 @@ function spawnSimHitEffect(player, damage = 0) {
     duration: 260
   })
 
-  spawnSimFloatingBurst(player, {
-    text: `-${damage}`,
-    className: 'sim-hit-burst',
-    duration: 720,
-    yOffset: -4
-  })
+  if (SIM_BATTLE_PERFORMANCE.showFloatingDamage) {
+    spawnSimFloatingBurst(player, {
+      text: `-${damage}`,
+      className: 'sim-hit-burst',
+      duration: 720,
+      yOffset: -4
+    })
+  }
 }
 
 function spawnSimDecayEffect(player, damage = 0) {
   if (!player || damage <= 0) return
+  if (!shouldPlaySimTransientEffect(`decay-${player.id}`)) return
 
   const label = simOverlayMap.get(player.id)
-  if (label) {
-    label.classList.remove('is-hit')
-    void label.offsetWidth
+  if (label && !APP_PERFORMANCE_PROFILE.isMobile && !label.classList.contains('is-hit')) {
     label.classList.add('is-hit')
-    setTimeout(() => label.classList.remove('is-hit'), 320)
+    label._simHitTimer = setTimeout(() => {
+      label.classList.remove('is-hit')
+      label._simHitTimer = null
+    }, 320)
   }
 
   flashSimBallBody(player, {
@@ -9937,12 +10025,14 @@ function spawnSimDecayEffect(player, damage = 0) {
     duration: 300
   })
 
-  spawnSimFloatingBurst(player, {
-    text: `-${damage}`,
-    className: 'sim-hit-burst sim-decay-burst',
-    duration: 780,
-    yOffset: -8
-  })
+  if (SIM_BATTLE_PERFORMANCE.showFloatingDamage) {
+    spawnSimFloatingBurst(player, {
+      text: `-${damage}`,
+      className: 'sim-hit-burst sim-decay-burst',
+      duration: 780,
+      yOffset: -8
+    })
+  }
 }
 
 function resetSimSuddenDeathState() {
@@ -10015,7 +10105,9 @@ function updateSimSuddenDeath(now) {
     markSimPlayerDead(player, { silent: true })
   })
 
-  renderSimRanking(getSimRankingData())
+  if (!simBattleFinished) {
+    scheduleSimRankingRender({ force: deadPlayers.length > 0 })
+  }
   updateSimArenaOverlay(true)
 
   if (forcedSurvivor && !simBattleFinished) {
@@ -10032,8 +10124,8 @@ function updateSimSuddenDeath(now) {
 function spawnSimBombExplosionEffect(bomb, { innerRadius = null, outerRadius = null, duration = 760 } = {}) {
   if (!simHealthOverlay || !simArenaWrap || !simArenaRender || !bomb) return
 
-  const displayWidth = simArenaWrap.clientWidth || simArenaRender.options.width
-  const displayHeight = simArenaWrap.clientHeight || simArenaRender.options.height
+  const displayWidth = simArenaMeta?.displayWidth || simArenaRender.options.width
+  const displayHeight = simArenaMeta?.displayHeight || simArenaRender.options.height
   const scaleX = displayWidth / simArenaRender.options.width
   const scaleY = displayHeight / simArenaRender.options.height
   const scale = Math.min(scaleX, scaleY)
@@ -10229,10 +10321,7 @@ function updateSimArenaHazards(now) {
 
   simArenaMeta.rotors?.forEach((rotor) => {
     if (!rotor?.plugin?.center) return
-    Body.setPosition(rotor, rotor.plugin.center)
     Body.setAngle(rotor, rotor.plugin.baseAngle + now * rotor.plugin.spinSpeed)
-    Body.setVelocity(rotor, { x: 0, y: 0 })
-    Body.setAngularVelocity(rotor, 0)
   })
 
   const shrink = simArenaMeta.shrink
@@ -10247,21 +10336,25 @@ function updateSimArenaHazards(now) {
   const left = (shrink.fullWidth - zoneWidth) / 2
   const top = (shrink.fullHeight - zoneHeight) / 2
 
-  shrink.zoneEl.classList.add('is-active')
-  shrink.zoneEl.classList.toggle('is-danger', progress > 0.12)
-  shrink.zoneEl.style.left = `${left}px`
-  shrink.zoneEl.style.top = `${top}px`
-  shrink.zoneEl.style.width = `${zoneWidth}px`
-  shrink.zoneEl.style.height = `${zoneHeight}px`
+  const lastVisualUpdateAt = shrink.lastVisualUpdateAt || 0
+  if (now - lastVisualUpdateAt >= SIM_BATTLE_PERFORMANCE.overlayFrameGap) {
+    shrink.lastVisualUpdateAt = now
+    shrink.zoneEl.classList.add('is-active')
+    shrink.zoneEl.classList.toggle('is-danger', progress > 0.12)
+    shrink.zoneEl.style.left = `${left}px`
+    shrink.zoneEl.style.top = `${top}px`
+    shrink.zoneEl.style.width = `${zoneWidth}px`
+    shrink.zoneEl.style.height = `${zoneHeight}px`
 
-  const displayWidth = simArenaWrap?.clientWidth || simArenaRender?.options?.width || shrink.fullWidth
-  const displayHeight = simArenaWrap?.clientHeight || simArenaRender?.options?.height || shrink.fullHeight
-  const scaleX = displayWidth / Math.max(1, simArenaRender?.options?.width || shrink.fullWidth)
-  const scaleY = displayHeight / Math.max(1, simArenaRender?.options?.height || shrink.fullHeight)
-  shrink.zoneEl.style.setProperty('--sim-shrink-display-left', `${left * scaleX}px`)
-  shrink.zoneEl.style.setProperty('--sim-shrink-display-top', `${top * scaleY}px`)
-  shrink.zoneEl.style.setProperty('--sim-shrink-display-width', `${zoneWidth * scaleX}px`)
-  shrink.zoneEl.style.setProperty('--sim-shrink-display-height', `${zoneHeight * scaleY}px`)
+    const displayWidth = simArenaMeta.displayWidth || simArenaRender?.options?.width || shrink.fullWidth
+    const displayHeight = simArenaMeta.displayHeight || simArenaRender?.options?.height || shrink.fullHeight
+    const scaleX = displayWidth / Math.max(1, simArenaRender?.options?.width || shrink.fullWidth)
+    const scaleY = displayHeight / Math.max(1, simArenaRender?.options?.height || shrink.fullHeight)
+    shrink.zoneEl.style.setProperty('--sim-shrink-display-left', `${left * scaleX}px`)
+    shrink.zoneEl.style.setProperty('--sim-shrink-display-top', `${top * scaleY}px`)
+    shrink.zoneEl.style.setProperty('--sim-shrink-display-width', `${zoneWidth * scaleX}px`)
+    shrink.zoneEl.style.setProperty('--sim-shrink-display-height', `${zoneHeight * scaleY}px`)
+  }
 
   shrink.rect = { left, top, right: left + zoneWidth, bottom: top + zoneHeight }
 
@@ -10359,6 +10452,39 @@ function createSimBody(player, worldWidth, worldHeight) {
   return body
 }
 
+function renderSimCanvasOnce(timestamp = performance.now()) {
+  if (!simArenaRender) return
+  simRenderLastPaintAt = timestamp
+  Render.world(simArenaRender, timestamp)
+}
+
+function startSimRenderLoop() {
+  if (simRenderRaf) {
+    cancelAnimationFrame(simRenderRaf)
+  }
+  simRenderLastPaintAt = 0
+
+  const renderFrame = (timestamp) => {
+    if (!simArenaRender) {
+      simRenderRaf = null
+      return
+    }
+
+    const shouldPaint = simBattleFinished || !simRenderLastPaintAt || timestamp - simRenderLastPaintAt >= SIM_BATTLE_PERFORMANCE.renderFrameGap
+    if (shouldPaint) {
+      renderSimCanvasOnce(timestamp)
+    }
+
+    if (simBattleFinished) {
+      simRenderRaf = null
+      return
+    }
+    simRenderRaf = requestAnimationFrame(renderFrame)
+  }
+
+  simRenderRaf = requestAnimationFrame(renderFrame)
+}
+
 function initSimArena() {
   if (!simArenaWrap) return false
 
@@ -10388,7 +10514,7 @@ function initSimArena() {
       height,
       wireframes: false,
       background: 'transparent',
-      pixelRatio: getCanvasPixelRatio()
+      pixelRatio: Math.min(window.devicePixelRatio || 1, SIM_BATTLE_PERFORMANCE.canvasPixelRatio)
     }
   })
 
@@ -10397,7 +10523,7 @@ function initSimArena() {
   simArenaRender.canvas.style.width = '100%'
   simArenaRender.canvas.style.height = '100%'
 
-  Matter.Render.run(simArenaRender)
+  startSimRenderLoop()
   simArenaRunner = Matter.Runner.create()
   simArenaRunner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
   Matter.Runner.run(simArenaRunner, simArenaEngine)
@@ -10411,6 +10537,8 @@ function initSimArena() {
   simArenaMeta = {
     width,
     height,
+    displayWidth: width,
+    displayHeight: height,
     mapId: simSelectedMap,
     walls,
     ...mapResult.meta,
@@ -10422,6 +10550,7 @@ function initSimArena() {
       fullHeight: height,
       minWidth: width * 0.36,
       minHeight: height * 0.36,
+      lastVisualUpdateAt: 0,
       rect: { left: 0, top: 0, right: width, bottom: height }
     }
   }
@@ -10487,11 +10616,15 @@ function updateSimMovement() {
   }
 }
 
-function paintSimArenaOverlay() {
+function paintSimArenaOverlay(refreshMetrics = false) {
   if (!simArenaRender || !simArenaWrap) return
 
-  const displayWidth = simArenaWrap.clientWidth || simArenaRender.options.width
-  const displayHeight = simArenaWrap.clientHeight || simArenaRender.options.height
+  if (refreshMetrics && simArenaMeta) {
+    simArenaMeta.displayWidth = simArenaWrap.clientWidth || simArenaRender.options.width
+    simArenaMeta.displayHeight = simArenaWrap.clientHeight || simArenaRender.options.height
+  }
+  const displayWidth = simArenaMeta?.displayWidth || simArenaRender.options.width
+  const displayHeight = simArenaMeta?.displayHeight || simArenaRender.options.height
   const scaleX = displayWidth / simArenaRender.options.width
   const scaleY = displayHeight / simArenaRender.options.height
 
@@ -10504,7 +10637,11 @@ function paintSimArenaOverlay() {
     const parts = label._parts || {}
 
     if (parts.bar) {
-      parts.bar.style.width = `${(hpRatio * 100).toFixed(1)}%`
+      const nextBarWidth = `${(hpRatio * 100).toFixed(1)}%`
+      if (parts.bar._lastWidth !== nextBarWidth) {
+        parts.bar._lastWidth = nextBarWidth
+        parts.bar.style.width = nextBarWidth
+      }
     }
     if (parts.text) {
       const nextText = player.isAlive ? `${Math.max(0, player.currentHp)}/${player.maxHp}` : '탈락'
@@ -10519,8 +10656,16 @@ function paintSimArenaOverlay() {
       }
     }
 
-    label.classList.toggle('is-dead', !player.isAlive)
-    label.classList.toggle('is-winner', player.finalPlace === 1)
+    const isDead = !player.isAlive
+    const isWinner = player.finalPlace === 1
+    if (label._isDead !== isDead) {
+      label._isDead = isDead
+      label.classList.toggle('is-dead', isDead)
+    }
+    if (label._isWinner !== isWinner) {
+      label._isWinner = isWinner
+      label.classList.toggle('is-winner', isWinner)
+    }
 
     const x = body.position.x * scaleX
     const y = body.position.y * scaleY
@@ -10534,26 +10679,17 @@ function paintSimArenaOverlay() {
 function updateSimArenaOverlay(force = false) {
   if (!simArenaRender || !simArenaWrap) return
 
-  const minFrameGap = 1000 / 30
+  const forcePaint = force === true
   const now = performance.now()
 
-  if (force || now - simOverlayLastPaintAt >= minFrameGap) {
+  if (forcePaint || now - simOverlayLastPaintAt >= SIM_BATTLE_PERFORMANCE.overlayFrameGap) {
     simOverlayLastPaintAt = now
     if (simOverlayRaf) {
       cancelAnimationFrame(simOverlayRaf)
       simOverlayRaf = null
     }
-    paintSimArenaOverlay()
-    return
+    paintSimArenaOverlay(forcePaint)
   }
-
-  if (simOverlayRaf) return
-
-  simOverlayRaf = requestAnimationFrame(() => {
-    simOverlayRaf = null
-    simOverlayLastPaintAt = performance.now()
-    paintSimArenaOverlay()
-  })
 }
 
 function getSimPlayerById(playerId) {
@@ -10590,7 +10726,7 @@ function getSimRankingData() {
 function syncSimCombatStatus(message, options = {}) {
   const { force = false } = options
   const now = performance.now()
-  if (!force && now - simLastCombatMessageAt < 120) return
+  if (!force && now - simLastCombatMessageAt < SIM_BATTLE_PERFORMANCE.statusInterval) return
   simLastCombatMessageAt = now
   if (simStatusText) {
     simStatusText.textContent = message
@@ -10696,7 +10832,9 @@ function resolveSimPairCombat(playerA, playerB) {
     syncSimCombatStatus(`${playerA.label} vs ${playerB.label} 충돌 · ${resultA} / ${resultB}`)
   }
 
-  renderSimRanking(getSimRankingData())
+  if (!simBattleFinished) {
+    scheduleSimRankingRender({ force: !playerA.isAlive || !playerB.isAlive })
+  }
   updateSimArenaOverlay()
   maybeFinishSimBattle()
 }
@@ -10888,6 +11026,10 @@ function maybeFinishSimBattle() {
   releaseFastForward('game4')
   simBattleRunning = false
   simBattleFinished = true
+  if (simArenaRunner) {
+    simArenaRunner.enabled = false
+    Matter.Runner.stop(simArenaRunner)
+  }
   if (simArenaWrap) {
     simArenaWrap.classList.remove('is-sudden-death')
   }
@@ -10917,7 +11059,7 @@ function maybeFinishSimBattle() {
     setSimShuffleLock(false)
     setSimBattleStartState(false)
     updateSimPhase('종료')
-    renderSimRanking(getSimRankingData())
+    flushSimRankingRender(getSimRankingData())
     updateSimArenaOverlay(true)
     setSimViewMode('battle')
   } catch (error) {
@@ -11014,7 +11156,7 @@ async function startSimBattle() {
   setSimInputLock(true)
   setSimShuffleLock(true)
   updateSimPhase('전투 중')
-  renderSimRanking(getSimRankingData())
+  flushSimRankingRender(getSimRankingData())
   updateSimArenaOverlay()
 
   if (simStatusText) {
