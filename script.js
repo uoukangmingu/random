@@ -1,3 +1,34 @@
+const APP_PERFORMANCE_PROFILE = (() => {
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches
+  const touchCapable = coarsePointer || navigator.maxTouchPoints > 0
+  const shortSide = Math.min(window.innerWidth, window.innerHeight)
+  const isMobile = touchCapable && shortSide <= 1100
+  const memory = Number(navigator.deviceMemory || 0)
+  const cpuThreads = Number(navigator.hardwareConcurrency || 0)
+  const saveData = Boolean(navigator.connection?.saveData)
+  const lowMemory = memory > 0 && memory <= 4
+  const lowCpu = cpuThreads > 0 && cpuThreads <= 8
+  const isLowEndDesktop = !isMobile && (saveData || lowMemory || lowCpu)
+  const constrained = isMobile || isLowEndDesktop || saveData
+
+  return Object.freeze({
+    tier: isMobile ? 'mobile' : isLowEndDesktop ? 'low' : 'standard',
+    isMobile,
+    isLowEndDesktop,
+    constrained,
+    canvasPixelRatio: isMobile ? (shortSide <= 430 ? 0.8 : 0.9) : isLowEndDesktop ? 1 : 1.25,
+    physicsHz: isMobile ? 40 : isLowEndDesktop ? 50 : 60,
+    animationFrameInterval: isMobile ? 1000 / 30 : isLowEndDesktop ? 1000 / 40 : 1000 / 60,
+    countRefreshInterval: isMobile ? 200 : isLowEndDesktop ? 120 : 80,
+    stockTickInterval: isMobile ? 500 : isLowEndDesktop ? 400 : 250
+  })
+})()
+
+document.documentElement.classList.add(`perf-${APP_PERFORMANCE_PROFILE.tier}`)
+if (APP_PERFORMANCE_PROFILE.constrained) {
+  document.documentElement.classList.add('perf-constrained')
+}
+
 const screens = {
   home: document.getElementById('homeScreen'),
   menu: document.getElementById('menuScreen'),
@@ -338,19 +369,16 @@ function scheduleUnsupportedEmojiNormalization(root = document.body) {
 }
 
 function installEmojiFallbacks() {
-  normalizeUnsupportedEmojis(document.body)
+  // 최신 모바일/저사양 PC는 운영체제 이모지 폰트를 기본 제공한다. 전체 DOM을 캔버스로
+  // 재검사하는 작업은 초기 진입과 실시간 게임 렌더링에 더 큰 부담이므로 생략한다.
+  if (APP_PERFORMANCE_PROFILE.constrained) return
 
-  if (!('MutationObserver' in window)) return
-  emojiFallbackObserver = new MutationObserver(() => {
-    scheduleUnsupportedEmojiNormalization(document.body)
-  })
-  emojiFallbackObserver.observe(document.body, {
-    childList: true,
-    characterData: true,
-    attributes: true,
-    subtree: true,
-    attributeFilter: ['aria-label', 'title', 'alt']
-  })
+  const runInitialCheck = () => normalizeUnsupportedEmojis(document.body)
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(runInitialCheck, { timeout: 1200 })
+  } else {
+    setTimeout(runInitialCheck, 250)
+  }
 }
 
 const balloonConfigInput = document.getElementById('balloonConfigInput')
@@ -646,7 +674,7 @@ const BOARD_SIDE_PADDING = 18
 
 const BASE_BOARD_WIDTH = 1366
 const BASE_BOARD_HEIGHT = 768
-const MAX_CANVAS_PIXEL_RATIO = window.matchMedia('(pointer: coarse)').matches ? 1 : 1.35
+const MAX_CANVAS_PIXEL_RATIO = APP_PERFORMANCE_PROFILE.canvasPixelRatio
 
 function getCanvasPixelRatio() {
   return Math.min(window.devicePixelRatio || 1, MAX_CANVAS_PIXEL_RATIO)
@@ -857,9 +885,11 @@ let keyReactLastAppliedRawText = keyReactConfigInput ? keyReactConfigInput.value
 
 const BEAR_FIND_MIN_PLAYERS = 2
 const BEAR_FIND_MAX_PLAYERS = 20
-const BEAR_FIND_POSTER_SRC = 'assets/bear-find-start.png'
+const BEAR_FIND_POSTER_SRC = 'assets/bear-find-start.webp'
 const BEAR_FIND_BEAR_VIDEO_SRC = 'assets/bear-find-bear.mp4'
 const BEAR_FIND_PANDA_VIDEO_SRC = 'assets/bear-find-panda.mp4'
+const BEAR_FIND_BEAR_MOBILE_VIDEO_SRC = 'assets/bear-find-bear-mobile.mp4'
+const BEAR_FIND_PANDA_MOBILE_VIDEO_SRC = 'assets/bear-find-panda-mobile.mp4'
 
 const PHONE_PASS_TURN_COUNT = 8
 
@@ -1071,6 +1101,20 @@ function clampValue(value, min, max) {
 }
 
 function getBallCountBySlotCount(slotCount) {
+  if (APP_PERFORMANCE_PROFILE.isMobile) {
+    if (slotCount <= 5) return 220
+    if (slotCount <= 10) return 180
+    if (slotCount <= 15) return 150
+    return 120
+  }
+
+  if (APP_PERFORMANCE_PROFILE.isLowEndDesktop) {
+    if (slotCount <= 5) return 320
+    if (slotCount <= 10) return 260
+    if (slotCount <= 15) return 220
+    return 180
+  }
+
   if (slotCount <= 5) return 500
   if (slotCount <= 10) return 400
   if (slotCount <= 15) return 300
@@ -1096,6 +1140,7 @@ let engine
 let render
 let runner
 let world
+let game1PhysicsActive = false
 let worldBodies = []
 let ballBodies = []
 let movingBodies = []
@@ -3235,6 +3280,7 @@ function handleAudioClick(event) {
 }
 
 function handleAudioHover(event) {
+  if (APP_PERFORMANCE_PROFILE.constrained) return
   if (!siteAudio.enabled || !siteAudio.unlocked || !window.matchMedia('(pointer: fine)').matches) return
 
   const target = event.target instanceof Element ? event.target.closest('button, a, .game-item, .luck-carousel-dot, .physical-carousel-dot') : null
@@ -5050,7 +5096,18 @@ function showScreen(target, options = {}) {
 
   releaseAllFastForward()
 
-  const leavingGame4 = screens.game4?.classList.contains('active') && target !== 'game4'
+  const leavingGame1 = previousScreenKey === 'game1' && target !== 'game1'
+  const leavingGame2 = previousScreenKey === 'game2' && target !== 'game2'
+  const leavingGame3 = previousScreenKey === 'game3' && target !== 'game3'
+  const leavingGame4 = previousScreenKey === 'game4' && target !== 'game4'
+  const leavingGame5 = previousScreenKey === 'game5' && target !== 'game5'
+  const leavingGame6 = previousScreenKey === 'game6' && target !== 'game6'
+  const leavingGame7 = previousScreenKey === 'game7' && target !== 'game7'
+  const leavingBalloon = previousScreenKey === 'physicalBalloon' && target !== 'physicalBalloon'
+  const leavingBomb = previousScreenKey === 'physicalBomb' && target !== 'physicalBomb'
+  const leavingCircle = previousScreenKey === 'physicalCircle' && target !== 'physicalCircle'
+  const leavingKeyReact = previousScreenKey === 'physicalKeyReact' && target !== 'physicalKeyReact'
+  const leavingBearFind = previousScreenKey === 'physicalBearFind' && target !== 'physicalBearFind'
   closePopup({ force: true })
   Object.values(screens).forEach((screen) => screen?.classList.remove('active'))
   screens[target].classList.add('active')
@@ -5065,15 +5122,13 @@ function showScreen(target, options = {}) {
   document.body.classList.toggle('physical-bearfind-mode', target === 'physicalBearFind')
   document.body.classList.toggle('key-react-compact-mode', target === 'physicalKeyReact')
 
-  if (target !== 'game1') {
+  document.body.classList.toggle('game1-mode', target === 'game1')
+  if (leavingGame1) {
     stopGame1LiveRound()
-    document.body.classList.remove('game1-mode')
     setDrawerState(false)
-  } else {
-    document.body.classList.add('game1-mode')
   }
 
-  if (target !== 'game2') {
+  if (leavingGame2) {
     closeRaceTrackZoom()
     stopRaceLoop()
     raceFinished = false
@@ -5082,33 +5137,29 @@ function showScreen(target, options = {}) {
     setRaceShuffleLock(false)
   }
 
-  if (target !== 'game3') {
+  if (leavingGame3) {
     stopBattleFlow()
     setBattleInputLock(false)
     setBattleShuffleLock(false)
   }
 
-  if (target !== 'game4') {
-    if (leavingGame4) {
-      resetSim()
-    } else {
-      stopSimBattle({ preserveSetup: true })
-    }
+  if (leavingGame4) {
+    resetSim()
   }
 
-  if (target !== 'game5') {
+  if (leavingGame5) {
     closeRouletteStageZoom()
     stopNavalGame({ preserveBoard: false })
     setNavalInputLock(false)
   }
 
-  if (target !== 'game6') {
+  if (leavingGame6) {
     stopStockGame({ preserveSetup: true })
     setStockInputLock(false)
     setStockSetupLock(false)
   }
 
-  if (target !== 'game7') {
+  if (leavingGame7) {
     ladderRunToken += 1
     stopLadderProgressAnimation()
     ladderAutoRunning = false
@@ -5116,24 +5167,24 @@ function showScreen(target, options = {}) {
     setLadderInputLock(false)
   }
 
-  if (target !== 'physicalBalloon') {
+  if (leavingBalloon) {
     stopBalloonHold()
   }
 
-  if (target !== 'physicalBomb') {
+  if (leavingBomb) {
     stopBombPassGame()
   }
 
-  if (target !== 'physicalCircle') {
+  if (leavingCircle) {
     stopCircleTapGame({ preservePlayers: true })
   }
 
-  if (target !== 'physicalKeyReact') {
+  if (leavingKeyReact) {
     stopKeyReactGame({ preservePlayers: true })
   }
 
 
-  if (target !== 'physicalBearFind') {
+  if (leavingBearFind) {
     stopBearFindPlayback()
   }
 
@@ -5211,6 +5262,7 @@ function showScreen(target, options = {}) {
 
   currentScreenKey = target
   updatePrevStepButtons()
+  scheduleGameStartButtonStateSync()
 
   if (target !== previousScreenKey) {
     playSfx('screen')
@@ -5403,6 +5455,8 @@ function ensureGameReady() {
 
   if (!engine) {
     initMatterWorld()
+  } else {
+    resumeGame1Physics()
   }
 
   if (!currentSlots.length && configInput) {
@@ -5439,6 +5493,16 @@ function initMatterWorld() {
   engine = Engine.create()
   world = engine.world
   engine.gravity.y = 1.05
+  engine.enableSleeping = true
+  if (APP_PERFORMANCE_PROFILE.isMobile) {
+    engine.positionIterations = 4
+    engine.velocityIterations = 3
+    engine.constraintIterations = 1
+  } else if (APP_PERFORMANCE_PROFILE.isLowEndDesktop) {
+    engine.positionIterations = 5
+    engine.velocityIterations = 3
+    engine.constraintIterations = 1
+  }
 
   render = Render.create({
     element: gameCanvasWrap,
@@ -5458,12 +5522,28 @@ function initMatterWorld() {
   Render.run(render)
 
   runner = Runner.create()
+  runner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
   Runner.run(runner, engine)
+  game1PhysicsActive = true
 
   Events.on(engine, 'beforeUpdate', animateMovingBodies)
   Events.on(engine, 'afterUpdate', scheduleRefreshCounts)
   Events.on(engine, 'collisionStart', handleGame1CollisionAudio)
   return true
+}
+
+function pauseGame1Physics() {
+  if (!game1PhysicsActive) return
+  if (render) Render.stop(render)
+  if (runner) Runner.stop(runner)
+  game1PhysicsActive = false
+}
+
+function resumeGame1Physics() {
+  if (game1PhysicsActive || !render || !runner || !engine) return
+  Render.run(render)
+  Runner.run(runner, engine)
+  game1PhysicsActive = true
 }
 
 function handleGame1CollisionAudio(event) {
@@ -5489,6 +5569,7 @@ function stopGame1LiveRound() {
   clearFinalWatcher()
   resetRoundState()
   countRefreshQueued = false
+  pauseGame1Physics()
 
   if (ballBodies.length && world) {
     ballBodies.forEach((body) => Composite.remove(world, body))
@@ -5553,12 +5634,18 @@ function clearSpawnTimers() {
   resetRoundState()
 }
 
+let lastCountRefreshAt = 0
+
 function scheduleRefreshCounts() {
+  if (!isGame1ActiveScreen() || document.hidden) return
+  const now = performance.now()
+  if (now - lastCountRefreshAt < APP_PERFORMANCE_PROFILE.countRefreshInterval) return
   if (countRefreshQueued) return
   countRefreshQueued = true
 
   requestAnimationFrame(() => {
     countRefreshQueued = false
+    lastCountRefreshAt = performance.now()
     refreshCounts()
   })
 }
@@ -7422,6 +7509,11 @@ function raceFrame(timestamp) {
 
   if (!raceLastTimestamp) {
     raceLastTimestamp = timestamp
+  }
+
+  if (timestamp - raceLastTimestamp < APP_PERFORMANCE_PROFILE.animationFrameInterval) {
+    raceAnimationFrame = requestAnimationFrame(raceFrame)
+    return
   }
 
   playThrottledSfx('raceHoof', SFX_THROTTLE_MS.raceHoof)
@@ -10277,6 +10369,16 @@ function initSimArena() {
   simArenaEngine = Engine.create()
   simArenaWorld = simArenaEngine.world
   simArenaEngine.gravity.y = 0
+  simArenaEngine.enableSleeping = true
+  if (APP_PERFORMANCE_PROFILE.isMobile) {
+    simArenaEngine.positionIterations = 4
+    simArenaEngine.velocityIterations = 3
+    simArenaEngine.constraintIterations = 1
+  } else if (APP_PERFORMANCE_PROFILE.isLowEndDesktop) {
+    simArenaEngine.positionIterations = 5
+    simArenaEngine.velocityIterations = 3
+    simArenaEngine.constraintIterations = 1
+  }
 
   simArenaRender = Matter.Render.create({
     element: simArenaWrap,
@@ -10297,6 +10399,7 @@ function initSimArena() {
 
   Matter.Render.run(simArenaRender)
   simArenaRunner = Matter.Runner.create()
+  simArenaRunner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
   Matter.Runner.run(simArenaRunner, simArenaEngine)
   syncFastForwardRuntime('game4')
 
@@ -11422,7 +11525,8 @@ function animateNavalBombDrop(targetIndex) {
   burst.style.top = `${centerY}px`
   navalBombLayer.appendChild(burst)
 
-  const particles = Array.from({ length: 10 }, () => {
+  const particleCount = APP_PERFORMANCE_PROFILE.isMobile ? 5 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 7 : 10
+  const particles = Array.from({ length: particleCount }, () => {
     const particle = document.createElement('span')
     particle.className = 'naval-bomb-particle'
     particle.style.left = `${centerX}px`
@@ -12205,12 +12309,13 @@ function createRouletteEffectNode(className, x, y, text = '') {
 
 function createRouletteFireworkParticles(x, y) {
   if (!navalBombLayer) return []
-  return Array.from({ length: 14 }, (_, index) => {
+  const particleCount = APP_PERFORMANCE_PROFILE.isMobile ? 7 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 10 : 14
+  return Array.from({ length: particleCount }, (_, index) => {
     const particle = document.createElement('span')
     particle.className = 'roulette-firework-particle'
     particle.style.left = `${x}px`
     particle.style.top = `${y}px`
-    const angle = (index * Math.PI * 2) / 14
+    const angle = (index * Math.PI * 2) / particleCount
     const distance = 28 + (index % 4) * 8
     const fx = Math.cos(angle) * distance
     const fy = Math.sin(angle) * distance
@@ -12498,7 +12603,7 @@ const STOCK_SEED_MONEY = 1000000
 const STOCK_MIN_DURATION = 10
 const STOCK_MAX_DURATION = 60
 const STOCK_DURATION_STEP = 5
-const STOCK_TICK_MS = 250
+const STOCK_TICK_MS = APP_PERFORMANCE_PROFILE.stockTickInterval
 const STOCK_HISTORY_LENGTH = 44
 const STOCK_MAX_HOLDINGS = 4
 const STOCK_UNIT_WON = 10000
@@ -16630,6 +16735,7 @@ function applyBearFindVideoColorMatchFromStats(posterStats, videoStats, key) {
 
 function calibrateBearFindVideoColorMatch() {
   if (!bearFindVideo || !bearFindPoster) return
+  if (APP_PERFORMANCE_PROFILE.constrained) return
   if (!bearFindVideo.videoWidth || !bearFindVideo.videoHeight) return
 
   const key = `${bearFindCurrentOutcome || 'idle'}:${bearFindVideo.currentSrc || bearFindVideo.src || ''}`
@@ -16727,6 +16833,9 @@ function getBearFindOutcomeByIndex(index) {
 }
 
 function getBearFindVideoSrc(outcome) {
+  if (APP_PERFORMANCE_PROFILE.isMobile) {
+    return outcome === 'panda' ? BEAR_FIND_PANDA_MOBILE_VIDEO_SRC : BEAR_FIND_BEAR_MOBILE_VIDEO_SRC
+  }
   return outcome === 'panda' ? BEAR_FIND_PANDA_VIDEO_SRC : BEAR_FIND_BEAR_VIDEO_SRC
 }
 
@@ -17061,7 +17170,7 @@ function playBearFindCurrentTurn() {
     bearFindVideo.removeAttribute('controls')
     bearFindVideo.playsInline = true
     bearFindVideo.poster = BEAR_FIND_POSTER_SRC
-    bearFindVideo.preload = 'auto'
+    bearFindVideo.preload = APP_PERFORMANCE_PROFILE.isMobile ? 'metadata' : 'auto'
     bearFindVideo.src = src
     try {
       bearFindVideo.currentTime = 0
@@ -17910,6 +18019,14 @@ document.addEventListener('visibilitychange', () => {
     if (screens.game2?.classList.contains('active')) {
       stopRaceLoop()
     }
+    if (screens.game1?.classList.contains('active')) {
+      pauseGame1Physics()
+    }
+    return
+  }
+
+  if (screens.game1?.classList.contains('active')) {
+    resumeGame1Physics()
   }
 })
 
@@ -17986,6 +18103,7 @@ function initCustomCursor() {
   document.addEventListener('pointermove', (event) => {
     if (event.pointerType && event.pointerType !== 'mouse') return
     if (!customCursorEl) return
+    document.documentElement.classList.add('app-custom-cursor')
     customCursorEl.classList.add('is-visible')
     updateCustomCursorPosition(event.clientX, event.clientY)
     syncCustomCursorState(event.target)
@@ -17994,6 +18112,8 @@ function initCustomCursor() {
   document.addEventListener('pointerdown', (event) => {
     if (!customCursorEl) return
     if (event.pointerType && event.pointerType !== 'mouse') return
+    document.documentElement.classList.add('app-custom-cursor')
+    customCursorEl.classList.add('is-visible')
     customCursorEl.classList.add('is-press')
     syncCustomCursorState(event.target)
   }, true)
@@ -18005,12 +18125,14 @@ function initCustomCursor() {
   document.addEventListener('pointerout', (event) => {
     if (!event.relatedTarget) {
       customCursorHoverState = ''
+      document.documentElement.classList.remove('app-custom-cursor')
       customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
     }
   }, true)
 
   window.addEventListener('blur', () => {
     customCursorHoverState = ''
+    document.documentElement.classList.remove('app-custom-cursor')
     customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
   })
 }
@@ -18043,7 +18165,15 @@ setRaceShuffleLock(false)
 setSimInputLock(false)
 setSimShuffleLock(false)
 updateAllGameStartButtonRunningStates()
-setInterval(updateAllGameStartButtonRunningStates, 180)
+
+function monitorActiveGameStartButton() {
+  if (!document.hidden && document.body.classList.contains('app-active-game')) {
+    updateAllGameStartButtonRunningStates()
+  }
+  setTimeout(monitorActiveGameStartButton, document.hidden ? 2500 : 1000)
+}
+
+setTimeout(monitorActiveGameStartButton, 1000)
 
 if (configInput) {
   updateSlotsFromInput({ build: false })
@@ -18059,10 +18189,6 @@ if (simConfigInput) {
 
 if (navalConfigInput) {
   updateNavalFromInput({ render: false })
-  renderNavalBoardBase()
-  renderNavalBoardState()
-  renderNavalLogs()
-  renderNavalRanking()
 }
 
 if (stockDurationInput) {
@@ -18073,17 +18199,14 @@ if (stockDurationInput) {
 
 if (stockConfigInput) {
   updateStockFromInput({ render: false, preserveDrafts: true })
-  renderStockGame()
 }
 
 if (ladderConfigInput) {
   updateLadderFromInput({ render: false })
-  renderLadderGame()
 }
 
 if (balloonConfigInput) {
   updateBalloonFromInput({ render: false })
-  renderBalloonGame()
 }
 
 if (screens.home) {

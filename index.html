@@ -15,6 +15,19 @@
           document.documentElement.classList.add('theme-dark')
         }
       } catch (error) {}
+
+      const coarse = window.matchMedia('(pointer: coarse)').matches
+      const touch = coarse || navigator.maxTouchPoints > 0
+      const shortSide = Math.min(window.innerWidth, window.innerHeight)
+      const mobile = touch && shortSide <= 1100
+      const memory = Number(navigator.deviceMemory || 0)
+      const threads = Number(navigator.hardwareConcurrency || 0)
+      const saveData = Boolean(navigator.connection && navigator.connection.saveData)
+      const lowDesktop = !mobile && (saveData || (memory > 0 && memory <= 4) || (threads > 0 && threads <= 8))
+      document.documentElement.classList.add(mobile ? 'perf-mobile' : lowDesktop ? 'perf-low' : 'perf-standard')
+      if (mobile || lowDesktop || saveData) {
+        document.documentElement.classList.add('perf-constrained')
+      }
     })()
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -23,7 +36,7 @@
     href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Pretendard:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="style.css?v=20260617-hell-mode-hq-v1" />
+  <link rel="stylesheet" href="style.min.css?v=20260716-cursor-theme-fix-v3" />
 </head>
 <body>
 
@@ -643,9 +656,9 @@
               </div>
 
               <button id="bearFindStageButton" class="bear-find-stage-button" type="button" aria-label="선물 상자 열기">
-                <img id="bearFindPoster" class="bear-find-poster" src="assets/bear-find-start.png" alt="크리스마스 선물 상자" />
+                <img id="bearFindPoster" class="bear-find-poster" src="assets/bear-find-start.webp" alt="크리스마스 선물 상자" loading="lazy" decoding="async" />
                 <canvas id="bearFindStillFrame" class="bear-find-still-frame" aria-hidden="true"></canvas>
-                <video id="bearFindVideo" class="bear-find-video" playsinline preload="auto"></video>
+                <video id="bearFindVideo" class="bear-find-video" playsinline preload="none"></video>
                 <span id="bearFindColorMatchProbe" class="bear-find-color-probe" aria-hidden="true"></span>
                 <span id="bearFindCurrentLabel" class="bear-find-current-label">시작 전</span>
               </button>
@@ -1393,7 +1406,7 @@
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
-  <script src="script.js?v=20260617-hell-mode-hq-v1"></script>
+  <script src="assets/matter.min.js?v=0.20.0"></script>
+  <script src="script.min.js?v=20260716-cursor-theme-fix-v3"></script>
 </body>
 </html>

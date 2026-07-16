@@ -1927,6 +1927,124 @@ body.orientation-blocked .orientation-lock-overlay {
   }
 }
 
+/* =========================================================
+   Adaptive performance profile · 2026-07
+   Mobile uses a deliberately lighter visual pipeline. Low-spec desktop keeps
+   the desktop layout while avoiding the most expensive compositing effects.
+   ========================================================= */
+html.perf-constrained body {
+  background-attachment: scroll !important;
+}
+
+html.perf-constrained .background-deco {
+  animation: none !important;
+  will-change: auto !important;
+}
+
+html.perf-constrained .screen.active {
+  animation: none !important;
+}
+
+html.perf-constrained .card,
+html.perf-constrained .controls-wrap,
+html.perf-constrained .scoreboard-card,
+html.perf-constrained .game-board-card,
+html.perf-constrained .race-panel,
+html.perf-constrained .battle-table-card,
+html.perf-constrained .battle-panel,
+html.perf-constrained .sim-setup-card,
+html.perf-constrained .sim-arena-card,
+html.perf-constrained .sim-battle-summary-card,
+html.perf-constrained .naval-board-card,
+html.perf-constrained .stock-setup-card,
+html.perf-constrained .stock-live-card,
+html.perf-constrained .stock-panel,
+html.perf-constrained .stock-market-preview-card,
+html.perf-constrained .stock-allocation-card,
+html.perf-constrained .popup,
+html.perf-constrained .orientation-lock-card,
+html.perf-constrained .game-sidebar,
+html.perf-constrained .race-sidebar,
+html.perf-constrained .battle-sidebar,
+html.perf-constrained .sim-sidebar,
+html.perf-constrained .naval-sidebar,
+html.perf-constrained .stock-sidebar {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 7px 18px rgba(51, 91, 118, 0.12) !important;
+}
+
+html.perf-constrained .menu-btn .emoji,
+html.perf-constrained .game-item .game-icon,
+html.perf-constrained .small-badge,
+html.perf-constrained .utility-btn-icon {
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+html.perf-constrained .race-ranking-list,
+html.perf-constrained .battle-table,
+html.perf-constrained .sim-health-overlay,
+html.perf-constrained #stockBoard,
+html.perf-constrained #stockPortfolioList,
+html.perf-constrained #stockRankingList,
+html.perf-constrained #navalBoardWrap,
+html.perf-constrained .game-canvas-wrap,
+html.perf-constrained .race-track-wrap,
+html.perf-constrained .sim-arena-wrap {
+  contain: layout paint style;
+}
+
+html.perf-mobile button,
+html.perf-mobile .game-item,
+html.perf-mobile .card,
+html.perf-mobile .race-horse,
+html.perf-mobile .sim-ball-label {
+  transition-duration: 0.12s !important;
+}
+
+html.perf-mobile .game-item:hover,
+html.perf-mobile .menu-btn:hover,
+html.perf-mobile .action-btn:hover,
+html.perf-mobile .back-btn:hover,
+html.perf-mobile .utility-btn:hover {
+  transform: none !important;
+}
+
+html.perf-mobile .app {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+html.perf-mobile.hell-mode body,
+html.perf-low.hell-mode body,
+html.perf-mobile.hell-mode::before,
+html.perf-mobile.hell-mode::after,
+html.perf-mobile.hell-mode body::before,
+html.perf-mobile.hell-mode body::after,
+html.perf-low.hell-mode::before,
+html.perf-low.hell-mode::after,
+html.perf-low.hell-mode body::before,
+html.perf-low.hell-mode body::after {
+  animation: none !important;
+}
+
+html.perf-mobile.hell-mode::before,
+html.perf-mobile.hell-mode body::before,
+html.perf-low.hell-mode::before,
+html.perf-low.hell-mode body::before {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen.active,
+  .background-deco,
+  .app-cursor {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 @media (max-width: 640px) {
   .race-card {
     padding: 12px;
@@ -10701,16 +10819,16 @@ body,
 }
 
 @media (pointer: fine) {
-  html,
-  body,
-  body *,
-  button,
-  a,
-  input,
-  textarea,
-  select,
-  summary,
-  label {
+  html.app-custom-cursor,
+  html.app-custom-cursor body,
+  html.app-custom-cursor body *,
+  html.app-custom-cursor button,
+  html.app-custom-cursor a,
+  html.app-custom-cursor input,
+  html.app-custom-cursor textarea,
+  html.app-custom-cursor select,
+  html.app-custom-cursor summary,
+  html.app-custom-cursor label {
     cursor: none !important;
   }
 
@@ -28173,4 +28291,36 @@ html.hell-mode .popup.battle-final-popup .popup-message {
   html.hell-mode::after {
     border-radius: 8% / 5%;
   }
+}
+
+/* Final cascade guard for adaptive performance rules. */
+html.perf-constrained body {
+  background-attachment: scroll !important;
+}
+
+html.perf-constrained .background-deco {
+  animation: none !important;
+  will-change: auto !important;
+}
+
+html.perf-constrained .screen.active {
+  animation: none !important;
+}
+
+html.perf-mobile .app {
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+}
+
+html.perf-mobile.hell-mode body,
+html.perf-low.hell-mode body,
+html.perf-mobile.hell-mode::before,
+html.perf-mobile.hell-mode::after,
+html.perf-mobile.hell-mode body::before,
+html.perf-mobile.hell-mode body::after,
+html.perf-low.hell-mode::before,
+html.perf-low.hell-mode::after,
+html.perf-low.hell-mode body::before,
+html.perf-low.hell-mode body::after {
+  animation: none !important;
 }
