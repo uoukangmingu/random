@@ -1,0 +1,42 @@
+[
+  {
+    "name": "core.js",
+    "bytes": 181322
+  },
+  {
+    "name": "game1-drop.js",
+    "bytes": 43200
+  },
+  {
+    "name": "game2-race.js",
+    "bytes": 22122
+  },
+  {
+    "name": "game3-card-battle.js",
+    "bytes": 48352
+  },
+  {
+    "name": "game4-ball-battle.js",
+    "bytes": 66900
+  },
+  {
+    "name": "game5-russian-roulette.js",
+    "bytes": 26375
+  },
+  {
+    "name": "game6-stock.js",
+    "bytes": 53218
+  },
+  {
+    "name": "game7-ladder.js",
+    "bytes": 25928
+  },
+  {
+    "name": "physical-games.js",
+    "bytes": 77502
+  },
+  {
+    "name": "bootstrap.js",
+    "bytes": 28214
+  }
+]
