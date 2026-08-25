@@ -9,7 +9,8 @@
     "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
     "check:wheel-runtime": "node scripts/qa-wheel-runtime.mjs",
-    "check:catalog-runtime": "node scripts/qa-catalog-list-runtime.mjs"
+    "check:catalog-runtime": "node scripts/qa-catalog-list-runtime.mjs",
+    "check:carousel-runtime": "node scripts/qa-mobile-carousel-runtime.mjs"
   },
   "devDependencies": {
     "vite": "^8.2.2"

@@ -1,11 +1,11 @@
-const CACHE_VERSION = 'random-roulette-v20260825-mobile-compositor-wheel-ux12'
+const CACHE_VERSION = 'random-roulette-v20260825-mobile-menu-loop-ux13'
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './random-roulette.v3.12.css',
+  './random-roulette.v3.13.css',
   './volume-controls.js',
-  './random-roulette.v3.12.js',
+  './random-roulette.v3.13.js',
   './assets/matter.min.js',
   './assets/app-icon.svg',
   './assets/app-icon-192.png',
