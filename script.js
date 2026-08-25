@@ -468,8 +468,9 @@ const popupOverlay = document.getElementById('popupOverlay')
 const popupTitle = document.getElementById('popupTitle')
 const popupMessage = document.getElementById('popupMessage')
 const closePopupBtn = document.getElementById('closePopupBtn')
-const popupIcon = document.querySelector('.popup-icon')
+const popupIcon = popupOverlay?.querySelector('.popup-icon') || null
 const popupBox = popupOverlay?.querySelector('.popup') || null
+let popupLastFocusedElement = null
 
 const documentRoot = document.documentElement
 const themeToggleBtn = document.getElementById('themeToggleBtn')
@@ -3762,8 +3763,81 @@ async function toggleFullscreenMode() {
   }
 }
 
+function getPopupFocusableElements() {
+  if (!popupBox) return []
+  return [...popupBox.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((element) => element instanceof HTMLElement && element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden')
+}
+
+function isBlockingAppDialogVisible() {
+  return ['sessionConfirmOverlay', 'rosterOverlay'].some((id) => {
+    const overlay = document.getElementById(id)
+    return Boolean(overlay && !overlay.classList.contains('hidden'))
+  })
+}
+
+function canRestorePopupFocus(element) {
+  return Boolean(element instanceof HTMLElement && element.isConnected && !element.closest('.hidden') && element.getClientRects().length > 0)
+}
+
+function focusPopupContent() {
+  if (!isPopupVisible() || isBlockingAppDialogVisible()) return
+  const firstFocusable = getPopupFocusableElements()[0]
+  ;(firstFocusable || popupBox)?.focus({ preventScroll: true })
+}
+
+function handleBlockingDialogClosed() {
+  if (!isPopupVisible() || isBlockingAppDialogVisible()) return
+  if (!canRestorePopupFocus(popupLastFocusedElement) && canRestorePopupFocus(document.activeElement) && !popupBox?.contains(document.activeElement)) {
+    popupLastFocusedElement = document.activeElement
+  }
+  focusPopupContent()
+}
+
+function handlePopupDialogKeydown(event) {
+  if (!isPopupVisible() || isBlockingAppDialogVisible()) return
+
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    closePopup()
+    return
+  }
+
+  if (event.key !== 'Tab') return
+
+  const focusable = getPopupFocusableElements()
+  if (!focusable.length) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    popupBox?.focus({ preventScroll: true })
+    return
+  }
+
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  const active = document.activeElement
+  if (!popupBox?.contains(active)) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    first.focus({ preventScroll: true })
+  } else if (event.shiftKey && active === first) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    last.focus({ preventScroll: true })
+  } else if (!event.shiftKey && active === last) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    first.focus({ preventScroll: true })
+  }
+}
+
 function showPopup(title, message, options = {}) {
   const { icon = '🛠️', allowHtml = false, popupClass = '' } = options
+
+  if (!isPopupVisible()) {
+    popupLastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  }
 
   if (popupBox) {
     popupBox.className = 'popup'
@@ -3791,6 +3865,8 @@ function showPopup(title, message, options = {}) {
   if (popupOverlay) {
     popupOverlay.classList.remove('hidden')
   }
+
+  requestAnimationFrame(focusPopupContent)
 
   playPopupAudioCue(title, message)
 }
@@ -3833,6 +3909,12 @@ function closePopup(options = {}) {
     const resolver = popupWaitResolver
     popupWaitResolver = null
     resolver()
+  }
+
+  const focusTarget = popupLastFocusedElement
+  popupLastFocusedElement = null
+  if (canRestorePopupFocus(focusTarget)) {
+    focusTarget.focus({ preventScroll: true })
   }
 
   document.dispatchEvent(new CustomEvent('app-popup-closed', { detail: { force } }))
@@ -3970,9 +4052,9 @@ function handleLuckGameSelection(button) {
     }
 
     const targetScreen = `game${selectedGame}`
-    const eligibility = window.RandomRouletteRegistry?.getEligibility?.(targetScreen)
-    if (eligibility && !eligibility.ok) {
-      showPopup('현재 명단으로 실행 불가', eligibility.reason, { icon: '👥' })
+    const entryAvailability = window.RandomRouletteRegistry?.getEntryAvailability?.(targetScreen)
+    if (entryAvailability && !entryAvailability.ok) {
+      showPopup('현재 기기에서 실행 불가', entryAvailability.reason, { icon: '⚠️' })
       return
     }
 
@@ -4384,9 +4466,9 @@ function handlePhysicalGameSelection(button) {
   const targetScreen = targetByGame[button.dataset.physicalGame]
   if (!targetScreen) return
 
-  const eligibility = window.RandomRouletteRegistry?.getEligibility?.(targetScreen)
-  if (eligibility && !eligibility.ok) {
-    showPopup('현재 환경에서 실행 불가', eligibility.reason, { icon: '👥' })
+  const entryAvailability = window.RandomRouletteRegistry?.getEntryAvailability?.(targetScreen)
+  if (entryAvailability && !entryAvailability.ok) {
+    showPopup('현재 기기에서 실행 불가', entryAvailability.reason, { icon: '⚠️' })
     return
   }
 
@@ -5131,6 +5213,8 @@ function updatePrevStepButtons() {
 function showScreen(target, options = {}) {
   if (target === 'menu' || target === 'physical') target = 'luck'
   if (!screens[target]) return
+
+  window.RandomRouletteUtilitySettings?.close?.()
 
   const { historyMode = 'push', force = false } = options
   const previousScreenKey = currentScreenKey
@@ -17428,6 +17512,9 @@ if (popupOverlay) {
     }
   })
 }
+
+document.addEventListener('keydown', handlePopupDialogKeydown)
+document.addEventListener('app-dialog-closed', handleBlockingDialogClosed)
 
 
 if (luckGameGrid) {

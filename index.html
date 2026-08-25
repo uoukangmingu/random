@@ -47,7 +47,7 @@
     href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Pretendard:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="random-roulette.v3.7.css" />
+  <link rel="stylesheet" href="random-roulette.v3.10.css" />
 </head>
 <body>
 
@@ -178,13 +178,13 @@
           <div>
             <p class="small-badge">🎲 random games 🎲</p>
             <h2>랜덤 게임 목록</h2>
-            <p class="sub-text">운 게임과 피지컬 게임을 한곳에서 바로 선택할 수 있다. 랜덤 게임 뽑기는 현재 공용 명단과 기기에서 실행 가능한 게임만 골라준다.</p>
+            <p class="sub-text">기기에서 지원하는 게임은 공용 목록 없이도 모두 들어갈 수 있다. 이름·메뉴·의견 같은 항목은 게임 안에서 직접 입력하거나 공용 목록으로 한 번에 불러올 수 있다.</p>
           </div>
         </div>
 
         <div class="catalog-availability-bar" aria-live="polite">
-          <p id="catalogAvailabilitySummary">현재 기기와 참가자 명단을 확인하고 있어.</p>
-          <button id="catalogRosterEditBtn" class="catalog-roster-edit-btn" type="button">참가자 명단 수정</button>
+          <p id="catalogAvailabilitySummary">현재 기기에서 이용 가능한 게임을 확인하고 있어.</p>
+          <button id="catalogRosterEditBtn" class="catalog-roster-edit-btn" type="button">공용 목록 만들기 · 선택</button>
         </div>
 
         <div class="luck-carousel-shell">
@@ -192,10 +192,10 @@
           <button class="game-item game-launch featured-random-pick" data-game="8" type="button">
             <div class="game-num">🎲</div>
             <h3>랜덤 게임 뽑기</h3>
-            <p>현재 공용 명단의 인원수와 기기를 확인해 실행 가능한 전체 게임 중 하나를 골라준다</p>
+            <p>공용 목록이 있으면 바로 시작 가능한 게임을, 없으면 현재 기기의 전체 호환 게임 중 하나를 골라준다</p>
             <div class="game-meta">
               <div class="game-meta-row"><span class="game-meta-label">대상</span><span class="game-meta-value">실행 가능 게임</span></div>
-              <div class="game-meta-row"><span class="game-meta-label">방식</span><span class="game-meta-value">명단·기기 기반</span></div>
+              <div class="game-meta-row"><span class="game-meta-label">방식</span><span class="game-meta-value">목록·기기 기반</span></div>
             </div>
           </button>
           <button class="game-item game-launch wheel-game-launch" data-game="wheel" type="button">
@@ -203,7 +203,7 @@
             <h3>기본 원판 룰렛</h3>
             <p>항목별 가중치를 설정하고 당첨자 제거·재추첨·결과 기록을 지원하는 기본 룰렛</p>
             <div class="game-meta">
-              <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~50명</span></div>
+              <div class="game-meta-row"><span class="game-meta-label">항목</span><span class="game-meta-value">2~50개</span></div>
               <div class="game-meta-row"><span class="game-meta-label">방식</span><span class="game-meta-value">가중치 추첨</span></div>
             </div>
           </button>
@@ -354,7 +354,7 @@
 
               <div class="wheel-option-row">
                 <label class="wheel-checkbox"><input id="wheelAutoRemoveCheckbox" type="checkbox" /> 당첨 항목 자동 제거</label>
-                <button id="wheelUseRosterBtn" class="action-btn secondary" type="button">공용 명단 불러오기</button>
+                <button id="wheelUseRosterBtn" class="action-btn secondary" type="button">공용 목록 불러오기</button>
               </div>
 
               <div class="button-row wheel-button-row">
@@ -1392,24 +1392,28 @@
   </main>
 
   <div class="utility-controls" aria-label="빠른 화면 조작">
-    <div id="utilitySettingsPanel" class="utility-settings-panel hidden" role="group" aria-label="화면 설정">
-      <button id="rosterToggleBtn" class="utility-btn utility-roster-btn" type="button" aria-haspopup="dialog" aria-controls="rosterOverlay" aria-label="참가자 명단 열기" title="참가자 명단 열기">
-        <span class="utility-btn-icon" aria-hidden="true">👥</span>
-        <span class="utility-btn-label">참가자 <b id="rosterCountBadge">0</b></span>
+    <div id="utilitySettingsPanel" class="utility-settings-panel app-settings-panel hidden" role="group" aria-label="화면 설정">
+      <div class="utility-settings-head">
+        <strong>설정</strong>
+        <button id="utilitySettingsCloseBtn" class="utility-settings-close-btn" type="button" aria-label="화면 설정 닫기">×</button>
+      </div>
+      <button id="rosterToggleBtn" class="utility-btn utility-roster-btn app-settings-action" type="button" aria-haspopup="dialog" aria-controls="rosterOverlay" aria-label="공용 목록 열기" title="공용 목록 열기">
+        <span class="utility-btn-icon" aria-hidden="true">☷</span>
+        <span class="utility-btn-label">공용 목록 <b id="rosterCountBadge">0</b></span>
       </button>
-      <button id="themeToggleBtn" class="utility-btn utility-theme-btn" type="button" aria-pressed="false" aria-label="밤 모드로 전환" title="밤 모드로 전환">
+      <button id="themeToggleBtn" class="utility-btn utility-theme-btn app-settings-action" type="button" aria-pressed="false" aria-label="밤 모드로 전환" title="밤 모드로 전환">
         <span class="utility-btn-icon" aria-hidden="true">🌙</span>
         <span class="utility-btn-label">밤 모드</span>
       </button>
-      <button id="fullscreenToggleBtn" class="utility-btn utility-fullscreen-btn" type="button" aria-pressed="false" aria-label="전체화면 켜기" title="전체화면 켜기">
+      <button id="fullscreenToggleBtn" class="utility-btn utility-fullscreen-btn app-settings-action" type="button" aria-pressed="false" aria-label="전체화면 켜기" title="전체화면 켜기">
         <span class="utility-btn-icon" aria-hidden="true">⛶</span>
         <span class="utility-btn-label">전체화면</span>
       </button>
-      <button id="audioToggleBtn" class="utility-btn utility-audio-btn" type="button" aria-pressed="true" aria-label="사운드 끄기" title="사운드 끄기">
+      <button id="audioToggleBtn" class="utility-btn utility-audio-btn app-settings-action" type="button" aria-pressed="true" aria-label="사운드 끄기" title="사운드 끄기">
         <span class="utility-btn-icon" aria-hidden="true">🔊</span>
         <span class="utility-btn-label">사운드 켬</span>
       </button>
-      <div class="utility-volume-panel" aria-label="게임 음량 조절">
+      <div class="utility-volume-panel app-settings-volume" aria-label="게임 음량 조절">
         <label class="volume-control" for="bgmVolumeRange">
           <span class="volume-control-text">배경음</span>
           <input id="bgmVolumeRange" class="volume-range" type="range" min="0" max="100" value="32" step="1" aria-label="배경음 음량" />
@@ -1423,34 +1427,34 @@
       </div>
     </div>
     <div class="utility-quick-actions">
-      <button id="utilitySettingsToggleBtn" class="utility-btn utility-settings-toggle-btn" type="button" aria-expanded="false" aria-controls="utilitySettingsPanel" aria-label="화면 설정 열기" title="화면 설정 열기">
+      <button id="utilitySettingsToggleBtn" class="utility-btn utility-settings-toggle-btn app-quick-action" type="button" aria-expanded="false" aria-controls="utilitySettingsPanel" aria-label="화면 설정 열기" title="화면 설정 열기">
         <span class="utility-btn-icon" aria-hidden="true">⚙</span>
       </button>
-      <button id="desktopPrevStepBtn" class="utility-btn utility-prevstep-btn utility-desktop-only" type="button" aria-label="이전으로" title="이전으로">
+      <button id="desktopPrevStepBtn" class="utility-btn utility-prevstep-btn utility-desktop-only app-quick-action" type="button" aria-label="이전으로" title="이전으로">
         <span class="utility-btn-icon" aria-hidden="true">↩</span>
         <span class="utility-btn-label">이전으로</span>
       </button>
-      <button id="mobilePrevStepBtn" class="utility-btn utility-prevstep-btn utility-mobile-only" type="button" aria-label="이전으로" title="이전으로">
+      <button id="mobilePrevStepBtn" class="utility-btn utility-prevstep-btn utility-mobile-only app-quick-action" type="button" aria-label="이전으로" title="이전으로">
         <span class="utility-btn-icon" aria-hidden="true">↩</span>
         <span class="utility-btn-label">이전으로</span>
       </button>
     </div>
   </div>
 
-  <div id="rosterOverlay" class="app-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rosterDialogTitle">
+  <div id="rosterOverlay" class="app-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rosterDialogTitle" aria-describedby="rosterDialogDescription">
     <div class="app-dialog roster-dialog">
       <div class="app-dialog-head">
-        <div><p class="small-badge">👥 shared roster</p><h3 id="rosterDialogTitle">공용 참가자 명단</h3></div>
-        <button id="rosterCloseBtn" class="app-dialog-close" type="button" aria-label="참가자 명단 닫기">×</button>
+        <div><p class="small-badge">☷ shared list</p><h3 id="rosterDialogTitle">공용 목록</h3></div>
+        <button id="rosterCloseBtn" class="app-dialog-close" type="button" aria-label="공용 목록 닫기">×</button>
       </div>
-      <p class="sub-text">한 번 저장하면 모든 게임의 참가자 입력에 자동으로 반영된다. 쉼표 또는 줄바꿈으로 구분할 수 있다.</p>
-      <label class="roster-input-label" for="rosterInput">참가자 이름</label>
-      <textarea id="rosterInput" rows="8" spellcheck="false" placeholder="홍길동&#10;김아무개&#10;박철수"></textarea>
+      <p id="rosterDialogDescription" class="sub-text">이름·점심 메뉴·의견처럼 여러 게임에서 다시 쓸 항목을 저장한다. 선택 기능이므로 입력을 비운 상태도 저장할 수 있고, 게임 안에서 직접 입력해도 된다.</p>
+      <label class="roster-input-label" for="rosterInput">항목 (선택)</label>
+      <textarea id="rosterInput" rows="8" spellcheck="false" placeholder="김치찌개&#10;돈가스&#10;비빔밥"></textarea>
       <div id="rosterPreview" class="roster-preview" aria-live="polite"></div>
-      <div id="rosterStatus" class="status-text" aria-live="polite">2~50명의 중복되지 않은 이름을 입력해줘.</div>
+      <div id="rosterStatus" class="status-text" aria-live="polite">비워서 저장하거나, 쉼표 또는 줄바꿈으로 2~50개 항목을 입력해줘.</div>
       <div class="app-dialog-actions">
-        <button id="rosterClearBtn" class="action-btn soft" type="button">비우기</button>
-        <button id="rosterSaveBtn" class="action-btn primary" type="button">명단 저장·전체 반영</button>
+        <button id="rosterClearBtn" class="action-btn soft" type="button">입력 비우기</button>
+        <button id="rosterSaveBtn" class="action-btn primary" type="button">공용 목록 저장·반영</button>
       </div>
     </div>
   </div>
@@ -1486,6 +1490,6 @@
 
   <script src="assets/matter.min.js?v=0.20.0"></script>
   <script src="volume-controls.js?v=20260825-runtime-fix"></script>
-  <script src="random-roulette.v3.7.js"></script>
+  <script src="random-roulette.v3.10.js"></script>
 </body>
 </html>
