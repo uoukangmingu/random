@@ -17,7 +17,8 @@ const APP_PERFORMANCE_PROFILE = (() => {
     isLowEndDesktop,
     constrained,
     canvasPixelRatio: isMobile ? (shortSide <= 430 ? 0.8 : 0.9) : isLowEndDesktop ? 1 : 1.25,
-    physicsHz: isMobile ? 40 : isLowEndDesktop ? 50 : 60,
+    // 게임 판정은 모든 기기에서 같은 고정 시간축을 사용한다. 성능 차이는 렌더링에만 적용한다.
+    physicsHz: 50,
     animationFrameInterval: isMobile ? 1000 / 30 : isLowEndDesktop ? 1000 / 40 : 1000 / 60,
     countRefreshInterval: isMobile ? 200 : isLowEndDesktop ? 120 : 80,
     stockTickInterval: isMobile ? 500 : isLowEndDesktop ? 400 : 250
@@ -32,6 +33,7 @@ if (APP_PERFORMANCE_PROFILE.constrained) {
 const screens = {
   home: document.getElementById('homeScreen'),
   menu: document.getElementById('menuScreen'),
+  wheel: document.getElementById('wheelScreen'),
   physical: document.getElementById('physicalScreen'),
   physicalBalloon: document.getElementById('physicalBalloonScreen'),
   physicalBomb: document.getElementById('physicalBombScreen'),
@@ -51,12 +53,12 @@ const screens = {
 const startBtn = document.getElementById('startBtn')
 const physicalBtn = document.getElementById('physicalBtn')
 const luckBtn = document.getElementById('luckBtn')
-const backButtons = document.querySelectorAll('.back-btn')
 const gameLaunchButtons = document.querySelectorAll('.game-launch')
 const comingSoonButtons = document.querySelectorAll('.game-coming-soon')
 const luckGameGrid = document.getElementById('luckGameGrid')
 const luckCarouselHud = document.getElementById('luckCarouselHud')
 const luckCarouselDots = document.getElementById('luckCarouselDots')
+const luckCarouselCounter = document.getElementById('luckCarouselCounter')
 const physicalGameGrid = document.getElementById('physicalGameGrid')
 const physicalCarouselHud = document.getElementById('physicalCarouselHud')
 const physicalCarouselDots = document.getElementById('physicalCarouselDots')
@@ -65,28 +67,28 @@ const physicalGameLaunchButtons = document.querySelectorAll('.physical-game-laun
 
 const EMOJI_FALLBACK_MAP = Object.freeze({
   '🎀': ['✦', '*'],
-  '✨': ['✧', '*'],
-  '💪': ['🏃', 'PHYS'],
-  '🍀': ['🎱', 'LUCK'],
-  '🎲': ['🔀', 'RANDOM'],
-  '🫙': ['🪣', 'BOWL'],
-  '🏇': ['🐴', 'HORSE'],
-  '🃏': ['♠️', 'CARD'],
-  '🔵': ['⚪', 'BALL'],
-  '🔫': ['🎯', 'SHOT'],
-  '📈': ['💹', 'UP'],
-  '🪜': ['↕️', 'LADDER'],
-  '📱': ['☎️', 'MOBILE'],
+  '✨': ['✦', '*'],
+  '💪': ['◆', 'PLAY'],
+  '🍀': ['♣', 'LUCK'],
+  '🎲': ['◆', 'RND'],
+  '🫙': ['▽', 'DROP'],
+  '🏇': ['♞', 'RACE'],
+  '🃏': ['♠', 'CARD'],
+  '🔵': ['●', 'BALL'],
+  '🔫': ['⌖', 'SHOT'],
+  '📈': ['↗', 'UP'],
+  '🪜': ['↕', 'LADDER'],
+  '📱': ['▯', 'MOBILE'],
   '💻': ['PC'],
-  '🖥️': ['💻', 'PC'],
-  '🖥': ['💻', 'PC'],
-  '🎈': ['🔴', 'BALLOON'],
-  '💣': ['⏱️', 'BOMB'],
-  '⭕': ['◎', 'CIRCLE'],
-  '⌨️': ['⌨', 'KEY'],
+  '🖥️': ['▣', 'PC'],
+  '🖥': ['▣', 'PC'],
+  '🎈': ['○', 'BALLOON'],
+  '💣': ['●', 'BOMB'],
+  '⭕': ['○', 'CIRCLE'],
+  '⌨️': ['KEY'],
   '⌨': ['KEY'],
-  '🧸': ['🐻', 'BEAR'],
-  '🎁': ['📦', 'BOX'],
+  '🧸': ['BEAR'],
+  '🎁': ['□', 'BOX'],
   '💥': ['✹', 'BOOM'],
   '⚔️': ['⚔', 'VS'],
   '⚔': ['VS'],
@@ -96,7 +98,7 @@ const EMOJI_FALLBACK_MAP = Object.freeze({
   '⚠️': ['⚠', '!'],
   '⚠': ['!'],
   '🌙': ['☾', 'NIGHT'],
-  '☀️': ['☀', 'DAY'],
+  '☀️': ['☼', 'DAY'],
   '☀': ['DAY'],
   '🔊': ['♪', 'ON'],
   '🔇': ['×', 'OFF'],
@@ -105,13 +107,15 @@ const EMOJI_FALLBACK_MAP = Object.freeze({
   '🏆': ['★', 'WIN'],
   '👑': ['♛', '1st'],
   '💀': ['☠', 'OUT'],
+  '☠': ['X'],
   '😨': ['!', '!!'],
   '🙂': [':)'],
+  '👥': ['2P', 'PEOPLE'],
   '🎡': ['↻', 'SPIN'],
   '🎬': ['▶', 'REC'],
   '🐎': ['♞', 'HORSE'],
   '🐴': ['♞', 'HORSE'],
-  '🐼': ['PANDA'],
+  '🐼': ['BEAR'],
   '👀': ['SEE'],
   '👆': ['TAP'],
   '💄': ['MAKEUP'],
@@ -121,10 +125,10 @@ const EMOJI_FALLBACK_MAP = Object.freeze({
   '🗺️': ['MAP'],
   '🗺': ['MAP'],
   '🧮': ['CALC'],
-  '🛡️': ['🛡', 'DEF'],
+  '🛡️': ['◇', 'DEF'],
   '🛡': ['DEF'],
   '🩺': ['♥', 'HP'],
-  '🪙': ['◎', 'COIN'],
+  '🪙': ['●', 'COIN'],
   '🎆': ['✦', 'FIRE'],
   '🎯': ['⌖', 'HIT'],
   '🍞': ['BREAD'],
@@ -133,14 +137,18 @@ const EMOJI_FALLBACK_MAP = Object.freeze({
   '★': ['*'],
   '✦': ['*'],
   '✧': ['*'],
-  '❤': ['♥'],
+  '❤': ['♥', 'HEART'],
   '♥': ['HEART'],
-  '❤️': ['♥'],
+  '❤️': ['♥', 'HEART'],
   '⏩': ['>>'],
   '↩': ['<'],
   '←': ['<'],
   '→': ['>'],
-  '↓': ['v']
+  '↑': ['^'],
+  '↓': ['v'],
+  '▼': ['v'],
+  '−': ['-'],
+  '□': ['[]']
 })
 
 const EMOJI_FALLBACK_PATTERN = new RegExp(
@@ -153,7 +161,8 @@ const EMOJI_FALLBACK_PATTERN = new RegExp(
 
 const EMOJI_SCAN_PATTERN = /(?:[\u{1F000}-\u{1FAFF}]|[\u2190-\u27BF])\uFE0F?(?:\u200D(?:[\u{1F000}-\u{1FAFF}]|[\u2190-\u27BF])\uFE0F?)*/gu
 
-const EMOJI_RISKY_FALLBACK_SET = new Set([])
+// 비교적 최근 추가되어 OS별 누락이 잦은 문자는 보수적 환경에서 안전 기호로 선교체한다.
+const EMOJI_RISKY_FALLBACK_SET = new Set(['🫙', '🪜', '🪙', '🫧', '🗗', '🛡️', '🩺'])
 
 const emojiSupportCache = new Map()
 let emojiFallbackObserver = null
@@ -184,7 +193,7 @@ function isConservativeEmojiFallbackEnvironment() {
 }
 
 function shouldUseRiskFallbackForEmoji(emoji) {
-  return false
+  return EMOJI_RISKY_FALLBACK_SET.has(emoji) && isConservativeEmojiFallbackEnvironment()
 }
 
 function getFallbackCandidates(emoji) {
@@ -213,54 +222,50 @@ function isReplacementLikelySupported(text) {
 
 function isEmojiLikelySupported(emoji) {
   if (!emoji) return true
+  if (globalThis.__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__ === true) return false
   if (emojiSupportCache.has(emoji)) return emojiSupportCache.get(emoji)
 
-  let supported = true
+  let supported = false
 
   try {
     const canvas = document.createElement('canvas')
     const context = canvas.getContext('2d', { willReadFrequently: true })
 
     if (context) {
-      const size = 56
+      const size = 64
       canvas.width = size * 2
       canvas.height = size
       context.textBaseline = 'top'
       context.font = '44px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", "Segoe UI Symbol", sans-serif'
-      const emojiWidth = context.measureText(emoji).width
-      const missingWidth = context.measureText('□').width
-      const tofuWidth = context.measureText('�').width
 
-      context.clearRect(0, 0, canvas.width, canvas.height)
-      context.fillText(emoji, 4, 4)
-      const emojiPixels = context.getImageData(0, 0, canvas.width, canvas.height).data
-
-      context.clearRect(0, 0, canvas.width, canvas.height)
-      context.fillText('□', 4, 4)
-      const missingPixels = context.getImageData(0, 0, canvas.width, canvas.height).data
-
-      context.clearRect(0, 0, canvas.width, canvas.height)
-      context.fillText('�', 4, 4)
-      const tofuPixels = context.getImageData(0, 0, canvas.width, canvas.height).data
-
-      let ink = 0
-      let diffFromSquare = 0
-      let diffFromTofu = 0
-      for (let index = 3; index < emojiPixels.length; index += 4) {
-        if (emojiPixels[index] > 0) ink += 1
-        if (Math.abs(emojiPixels[index] - missingPixels[index]) > 4) diffFromSquare += 1
-        if (Math.abs(emojiPixels[index] - tofuPixels[index]) > 4) diffFromTofu += 1
+      const captureGlyph = (text) => {
+        context.clearRect(0, 0, canvas.width, canvas.height)
+        context.fillText(text, 4, 4)
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
+        let ink = 0
+        let hash = 2166136261
+        for (let index = 0; index < pixels.length; index += 4) {
+          const alpha = pixels[index + 3]
+          if (alpha > 0) ink += 1
+          hash ^= pixels[index] + pixels[index + 1] * 3 + pixels[index + 2] * 5 + alpha * 7
+          hash = Math.imul(hash, 16777619)
+        }
+        return { width: context.measureText(text).width, ink, hash: hash >>> 0 }
       }
 
-      supported = ink > 24 && (
-        Math.abs(emojiWidth - missingWidth) > 1 ||
-        Math.abs(emojiWidth - tofuWidth) > 1 ||
-        diffFromSquare > 150 ||
-        diffFromTofu > 150
-      )
+      const emojiSignature = captureGlyph(emoji)
+      // 글꼴마다 두부 모양이 달라 □만 비교하면 오판한다. 실제 미할당 코드포인트도 함께 비교한다.
+      const missingSignatures = ['\uFFFF', '\u{10FFFF}', '\uE000', '�'].map(captureGlyph)
+      const matchesMissingGlyph = missingSignatures.some((signature) => (
+        Math.abs(emojiSignature.width - signature.width) <= 0.5 &&
+        emojiSignature.ink === signature.ink &&
+        emojiSignature.hash === signature.hash
+      ))
+      supported = emojiSignature.ink > 24 && !matchesMissingGlyph
     }
   } catch (error) {
-    supported = true
+    // 검사가 막힌 환경은 빈 문자를 남기지 않도록 안전 대체를 택한다.
+    supported = false
   }
 
   emojiSupportCache.set(emoji, supported)
@@ -369,15 +374,25 @@ function scheduleUnsupportedEmojiNormalization(root = document.body) {
 }
 
 function installEmojiFallbacks() {
-  // 최신 모바일/저사양 PC는 운영체제 이모지 폰트를 기본 제공한다. 전체 DOM을 캔버스로
-  // 재검사하는 작업은 초기 진입과 실시간 게임 렌더링에 더 큰 부담이므로 생략한다.
-  if (APP_PERFORMANCE_PROFILE.constrained) return
+  if (typeof MutationObserver === 'function' && !emojiFallbackObserver) {
+    emojiFallbackObserver = new MutationObserver((mutations) => {
+      const changedRoot = mutations.find((mutation) => mutation.target instanceof Element)?.target || document.body
+      scheduleUnsupportedEmojiNormalization(changedRoot)
+    })
+    emojiFallbackObserver.observe(document.body, {
+      childList: true,
+      characterData: true,
+      attributes: true,
+      subtree: true,
+      attributeFilter: ['aria-label', 'title', 'alt']
+    })
+  }
 
   const runInitialCheck = () => normalizeUnsupportedEmojis(document.body)
-  if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(runInitialCheck, { timeout: 1200 })
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(runInitialCheck)
   } else {
-    setTimeout(runInitialCheck, 250)
+    setTimeout(runInitialCheck, 0)
   }
 }
 
@@ -514,8 +529,6 @@ const gameMainHeader = document.querySelector('#game1Screen .game-main-header')
 const gamePlayArea = document.querySelector('#game1Screen .game-play-area')
 const gameSidebarInner = document.querySelector('#game1Screen .game-sidebar-inner')
 const scoreboardCard = document.querySelector('#game1Screen .scoreboard-card')
-const game1BackBtn = document.querySelector('#game1Screen .game-header-actions .back-btn[data-target="luck"]')
-const gameHeaderActions = document.querySelector('#game1Screen .game-header-actions')
 
 const raceConfigInput = document.getElementById('raceConfigInput')
 const shuffleRaceBtn = document.getElementById('shuffleRaceBtn')
@@ -532,8 +545,6 @@ const raceLayout = document.querySelector('#game2Screen .race-layout')
 const raceSidebar = document.querySelector('#game2Screen .race-sidebar')
 const raceMain = document.querySelector('#game2Screen .race-main')
 const raceMainHeader = document.querySelector('#game2Screen .race-main-header')
-const raceHeaderActions = document.querySelector('#game2Screen .race-main-header .game-header-actions, #game2Screen .race-main-header .race-panel-head-actions')
-const raceBackBtn = document.querySelector('#game2Screen .race-main-header .back-btn[data-target="luck"]')
 const raceCardScreen = document.querySelector('#game2Screen .race-card')
 const raceTrackZoomBtn = document.getElementById('raceTrackZoomBtn')
 const raceTrackZoomBackdrop = document.getElementById('raceTrackZoomBackdrop')
@@ -572,15 +583,12 @@ const simSidebar = document.querySelector('#game4Screen .sim-sidebar')
 const simSidebarInner = document.querySelector('#game4Screen .sim-sidebar-inner')
 const simMain = document.querySelector('#game4Screen .sim-main')
 const simMainHeader = document.querySelector('#game4Screen .sim-main-header')
-const simHeaderActions = document.querySelector('#game4Screen .sim-main-header .game-header-actions')
-const simBackBtn = document.querySelector('#game4Screen .sim-main-header .back-btn[data-target="luck"]')
 const simControlsWrap = document.querySelector('#game4Screen .controls-wrap')
 const simButtonRow = document.querySelector('#game4Screen .controls-wrap .button-row')
 const simScoreboardCard = document.querySelector('#game4Screen .scoreboard-card')
 const simSetupCard = document.querySelector('#game4Screen .sim-setup-card')
 const simArenaCard = document.querySelector('#game4Screen .sim-arena-card')
 const simBattleSummaryCard = document.querySelector('#game4Screen .sim-battle-summary-card')
-const simMobileBackWrap = document.querySelector('#game4Screen .sim-mobile-back-wrap')
 const simMobileBattleStartSlot = document.querySelector('#game4Screen .sim-mobile-battle-start-slot')
 const simMobileResetSlot = document.querySelector('#game4Screen .sim-mobile-reset-slot')
 const simInfoBtn = document.getElementById('simInfoBtn')
@@ -899,11 +907,13 @@ function isPhonePassPhysicalMode() {
 
 function createPhonePassPlayers(prefix, count = PHONE_PASS_TURN_COUNT) {
   const palette = getCommonPlayerPaletteByTheme()
-  const names = ['분홍', '민트', '하늘', '노랑', '보라', '주황', '초록', '라벤더']
+  const sharedNames = window.RandomRouletteRoster?.getNames?.() || []
+  const fallbackNames = ['분홍', '민트', '하늘', '노랑', '보라', '주황', '초록', '라벤더']
+  const playerNames = sharedNames.length >= 2 ? sharedNames : fallbackNames.slice(0, count)
 
-  return Array.from({ length: count }, (_, index) => ({
+  return Array.from({ length: playerNames.length }, (_, index) => ({
     id: `${prefix}-pass-${index + 1}`,
-    label: names[index % names.length],
+    label: playerNames[index],
     color: palette[index % palette.length] || '#ff82ad',
     isPhonePassVirtual: true
   }))
@@ -988,7 +998,7 @@ function isUsingCircleTapPhonePassMode() {
 
 function ensureBalloonPhonePassPlayers() {
   if (!isUsingBalloonPhonePassMode()) return false
-  if (!balloonPlayers.length || !balloonPlayers.every((player) => player.isPhonePassVirtual)) {
+  if (!balloonGameStarted || !balloonPlayers.length || !balloonPlayers.every((player) => player.isPhonePassVirtual)) {
     balloonPlayers = createPhonePassPlayers('balloon')
   }
   return true
@@ -996,7 +1006,7 @@ function ensureBalloonPhonePassPlayers() {
 
 function ensureCircleTapPhonePassPlayers() {
   if (!isUsingCircleTapPhonePassMode()) return false
-  if (!circleTapPlayers.length || !circleTapPlayers.every((player) => player.isPhonePassVirtual)) {
+  if (!circleTapStarted || !circleTapPlayers.length || !circleTapPlayers.every((player) => player.isPhonePassVirtual)) {
     circleTapPlayers = createPhonePassPlayers('circle-tap')
   }
   return true
@@ -1101,24 +1111,10 @@ function clampValue(value, min, max) {
 }
 
 function getBallCountBySlotCount(slotCount) {
-  if (APP_PERFORMANCE_PROFILE.isMobile) {
-    if (slotCount <= 5) return 220
-    if (slotCount <= 10) return 180
-    if (slotCount <= 15) return 150
-    return 120
-  }
-
-  if (APP_PERFORMANCE_PROFILE.isLowEndDesktop) {
-    if (slotCount <= 5) return 320
-    if (slotCount <= 10) return 260
-    if (slotCount <= 15) return 220
-    return 180
-  }
-
-  if (slotCount <= 5) return 500
-  if (slotCount <= 10) return 400
-  if (slotCount <= 15) return 300
-  return 200
+  if (slotCount <= 5) return 220
+  if (slotCount <= 10) return 180
+  if (slotCount <= 15) return 150
+  return 120
 }
 
 let currentScale = 1
@@ -1195,14 +1191,20 @@ const FAST_FORWARD_MULTIPLIER = 3
 const FAST_FORWARD_BLOCKED_MESSAGE = '빨리감기 불가능 게임'
 
 const FAST_FORWARD_CARD_CONFIG = {
-  1: { title: '담아라!', state: 'blocked', badgeText: '없음' },
+  random: { title: '랜덤 게임 뽑기', state: 'none', badgeText: '불가' },
+  wheel: { title: '기본 원판 룰렛', state: 'none', badgeText: '불가' },
+  1: { title: '담아라!', state: 'blocked', badgeText: '불가' },
   2: { title: '경마', state: 'supported', badgeText: '가능' },
-  3: { title: '카드 연산 배틀', state: 'none', badgeText: '없음' },
+  3: { title: '카드 연산 배틀', state: 'none', badgeText: '불가' },
   4: { title: '볼 배틀', state: 'supported', badgeText: '가능' },
   5: { title: '러시안 룰렛', state: 'supported', badgeText: '가능' },
-  6: { title: '주식게임', state: 'none', badgeText: '없음' },
-  7: { title: '투명 사다리 타기', state: 'none', badgeText: '없음' },
-  8: { title: '랜덤 룰렛', state: 'none', badgeText: '없음' }
+  6: { title: '주식게임', state: 'none', badgeText: '불가' },
+  7: { title: '투명 사다리 타기', state: 'none', badgeText: '불가' },
+  balloon: { title: '풍선 불기', state: 'none', badgeText: '불가' },
+  'bomb-pass': { title: '폭탄 넘기기', state: 'none', badgeText: '불가' },
+  'shrinking-circle': { title: '작아지는 원', state: 'none', badgeText: '불가' },
+  'stay-click': { title: 'STAY CLICK', state: 'none', badgeText: '불가' },
+  'bear-find': { title: '곰찾기', state: 'none', badgeText: '불가' }
 }
 
 const fastForwardStates = {
@@ -1378,9 +1380,9 @@ function setRaceShuffleLock(isLocked) {
 }
 
 
-function getFastForwardCardConfig(gameNumber) {
-  return FAST_FORWARD_CARD_CONFIG[gameNumber] || {
-    title: `게임 ${gameNumber}`,
+function getFastForwardCardConfig(gameKey) {
+  return FAST_FORWARD_CARD_CONFIG[gameKey] || {
+    title: `게임 ${gameKey}`,
     state: 'pending',
     badgeText: '미정'
   }
@@ -1575,11 +1577,11 @@ function decorateLuckGameFastForwardBadges() {
   const items = document.querySelectorAll('.game-item')
 
   items.forEach((item) => {
-    const gameNumber = Number(item.dataset.game || item.querySelector('.game-num')?.textContent?.trim())
-    if (!Number.isFinite(gameNumber)) return
+    const gameKey = item.dataset.physicalGame || (item.dataset.game === '8' ? 'random' : item.dataset.game)
+    if (!gameKey) return
 
-    const config = getFastForwardCardConfig(gameNumber)
-    item.dataset.ffGame = String(gameNumber)
+    const config = getFastForwardCardConfig(gameKey)
+    item.dataset.ffGame = String(gameKey)
     item.dataset.ffState = config.state
 
     if (item.querySelector('.game-ff-badge')) return
@@ -1615,10 +1617,11 @@ function handleLuckFastForwardBadgeClick(event) {
   event.preventDefault()
   event.stopPropagation()
 
-  const gameNumber = Number(item.dataset.ffGame || item.dataset.game || item.querySelector('.game-num')?.textContent?.trim())
-  if (!Number.isFinite(gameNumber)) return
+  const gameKey = item.dataset.ffGame || item.dataset.physicalGame || (item.dataset.game === '8' ? 'random' : item.dataset.game)
+  if (!gameKey) return
+  const guideKey = /^\d+$/.test(gameKey) ? Number(gameKey) : gameKey
 
-  openFastForwardGuide(gameNumber)
+  openFastForwardGuide(guideKey)
 }
 
 function escapeHtml(text) {
@@ -3955,7 +3958,22 @@ function handleLuckGameSelection(button) {
     let selectedGame = button.dataset.game
 
     if (selectedGame === '8') {
-      selectedGame = String(Math.floor(Math.random() * 7) + 1)
+      const smartPick = window.RandomRouletteRegistry?.pickEligibleGameScreen?.()
+      if (!smartPick) return
+      showScreen(smartPick)
+      return
+    }
+
+    if (selectedGame === 'wheel') {
+      showScreen('wheel')
+      return
+    }
+
+    const targetScreen = `game${selectedGame}`
+    const eligibility = window.RandomRouletteRegistry?.getEligibility?.(targetScreen)
+    if (eligibility && !eligibility.ok) {
+      showPopup('현재 명단으로 실행 불가', eligibility.reason, { icon: '👥' })
+      return
     }
 
     if (selectedGame === '1') showScreen('game1')
@@ -3982,12 +4000,29 @@ function bindLuckGameItemInteraction(button) {
   })
 }
 
+function bindGameCatalogItemInteraction(button) {
+  if (!button) return
+  if (button.classList.contains('physical-game-launch')) {
+    bindPhysicalGameItemInteraction(button)
+    return
+  }
+  bindLuckGameItemInteraction(button)
+}
+
+function getVisibleLuckCarouselItems(items) {
+  return items.filter((item) => !item.hidden && !item.classList.contains('is-device-hidden') && window.getComputedStyle(item).display !== 'none')
+}
+
 function getLuckCarouselOriginalItems() {
-  return luckGameGrid ? [...luckGameGrid.querySelectorAll('.game-item:not([data-clone])')] : []
+  return luckGameGrid
+    ? getVisibleLuckCarouselItems([...luckGameGrid.querySelectorAll('.game-item:not([data-clone])')])
+    : []
 }
 
 function getLuckCarouselTrackItems() {
-  return luckGameGrid ? [...luckGameGrid.querySelectorAll('.game-item')] : []
+  return luckGameGrid
+    ? getVisibleLuckCarouselItems([...luckGameGrid.querySelectorAll('.game-item')])
+    : []
 }
 
 function ensureLuckCarouselLoop() {
@@ -4002,7 +4037,7 @@ function ensureLuckCarouselLoop() {
   originalItems.forEach((item, index) => {
     item.dataset.carouselIndex = String(index)
     item.dataset.loopSet = 'center'
-    bindLuckGameItemInteraction(item)
+    bindGameCatalogItemInteraction(item)
   })
 
   luckCarouselLoopReady = false
@@ -4021,7 +4056,9 @@ function ensureLuckCarouselLoop() {
     prependClone.dataset.loopSet = 'prepend'
     prependClone.dataset.carouselIndex = item.dataset.carouselIndex
     prependClone.removeAttribute('id')
-    bindLuckGameItemInteraction(prependClone)
+    delete prependClone.dataset.luckGameBound
+    delete prependClone.dataset.physicalGameBound
+    bindGameCatalogItemInteraction(prependClone)
     prependFragment.appendChild(prependClone)
 
     const appendClone = item.cloneNode(true)
@@ -4029,7 +4066,9 @@ function ensureLuckCarouselLoop() {
     appendClone.dataset.loopSet = 'append'
     appendClone.dataset.carouselIndex = item.dataset.carouselIndex
     appendClone.removeAttribute('id')
-    bindLuckGameItemInteraction(appendClone)
+    delete appendClone.dataset.luckGameBound
+    delete appendClone.dataset.physicalGameBound
+    bindGameCatalogItemInteraction(appendClone)
     appendFragment.appendChild(appendClone)
   })
 
@@ -4115,6 +4154,9 @@ function updateLuckCarouselActiveIndex(index, closestItem = null) {
 
   luckCarouselActiveIndex = safeIndex
   updateLuckCarouselDots(safeIndex)
+  if (luckCarouselCounter) {
+    luckCarouselCounter.textContent = originalItems.length ? `${safeIndex + 1} / ${originalItems.length}` : '0 / 0'
+  }
 
   const activeTrackIndex = activeItem ? trackItems.indexOf(activeItem) : -1
 
@@ -4299,7 +4341,10 @@ function syncLuckCarousel(options = {}) {
     luckCarouselHud.setAttribute('aria-hidden', shouldUseCarousel ? 'false' : 'true')
   }
 
-  if (!originalItems.length) return
+  if (!originalItems.length) {
+    if (luckCarouselCounter) luckCarouselCounter.textContent = '0 / 0'
+    return
+  }
 
   if (!luckCarouselDots || luckCarouselDots.children.length !== originalItems.length) {
     buildLuckCarouselDots()
@@ -4329,30 +4374,23 @@ function isPhysicalCarouselMode() {
 
 function handlePhysicalGameSelection(button) {
   if (!button) return
+  const targetByGame = {
+    balloon: 'physicalBalloon',
+    'bomb-pass': 'physicalBomb',
+    'shrinking-circle': 'physicalCircle',
+    'stay-click': 'physicalKeyReact',
+    'bear-find': 'physicalBearFind'
+  }
+  const targetScreen = targetByGame[button.dataset.physicalGame]
+  if (!targetScreen) return
 
-  if (button.dataset.physicalGame === 'balloon') {
-    showScreen('physicalBalloon')
+  const eligibility = window.RandomRouletteRegistry?.getEligibility?.(targetScreen)
+  if (eligibility && !eligibility.ok) {
+    showPopup('현재 환경에서 실행 불가', eligibility.reason, { icon: '👥' })
     return
   }
 
-  if (button.dataset.physicalGame === 'bomb-pass') {
-    showScreen('physicalBomb')
-    return
-  }
-
-  if (button.dataset.physicalGame === 'shrinking-circle') {
-    showScreen('physicalCircle')
-    return
-  }
-
-  if (button.dataset.physicalGame === 'stay-click') {
-    showScreen('physicalKeyReact')
-    return
-  }
-
-  if (button.dataset.physicalGame === 'bear-find') {
-    showScreen('physicalBearFind')
-  }
+  showScreen(targetScreen)
 }
 
 function bindPhysicalGameItemInteraction(button) {
@@ -4714,9 +4752,7 @@ function syncGame1MobileLayout() {
     !gamePlayArea ||
     !gameSidebar ||
     !gameSidebarInner ||
-    !scoreboardCard ||
-    !game1BackBtn ||
-    !gameHeaderActions
+    !scoreboardCard
   ) {
     return
   }
@@ -4734,11 +4770,6 @@ function syncGame1MobileLayout() {
       gameCardFull.appendChild(scoreboardCard)
     }
 
-    if (game1BackBtn.parentElement !== gameCardFull) {
-      game1BackBtn.classList.add('mobile-back-btn')
-      gameCardFull.appendChild(game1BackBtn)
-    }
-
     mobileLayoutApplied = true
     return
   }
@@ -4750,11 +4781,6 @@ function syncGame1MobileLayout() {
 
     if (scoreboardCard.parentElement !== gameSidebarInner) {
       gameSidebarInner.appendChild(scoreboardCard)
-    }
-
-    if (game1BackBtn.parentElement !== gameHeaderActions) {
-      game1BackBtn.classList.remove('mobile-back-btn')
-      gameHeaderActions.appendChild(game1BackBtn)
     }
 
     mobileLayoutApplied = false
@@ -4779,11 +4805,6 @@ function syncRaceMobileLayout() {
       raceLayout.insertBefore(raceMainHeader, raceLayout.firstChild)
     }
 
-    if (raceBackBtn && raceBackBtn.parentElement !== raceLayout) {
-      raceBackBtn.classList.add('mobile-race-back-btn')
-      raceLayout.appendChild(raceBackBtn)
-    }
-
     raceMobileLayoutApplied = true
     return
   }
@@ -4791,11 +4812,6 @@ function syncRaceMobileLayout() {
   if (!shouldUseMobileLayout && raceMobileLayoutApplied) {
     if (raceMainHeader.parentElement !== raceMain) {
       raceMain.insertBefore(raceMainHeader, raceMain.firstChild)
-    }
-
-    if (raceBackBtn && raceHeaderActions && raceBackBtn.parentElement !== raceHeaderActions) {
-      raceBackBtn.classList.remove('mobile-race-back-btn')
-      raceHeaderActions.appendChild(raceBackBtn)
     }
 
     raceMobileLayoutApplied = false
@@ -5068,18 +5084,19 @@ function goToPreviousStep(fallbackTarget = 'home') {
 
 function getPreviousStepFallbackTarget(screenKey = getActiveScreenKey()) {
   switch (screenKey) {
-    case 'menu':
-      return 'home'
     case 'luck':
-      return 'menu'
+      return 'home'
+    case 'menu':
     case 'physical':
-      return 'menu'
+      return 'luck'
+    case 'wheel':
+      return 'luck'
     case 'physicalBalloon':
     case 'physicalBomb':
     case 'physicalCircle':
     case 'physicalKeyReact':
     case 'physicalBearFind':
-      return 'physical'
+      return 'luck'
     case 'game1':
     case 'game2':
     case 'game3':
@@ -5112,13 +5129,31 @@ function updatePrevStepButtons() {
 }
 
 function showScreen(target, options = {}) {
+  if (target === 'menu' || target === 'physical') target = 'luck'
   if (!screens[target]) return
 
-  const { historyMode = 'push' } = options
+  const { historyMode = 'push', force = false } = options
   const previousScreenKey = currentScreenKey
+
+  if (!force && target !== previousScreenKey && window.RandomRouletteSession?.shouldConfirmExit?.(previousScreenKey)) {
+    window.RandomRouletteSession.requestNavigation({
+      target,
+      message: '현재 게임이 진행 중이야. 이동하면 진행 상황이 사라져.',
+      onConfirm: () => showScreen(target, { ...options, force: true }),
+      onCancel: () => {
+        if (historyMode === 'skip') {
+          // popstate는 이미 브라우저 기록을 이전 항목으로 이동시킨 뒤 발생한다.
+          // 이동을 취소했다면 현재 게임 화면을 다시 push해 기록 위치도 함께 복원한다.
+          commitScreenHistory(previousScreenKey, 'push')
+        }
+      }
+    })
+    return
+  }
 
   releaseAllFastForward()
 
+  const leavingWheel = previousScreenKey === 'wheel' && target !== 'wheel'
   const leavingGame1 = previousScreenKey === 'game1' && target !== 'game1'
   const leavingGame2 = previousScreenKey === 'game2' && target !== 'game2'
   const leavingGame3 = previousScreenKey === 'game3' && target !== 'game3'
@@ -5134,6 +5169,11 @@ function showScreen(target, options = {}) {
   closePopup({ force: true })
   Object.values(screens).forEach((screen) => screen?.classList.remove('active'))
   screens[target].classList.add('active')
+  forceScrollToTop()
+
+  if (leavingWheel) {
+    window.RandomRouletteWheel?.cancelSpin?.()
+  }
 
   document.body.classList.toggle('home-screen-mode', target === 'home')
   document.body.classList.toggle('menu-screen-mode', target === 'menu')
@@ -5213,10 +5253,16 @@ function showScreen(target, options = {}) {
 
   if (target === 'luck') {
     syncLuckCarousel({ align: true })
+    window.RandomRouletteRegistry?.refreshCards?.()
   }
 
   if (target === 'physical') {
     syncPhysicalCarousel({ align: true })
+    window.RandomRouletteRegistry?.refreshCards?.()
+  }
+
+  if (target === 'wheel') {
+    window.RandomRouletteWheel?.ensureReady?.()
   }
 
   if (target === 'game1') {
@@ -5280,7 +5326,7 @@ function showScreen(target, options = {}) {
     forceScrollToTop()
   }
 
-  document.body.classList.toggle('app-active-game', /^game\d+$/.test(target) || target === 'physicalBalloon' || target === 'physicalBomb' || target === 'physicalCircle' || target === 'physicalKeyReact' || target === 'physicalBearFind')
+  document.body.classList.toggle('app-active-game', target === 'wheel' || /^game\d+$/.test(target) || target === 'physicalBalloon' || target === 'physicalBomb' || target === 'physicalCircle' || target === 'physicalKeyReact' || target === 'physicalBearFind')
   updateOrientationGate()
 
   currentScreenKey = target
@@ -11963,7 +12009,7 @@ function resetNavalGame() {
 
 /* =========================
    game5 : russian roulette
-   기존 폭격 해전 함수명을 재사용해 화면 전환/초기화 흐름과 연결한다.
+   기존 화면 전환/초기화 연결 지점을 유지해 러시안 룰렛 구현을 연결한다.
 ========================= */
 
 const ROULETTE_MAX_PLAYERS = 10
@@ -12745,7 +12791,9 @@ const STOCK_SEED_MONEY = 1000000
 const STOCK_MIN_DURATION = 10
 const STOCK_MAX_DURATION = 60
 const STOCK_DURATION_STEP = 5
-const STOCK_TICK_MS = APP_PERFORMANCE_PROFILE.stockTickInterval
+const STOCK_TICK_MS = 250
+const STOCK_RENDER_INTERVAL_MS = APP_PERFORMANCE_PROFILE.stockTickInterval
+const STOCK_SCHEDULER_INTERVAL_MS = 50
 const STOCK_HISTORY_LENGTH = 44
 const STOCK_MAX_HOLDINGS = 4
 const STOCK_UNIT_WON = 10000
@@ -12847,6 +12895,9 @@ let stockGameFinished = false
 let stockElapsedMs = 0
 let stockDurationSeconds = 30
 let stockGameInterval = null
+let stockLogicAccumulatorMs = 0
+let stockLastSchedulerAt = 0
+let stockLastRenderAt = 0
 let stockSetupTurnIndex = 0
 let stockMarket = []
 let stockFocusedSelectionId = ''
@@ -14033,6 +14084,9 @@ function finishStockGame() {
   stockGameRunning = false
   stockGameFinished = true
   stockElapsedMs = stockDurationSeconds * 1000
+  stockLogicAccumulatorMs = 0
+  stockLastSchedulerAt = 0
+  stockLastRenderAt = 0
   finalizeStockAutoSell()
   setStockInputLock(false)
   setStockSetupLock(false)
@@ -14045,14 +14099,28 @@ function finishStockGame() {
 function tickStockGame() {
   if (!stockGameRunning) return
 
-  stockElapsedMs += STOCK_TICK_MS
-  const tickIndex = Math.floor(stockElapsedMs / STOCK_TICK_MS)
-  stockMarket.forEach((stock) => updateSingleStockTick(stock, tickIndex))
-  renderStockBoard()
-  renderStockPlayerSummary()
-  renderStockPortfolio()
-  renderStockRanking()
-  renderStockTimer()
+  const now = performance.now()
+  const elapsedSinceScheduler = stockLastSchedulerAt
+    ? Math.min(1000, Math.max(0, now - stockLastSchedulerAt))
+    : STOCK_SCHEDULER_INTERVAL_MS
+  stockLastSchedulerAt = now
+  stockLogicAccumulatorMs += elapsedSinceScheduler
+
+  while (stockLogicAccumulatorMs >= STOCK_TICK_MS && stockElapsedMs < stockDurationSeconds * 1000) {
+    stockLogicAccumulatorMs -= STOCK_TICK_MS
+    stockElapsedMs += STOCK_TICK_MS
+    const tickIndex = Math.floor(stockElapsedMs / STOCK_TICK_MS)
+    stockMarket.forEach((stock) => updateSingleStockTick(stock, tickIndex))
+  }
+
+  if (!stockLastRenderAt || now - stockLastRenderAt >= STOCK_RENDER_INTERVAL_MS) {
+    stockLastRenderAt = now
+    renderStockBoard()
+    renderStockPlayerSummary()
+    renderStockPortfolio()
+    renderStockRanking()
+    renderStockTimer()
+  }
 
   if (stockElapsedMs >= stockDurationSeconds * 1000) {
     finishStockGame()
@@ -14087,6 +14155,9 @@ function startStockGame() {
   stockGameRunning = true
   stockGameFinished = false
   stockElapsedMs = 0
+  stockLogicAccumulatorMs = 0
+  stockLastSchedulerAt = performance.now()
+  stockLastRenderAt = 0
   setStockInputLock(true)
   setStockSetupLock(true)
   updateStockStatus('실시간 변동 시작! 중간 매도 없이 끝까지 지켜보는 관찰형 주식게임이야.')
@@ -14096,7 +14167,7 @@ function startStockGame() {
   if (stockGameInterval) {
     clearInterval(stockGameInterval)
   }
-  stockGameInterval = setInterval(tickStockGame, STOCK_TICK_MS)
+  stockGameInterval = setInterval(tickStockGame, STOCK_SCHEDULER_INTERVAL_MS)
 }
 
 function sellStockHolding(playerId, stockId) {
@@ -14128,6 +14199,9 @@ function stopStockGame(options = {}) {
   }
 
   stockGameRunning = false
+  stockLogicAccumulatorMs = 0
+  stockLastSchedulerAt = 0
+  stockLastRenderAt = 0
 
   if (!preserveSetup) {
     stockGameFinished = false
@@ -14233,7 +14307,7 @@ function startRace() {
 
 
 const LADDER_DESKTOP_MAX_PLAYERS = 8
-const LADDER_MOBILE_MAX_PLAYERS = 4
+const LADDER_MOBILE_MAX_PLAYERS = 5
 const LADDER_MIN_PLAYERS = 2
 const LADDER_PLAYER_PALETTE = ['#ff82ad', '#6ce8d1', '#7fd8ff', '#ffd56f', '#c9b6ff', '#ffa97d', '#9fe9df', '#ffb087', '#d6c3ff', '#89f2b8', '#ffe07e', '#ffb6dc']
 
@@ -16966,7 +17040,8 @@ function parseBearFindPlayerCount(value) {
 }
 
 function getBearFindPlayerLabel(index) {
-  return `${index + 1}번 참가자`
+  const sharedNames = window.RandomRouletteRoster?.getNames?.() || []
+  return sharedNames[index] || `${index + 1}번 참가자`
 }
 
 function getBearFindOutcomeByIndex(index) {
@@ -17140,7 +17215,7 @@ function renderBearFindGame() {
     } else if (bearFindFinished) {
       bearFindPhaseBadge.textContent = '당첨 완료'
     } else if (bearFindStarted) {
-      bearFindPhaseBadge.textContent = `${bearFindCurrentIndex + 1}번 차례`
+      bearFindPhaseBadge.textContent = `${getBearFindPlayerLabel(bearFindCurrentIndex)} 차례`
     } else {
       bearFindPhaseBadge.textContent = '대기'
     }
@@ -17151,9 +17226,9 @@ function renderBearFindGame() {
       bearFindCurrentLabel.textContent = '상자 오픈 중'
     } else if (bearFindFinished) {
       const winnerIndex = bearFindResults.findIndex((item) => item === 'panda')
-      bearFindCurrentLabel.textContent = winnerIndex >= 0 ? `${winnerIndex + 1}번 참가자 당첨` : '게임 종료'
+      bearFindCurrentLabel.textContent = winnerIndex >= 0 ? `${getBearFindPlayerLabel(winnerIndex)} 당첨` : '게임 종료'
     } else if (bearFindStarted) {
-      bearFindCurrentLabel.textContent = `${bearFindCurrentIndex + 1}번 참가자 차례`
+      bearFindCurrentLabel.textContent = `${getBearFindPlayerLabel(bearFindCurrentIndex)} 차례`
     } else {
       bearFindCurrentLabel.textContent = '시작 전'
     }
@@ -17165,7 +17240,7 @@ function renderBearFindGame() {
     } else if (bearFindFinished) {
       bearFindStageHint.textContent = '판다를 찾았어. 리셋 후 다시 시작할 수 있어.'
     } else if (bearFindStarted) {
-      bearFindStageHint.textContent = `${bearFindCurrentIndex + 1}번 참가자가 원할 때 선물 상자를 눌러줘.`
+      bearFindStageHint.textContent = `${getBearFindPlayerLabel(bearFindCurrentIndex)}님이 원할 때 선물 상자를 눌러줘.`
     } else {
       bearFindStageHint.textContent = '시작을 누른 뒤, 현재 참가자가 원할 때 상자를 눌러줘.'
     }
@@ -17198,7 +17273,7 @@ function startBearFindGame() {
   bearFindFinished = false
   bearFindLocked = false
   bearFindCurrentIndex = 0
-  bearFindWinningIndex = Math.floor(Math.random() * bearFindPlayerCount)
+  bearFindWinningIndex = window.RandomRouletteRng?.randomInt?.(bearFindPlayerCount) ?? Math.floor(Math.random() * bearFindPlayerCount)
   bearFindResults = []
   bearFindCurrentOutcome = ''
   setBearFindInputLock(true)
@@ -17238,7 +17313,7 @@ function handleBearFindVideoEnd() {
     setBearFindInputLock(false)
 
     if (bearFindStatusText) {
-      bearFindStatusText.textContent = `${finishedIndex + 1}번 참가자가 판다를 찾았어.`
+      bearFindStatusText.textContent = `${getBearFindPlayerLabel(finishedIndex)}님이 판다를 찾았어.`
     }
 
     renderBearFindGame()
@@ -17254,7 +17329,7 @@ function handleBearFindVideoEnd() {
   bearFindCurrentIndex += 1
 
   if (bearFindStatusText) {
-    bearFindStatusText.textContent = `${finishedIndex + 1}번 참가자는 곰인형이 나왔어. 다음 참가자 차례야.`
+    bearFindStatusText.textContent = `${getBearFindPlayerLabel(finishedIndex)}님은 곰인형이 나왔어. 다음 참가자 차례야.`
   }
 
   renderBearFindGame()
@@ -17331,7 +17406,7 @@ function playBearFindCurrentTurn() {
 }
 
 if (startBtn) {
-  startBtn.addEventListener('click', () => showScreen('menu'))
+  startBtn.addEventListener('click', () => showScreen('luck'))
 }
 
 if (physicalBtn) {
@@ -17358,12 +17433,6 @@ if (popupOverlay) {
 if (luckGameGrid) {
   luckGameGrid.addEventListener('click', handleLuckFastForwardBadgeClick, true)
 }
-
-backButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    goToPreviousStep(button.dataset.target)
-  })
-})
 
 gameLaunchButtons.forEach((button) => {
   bindLuckGameItemInteraction(button)
@@ -18176,6 +18245,11 @@ if (luckGameGrid) {
   luckGameGrid.addEventListener('scroll', handleLuckCarouselScroll, { passive: true })
 }
 
+window.addEventListener('roulette-catalog-refreshed', () => {
+  luckCarouselActiveIndex = 0
+  syncLuckCarousel({ align: screens.luck?.classList.contains('active') })
+})
+
 if (physicalGameGrid) {
   physicalGameGrid.addEventListener('scroll', handlePhysicalCarouselScroll, { passive: true })
 }
@@ -18231,6 +18305,7 @@ function syncCustomCursorState(target) {
 
   customCursorEl.classList.toggle('is-hover', Boolean(interactive))
   customCursorEl.classList.toggle('is-text', Boolean(textEditable))
+  document.documentElement.classList.toggle('app-native-text-cursor', Boolean(textEditable))
 }
 
 function initCustomCursor() {
@@ -18267,14 +18342,14 @@ function initCustomCursor() {
   document.addEventListener('pointerout', (event) => {
     if (!event.relatedTarget) {
       customCursorHoverState = ''
-      document.documentElement.classList.remove('app-custom-cursor')
+      document.documentElement.classList.remove('app-custom-cursor', 'app-native-text-cursor')
       customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
     }
   }, true)
 
   window.addEventListener('blur', () => {
     customCursorHoverState = ''
-    document.documentElement.classList.remove('app-custom-cursor')
+    document.documentElement.classList.remove('app-custom-cursor', 'app-native-text-cursor')
     customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
   })
 }
@@ -18312,6 +18387,7 @@ function monitorActiveGameStartButton() {
   if (!document.hidden && document.body.classList.contains('app-active-game')) {
     updateAllGameStartButtonRunningStates()
   }
+  window.RandomRouletteWakeLock?.sync?.(window.RandomRouletteSession?.isRunning?.(currentScreenKey) || false)
   setTimeout(monitorActiveGameStartButton, document.hidden ? 2500 : 1000)
 }
 
