@@ -1,11 +1,11 @@
-const CACHE_VERSION = 'random-roulette-v20260825-mobile-menu-loop-ux13'
+const CACHE_VERSION = 'random-roulette-v20260825-swipe-only-menu-loop-ux14'
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './random-roulette.v3.13.css',
+  './random-roulette.v3.14.css',
   './volume-controls.js',
-  './random-roulette.v3.13.js',
+  './random-roulette.v3.14.js',
   './assets/matter.min.js',
   './assets/app-icon.svg',
   './assets/app-icon-192.png',
