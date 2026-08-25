@@ -840,7 +840,12 @@ document.addEventListener('visibilitychange', () => {
 
 if (luckGameGrid) {
   luckGameGrid.addEventListener('scroll', handleLuckCarouselScroll, { passive: true })
+  luckGameGrid.addEventListener('pointerdown', handleLuckCarouselPointerDown, { passive: true })
+  luckGameGrid.addEventListener('click', suppressLuckCarouselSwipeClick, true)
 }
+
+window.addEventListener('pointerup', handleLuckCarouselPointerUp)
+window.addEventListener('pointercancel', handleLuckCarouselPointerCancel, { passive: true })
 
 window.addEventListener('roulette-catalog-refreshed', () => {
   luckCarouselActiveIndex = 0
