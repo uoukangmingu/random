@@ -6,7 +6,7 @@ import { webcrypto } from 'node:crypto'
 
 const root = process.cwd()
 const requiredFiles = [
-  'index.html', 'dist/app.js', 'dist/app.css', 'random-roulette.v3.14.js', 'random-roulette.v3.14.css', 'app.bundle.js', 'app.bundle.css', 'script.min.js', 'style.min.css', 'volume-controls.js', 'manifest.webmanifest', 'sw.js',
+  'index.html', 'dist/app.js', 'dist/app.css', 'random-roulette.v3.15.js', 'random-roulette.v3.15.css', 'app.bundle.js', 'app.bundle.css', 'script.min.js', 'style.min.css', 'volume-controls.js', 'manifest.webmanifest', 'sw.js',
   'assets/matter.min.js', 'assets/app-icon.svg', 'assets/app-icon-192.png', 'assets/app-icon-512.png'
 ]
 
@@ -19,7 +19,7 @@ const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1])
 const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))]
 if (duplicateIds.length) throw new Error(`중복 HTML id: ${duplicateIds.join(', ')}`)
 
-for (const marker of ['wheelScreen', 'rosterOverlay', 'sessionConfirmOverlay', 'manifest.webmanifest', 'volume-controls.js', 'random-roulette.v3.14.js', '__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__', 'emoji-text-fallback', '랜덤 게임 목록', 'unified-game-grid', 'catalogAvailabilitySummary', 'catalogRosterEditBtn', 'luckCarouselCounter', 'utilitySettingsPanel', 'utilitySettingsToggleBtn', 'utilitySettingsCloseBtn', '공용 목록', '입력 비우기', 'aria-label="공용 목록 열기"', 'aria-describedby="rosterDialogDescription"', 'aria-describedby="popupMessage"']) {
+for (const marker of ['wheelScreen', 'rosterOverlay', 'sessionConfirmOverlay', 'manifest.webmanifest', 'volume-controls.js', 'random-roulette.v3.15.js', '__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__', 'emoji-text-fallback', '랜덤 게임 목록', 'unified-game-grid', 'catalogAvailabilitySummary', 'catalogRosterEditBtn', 'luckCarouselCounter', 'utilitySettingsPanel', 'utilitySettingsToggleBtn', 'utilitySettingsCloseBtn', '공용 목록', '입력 비우기', 'aria-label="공용 목록 열기"', 'aria-describedby="rosterDialogDescription"', 'aria-describedby="popupMessage"']) {
   if (!html.includes(marker)) throw new Error(`필수 마커 누락: ${marker}`)
 }
 for (const removedMarker of ['id="menuScreen"', 'id="physicalScreen"', 'id="physicalGameGrid"', 'id="luckCarouselPrevBtn"', 'id="luckCarouselNextBtn"', '>운 게임 목록<', '>피지컬 게임 목록<', 'class="physical-compat-badge', 'class="luck-carousel-nav-btn', '모바일 · PC</span>', 'PC 전용</span>', '현재 명단 실행 불가', '참가자 명단 수정', '공용 참가자 명단']) {
@@ -38,8 +38,8 @@ const appCss = await readFile(path.join(root, 'dist', 'app.css'), 'utf8')
 const rootCss = await readFile(path.join(root, 'style.min.css'), 'utf8')
 const deployApp = await readFile(path.join(root, 'app.bundle.js'), 'utf8')
 const deployCss = await readFile(path.join(root, 'app.bundle.css'), 'utf8')
-const versionedApp = await readFile(path.join(root, 'random-roulette.v3.14.js'), 'utf8')
-const versionedCss = await readFile(path.join(root, 'random-roulette.v3.14.css'), 'utf8')
+const versionedApp = await readFile(path.join(root, 'random-roulette.v3.15.js'), 'utf8')
+const versionedCss = await readFile(path.join(root, 'random-roulette.v3.15.css'), 'utf8')
 if (rootApp !== app || deployApp !== app || versionedApp !== app || rootCss !== appCss || deployCss !== appCss || versionedCss !== appCss) {
   throw new Error('배포용 루트 번들이 dist 빌드와 일치하지 않음')
 }
@@ -70,7 +70,7 @@ for (const marker of ["showScreen('luck')", 'pickEligibleGameScreen', 'bindGameC
 for (const marker of ['restoreCatalogOrder', 'setDeviceVisibility', 'syncCatalogDeviceClass', 'catalog-desktop-device', 'userAgentData?.mobile', 'hasDesktopIdentity', 'getDeviceCompatibleGameScreens', 'listReadiness', 'is-list-ineligible', 'catalog-list-status', 'listBlocked', 'roulette-shared-list-change', 'resetDraft', 'roulette-catalog-refreshed', 'LADDER_MOBILE_MAX_PLAYERS = 5']) {
   if (!app.includes(marker)) throw new Error(`게임 목록 UX 로직 누락: ${marker}`)
 }
-for (const marker of ['getWrappedLuckCarouselIndex', 'ensureLuckCarouselLoop', 'scheduleLuckCarouselLoopNormalize', 'normalizeLuckCarouselLoop']) {
+for (const marker of ['getWrappedLuckCarouselIndex', 'getLuckCarouselItemByIndex', 'ensureLuckCarouselLoop', 'delete item.dataset.carouselIndex', 'getVisibleLuckCarouselItems([...luckGameGrid.querySelectorAll', 'moveLuckCarouselBySwipe', 'LUCK_CAROUSEL_SWIPE_THRESHOLD_PX = 34', 'getLuckCarouselSwipeDirection', 'handleLuckCarouselPointerDown', 'handleLuckCarouselPointerUp', 'suppressLuckCarouselSwipeClick', 'scheduleLuckCarouselLoopNormalize', 'normalizeLuckCarouselLoop']) {
   if (!app.includes(marker)) throw new Error(`모바일 게임 메뉴 순환 로직 누락: ${marker}`)
 }
 for (const removedMarker of ['luckCarouselPrevBtn', 'luckCarouselNextBtn', 'moveLuckCarousel(-1)', 'moveLuckCarousel(1)']) {
@@ -81,6 +81,9 @@ for (const marker of ['.catalog-availability-bar', '.game-item.is-device-hidden'
 }
 for (const removedMarker of ['.luck-carousel-controls', '.luck-carousel-nav-btn']) {
   if (appCss.includes(removedMarker)) throw new Error(`제거한 모바일 메뉴 버튼 스타일이 남아 있음: ${removedMarker}`)
+}
+for (const marker of ['scroll-snap-stop: normal', 'touch-action: pan-y pinch-zoom']) {
+  if (!appCss.includes(marker)) throw new Error(`모바일 게임 메뉴 스와이프 감도 규칙 누락: ${marker}`)
 }
 for (const removedMarker of ['game-eligibility-overlay', 'is-roster-ineligible', 'sortCatalogCards', '현재 명단으로 실행 불가']) {
   if (app.includes(removedMarker) || appCss.includes(removedMarker)) throw new Error(`이전 명단 차단 UX가 남아 있음: ${removedMarker}`)
