@@ -1,11 +1,11 @@
-const CACHE_VERSION = 'random-roulette-v20260825-smooth-wheel-deceleration-ux10'
+const CACHE_VERSION = 'random-roulette-v20260825-list-eligibility-ux11'
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './random-roulette.v3.10.css',
+  './random-roulette.v3.11.css',
   './volume-controls.js',
-  './random-roulette.v3.10.js',
+  './random-roulette.v3.11.js',
   './assets/matter.min.js',
   './assets/app-icon.svg',
   './assets/app-icon-192.png',

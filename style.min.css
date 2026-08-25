@@ -1,4 +1,4 @@
-/* Random Roulette modular build · 2026-08-25T05:44:02.293Z */
+/* Random Roulette modular build · 2026-08-25T06:31:49.176Z */
 
 /* ===== style.css ===== */
 * {
@@ -28741,6 +28741,47 @@ html.theme-dark .catalog-roster-edit-btn {
   color: #acd8f1;
 }
 
+#luckScreen .game-item.is-list-ineligible {
+  opacity: .68 !important;
+  cursor: not-allowed !important;
+  filter: saturate(.72) !important;
+  border-color: rgba(210, 104, 104, .44) !important;
+  box-shadow: none !important;
+}
+
+#luckScreen .game-item.is-list-ineligible:hover,
+#luckScreen .game-item.is-list-ineligible:active {
+  transform: none !important;
+}
+
+#luckScreen .game-item.is-list-ineligible::after {
+  display: none !important;
+}
+
+.catalog-list-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 38px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(205, 93, 93, .26);
+  border-radius: 12px;
+  background: rgba(255, 232, 232, .88);
+  color: #9c4141;
+  font-size: .78rem;
+  font-weight: 900;
+  line-height: 1.35;
+  text-align: center;
+}
+
+html.theme-dark .catalog-list-status {
+  border-color: rgba(255, 145, 145, .24);
+  background: rgba(104, 42, 48, .48);
+  color: #ffc1c1;
+}
+
 html.theme-dark .wheel-sidebar,
 html.theme-dark .wheel-stage-card,
 html.theme-dark .wheel-history-card,
@@ -29002,6 +29043,12 @@ html.theme-dark #luckScreen .featured-random-pick {
   html.theme-dark #luckScreen .luck-carousel-hint strong {
     background: rgba(153, 205, 236, .14);
     color: #b8dff5;
+  }
+
+  body.luck-carousel-mode #luckScreen .game-item.is-carousel-active.is-list-ineligible,
+  body.luck-carousel-mode #luckScreen .game-item.is-carousel-neighbor.is-list-ineligible {
+    opacity: .68 !important;
+    filter: saturate(.72) !important;
   }
 }
 

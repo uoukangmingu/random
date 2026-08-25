@@ -1,4 +1,4 @@
-/* Random Roulette modular build · 2026-08-25T05:44:02.293Z */
+/* Random Roulette modular build · 2026-08-25T06:31:49.176Z */
 
 ;
 /* ===== src/games/core.js ===== */
@@ -4051,15 +4051,17 @@ function handleLuckGameSelection(button) {
       return
     }
 
-    if (selectedGame === 'wheel') {
-      showScreen('wheel')
+    const targetScreen = selectedGame === 'wheel' ? 'wheel' : `game${selectedGame}`
+    const launchAvailability = window.RandomRouletteRegistry?.getLaunchAvailability?.(targetScreen)
+    if (launchAvailability && !launchAvailability.ok) {
+      const title = launchAvailability.listBlocked ? '공용 목록 조건 불일치' : '현재 기기에서 실행 불가'
+      const suffix = launchAvailability.listBlocked ? ' 공용 목록을 수정하거나 비워서 저장해줘.' : ''
+      showPopup(title, `${launchAvailability.reason}${suffix}`, { icon: '⚠️' })
       return
     }
 
-    const targetScreen = `game${selectedGame}`
-    const entryAvailability = window.RandomRouletteRegistry?.getEntryAvailability?.(targetScreen)
-    if (entryAvailability && !entryAvailability.ok) {
-      showPopup('현재 기기에서 실행 불가', entryAvailability.reason, { icon: '⚠️' })
+    if (selectedGame === 'wheel') {
+      showScreen('wheel')
       return
     }
 
@@ -4471,9 +4473,11 @@ function handlePhysicalGameSelection(button) {
   const targetScreen = targetByGame[button.dataset.physicalGame]
   if (!targetScreen) return
 
-  const entryAvailability = window.RandomRouletteRegistry?.getEntryAvailability?.(targetScreen)
-  if (entryAvailability && !entryAvailability.ok) {
-    showPopup('현재 기기에서 실행 불가', entryAvailability.reason, { icon: '⚠️' })
+  const launchAvailability = window.RandomRouletteRegistry?.getLaunchAvailability?.(targetScreen)
+  if (launchAvailability && !launchAvailability.ok) {
+    const title = launchAvailability.listBlocked ? '공용 목록 조건 불일치' : '현재 기기에서 실행 불가'
+    const suffix = launchAvailability.listBlocked ? ' 공용 목록을 수정하거나 비워서 저장해줘.' : ''
+    showPopup(title, `${launchAvailability.reason}${suffix}`, { icon: '⚠️' })
     return
   }
 
@@ -6039,6 +6043,9 @@ function rand(min, max) {
   const SPIN_ACCELERATION_RATIO = 0.12
   const SPIN_CRUISE_RATIO = 0.28
   const SPIN_DECELERATION_RATIO = 0.60
+  const MOBILE_SPIN_ACCELERATION_RATIO = 0.10
+  const MOBILE_SPIN_CRUISE_RATIO = 0.26
+  const MOBILE_SPIN_DECELERATION_RATIO = 0.64
   const COLORS = ['#75c9f2', '#8edfcf', '#ffd56f', '#ff9f85', '#b9a7f4', '#f38db0', '#86d7a5', '#8caef4', '#efb76f', '#8dd7dc', '#d49ce5', '#ffbd91']
   let initialized = false
   let running = false
@@ -6086,18 +6093,41 @@ function rand(min, max) {
       ? overrides.reduceMotion
       : global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
     const mobile = typeof overrides.mobile === 'boolean' ? overrides.mobile : isMobileSpinEnvironment()
-    if (reduceMotion) return { duration: 180, minTurns: 0, mobile }
+    if (reduceMotion) {
+      return {
+        duration: 180,
+        minTurns: 0,
+        mobile,
+        acceleration: SPIN_ACCELERATION_RATIO,
+        cruise: SPIN_CRUISE_RATIO,
+        deceleration: SPIN_DECELERATION_RATIO
+      }
+    }
     return mobile
-      ? { duration: 7200, minTurns: 10, mobile: true }
-      : { duration: 6200, minTurns: 9, mobile: false }
+      ? {
+          duration: 8200,
+          minTurns: 11,
+          mobile: true,
+          acceleration: MOBILE_SPIN_ACCELERATION_RATIO,
+          cruise: MOBILE_SPIN_CRUISE_RATIO,
+          deceleration: MOBILE_SPIN_DECELERATION_RATIO
+        }
+      : {
+          duration: 6200,
+          minTurns: 9,
+          mobile: false,
+          acceleration: SPIN_ACCELERATION_RATIO,
+          cruise: SPIN_CRUISE_RATIO,
+          deceleration: SPIN_DECELERATION_RATIO
+        }
   }
 
-  // 가속 → 일정 속도 → 긴 감속을 거리 비율로 적분한 물리형 진행 곡선이다.
-  function getSpinEasedProgress(rawProgress) {
+  // 모바일은 감속 구간을 더 길게 배분해 작은 화면에서도 정지 순간이 급하게 느껴지지 않게 한다.
+  function getSpinEasedProgress(rawProgress, motionProfile = {}) {
     const progress = Math.max(0, Math.min(1, Number(rawProgress) || 0))
-    const acceleration = SPIN_ACCELERATION_RATIO
-    const cruise = SPIN_CRUISE_RATIO
-    const deceleration = SPIN_DECELERATION_RATIO
+    const acceleration = motionProfile.acceleration ?? SPIN_ACCELERATION_RATIO
+    const cruise = motionProfile.cruise ?? SPIN_CRUISE_RATIO
+    const deceleration = motionProfile.deceleration ?? SPIN_DECELERATION_RATIO
     const totalArea = acceleration / 2 + cruise + deceleration / 2
 
     if (progress < acceleration) {
@@ -6401,7 +6431,7 @@ function rand(min, max) {
 
     const frame = (now) => {
       const progress = Math.min(1, (now - startedAt) / duration)
-      const eased = getSpinEasedProgress(progress)
+      const eased = getSpinEasedProgress(progress, motionProfile)
       currentRotation = startRotation + (targetRotation - startRotation) * eased
       if (!setCanvasSpinTransform(canvas, currentRotation - startRotation)) renderWheel(parsed.items, currentRotation)
       if (progress < 1 && running) {
@@ -6613,23 +6643,52 @@ function rand(min, max) {
     return hidden
   }
 
+  function getSharedListState() {
+    const roster = global.RandomRouletteRoster
+    const count = roster?.getCount?.() || 0
+    const hasSharedList = Boolean(roster?.hasSharedList?.() || roster?.hasRoster?.() || count >= 2)
+    return { count, hasSharedList }
+  }
+
   function getEligibility(screenKey, options = {}) {
     const config = games[screenKey]
     if (!config) return { ok: true, reason: '' }
-    const roster = global.RandomRouletteRoster
-    const count = roster?.getCount?.() || 0
+    const { count, hasSharedList } = getSharedListState()
     const max = typeof config.max === 'function' ? config.max() : config.max
 
     const entry = getEntryAvailability(screenKey)
     if (!entry.ok) return entry
-    if (config.requiresRoster === false && !options.forSmartPick) return { ok: true, reason: '' }
+    if (!hasSharedList) {
+      return { ok: false, inputNeeded: true, reason: `공용 목록 없이 입장해 게임 안에서 ${config.min}개 이상 직접 입력할 수 있어.`, count, min: config.min, max }
+    }
     if (count < config.min) {
-      return { ok: false, inputNeeded: true, reason: `공용 목록이 없어도 입장할 수 있어. 게임 안에서 ${config.min}개 이상 입력해줘.`, count, min: config.min, max }
+      return { ok: false, listBlocked: true, reason: `${config.title}은 ${config.min}~${max}개 항목을 지원해. 현재 공용 목록은 ${count}개라 실행할 수 없어.`, count, min: config.min, max }
     }
     if (count > max) {
-      return { ok: false, inputNeeded: true, reason: `${config.title}은 ${config.min}~${max}개 항목을 지원해. 들어가서 이 게임의 입력만 수정할 수 있어.`, count, min: config.min, max }
+      return { ok: false, listBlocked: true, reason: `${config.title}은 ${config.min}~${max}개 항목을 지원해. 현재 공용 목록은 ${count}개라 실행할 수 없어.`, count, min: config.min, max }
     }
     return { ok: true, reason: '', count, min: config.min, max }
+  }
+
+  function getLaunchAvailability(screenKey) {
+    const config = games[screenKey]
+    if (!config) return { ok: true, reason: '' }
+    const entry = getEntryAvailability(screenKey)
+    if (!entry.ok) return entry
+
+    const { count, hasSharedList } = getSharedListState()
+    const max = typeof config.max === 'function' ? config.max() : config.max
+    if (!hasSharedList) {
+      return {
+        ok: true,
+        inputNeeded: true,
+        reason: `공용 목록 없이 입장해 게임 안에서 ${config.min}~${max}개 항목을 직접 입력할 수 있어.`,
+        count,
+        min: config.min,
+        max
+      }
+    }
+    return getEligibility(screenKey)
   }
 
   function getEntryAvailability(screenKey) {
@@ -6646,15 +6705,28 @@ function rand(min, max) {
 
   function markCard(button, screenKey) {
     if (!button || !screenKey) return
-    const eligibility = getEligibility(screenKey)
-    button.setAttribute('aria-disabled', 'false')
-    button.dataset.listReadiness = eligibility.ok ? 'ready' : 'input'
-    if (eligibility.ok) {
-      delete button.dataset.ineligibleLabel
-      button.removeAttribute('title')
+    const availability = getLaunchAvailability(screenKey)
+    const blocked = availability.listBlocked === true
+    button.setAttribute('aria-disabled', blocked ? 'true' : 'false')
+    button.dataset.listReadiness = blocked ? 'blocked' : availability.inputNeeded ? 'input' : 'ready'
+    button.classList.toggle('is-list-ineligible', blocked)
+
+    let status = button.querySelector('.catalog-list-status')
+    if (blocked) {
+      const label = `공용 목록 ${availability.count}개 · ${availability.min}~${availability.max}개만 가능`
+      button.dataset.ineligibleLabel = label
+      button.title = `${availability.reason} 공용 목록을 수정하거나 비워서 저장해줘.`
+      if (!status) {
+        status = document.createElement('span')
+        status.className = 'catalog-list-status'
+        button.appendChild(status)
+      }
+      status.textContent = label
     } else {
       delete button.dataset.ineligibleLabel
-      button.title = eligibility.reason || '게임 안에서 직접 입력할 수 있어.'
+      status?.remove()
+      if (availability.inputNeeded) button.title = availability.reason
+      else button.removeAttribute('title')
     }
   }
 
@@ -6664,10 +6736,10 @@ function rand(min, max) {
     const gameCards = visibleCards.filter((button) => button.dataset.game !== '8')
     const sharedCount = global.RandomRouletteRoster?.getCount?.() || 0
     const ready = gameCards.filter((button) => button.dataset.listReadiness === 'ready').length
-    const inputNeeded = gameCards.length - ready
+    const blocked = gameCards.filter((button) => button.dataset.listReadiness === 'blocked').length
     const hiddenLabel = isPhoneLikeDevice() ? 'PC 전용' : '모바일 전용'
     const parts = sharedCount >= 2
-      ? [`공용 목록 ${sharedCount}개`, `바로 시작 ${ready}개`, `${inputNeeded}개는 게임 안에서 수정`]
+      ? [`공용 목록 ${sharedCount}개`, `실행 가능 ${ready}개`, blocked ? `조건 불일치 ${blocked}개` : '모든 게임 조건 일치']
       : ['공용 목록은 선택 사항', `${gameCards.length}개 게임 모두 입장 가능`, '게임 안에서 직접 입력']
     if (hiddenCards.length) parts.push(`${hiddenLabel} ${hiddenCards.length}개 숨김`)
     summary.textContent = parts.join(' · ')
@@ -6711,7 +6783,9 @@ function rand(min, max) {
       if (game === '8') {
         button.setAttribute('aria-disabled', 'false')
         button.dataset.listReadiness = 'ready'
+        button.classList.remove('is-list-ineligible')
         delete button.dataset.ineligibleLabel
+        button.querySelector('.catalog-list-status')?.remove()
         button.removeAttribute('title')
         return
       }
@@ -6762,6 +6836,7 @@ function rand(min, max) {
     init,
     games,
     getEligibility,
+    getLaunchAvailability,
     getEntryAvailability,
     getEligibleGameScreens,
     getDeviceCompatibleGameScreens,
