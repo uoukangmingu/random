@@ -1,4 +1,4 @@
-/* Random Roulette modular build · 2026-08-25T08:16:10.978Z */
+/* Random Roulette modular build · 2026-08-25T08:40:05.487Z */
 
 /* ===== style.css ===== */
 * {
@@ -8629,7 +8629,8 @@ html.theme-dark .popup.game-info-popup .popup-message::-webkit-scrollbar-thumb {
     max-width: calc(100% - 76px);
     min-height: 214px;
     scroll-snap-align: center;
-    scroll-snap-stop: always;
+    scroll-snap-stop: normal;
+    touch-action: pan-y pinch-zoom;
     opacity: 0.58;
     transform: scale(0.94);
     filter: saturate(0.78) brightness(0.82);

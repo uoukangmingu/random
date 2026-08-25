@@ -4,7 +4,7 @@
 
 ## 실행
 
-빌드는 `dist/app.js`, `dist/app.css`를 만들고 일반 정적 호스팅을 위한 `random-roulette.v3.14.js`, `random-roulette.v3.14.css`와 기존 호환 번들도 함께 만든다. `index.html`은 이전 서비스 워커 캐시에 막히지 않는 버전 파일을 불러온다. PWA와 서비스 워커 검증을 위해 파일을 직접 여는 대신 로컬 서버를 사용한다.
+빌드는 `dist/app.js`, `dist/app.css`를 만들고 일반 정적 호스팅을 위한 `random-roulette.v3.15.js`, `random-roulette.v3.15.css`와 기존 호환 번들도 함께 만든다. `index.html`은 이전 서비스 워커 캐시에 막히지 않는 버전 파일을 불러온다. PWA와 서비스 워커 검증을 위해 파일을 직접 여는 대신 로컬 서버를 사용한다.
 
 ```bash
 python3 -m http.server 4173
@@ -27,7 +27,7 @@ npm run check
 - `npm run check`: JavaScript 문법, 중복 함수, 필수 파일·HTML ID·기능 마커 검사
 - `npm run icons`: PWA PNG 아이콘 재생성(Pillow 필요)
 
-원본 `script.js`나 모듈을 수정한 뒤에는 반드시 `npm run build`를 실행한다. `random-roulette.v3.14.*`, `app.bundle.*`, `script.min.js`, `style.min.css`는 `dist`와 동일한 자동 생성 배포본이므로 직접 수정하지 않는다. 음량 슬라이더의 퍼센트와 채움 색상은 `volume-controls.js`에서도 독립적으로 동기화한다.
+원본 `script.js`나 모듈을 수정한 뒤에는 반드시 `npm run build`를 실행한다. `random-roulette.v3.15.*`, `app.bundle.*`, `script.min.js`, `style.min.css`는 `dist`와 동일한 자동 생성 배포본이므로 직접 수정하지 않는다. 음량 슬라이더의 퍼센트와 채움 색상은 `volume-controls.js`에서도 독립적으로 동기화한다.
 
 시작 버튼은 중간 분류 메뉴 없이 `랜덤 게임 목록`으로 바로 이동한다. 목록은 랜덤 게임 뽑기, 기본 룰렛, 7개 운 게임, 5개 피지컬 게임을 한 화면에 표시하며 모든 카드 우측 상단에 빨리감기 가능 여부를 표시한다.
 

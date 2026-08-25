@@ -1179,6 +1179,9 @@ let luckCarouselScrollTicking = false
 let luckCarouselLoopReady = false
 let luckCarouselLoopJumping = false
 let luckCarouselLoopSettleTimer = null
+let luckCarouselSwipeState = null
+let luckCarouselSuppressClickUntil = 0
+const LUCK_CAROUSEL_SWIPE_THRESHOLD_PX = 34
 let physicalCarouselActiveIndex = 0
 let physicalCarouselScrollTicking = false
 let physicalCarouselLoopReady = false
@@ -4097,6 +4100,10 @@ function getVisibleLuckCarouselItems(items) {
   return items.filter((item) => !item.hidden && !item.classList.contains('is-device-hidden') && window.getComputedStyle(item).display !== 'none')
 }
 
+function getLuckCarouselItemByIndex(items, targetIndex) {
+  return items.find((item) => Number.parseInt(item.dataset.carouselIndex || '-1', 10) === targetIndex) || null
+}
+
 function getLuckCarouselOriginalItems() {
   return luckGameGrid
     ? getVisibleLuckCarouselItems([...luckGameGrid.querySelectorAll('.game-item:not([data-clone])')])
@@ -4116,6 +4123,14 @@ function ensureLuckCarouselLoop() {
   if (existingClones.length) {
     existingClones.forEach((item) => item.remove())
   }
+
+  // 기기 판정 전 만들어진 PC/모바일 카드의 인덱스가 다음 순환 묶음에 섞이지 않도록 매번 초기화한다.
+  const allOriginalItems = [...luckGameGrid.querySelectorAll('.game-item:not([data-clone])')]
+  allOriginalItems.forEach((item) => {
+    delete item.dataset.carouselIndex
+    delete item.dataset.loopSet
+    item.classList.remove('is-carousel-active', 'is-carousel-neighbor')
+  })
 
   const originalItems = getLuckCarouselOriginalItems()
   originalItems.forEach((item, index) => {
@@ -4140,6 +4155,7 @@ function ensureLuckCarouselLoop() {
     prependClone.dataset.loopSet = 'prepend'
     prependClone.dataset.carouselIndex = item.dataset.carouselIndex
     prependClone.removeAttribute('id')
+    prependClone.classList.remove('is-carousel-active', 'is-carousel-neighbor')
     delete prependClone.dataset.luckGameBound
     delete prependClone.dataset.physicalGameBound
     bindGameCatalogItemInteraction(prependClone)
@@ -4150,6 +4166,7 @@ function ensureLuckCarouselLoop() {
     appendClone.dataset.loopSet = 'append'
     appendClone.dataset.carouselIndex = item.dataset.carouselIndex
     appendClone.removeAttribute('id')
+    appendClone.classList.remove('is-carousel-active', 'is-carousel-neighbor')
     delete appendClone.dataset.luckGameBound
     delete appendClone.dataset.physicalGameBound
     bindGameCatalogItemInteraction(appendClone)
@@ -4287,12 +4304,78 @@ function scrollToLuckCarouselIndex(index, behavior = 'smooth') {
   scrollLuckCarouselToItem(targetItem, behavior)
 }
 
+function moveLuckCarouselBySwipe(direction) {
+  if (!isLuckCarouselMode() || !luckGameGrid) return
+
+  const originalItems = getLuckCarouselOriginalItems()
+  const trackItems = getLuckCarouselTrackItems()
+  if (originalItems.length <= 1 || !trackItems.length) return
+
+  const step = direction < 0 ? -1 : 1
+  const currentItem = getLuckCarouselClosestItem()
+  const currentTrackIndex = currentItem ? trackItems.indexOf(currentItem) : -1
+  const currentIndex = Number.parseInt(currentItem?.dataset.carouselIndex || String(luckCarouselActiveIndex), 10)
+  const targetIndex = getWrappedLuckCarouselIndex(currentIndex + step, originalItems.length)
+  const adjacentItem = currentTrackIndex >= 0 ? trackItems[currentTrackIndex + step] : null
+  const targetItem = adjacentItem && Number.parseInt(adjacentItem.dataset.carouselIndex || '-1', 10) === targetIndex
+    ? adjacentItem
+    : getLuckCarouselItemByIndex(originalItems, targetIndex)
+
+  if (!targetItem) return
+
+  clearLuckCarouselLoopSettleTimer()
+  updateLuckCarouselActiveIndex(targetIndex, targetItem)
+  scrollLuckCarouselToItem(targetItem, 'smooth')
+  scheduleLuckCarouselLoopNormalize(targetItem)
+}
+
+function handleLuckCarouselPointerDown(event) {
+  if (!isLuckCarouselMode() || event.isPrimary === false || (event.pointerType && event.pointerType === 'mouse')) return
+  luckCarouselSwipeState = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY
+  }
+}
+
+function getLuckCarouselSwipeDirection(distanceX, distanceY) {
+  if (Math.abs(distanceX) < LUCK_CAROUSEL_SWIPE_THRESHOLD_PX || Math.abs(distanceX) <= Math.abs(distanceY) * 1.1) return 0
+  return distanceX < 0 ? 1 : -1
+}
+
+function handleLuckCarouselPointerUp(event) {
+  if (!luckCarouselSwipeState || event.pointerId !== luckCarouselSwipeState.pointerId) return
+
+  const distanceX = event.clientX - luckCarouselSwipeState.startX
+  const distanceY = event.clientY - luckCarouselSwipeState.startY
+  luckCarouselSwipeState = null
+  const direction = getLuckCarouselSwipeDirection(distanceX, distanceY)
+
+  if (!direction) return
+
+  event.preventDefault()
+  luckCarouselSuppressClickUntil = performance.now() + UI_SWIPE_CLICK_SUPPRESS_MS
+  moveLuckCarouselBySwipe(direction)
+}
+
+function handleLuckCarouselPointerCancel(event) {
+  if (luckCarouselSwipeState && event.pointerId === luckCarouselSwipeState.pointerId) {
+    luckCarouselSwipeState = null
+  }
+}
+
+function suppressLuckCarouselSwipeClick(event) {
+  if (performance.now() >= luckCarouselSuppressClickUntil) return
+  event.preventDefault()
+  event.stopImmediatePropagation()
+}
+
 function getLuckCarouselLoopMetrics() {
   if (!luckGameGrid) return null
 
-  const prependItems = [...luckGameGrid.querySelectorAll('.game-item[data-loop-set="prepend"]')]
-  const centerItems = [...luckGameGrid.querySelectorAll('.game-item[data-loop-set="center"]')]
-  const appendItems = [...luckGameGrid.querySelectorAll('.game-item[data-loop-set="append"]')]
+  const prependItems = getVisibleLuckCarouselItems([...luckGameGrid.querySelectorAll('.game-item[data-loop-set="prepend"]')])
+  const centerItems = getVisibleLuckCarouselItems([...luckGameGrid.querySelectorAll('.game-item[data-loop-set="center"]')])
+  const appendItems = getVisibleLuckCarouselItems([...luckGameGrid.querySelectorAll('.game-item[data-loop-set="append"]')])
 
   if (!prependItems.length || !centerItems.length || !appendItems.length) {
     return null
@@ -4355,7 +4438,7 @@ function scheduleLuckCarouselLoopNormalize(closestItem) {
     }
 
     normalizeLuckCarouselLoop(settledItem)
-  }, 96)
+  }, 180)
 }
 
 function normalizeLuckCarouselLoop(closestItem) {
@@ -4370,7 +4453,7 @@ function normalizeLuckCarouselLoop(closestItem) {
   if (!metrics) return
 
   const targetIndex = Number.parseInt(closestItem.dataset.carouselIndex || '-1', 10)
-  const targetItem = metrics.centerItems[targetIndex]
+  const targetItem = getLuckCarouselItemByIndex(metrics.centerItems, targetIndex)
 
   if (!targetItem) return
 
@@ -18339,7 +18422,12 @@ document.addEventListener('visibilitychange', () => {
 
 if (luckGameGrid) {
   luckGameGrid.addEventListener('scroll', handleLuckCarouselScroll, { passive: true })
+  luckGameGrid.addEventListener('pointerdown', handleLuckCarouselPointerDown, { passive: true })
+  luckGameGrid.addEventListener('click', suppressLuckCarouselSwipeClick, true)
 }
+
+window.addEventListener('pointerup', handleLuckCarouselPointerUp)
+window.addEventListener('pointercancel', handleLuckCarouselPointerCancel, { passive: true })
 
 window.addEventListener('roulette-catalog-refreshed', () => {
   luckCarouselActiveIndex = 0

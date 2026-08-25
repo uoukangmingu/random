@@ -8626,7 +8626,8 @@ html.theme-dark .popup.game-info-popup .popup-message::-webkit-scrollbar-thumb {
     max-width: calc(100% - 76px);
     min-height: 214px;
     scroll-snap-align: center;
-    scroll-snap-stop: always;
+    scroll-snap-stop: normal;
+    touch-action: pan-y pinch-zoom;
     opacity: 0.58;
     transform: scale(0.94);
     filter: saturate(0.78) brightness(0.82);
