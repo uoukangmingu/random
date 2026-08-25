@@ -695,6 +695,34 @@ html.theme-dark #luckScreen .featured-random-pick {
     margin: 0;
   }
 
+  #luckScreen .luck-carousel-controls {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #luckScreen .luck-carousel-nav-btn {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    padding: 0;
+    border: 1px solid rgba(116, 154, 182, .28);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .78);
+    color: #47718f;
+    box-shadow: 0 8px 18px rgba(75, 108, 132, .1);
+    font: 800 1.85rem/1 system-ui, sans-serif;
+    touch-action: manipulation;
+  }
+
+  #luckScreen .luck-carousel-nav-btn:active {
+    transform: scale(.96);
+  }
+
   #luckScreen .luck-carousel-hint strong {
     padding: 5px 9px;
     border-radius: 999px;
@@ -709,6 +737,12 @@ html.theme-dark #luckScreen .featured-random-pick {
 
   html.theme-dark #luckScreen .luck-carousel-hint strong {
     background: rgba(153, 205, 236, .14);
+    color: #b8dff5;
+  }
+
+  html.theme-dark #luckScreen .luck-carousel-nav-btn {
+    border-color: rgba(153, 205, 236, .2);
+    background: rgba(28, 44, 58, .9);
     color: #b8dff5;
   }
 

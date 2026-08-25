@@ -1,4 +1,4 @@
-/* Random Roulette modular build · 2026-08-25T07:39:37.993Z */
+/* Random Roulette modular build · 2026-08-25T07:56:59.250Z */
 
 ;
 /* ===== src/games/core.js ===== */
@@ -64,6 +64,8 @@ const luckGameGrid = document.getElementById('luckGameGrid')
 const luckCarouselHud = document.getElementById('luckCarouselHud')
 const luckCarouselDots = document.getElementById('luckCarouselDots')
 const luckCarouselCounter = document.getElementById('luckCarouselCounter')
+const luckCarouselPrevBtn = document.getElementById('luckCarouselPrevBtn')
+const luckCarouselNextBtn = document.getElementById('luckCarouselNextBtn')
 const physicalGameGrid = document.getElementById('physicalGameGrid')
 const physicalCarouselHud = document.getElementById('physicalCarouselHud')
 const physicalCarouselDots = document.getElementById('physicalCarouselDots')
@@ -4265,6 +4267,11 @@ function getLuckCarouselCenteredLeft(targetItem) {
   return clampValue(targetLeft, 0, maxLeft)
 }
 
+function getWrappedLuckCarouselIndex(index, itemCount) {
+  if (!itemCount) return 0
+  return ((Number(index) % itemCount) + itemCount) % itemCount
+}
+
 function scrollLuckCarouselToItem(targetItem, behavior = 'smooth') {
   if (!luckGameGrid || !targetItem) return
 
@@ -4278,13 +4285,37 @@ function scrollToLuckCarouselIndex(index, behavior = 'smooth') {
   if (!luckGameGrid) return
 
   const items = getLuckCarouselOriginalItems()
-  const safeIndex = clampValue(index, 0, Math.max(0, items.length - 1))
+  const safeIndex = getWrappedLuckCarouselIndex(index, items.length)
   const targetItem = items[safeIndex]
 
   if (!targetItem) return
 
   updateLuckCarouselActiveIndex(safeIndex, targetItem)
   scrollLuckCarouselToItem(targetItem, behavior)
+}
+
+function moveLuckCarousel(direction) {
+  if (!isLuckCarouselMode() || !luckGameGrid) return
+
+  const originalItems = getLuckCarouselOriginalItems()
+  const trackItems = getLuckCarouselTrackItems()
+  if (originalItems.length <= 1 || !trackItems.length) return
+
+  const step = direction < 0 ? -1 : 1
+  const currentItem = getLuckCarouselClosestItem()
+  const currentTrackIndex = currentItem ? trackItems.indexOf(currentItem) : -1
+  const adjacentItem = currentTrackIndex >= 0 ? trackItems[currentTrackIndex + step] : null
+  const targetIndex = getWrappedLuckCarouselIndex(luckCarouselActiveIndex + step, originalItems.length)
+  const targetItem = adjacentItem && Number.parseInt(adjacentItem.dataset.carouselIndex || '-1', 10) === targetIndex
+    ? adjacentItem
+    : originalItems[targetIndex]
+
+  if (!targetItem) return
+
+  clearLuckCarouselLoopSettleTimer()
+  updateLuckCarouselActiveIndex(targetIndex, targetItem)
+  scrollLuckCarouselToItem(targetItem, 'smooth')
+  scheduleLuckCarouselLoopNormalize(targetItem)
 }
 
 function getLuckCarouselLoopMetrics() {
@@ -19079,6 +19110,9 @@ document.addEventListener('visibilitychange', () => {
 if (luckGameGrid) {
   luckGameGrid.addEventListener('scroll', handleLuckCarouselScroll, { passive: true })
 }
+
+luckCarouselPrevBtn?.addEventListener('click', () => moveLuckCarousel(-1))
+luckCarouselNextBtn?.addEventListener('click', () => moveLuckCarousel(1))
 
 window.addEventListener('roulette-catalog-refreshed', () => {
   luckCarouselActiveIndex = 0
