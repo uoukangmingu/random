@@ -6,8 +6,19 @@
   <title>랜덤 룰렛 사이트</title>
 <link rel="canonical" href="https://xn--qn1b03f6ko1a.bond/" />
 <meta name="robots" content="index, follow" />
-<meta name="description" content="랜덤 룰렛, 경마, 러시안 룰렛, 풍선 불기, 폭탄 넘기기 등 여러 랜덤 게임을 바로 즐길 수 있는 무료 랜덤 선택 사이트입니다." />
+  <meta name="description" content="랜덤 룰렛, 경마, 러시안 룰렛, 풍선 불기, 폭탄 넘기기 등 여러 랜덤 게임을 바로 즐길 수 있는 무료 랜덤 선택 사이트입니다." />
+  <meta name="theme-color" content="#f8fbff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/app-icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/app-icon-192.png" />
   <script>
+    if (new URLSearchParams(window.location.search).get('emoji') === 'text') {
+      window.__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__ = true
+      document.documentElement.classList.add('emoji-text-fallback')
+    }
+
     (function () {
       try {
         const savedTheme = localStorage.getItem('roulette-theme-preference')
@@ -36,7 +47,7 @@
     href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Pretendard:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="style.min.css?v=20260716-ball-battle-performance-v4" />
+  <link rel="stylesheet" href="random-roulette.v3.6.css" />
 </head>
 <body>
 
@@ -76,25 +87,6 @@
           <button id="startBtn" class="main-btn" type="button">시작</button>
         </div>
       </div>
-    </section>
-
-    <section id="menuScreen" class="screen">
-      <div class="card menu-card">
-        <p class="small-badge">✨ menu ✨</p>
-        <h2>메뉴 선택</h2>
-
-        <div class="menu-buttons">
-          <button id="physicalBtn" class="menu-btn physical" type="button">
-            <span class="emoji">💪</span>
-            <span>피지컬</span>
-          </button>
-
-          <button id="luckBtn" class="menu-btn luck" type="button">
-            <span class="emoji">🍀</span>
-            <span>운</span>
-          </button>
-          </div>
-        </div>
     </section>
 
     <section id="physicalCircleScreen" class="screen game-screen">
@@ -175,7 +167,6 @@
               <p id="circleTapStageHint" class="circle-tap-stage-hint">시작을 누른 뒤, 현재 휴대폰을 든 사람이 색상 원 안쪽을 정확히 눌러줘.</p>
             </div>
 
-            <button class="back-btn circle-tap-back-btn" data-target="physical" type="button">← 피지컬 목록으로</button>
           </div>
         </div>
       </div>
@@ -185,14 +176,37 @@
       <div class="card luck-card">
         <div class="luck-header">
           <div>
-            <p class="small-badge">🎲 luck games 🎲</p>
-            <h2>운 게임 목록</h2>
-            <p class="sub-text">총 8개 게임으로 구성되며, 8번 랜덤 룰렛은 1~7번 운 게임 중 하나를 무작위로 바로 실행한다.</p>
+            <p class="small-badge">🎲 random games 🎲</p>
+            <h2>랜덤 게임 목록</h2>
+            <p class="sub-text">운 게임과 피지컬 게임을 한곳에서 바로 선택할 수 있다. 랜덤 게임 뽑기는 현재 공용 명단과 기기에서 실행 가능한 게임만 골라준다.</p>
           </div>
         </div>
 
+        <div class="catalog-availability-bar" aria-live="polite">
+          <p id="catalogAvailabilitySummary">현재 기기와 참가자 명단을 확인하고 있어.</p>
+          <button id="catalogRosterEditBtn" class="catalog-roster-edit-btn" type="button">참가자 명단 수정</button>
+        </div>
+
         <div class="luck-carousel-shell">
-          <div id="luckGameGrid" class="game-grid">
+          <div id="luckGameGrid" class="game-grid unified-game-grid">
+          <button class="game-item game-launch featured-random-pick" data-game="8" type="button">
+            <div class="game-num">🎲</div>
+            <h3>랜덤 게임 뽑기</h3>
+            <p>현재 공용 명단의 인원수와 기기를 확인해 실행 가능한 전체 게임 중 하나를 골라준다</p>
+            <div class="game-meta">
+              <div class="game-meta-row"><span class="game-meta-label">대상</span><span class="game-meta-value">실행 가능 게임</span></div>
+              <div class="game-meta-row"><span class="game-meta-label">방식</span><span class="game-meta-value">명단·기기 기반</span></div>
+            </div>
+          </button>
+          <button class="game-item game-launch wheel-game-launch" data-game="wheel" type="button">
+            <div class="game-num">🎡</div>
+            <h3>기본 원판 룰렛</h3>
+            <p>항목별 가중치를 설정하고 당첨자 제거·재추첨·결과 기록을 지원하는 기본 룰렛</p>
+            <div class="game-meta">
+              <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~50명</span></div>
+              <div class="game-meta-row"><span class="game-meta-label">방식</span><span class="game-meta-value">가중치 추첨</span></div>
+            </div>
+          </button>
           <button class="game-item game-launch" data-game="1" type="button">
             <div class="game-num">🫙</div>
             <h3>담아라!</h3>
@@ -259,103 +273,134 @@
               <div class="game-meta-row"><span class="game-meta-label">난이도</span><span class="game-meta-value">★★</span></div>
             </div>
           </button>
-          <button class="game-item game-launch" data-game="8" type="button">
-            <div class="game-num">🎲</div>
-            <h3>랜덤 룰렛</h3>
-            <p>누르면 1~7번 운 게임 중 하나가 랜덤으로 바로 열린다</p>
+          <button class="game-item physical-game-item physical-game-launch" data-physical-game="balloon" data-physical-compat="mobile-compatible" type="button">
+            <div class="game-num">🎈</div>
+            <h3>풍선 불기</h3>
+            <p>풍선을 꾹 눌러 점점 키우다가 랜덤 순간에 터뜨린 사람이 당첨되는 피지컬 게임</p>
             <div class="game-meta">
-              <div class="game-meta-row"><span class="game-meta-label">대상</span><span class="game-meta-value">운 1~7</span></div>
-              <div class="game-meta-row"><span class="game-meta-label">방식</span><span class="game-meta-value">랜덤 선택</span></div>
+              <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~8명</span></div>
+              <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">꾹 누르기</span></div>
+            </div>
+          </button>
+
+          <button class="game-item physical-game-item physical-game-launch" data-physical-game="bomb-pass" data-physical-compat="mobile-only" type="button">
+            <div class="game-num">💣</div>
+            <h3>폭탄 넘기기</h3>
+            <p>시작 후 핸드폰을 넘기다가 폭탄이 터지는 순간 들고 있던 사람이 걸리는 모바일 전용 게임</p>
+            <div class="game-meta">
+              <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">자유</span></div>
+              <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">폰 넘기기</span></div>
+            </div>
+          </button>
+
+          <button class="game-item physical-game-item physical-game-launch" data-physical-game="shrinking-circle" data-physical-compat="mobile-only" type="button">
+            <div class="game-num">⭕</div>
+            <h3>작아지는 원</h3>
+            <p>자신의 색 원을 정확히 누를 때마다 원이 작아지고, 원 밖을 누른 사람이 바로 탈락하는 모바일 전용 게임</p>
+            <div class="game-meta">
+              <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~8명</span></div>
+              <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">정확히 터치</span></div>
+            </div>
+          </button>
+
+          <button class="game-item physical-game-item physical-game-launch" data-physical-game="stay-click" data-physical-compat="desktop-only" type="button">
+            <div class="game-num">⌨️</div>
+            <h3>STAY CLICK</h3>
+            <p>STAY를 버티다가 CLICK이 뜨는 순간 자기 키를 가장 빠르게 누르는 키보드 반응속도 게임</p>
+            <div class="game-meta">
+              <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~4명</span></div>
+              <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">키보드</span></div>
+            </div>
+          </button>
+
+          <button class="game-item physical-game-item physical-game-launch" data-physical-game="bear-find" data-physical-compat="mobile-compatible" type="button">
+            <div class="game-num">🧸</div>
+            <h3>곰찾기</h3>
+            <p>선물 상자를 누르면 곰인형 또는 판다 영상이 재생되고, 단 하나의 판다를 찾은 사람이 당첨되는 게임</p>
+            <div class="game-meta">
+              <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~20명</span></div>
+              <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">상자 터치</span></div>
             </div>
           </button>
           </div>
         </div>
 
         <div id="luckCarouselHud" class="luck-carousel-hud" aria-hidden="true">
-          <p class="luck-carousel-hint">좌우로 넘겨서 게임을 선택해줘</p>
-          <div id="luckCarouselDots" class="luck-carousel-dots" aria-label="운 게임 페이지 표시"></div>
+          <p class="luck-carousel-hint"><strong id="luckCarouselCounter">1 / 1</strong><span>좌우로 넘겨 게임 선택</span></p>
+          <div id="luckCarouselDots" class="luck-carousel-dots" aria-label="랜덤 게임 페이지 표시"></div>
         </div>
 
       </div>
     </section>
 
+    <section id="wheelScreen" class="screen game-screen">
+      <div class="card game-card wheel-card-screen">
+        <div class="wheel-layout">
+          <aside class="wheel-sidebar">
+            <div class="wheel-sidebar-inner">
+              <div class="sidebar-head">
+                <p class="small-badge game-mini-badge">🎡 basic roulette 🎡</p>
+                <h2>기본 원판 룰렛</h2>
+                <p class="sub-text">한 줄에 하나씩 항목을 적고, 세로줄(|) 뒤에 가중치를 입력한다.</p>
+              </div>
 
-    <section id="physicalScreen" class="screen">
-      <div class="card physical-card">
-        <div class="physical-header">
-          <div>
-            <p class="small-badge">💪 physical games 💪</p>
-            <h2>피지컬 게임 목록</h2>
-            <p class="sub-text">피지컬 게임은 조작 방식에 따라 모바일 호환 게임과 데스크톱 전용 게임으로 나뉜다. 모바일 호환 게임은 컴퓨터에서도 이용 가능하고, 데스크톱 전용 게임은 모바일 화면에 표시되지 않는다.</p>
+              <div class="input-card wheel-input-card">
+                <label for="wheelItemsInput">항목 | 가중치</label>
+                <textarea id="wheelItemsInput" rows="9" spellcheck="false">홍길동 | 1
+김아무개 | 1
+박철수 | 1</textarea>
+                <p class="helper-text">예: 치킨 | 3. 숫자를 생략하면 가중치 1로 계산하며, 2~50개 항목을 지원한다.</p>
+              </div>
+
+              <div class="wheel-option-row">
+                <label class="wheel-checkbox"><input id="wheelAutoRemoveCheckbox" type="checkbox" /> 당첨 항목 자동 제거</label>
+                <button id="wheelUseRosterBtn" class="action-btn secondary" type="button">공용 명단 불러오기</button>
+              </div>
+
+              <div class="button-row wheel-button-row">
+                <button id="wheelSpinBtn" class="action-btn primary" type="button">룰렛 돌리기</button>
+                <button id="wheelRespinnerBtn" class="action-btn secondary" type="button" disabled>재추첨</button>
+                <button id="wheelRemoveWinnerBtn" class="action-btn soft" type="button" disabled>당첨자 제거</button>
+              </div>
+
+              <div id="wheelInputStatus" class="status-text" aria-live="polite">항목을 확인한 뒤 룰렛을 돌려줘.</div>
+            </div>
+          </aside>
+
+          <div class="wheel-main">
+            <div class="wheel-stage-card">
+              <div class="wheel-stage-head">
+                <div>
+                  <h3>가중치 룰렛</h3>
+                  <p class="sub-text">당첨 결과를 먼저 안전하게 계산한 뒤 원판 애니메이션으로 표현한다.</p>
+                </div>
+                <span id="wheelTotalWeightBadge" class="wheel-weight-badge">총 가중치 3</span>
+              </div>
+
+              <div class="wheel-canvas-shell">
+                <div class="wheel-pointer" aria-hidden="true">▼</div>
+                <canvas id="wheelCanvas" width="720" height="720" aria-label="기본 원판 룰렛"></canvas>
+                <button id="wheelCenterButton" class="wheel-center-button" type="button">SPIN</button>
+              </div>
+
+              <div id="wheelResultCard" class="wheel-result-card" aria-live="polite">
+                <span>최근 결과</span>
+                <strong id="wheelResultText">아직 추첨 전</strong>
+              </div>
+            </div>
+
+            <div class="wheel-history-card">
+              <div class="wheel-history-head">
+                <div><h3>추첨 기록</h3><p>최근 결과와 사용한 가중치를 이 기기에 보관한다.</p></div>
+                <button id="wheelClearHistoryBtn" class="action-btn soft" type="button">기록 지우기</button>
+              </div>
+              <ol id="wheelHistoryList" class="wheel-history-list"></ol>
+            </div>
           </div>
-        </div>
-
-        <div class="physical-game-shell">
-          <div id="physicalGameGrid" class="game-grid physical-game-grid">
-            <button class="game-item physical-game-item physical-game-launch" data-physical-game="balloon" data-physical-compat="mobile-compatible" type="button">
-              <span class="physical-compat-badge">📱 모바일 · PC</span>
-              <div class="game-num">🎈</div>
-              <h3>풍선 불기</h3>
-              <p>풍선을 꾹 눌러 점점 키우다가 랜덤 순간에 터뜨린 사람이 당첨되는 피지컬 게임</p>
-              <div class="game-meta">
-                <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~8명</span></div>
-                <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">꾹 누르기</span></div>
-              </div>
-            </button>
-
-            <button class="game-item physical-game-item physical-game-launch" data-physical-game="bomb-pass" data-physical-compat="mobile-only" type="button">
-              <span class="physical-compat-badge is-mobile-only">📱 모바일 전용</span>
-              <div class="game-num">💣</div>
-              <h3>폭탄 넘기기</h3>
-              <p>시작 후 핸드폰을 넘기다가 폭탄이 터지는 순간 들고 있던 사람이 걸리는 모바일 전용 게임</p>
-              <div class="game-meta">
-                <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">자유</span></div>
-                <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">폰 넘기기</span></div>
-              </div>
-            </button>
-
-            <button class="game-item physical-game-item physical-game-launch" data-physical-game="shrinking-circle" data-physical-compat="mobile-only" type="button">
-              <span class="physical-compat-badge is-mobile-only">📱 모바일 전용</span>
-              <div class="game-num">⭕</div>
-              <h3>작아지는 원</h3>
-              <p>자신의 색 원을 정확히 누를 때마다 원이 작아지고, 원 밖을 누른 사람이 바로 탈락하는 모바일 전용 게임</p>
-              <div class="game-meta">
-                <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~8명</span></div>
-                <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">정확히 터치</span></div>
-              </div>
-            </button>
-
-            <button class="game-item physical-game-item physical-game-launch" data-physical-game="stay-click" data-physical-compat="desktop-only" type="button">
-              <span class="physical-compat-badge is-desktop-only">🖥️ PC 전용</span>
-              <div class="game-num">⌨️</div>
-              <h3>STAY CLICK</h3>
-              <p>STAY를 버티다가 CLICK이 뜨는 순간 자기 키를 가장 빠르게 누르는 키보드 반응속도 게임</p>
-              <div class="game-meta">
-                <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~4명</span></div>
-                <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">키보드</span></div>
-              </div>
-            </button>
-
-
-            <button class="game-item physical-game-item physical-game-launch" data-physical-game="bear-find" data-physical-compat="mobile-compatible" type="button">
-              <span class="physical-compat-badge">📱 모바일 · PC</span>
-              <div class="game-num">🧸</div>
-              <h3>곰찾기</h3>
-              <p>선물 상자를 누르면 곰인형 또는 판다 영상이 재생되고, 단 하나의 판다를 찾은 사람이 당첨되는 게임</p>
-              <div class="game-meta">
-                <div class="game-meta-row"><span class="game-meta-label">참가자</span><span class="game-meta-value">2~20명</span></div>
-                <div class="game-meta-row"><span class="game-meta-label">조작</span><span class="game-meta-value">상자 터치</span></div>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        <div id="physicalCarouselHud" class="physical-carousel-hud" aria-hidden="true">
-          <p class="physical-carousel-hint">좌우로 넘겨서 피지컬 게임을 선택해줘</p>
-          <div id="physicalCarouselDots" class="physical-carousel-dots" aria-label="피지컬 게임 페이지 표시"></div>
         </div>
       </div>
     </section>
+
 
     <section id="physicalBalloonScreen" class="screen game-screen">
       <div class="card game-card balloon-card-screen">
@@ -487,7 +532,6 @@
               </div>
             </div>
 
-            <button class="back-btn bomb-pass-back-btn" data-target="physical" type="button">← 피지컬 목록으로</button>
           </div>
         </div>
       </div>
@@ -729,7 +773,6 @@
 
             <div class="game-header-actions">
               <button id="drawerToggleBtn" class="drawer-toggle-btn" type="button">⚙ 설정</button>
-              <button class="back-btn" data-target="luck" type="button">← 목록으로</button>
             </div>
           </div>
 
@@ -903,9 +946,6 @@
           </div>
         </div>
 
-        <div class="battle-mobile-back-wrap">
-          <button class="back-btn battle-mobile-back-btn" data-target="luck" type="button">← 목록으로</button>
-        </div>
       </div>
     </section>
 
@@ -1027,9 +1067,6 @@
           </div>
         </div>
 
-        <div class="sim-mobile-back-wrap">
-          <button class="back-btn sim-mobile-back-btn" data-target="luck" type="button">← 목록으로</button>
-        </div>
       </div>
       <div id="simArenaZoomBackdrop" class="sim-arena-zoom-backdrop" aria-hidden="true"></div>
     </section>
@@ -1355,6 +1392,10 @@
   </main>
 
   <div class="utility-controls" aria-label="화면 설정">
+    <button id="rosterToggleBtn" class="utility-btn utility-roster-btn" type="button" aria-haspopup="dialog" aria-controls="rosterOverlay">
+      <span class="utility-btn-icon" aria-hidden="true">👥</span>
+      <span class="utility-btn-label">참가자 <b id="rosterCountBadge">0</b></span>
+    </button>
     <button id="themeToggleBtn" class="utility-btn utility-theme-btn" type="button" aria-pressed="false" aria-label="밤 모드로 전환" title="밤 모드로 전환">
       <span class="utility-btn-icon" aria-hidden="true">🌙</span>
       <span class="utility-btn-label">밤 모드</span>
@@ -1389,6 +1430,36 @@
     </button>
   </div>
 
+  <div id="rosterOverlay" class="app-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rosterDialogTitle">
+    <div class="app-dialog roster-dialog">
+      <div class="app-dialog-head">
+        <div><p class="small-badge">👥 shared roster</p><h3 id="rosterDialogTitle">공용 참가자 명단</h3></div>
+        <button id="rosterCloseBtn" class="app-dialog-close" type="button" aria-label="참가자 명단 닫기">×</button>
+      </div>
+      <p class="sub-text">한 번 저장하면 모든 게임의 참가자 입력에 자동으로 반영된다. 쉼표 또는 줄바꿈으로 구분할 수 있다.</p>
+      <label class="roster-input-label" for="rosterInput">참가자 이름</label>
+      <textarea id="rosterInput" rows="8" spellcheck="false" placeholder="홍길동&#10;김아무개&#10;박철수"></textarea>
+      <div id="rosterPreview" class="roster-preview" aria-live="polite"></div>
+      <div id="rosterStatus" class="status-text" aria-live="polite">2~50명의 중복되지 않은 이름을 입력해줘.</div>
+      <div class="app-dialog-actions">
+        <button id="rosterClearBtn" class="action-btn soft" type="button">비우기</button>
+        <button id="rosterSaveBtn" class="action-btn primary" type="button">명단 저장·전체 반영</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sessionConfirmOverlay" class="app-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sessionConfirmTitle">
+    <div class="app-dialog session-confirm-dialog">
+      <div class="popup-icon" aria-hidden="true">⚠️</div>
+      <h3 id="sessionConfirmTitle">진행 중인 게임을 종료할까?</h3>
+      <p id="sessionConfirmMessage">현재 진행 상황이 사라진다.</p>
+      <div class="app-dialog-actions">
+        <button id="sessionConfirmCancelBtn" class="action-btn secondary" type="button">계속 플레이</button>
+        <button id="sessionConfirmLeaveBtn" class="action-btn soft danger" type="button">종료하고 이동</button>
+      </div>
+    </div>
+  </div>
+
   <div id="popupOverlay" class="popup-overlay hidden">
     <div class="popup">
       <div class="popup-icon">🛠️</div>
@@ -1407,6 +1478,7 @@
   </div>
 
   <script src="assets/matter.min.js?v=0.20.0"></script>
-  <script src="script.min.js?v=20260716-ball-battle-performance-v4"></script>
+  <script src="volume-controls.js?v=20260825-runtime-fix"></script>
+  <script src="random-roulette.v3.6.js"></script>
 </body>
 </html>

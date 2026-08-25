@@ -1,0 +1,15 @@
+{
+  "name": "random-roulette-webapp",
+  "private": true,
+  "version": "2.0.0",
+  "scripts": {
+    "dev": "vite",
+    "icons": "python3 scripts/generate_icons.py",
+    "split": "node scripts/split-legacy.mjs",
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "devDependencies": {
+    "vite": "^8.2.2"
+  }
+}
