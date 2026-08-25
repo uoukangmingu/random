@@ -47,7 +47,7 @@
     href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Pretendard:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="random-roulette.v3.6.css" />
+  <link rel="stylesheet" href="random-roulette.v3.7.css" />
 </head>
 <body>
 
@@ -1391,43 +1391,50 @@
 
   </main>
 
-  <div class="utility-controls" aria-label="화면 설정">
-    <button id="rosterToggleBtn" class="utility-btn utility-roster-btn" type="button" aria-haspopup="dialog" aria-controls="rosterOverlay">
-      <span class="utility-btn-icon" aria-hidden="true">👥</span>
-      <span class="utility-btn-label">참가자 <b id="rosterCountBadge">0</b></span>
-    </button>
-    <button id="themeToggleBtn" class="utility-btn utility-theme-btn" type="button" aria-pressed="false" aria-label="밤 모드로 전환" title="밤 모드로 전환">
-      <span class="utility-btn-icon" aria-hidden="true">🌙</span>
-      <span class="utility-btn-label">밤 모드</span>
-    </button>
-    <button id="fullscreenToggleBtn" class="utility-btn utility-fullscreen-btn" type="button" aria-pressed="false" aria-label="전체화면 켜기" title="전체화면 켜기">
-      <span class="utility-btn-icon" aria-hidden="true">⛶</span>
-      <span class="utility-btn-label">전체화면</span>
-    </button>
-    <button id="audioToggleBtn" class="utility-btn utility-audio-btn" type="button" aria-pressed="true" aria-label="사운드 끄기" title="사운드 끄기">
-      <span class="utility-btn-icon" aria-hidden="true">🔊</span>
-      <span class="utility-btn-label">사운드 켬</span>
-    </button>
-    <div class="utility-volume-panel" aria-label="게임 음량 조절">
-      <label class="volume-control" for="bgmVolumeRange">
-        <span class="volume-control-text">배경음</span>
-        <input id="bgmVolumeRange" class="volume-range" type="range" min="0" max="100" value="32" step="1" aria-label="배경음 음량" />
-        <span id="bgmVolumeValue" class="volume-control-value">32%</span>
-      </label>
-      <label class="volume-control" for="sfxVolumeRange">
-        <span class="volume-control-text">효과음</span>
-        <input id="sfxVolumeRange" class="volume-range" type="range" min="0" max="100" value="72" step="1" aria-label="효과음 음량" />
-        <span id="sfxVolumeValue" class="volume-control-value">72%</span>
-      </label>
+  <div class="utility-controls" aria-label="빠른 화면 조작">
+    <div id="utilitySettingsPanel" class="utility-settings-panel hidden" role="group" aria-label="화면 설정">
+      <button id="rosterToggleBtn" class="utility-btn utility-roster-btn" type="button" aria-haspopup="dialog" aria-controls="rosterOverlay" aria-label="참가자 명단 열기" title="참가자 명단 열기">
+        <span class="utility-btn-icon" aria-hidden="true">👥</span>
+        <span class="utility-btn-label">참가자 <b id="rosterCountBadge">0</b></span>
+      </button>
+      <button id="themeToggleBtn" class="utility-btn utility-theme-btn" type="button" aria-pressed="false" aria-label="밤 모드로 전환" title="밤 모드로 전환">
+        <span class="utility-btn-icon" aria-hidden="true">🌙</span>
+        <span class="utility-btn-label">밤 모드</span>
+      </button>
+      <button id="fullscreenToggleBtn" class="utility-btn utility-fullscreen-btn" type="button" aria-pressed="false" aria-label="전체화면 켜기" title="전체화면 켜기">
+        <span class="utility-btn-icon" aria-hidden="true">⛶</span>
+        <span class="utility-btn-label">전체화면</span>
+      </button>
+      <button id="audioToggleBtn" class="utility-btn utility-audio-btn" type="button" aria-pressed="true" aria-label="사운드 끄기" title="사운드 끄기">
+        <span class="utility-btn-icon" aria-hidden="true">🔊</span>
+        <span class="utility-btn-label">사운드 켬</span>
+      </button>
+      <div class="utility-volume-panel" aria-label="게임 음량 조절">
+        <label class="volume-control" for="bgmVolumeRange">
+          <span class="volume-control-text">배경음</span>
+          <input id="bgmVolumeRange" class="volume-range" type="range" min="0" max="100" value="32" step="1" aria-label="배경음 음량" />
+          <span id="bgmVolumeValue" class="volume-control-value">32%</span>
+        </label>
+        <label class="volume-control" for="sfxVolumeRange">
+          <span class="volume-control-text">효과음</span>
+          <input id="sfxVolumeRange" class="volume-range" type="range" min="0" max="100" value="72" step="1" aria-label="효과음 음량" />
+          <span id="sfxVolumeValue" class="volume-control-value">72%</span>
+        </label>
+      </div>
     </div>
-    <button id="desktopPrevStepBtn" class="utility-btn utility-prevstep-btn utility-desktop-only" type="button" aria-label="이전으로" title="이전으로">
-      <span class="utility-btn-icon" aria-hidden="true">↩</span>
-      <span class="utility-btn-label">이전으로</span>
-    </button>
-    <button id="mobilePrevStepBtn" class="utility-btn utility-prevstep-btn utility-mobile-only" type="button" aria-label="이전으로" title="이전으로">
-      <span class="utility-btn-icon" aria-hidden="true">↩</span>
-      <span class="utility-btn-label">이전으로</span>
-    </button>
+    <div class="utility-quick-actions">
+      <button id="utilitySettingsToggleBtn" class="utility-btn utility-settings-toggle-btn" type="button" aria-expanded="false" aria-controls="utilitySettingsPanel" aria-label="화면 설정 열기" title="화면 설정 열기">
+        <span class="utility-btn-icon" aria-hidden="true">⚙</span>
+      </button>
+      <button id="desktopPrevStepBtn" class="utility-btn utility-prevstep-btn utility-desktop-only" type="button" aria-label="이전으로" title="이전으로">
+        <span class="utility-btn-icon" aria-hidden="true">↩</span>
+        <span class="utility-btn-label">이전으로</span>
+      </button>
+      <button id="mobilePrevStepBtn" class="utility-btn utility-prevstep-btn utility-mobile-only" type="button" aria-label="이전으로" title="이전으로">
+        <span class="utility-btn-icon" aria-hidden="true">↩</span>
+        <span class="utility-btn-label">이전으로</span>
+      </button>
+    </div>
   </div>
 
   <div id="rosterOverlay" class="app-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rosterDialogTitle">
@@ -1460,9 +1467,9 @@
     </div>
   </div>
 
-  <div id="popupOverlay" class="popup-overlay hidden">
-    <div class="popup">
-      <div class="popup-icon">🛠️</div>
+  <div id="popupOverlay" class="popup-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="popupTitle" aria-describedby="popupMessage">
+    <div class="popup" tabindex="-1">
+      <div class="popup-icon" aria-hidden="true">🛠️</div>
       <h3 id="popupTitle">개발중</h3>
       <div id="popupMessage" class="popup-message">아직 준비중이야!</div>
       <button id="closePopupBtn" class="popup-btn" type="button">확인</button>
@@ -1479,6 +1486,6 @@
 
   <script src="assets/matter.min.js?v=0.20.0"></script>
   <script src="volume-controls.js?v=20260825-runtime-fix"></script>
-  <script src="random-roulette.v3.6.js"></script>
+  <script src="random-roulette.v3.7.js"></script>
 </body>
 </html>
