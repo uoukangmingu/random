@@ -350,7 +350,7 @@
   function useRoster() {
     const rosterNames = global.RandomRouletteRoster?.getNames?.() || []
     if (rosterNames.length < 2) {
-      showPopup('공용 명단이 비어 있어', '참가자 명단을 먼저 등록해줘.', { icon: '👥' })
+      showPopup('공용 목록이 비어 있어', '목록을 만들거나 현재 룰렛 입력창에 항목을 직접 적어줘.', { icon: '☷' })
       global.RandomRouletteRoster?.open?.()
       return false
     }

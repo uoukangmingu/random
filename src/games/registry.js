@@ -70,39 +70,6 @@
     return false
   }
 
-  function getEligibilityHint(eligibility) {
-    if (!eligibility) return '참가자 명단 확인 필요'
-    if (Number.isFinite(eligibility.count) && Number.isFinite(eligibility.max) && eligibility.count > eligibility.max) {
-      return `지원 인원 ${eligibility.min}~${eligibility.max}명`
-    }
-    if (Number.isFinite(eligibility.min)) return `명단 ${eligibility.min}명 이상 필요`
-    return '참가자 명단을 조정해줘'
-  }
-
-  function setEligibilityOverlay(button, eligibility, label = '현재 명단 실행 불가') {
-    let overlay = button.querySelector(':scope > .game-eligibility-overlay')
-    if (eligibility.ok) {
-      overlay?.remove()
-      return
-    }
-
-    if (!overlay) {
-      overlay = document.createElement('span')
-      overlay.className = 'game-eligibility-overlay'
-      overlay.setAttribute('aria-hidden', 'true')
-      const icon = document.createElement('span')
-      icon.className = 'game-eligibility-icon'
-      icon.textContent = '👥'
-      const title = document.createElement('strong')
-      const hint = document.createElement('small')
-      overlay.append(icon, title, hint)
-      button.appendChild(overlay)
-    }
-
-    overlay.querySelector('strong').textContent = label
-    overlay.querySelector('small').textContent = getEligibilityHint(eligibility)
-  }
-
   function setDeviceVisibility(button, screenKey) {
     const hidden = shouldHideForDevice(screenKey)
     button.hidden = hidden
@@ -120,57 +87,69 @@
     const count = roster?.getCount?.() || 0
     const max = typeof config.max === 'function' ? config.max() : config.max
 
+    const entry = getEntryAvailability(screenKey)
+    if (!entry.ok) return entry
+    if (config.requiresRoster === false && !options.forSmartPick) return { ok: true, reason: '' }
+    if (count < config.min) {
+      return { ok: false, inputNeeded: true, reason: `공용 목록이 없어도 입장할 수 있어. 게임 안에서 ${config.min}개 이상 입력해줘.`, count, min: config.min, max }
+    }
+    if (count > max) {
+      return { ok: false, inputNeeded: true, reason: `${config.title}은 ${config.min}~${max}개 항목을 지원해. 들어가서 이 게임의 입력만 수정할 수 있어.`, count, min: config.min, max }
+    }
+    return { ok: true, reason: '', count, min: config.min, max }
+  }
+
+  function getEntryAvailability(screenKey) {
+    const config = games[screenKey]
+    if (!config) return { ok: true, reason: '' }
     if (config.device === 'phone' && !isPhoneLikeDevice()) {
       return { ok: false, reason: `${config.title} 게임은 모바일 전용이야.` }
     }
     if (config.device === 'desktop' && isPhoneLikeDevice()) {
       return { ok: false, reason: `${config.title} 게임은 키보드가 있는 PC에서 이용할 수 있어.` }
     }
-    if (config.requiresRoster === false && !options.forSmartPick) return { ok: true, reason: '' }
-    if (count < config.min) {
-      return { ok: false, reason: `공용 참가자 명단에 최소 ${config.min}명을 먼저 등록해줘.`, count, min: config.min, max }
-    }
-    if (count > max) {
-      return { ok: false, reason: `${config.title}: 현재 ${count}명 명단으로 실행할 수 없어. 지원 인원은 ${config.min}~${max}명이야.`, count, min: config.min, max }
-    }
-    return { ok: true, reason: '', count, min: config.min, max }
+    return { ok: true, reason: '' }
   }
 
   function markCard(button, screenKey) {
     if (!button || !screenKey) return
     const eligibility = getEligibility(screenKey)
-    button.classList.toggle('is-roster-ineligible', !eligibility.ok)
-    button.setAttribute('aria-disabled', eligibility.ok ? 'false' : 'true')
+    button.setAttribute('aria-disabled', 'false')
+    button.dataset.listReadiness = eligibility.ok ? 'ready' : 'input'
     if (eligibility.ok) {
       delete button.dataset.ineligibleLabel
       button.removeAttribute('title')
     } else {
-      button.dataset.ineligibleLabel = '현재 명단 실행 불가'
-      button.title = eligibility.reason
+      delete button.dataset.ineligibleLabel
+      button.title = eligibility.reason || '게임 안에서 직접 입력할 수 있어.'
     }
-    setEligibilityOverlay(button, eligibility)
   }
 
   function updateCatalogSummary(visibleCards, hiddenCards) {
     const summary = document.getElementById('catalogAvailabilitySummary')
     if (!summary) return
     const gameCards = visibleCards.filter((button) => button.dataset.game !== '8')
-    const available = gameCards.filter((button) => !button.classList.contains('is-roster-ineligible')).length
-    const unavailable = gameCards.length - available
+    const sharedCount = global.RandomRouletteRoster?.getCount?.() || 0
+    const ready = gameCards.filter((button) => button.dataset.listReadiness === 'ready').length
+    const inputNeeded = gameCards.length - ready
     const hiddenLabel = isPhoneLikeDevice() ? 'PC 전용' : '모바일 전용'
-    const parts = [`바로 실행 ${available}개`]
-    if (unavailable) parts.push(`명단 조정 필요 ${unavailable}개는 목록 뒤에 표시`)
+    const parts = sharedCount >= 2
+      ? [`공용 목록 ${sharedCount}개`, `바로 시작 ${ready}개`, `${inputNeeded}개는 게임 안에서 수정`]
+      : ['공용 목록은 선택 사항', `${gameCards.length}개 게임 모두 입장 가능`, '게임 안에서 직접 입력']
     if (hiddenCards.length) parts.push(`${hiddenLabel} ${hiddenCards.length}개 숨김`)
     summary.textContent = parts.join(' · ')
+
+    const editButton = document.getElementById('catalogRosterEditBtn')
+    if (editButton) {
+      editButton.textContent = sharedCount >= 2 ? `공용 목록 편집 · ${sharedCount}개` : '공용 목록 만들기 · 선택'
+    }
   }
 
-  function sortCatalogCards(grid, cards) {
-    const randomPick = cards.find((button) => button.dataset.game === '8')
-    const visible = cards.filter((button) => !button.hidden && button !== randomPick)
-    const available = visible.filter((button) => !button.classList.contains('is-roster-ineligible'))
-    const unavailable = visible.filter((button) => button.classList.contains('is-roster-ineligible'))
-    const hidden = cards.filter((button) => button.hidden)
-    ;[randomPick, ...available, ...unavailable, ...hidden].filter(Boolean).forEach((button) => grid.appendChild(button))
+  function restoreCatalogOrder(grid, cards) {
+    cards
+      .slice()
+      .sort((a, b) => Number(a.dataset.catalogOrder || 0) - Number(b.dataset.catalogOrder || 0))
+      .forEach((button) => grid.appendChild(button))
   }
 
   function refreshCards() {
@@ -179,6 +158,9 @@
     syncCatalogDeviceClass()
     grid.querySelectorAll('.game-item[data-clone]').forEach((clone) => clone.remove())
     const cards = [...grid.querySelectorAll(':scope > .game-item:not([data-clone])')]
+    cards.forEach((button, index) => {
+      if (!button.dataset.catalogOrder) button.dataset.catalogOrder = String(index + 1)
+    })
 
     cards.forEach((button) => {
       const screenKey = getScreenKey(button)
@@ -194,20 +176,10 @@
     cards.filter((button) => button.matches('.game-launch[data-game]')).forEach((button) => {
       const game = button.dataset.game
       if (game === '8') {
-        const hasEligible = getEligibleGameScreens().length > 0
-        const eligibility = hasEligible
-          ? { ok: true, reason: '' }
-          : { ok: false, reason: '공용 참가자 명단을 등록하면 현재 기기에서 실행 가능한 게임만 골라줘.', min: 2 }
-        button.classList.toggle('is-roster-ineligible', !hasEligible)
-        button.setAttribute('aria-disabled', hasEligible ? 'false' : 'true')
-        if (hasEligible) {
-          delete button.dataset.ineligibleLabel
-          button.removeAttribute('title')
-        } else {
-          button.dataset.ineligibleLabel = '명단 등록 필요'
-          button.title = '공용 참가자 명단을 등록하면 현재 기기에서 실행 가능한 게임만 골라줘.'
-        }
-        setEligibilityOverlay(button, eligibility, '명단 등록 필요')
+        button.setAttribute('aria-disabled', 'false')
+        button.dataset.listReadiness = 'ready'
+        delete button.dataset.ineligibleLabel
+        button.removeAttribute('title')
         return
       }
       markCard(button, luckButtonToScreen[game])
@@ -216,7 +188,7 @@
       markCard(button, physicalButtonToScreen[button.dataset.physicalGame])
     })
 
-    sortCatalogCards(grid, cards)
+    restoreCatalogOrder(grid, cards)
     const visibleCards = cards.filter((button) => !button.hidden)
     updateCatalogSummary(visibleCards, cards.filter((button) => button.hidden))
     global.dispatchEvent(new CustomEvent('roulette-catalog-refreshed'))
@@ -228,15 +200,15 @@
       .filter((screen) => getEligibility(screen, { forSmartPick: true }).ok)
   }
 
-  function pickEligibleGameScreen() {
-    if (!global.RandomRouletteRoster?.hasRoster?.()) {
-      global.RandomRouletteRoster?.open?.()
-      return null
-    }
+  function getDeviceCompatibleGameScreens() {
+    return Object.keys(games).filter((screen) => getEntryAvailability(screen).ok)
+  }
 
-    const eligible = getEligibleGameScreens()
+  function pickEligibleGameScreen() {
+    const hasSharedList = global.RandomRouletteRoster?.hasSharedList?.() || global.RandomRouletteRoster?.hasRoster?.()
+    const eligible = hasSharedList ? getEligibleGameScreens() : getDeviceCompatibleGameScreens()
     if (!eligible.length) {
-      showPopup('실행 가능한 게임 없음', '현재 인원수와 기기에서 실행 가능한 게임이 없어. 공용 명단의 인원을 조정해줘.', { icon: '⚠️' })
+      showPopup('실행 가능한 게임 없음', '현재 기기에서 실행 가능한 게임이 없어.', { icon: '⚠️' })
       return null
     }
 
@@ -257,7 +229,9 @@
     init,
     games,
     getEligibility,
+    getEntryAvailability,
     getEligibleGameScreens,
+    getDeviceCompatibleGameScreens,
     pickEligibleGameScreen,
     getEligibleLuckScreens: getEligibleGameScreens,
     pickEligibleLuckScreen: pickEligibleGameScreen,

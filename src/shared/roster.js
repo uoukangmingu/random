@@ -26,17 +26,17 @@
       .map((item) => item.trim())
       .filter(Boolean)
 
-    if (!tokens.length) return { ok: false, reason: '참가자 이름을 입력해줘.', names: [] }
-    if (tokens.length < 2) return { ok: false, reason: '최소 2명의 참가자가 필요해.', names: tokens }
-    if (tokens.length > MAX_NAMES) return { ok: false, reason: `공용 명단은 최대 ${MAX_NAMES}명까지 저장할 수 있어.`, names: tokens }
+    if (!tokens.length) return { ok: false, reason: '공용 목록은 선택 사항이야. 저장하려면 항목을 입력해줘.', names: [] }
+    if (tokens.length < 2) return { ok: false, reason: '선택하려면 최소 2개의 항목이 필요해.', names: tokens }
+    if (tokens.length > MAX_NAMES) return { ok: false, reason: `공용 목록은 최대 ${MAX_NAMES}개까지 저장할 수 있어.`, names: tokens }
     if (tokens.some((name) => name.length > MAX_NAME_LENGTH)) {
-      return { ok: false, reason: `이름은 ${MAX_NAME_LENGTH}자 이내로 입력해줘.`, names: tokens }
+      return { ok: false, reason: `각 항목은 ${MAX_NAME_LENGTH}자 이내로 입력해줘.`, names: tokens }
     }
 
     const normalizedSet = new Set()
     for (const name of tokens) {
       const key = name.toLocaleLowerCase('ko-KR')
-      if (normalizedSet.has(key)) return { ok: false, reason: `중복된 이름 “${name}”을 확인해줘.`, names: tokens }
+      if (normalizedSet.has(key)) return { ok: false, reason: `중복된 항목 “${name}”을 확인해줘.`, names: tokens }
       normalizedSet.add(key)
     }
 
@@ -95,7 +95,7 @@
 
     if (elements.status) {
       elements.status.textContent = parsed.ok
-        ? `${previewNames.length}명 확인 완료. 저장하면 모든 게임에 반영돼.`
+        ? `${previewNames.length}개 항목 확인 완료. 저장하면 각 게임의 입력 형식에 맞춰 반영돼.`
         : parsed.reason
       elements.status.classList.toggle('is-error', !parsed.ok && Boolean(source.trim()))
     }
@@ -116,9 +116,31 @@
     persist()
     syncToGames()
     render()
-    global.dispatchEvent(new CustomEvent('roulette-roster-change', { detail: { names: [...names] } }))
+    global.dispatchEvent(new CustomEvent('roulette-roster-change', { detail: { names: [...names], items: [...names] } }))
+    global.dispatchEvent(new CustomEvent('roulette-shared-list-change', { detail: { items: [...names] } }))
     close()
     return true
+  }
+
+  function clearSavedList() {
+    const elements = getElements()
+    names = []
+    persist()
+    if (elements.input) elements.input.value = ''
+    render('')
+    if (elements.status) {
+      elements.status.textContent = '공용 목록을 삭제했어. 각 게임에서 입력한 내용은 그대로 유지돼.'
+      elements.status.classList.remove('is-error')
+    }
+    global.dispatchEvent(new CustomEvent('roulette-roster-change', { detail: { names: [], items: [] } }))
+    global.dispatchEvent(new CustomEvent('roulette-shared-list-change', { detail: { items: [] } }))
+    elements.input?.focus({ preventScroll: true })
+  }
+
+  function getFocusableElements(container) {
+    if (!container) return []
+    return [...container.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+      .filter((element) => element instanceof HTMLElement && element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden')
   }
 
   function open() {
@@ -128,13 +150,19 @@
     elements.input.value = names.join('\n')
     elements.overlay.classList.remove('hidden')
     render(elements.input.value)
-    requestAnimationFrame(() => elements.input?.focus())
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (!elements.overlay?.classList.contains('hidden')) elements.input?.focus({ preventScroll: true })
+      }, 0)
+    })
   }
 
   function close() {
     const elements = getElements()
     elements.overlay?.classList.add('hidden')
-    if (lastFocusedElement instanceof HTMLElement) lastFocusedElement.focus({ preventScroll: true })
+    if (lastFocusedElement instanceof HTMLElement && lastFocusedElement.isConnected) lastFocusedElement.focus({ preventScroll: true })
+    lastFocusedElement = null
+    document.dispatchEvent(new CustomEvent('app-dialog-closed', { detail: { dialog: 'roster' } }))
   }
 
   function init() {
@@ -145,18 +173,43 @@
     elements.toggle?.addEventListener('click', open)
     elements.close?.addEventListener('click', close)
     elements.save?.addEventListener('click', saveFromDialog)
-    elements.clear?.addEventListener('click', () => {
-      if (elements.input) elements.input.value = ''
-      render('')
-      elements.input?.focus()
-    })
+    elements.clear?.addEventListener('click', clearSavedList)
     elements.input?.addEventListener('input', () => render(elements.input.value))
     elements.overlay?.addEventListener('click', (event) => {
       if (event.target === elements.overlay) close()
     })
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && !elements.overlay?.classList.contains('hidden')) close()
-    })
+      if (elements.overlay?.classList.contains('hidden')) return
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        close()
+        return
+      }
+      if (event.key !== 'Tab') return
+      event.stopPropagation()
+
+      const focusable = getFocusableElements(elements.overlay)
+      if (!focusable.length) {
+        event.preventDefault()
+        elements.overlay?.querySelector('.app-dialog')?.focus?.({ preventScroll: true })
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+      if (!elements.overlay?.contains(active)) {
+        event.preventDefault()
+        first.focus({ preventScroll: true })
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault()
+        last.focus({ preventScroll: true })
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus({ preventScroll: true })
+      }
+    }, true)
     render()
     if (names.length) syncToGames()
   }
@@ -168,7 +221,10 @@
     parse,
     syncToGames,
     getNames: () => [...names],
+    getItems: () => [...names],
     getCount: () => names.length,
-    hasRoster: () => names.length >= 2
+    hasRoster: () => names.length >= 2,
+    hasSharedList: () => names.length >= 2,
+    clear: clearSavedList
   })
 })(window)

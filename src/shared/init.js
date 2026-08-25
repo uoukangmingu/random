@@ -1,5 +1,6 @@
 (function initializeModularFeatures(global) {
   function init() {
+    global.RandomRouletteUtilitySettings?.init?.()
     global.RandomRouletteRoster?.init?.()
     global.RandomRouletteSession?.init?.()
     global.RandomRouletteWheel?.init?.()

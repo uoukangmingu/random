@@ -23,6 +23,9 @@ if (popupOverlay) {
   })
 }
 
+document.addEventListener('keydown', handlePopupDialogKeydown)
+document.addEventListener('app-dialog-closed', handleBlockingDialogClosed)
+
 
 if (luckGameGrid) {
   luckGameGrid.addEventListener('click', handleLuckFastForwardBadgeClick, true)

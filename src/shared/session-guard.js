@@ -43,6 +43,7 @@
     pending = null
     if (runCancel) action?.onCancel?.()
     if (lastFocusedElement instanceof HTMLElement) lastFocusedElement.focus({ preventScroll: true })
+    document.dispatchEvent(new CustomEvent('app-dialog-closed', { detail: { dialog: 'session-confirm' } }))
   }
 
   function confirm() {
@@ -99,10 +100,12 @@
       if (elements.overlay?.classList.contains('hidden')) return
       if (event.key === 'Escape') {
         event.preventDefault()
+        event.stopImmediatePropagation()
         close(true)
         return
       }
       if (event.key !== 'Tab') return
+      event.stopImmediatePropagation()
       const focusable = [elements.cancel, elements.leave].filter(Boolean)
       const index = focusable.indexOf(document.activeElement)
       const nextIndex = event.shiftKey
@@ -110,7 +113,7 @@
         : (index >= focusable.length - 1 ? 0 : index + 1)
       event.preventDefault()
       focusable[nextIndex]?.focus()
-    })
+    }, true)
   }
 
   function init() {
