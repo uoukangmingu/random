@@ -12,6 +12,7 @@ const scriptOrder = [
   'src/games/core.js',
   'src/shared/rng.js',
   'src/shared/game-engine.js',
+  'src/shared/utility-settings.js',
   'src/shared/roster.js',
   'src/shared/session-guard.js',
   'src/games/wheel.js',
@@ -50,11 +51,11 @@ const appCss = banner + cssParts.join('\n')
 await Promise.all([
   writeFile(path.join(distDir, 'app.js'), appJs, 'utf8'),
   writeFile(path.join(distDir, 'app.css'), appCss, 'utf8'),
-  writeFile(path.join(root, 'random-roulette.v3.6.js'), appJs, 'utf8'),
-  writeFile(path.join(root, 'random-roulette.v3.6.css'), appCss, 'utf8'),
+  writeFile(path.join(root, 'random-roulette.v3.8.js'), appJs, 'utf8'),
+  writeFile(path.join(root, 'random-roulette.v3.8.css'), appCss, 'utf8'),
   writeFile(path.join(root, 'app.bundle.js'), appJs, 'utf8'),
   writeFile(path.join(root, 'app.bundle.css'), appCss, 'utf8'),
   writeFile(path.join(root, 'script.min.js'), appJs, 'utf8'),
   writeFile(path.join(root, 'style.min.css'), appCss, 'utf8')
 ])
-console.log(`빌드 완료: dist + v3.6 배포 번들 + 호환 루트 번들`)
+console.log(`빌드 완료: dist + v3.8 배포 번들 + 호환 루트 번들`)
