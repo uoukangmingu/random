@@ -842,9 +842,6 @@ if (luckGameGrid) {
   luckGameGrid.addEventListener('scroll', handleLuckCarouselScroll, { passive: true })
 }
 
-luckCarouselPrevBtn?.addEventListener('click', () => moveLuckCarousel(-1))
-luckCarouselNextBtn?.addEventListener('click', () => moveLuckCarousel(1))
-
 window.addEventListener('roulette-catalog-refreshed', () => {
   luckCarouselActiveIndex = 0
   syncLuckCarousel({ align: screens.luck?.classList.contains('active') })
