@@ -26,7 +26,7 @@
       .map((item) => item.trim())
       .filter(Boolean)
 
-    if (!tokens.length) return { ok: false, reason: '공용 목록은 선택 사항이야. 저장하려면 항목을 입력해줘.', names: [] }
+    if (!tokens.length) return { ok: true, empty: true, names: [] }
     if (tokens.length < 2) return { ok: false, reason: '선택하려면 최소 2개의 항목이 필요해.', names: tokens }
     if (tokens.length > MAX_NAMES) return { ok: false, reason: `공용 목록은 최대 ${MAX_NAMES}개까지 저장할 수 있어.`, names: tokens }
     if (tokens.some((name) => name.length > MAX_NAME_LENGTH)) {
@@ -94,9 +94,11 @@
     }
 
     if (elements.status) {
-      elements.status.textContent = parsed.ok
-        ? `${previewNames.length}개 항목 확인 완료. 저장하면 각 게임의 입력 형식에 맞춰 반영돼.`
-        : parsed.reason
+      elements.status.textContent = parsed.empty
+        ? '빈 공용 목록으로 저장하면 각 게임에서 직접 입력해서 사용할 수 있어.'
+        : parsed.ok
+          ? `${previewNames.length}개 항목 확인 완료. 저장하면 각 게임의 입력 형식에 맞춰 반영돼.`
+          : parsed.reason
       elements.status.classList.toggle('is-error', !parsed.ok && Boolean(source.trim()))
     }
 
@@ -123,17 +125,17 @@
   }
 
   function clearSavedList() {
-    const elements = getElements()
     names = []
     persist()
-    if (elements.input) elements.input.value = ''
-    render('')
-    if (elements.status) {
-      elements.status.textContent = '공용 목록을 삭제했어. 각 게임에서 입력한 내용은 그대로 유지돼.'
-      elements.status.classList.remove('is-error')
-    }
     global.dispatchEvent(new CustomEvent('roulette-roster-change', { detail: { names: [], items: [] } }))
     global.dispatchEvent(new CustomEvent('roulette-shared-list-change', { detail: { items: [] } }))
+    render('')
+  }
+
+  function resetDraft() {
+    const elements = getElements()
+    if (elements.input) elements.input.value = ''
+    render('')
     elements.input?.focus({ preventScroll: true })
   }
 
@@ -173,7 +175,7 @@
     elements.toggle?.addEventListener('click', open)
     elements.close?.addEventListener('click', close)
     elements.save?.addEventListener('click', saveFromDialog)
-    elements.clear?.addEventListener('click', clearSavedList)
+    elements.clear?.addEventListener('click', resetDraft)
     elements.input?.addEventListener('input', () => render(elements.input.value))
     elements.overlay?.addEventListener('click', (event) => {
       if (event.target === elements.overlay) close()
@@ -225,6 +227,7 @@
     getCount: () => names.length,
     hasRoster: () => names.length >= 2,
     hasSharedList: () => names.length >= 2,
-    clear: clearSavedList
+    clear: clearSavedList,
+    resetDraft
   })
 })(window)
