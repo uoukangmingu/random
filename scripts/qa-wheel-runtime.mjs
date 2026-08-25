@@ -4,10 +4,18 @@ import path from 'node:path'
 import vm from 'node:vm'
 
 const root = path.resolve(import.meta.dirname, '..')
-const frameMs = 1000 / 60
+const simulatedFps = 30
+const frameMs = 1000 / simulatedFps
 let now = 0
 let nextFrameId = 1
 let frameQueue = []
+
+function queueFrame(callback) {
+  const id = nextFrameId
+  nextFrameId += 1
+  frameQueue.push({ id, callback })
+  return id
+}
 
 class MockClassList {
   constructor() {
@@ -102,6 +110,52 @@ class MockCanvas extends MockElement {
   getContext(type) {
     return type === '2d' ? canvasContext : null
   }
+
+  animate(keyframes, options) {
+    const startedAt = now
+    let cancelled = false
+    let frameId = null
+    let resolveFinished
+    let rejectFinished
+    const finished = new Promise((resolve, reject) => {
+      resolveFinished = resolve
+      rejectFinished = reject
+    })
+    const angles = keyframes.map((keyframe) => {
+      const match = String(keyframe.transform || '').match(/rotate\(([-+0-9.eE]+)rad\)/)
+      return match ? Number(match[1]) : 0
+    })
+    const animation = {
+      finished,
+      keyframes,
+      options,
+      cancel() {
+        if (cancelled) return
+        cancelled = true
+        if (frameId) frameQueue = frameQueue.filter((frame) => frame.id !== frameId)
+        rejectFinished(new Error('animation cancelled'))
+      }
+    }
+    this.lastAnimation = animation
+
+    const tick = (timestamp) => {
+      if (cancelled) return
+      const progress = Math.min(1, (timestamp - startedAt) / options.duration)
+      const scaled = progress * (keyframes.length - 1)
+      const lowerIndex = Math.floor(scaled)
+      const upperIndex = Math.min(keyframes.length - 1, lowerIndex + 1)
+      const blend = scaled - lowerIndex
+      const angle = angles[lowerIndex] + (angles[upperIndex] - angles[lowerIndex]) * blend
+      this.style.transform = `rotate(${angle}rad)`
+      if (progress < 1) {
+        frameId = queueFrame(tick)
+      } else {
+        resolveFinished(animation)
+      }
+    }
+    frameId = queueFrame(tick)
+    return animation
+  }
 }
 
 const elementIds = [
@@ -140,10 +194,7 @@ const context = {
     observe() {}
   },
   requestAnimationFrame(callback) {
-    const id = nextFrameId
-    nextFrameId += 1
-    frameQueue.push({ id, callback })
-    return id
+    return queueFrame(callback)
   },
   cancelAnimationFrame(id) {
     frameQueue = frameQueue.filter((frame) => frame.id !== id)
@@ -187,7 +238,12 @@ runFrame()
 now = 0
 context.RandomRouletteWheel.spin()
 
-const sampleTimes = [5200, 5800, 6400, 7000, 7600, 8000]
+const animationRecord = elements.wheelCanvas.lastAnimation
+if (!animationRecord || animationRecord.options.duration !== 9000 || animationRecord.keyframes.length !== 121) {
+  throw new Error('모바일 합성 애니메이션이 9초·121개 키프레임으로 시작되지 않음')
+}
+
+const sampleTimes = [5800, 6400, 7000, 7600, 8200, 8800]
 const samples = []
 for (const target of sampleTimes) {
   runUntil(target)
@@ -195,7 +251,7 @@ for (const target of sampleTimes) {
 }
 
 if (!samples.every((sample) => sample.running && Number.isFinite(sample.angle))) {
-  throw new Error('모바일 룰렛이 8초 이전에 종료되거나 회전 transform이 누락됨')
+  throw new Error('모바일 룰렛이 8.8초 이전에 종료되거나 합성 회전 transform이 누락됨')
 }
 
 const deltas = samples.slice(1).map((sample, index) => sample.angle - samples[index].angle)
@@ -203,8 +259,10 @@ if (!deltas.every((delta, index) => delta > 0 && (index === 0 || delta < deltas[
   throw new Error(`모바일 룰렛 후반 이동량이 단계적으로 감소하지 않음: ${deltas.join(', ')}`)
 }
 
-runUntil(8250)
-if (context.RandomRouletteWheel.isRunning()) throw new Error('모바일 룰렛이 8.2초 이후에도 종료되지 않음')
+runUntil(9050)
+await Promise.resolve()
+await Promise.resolve()
+if (context.RandomRouletteWheel.isRunning()) throw new Error('모바일 룰렛이 9초 이후에도 종료되지 않음')
 if (elements.wheelCanvas.classList.contains('is-spinning') || elements.wheelCanvas.style.transform) {
   throw new Error('룰렛 종료 후 GPU 회전 상태가 정리되지 않음')
 }
@@ -213,7 +271,9 @@ if (elements.wheelSpinBtn.disabled || elements.wheelResultText.textContent === '
 }
 
 console.log(JSON.stringify({
-  mobileDurationMs: 8200,
+  mobileDurationMs: 9000,
+  simulatedFps,
+  compositorKeyframes: animationRecord.keyframes.length,
   stillSpinningAtMs: samples.at(-1).time,
   distancePer600Ms: deltas.map((value) => Number(value.toFixed(4))),
   finishedAtOrBeforeMs: Math.round(now),

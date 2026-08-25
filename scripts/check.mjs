@@ -6,7 +6,7 @@ import { webcrypto } from 'node:crypto'
 
 const root = process.cwd()
 const requiredFiles = [
-  'index.html', 'dist/app.js', 'dist/app.css', 'random-roulette.v3.11.js', 'random-roulette.v3.11.css', 'app.bundle.js', 'app.bundle.css', 'script.min.js', 'style.min.css', 'volume-controls.js', 'manifest.webmanifest', 'sw.js',
+  'index.html', 'dist/app.js', 'dist/app.css', 'random-roulette.v3.12.js', 'random-roulette.v3.12.css', 'app.bundle.js', 'app.bundle.css', 'script.min.js', 'style.min.css', 'volume-controls.js', 'manifest.webmanifest', 'sw.js',
   'assets/matter.min.js', 'assets/app-icon.svg', 'assets/app-icon-192.png', 'assets/app-icon-512.png'
 ]
 
@@ -19,7 +19,7 @@ const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1])
 const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))]
 if (duplicateIds.length) throw new Error(`중복 HTML id: ${duplicateIds.join(', ')}`)
 
-for (const marker of ['wheelScreen', 'rosterOverlay', 'sessionConfirmOverlay', 'manifest.webmanifest', 'volume-controls.js', 'random-roulette.v3.11.js', '__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__', 'emoji-text-fallback', '랜덤 게임 목록', 'unified-game-grid', 'catalogAvailabilitySummary', 'catalogRosterEditBtn', 'luckCarouselCounter', 'utilitySettingsPanel', 'utilitySettingsToggleBtn', 'utilitySettingsCloseBtn', '공용 목록', '입력 비우기', 'aria-label="공용 목록 열기"', 'aria-describedby="rosterDialogDescription"', 'aria-describedby="popupMessage"']) {
+for (const marker of ['wheelScreen', 'rosterOverlay', 'sessionConfirmOverlay', 'manifest.webmanifest', 'volume-controls.js', 'random-roulette.v3.12.js', '__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__', 'emoji-text-fallback', '랜덤 게임 목록', 'unified-game-grid', 'catalogAvailabilitySummary', 'catalogRosterEditBtn', 'luckCarouselCounter', 'utilitySettingsPanel', 'utilitySettingsToggleBtn', 'utilitySettingsCloseBtn', '공용 목록', '입력 비우기', 'aria-label="공용 목록 열기"', 'aria-describedby="rosterDialogDescription"', 'aria-describedby="popupMessage"']) {
   if (!html.includes(marker)) throw new Error(`필수 마커 누락: ${marker}`)
 }
 for (const removedMarker of ['id="menuScreen"', 'id="physicalScreen"', 'id="physicalGameGrid"', '>운 게임 목록<', '>피지컬 게임 목록<', 'class="physical-compat-badge', '모바일 · PC</span>', 'PC 전용</span>', '현재 명단 실행 불가', '참가자 명단 수정', '공용 참가자 명단']) {
@@ -38,8 +38,8 @@ const appCss = await readFile(path.join(root, 'dist', 'app.css'), 'utf8')
 const rootCss = await readFile(path.join(root, 'style.min.css'), 'utf8')
 const deployApp = await readFile(path.join(root, 'app.bundle.js'), 'utf8')
 const deployCss = await readFile(path.join(root, 'app.bundle.css'), 'utf8')
-const versionedApp = await readFile(path.join(root, 'random-roulette.v3.11.js'), 'utf8')
-const versionedCss = await readFile(path.join(root, 'random-roulette.v3.11.css'), 'utf8')
+const versionedApp = await readFile(path.join(root, 'random-roulette.v3.12.js'), 'utf8')
+const versionedCss = await readFile(path.join(root, 'random-roulette.v3.12.css'), 'utf8')
 if (rootApp !== app || deployApp !== app || versionedApp !== app || rootCss !== appCss || deployCss !== appCss || versionedCss !== appCss) {
   throw new Error('배포용 루트 번들이 dist 빌드와 일치하지 않음')
 }
@@ -52,7 +52,7 @@ if (!app.includes("if (historyMode === 'skip')") || !app.includes("commitScreenH
 for (const marker of ['RandomRouletteWheel', 'RandomRouletteRoster', 'RandomRouletteRegistry', 'RandomRouletteWakeLock', 'RandomRouletteUtilitySettings']) {
   if (!app.includes(marker)) throw new Error(`빌드 기능 누락: ${marker}`)
 }
-for (const marker of ['getSpinMotionProfile', 'getSpinEasedProgress', 'MOBILE_SPIN_DECELERATION_RATIO = 0.64', 'duration: 8200', 'getSpinEasedProgress(progress, motionProfile)', 'setCanvasSpinTransform', 'clearCanvasSpinTransform']) {
+for (const marker of ['getSpinMotionProfile', 'getSpinEasedProgress', 'MOBILE_SPIN_DECELERATION_RATIO = 0.68', 'duration: 9000', 'buildSpinKeyframes', 'SPIN_KEYFRAME_COUNT = 121', "typeof canvas.animate === 'function'", 'animation.finished', 'getSpinEasedProgress(progress, motionProfile)', 'setCanvasSpinTransform', 'clearCanvasSpinTransform']) {
   if (!app.includes(marker)) throw new Error(`룰렛 감속 로직 누락: ${marker}`)
 }
 for (const marker of ['handlePopupDialogKeydown', 'popupLastFocusedElement', 'getFocusableElements(elements.overlay)', "event.key === 'Escape'", 'isBlockingAppDialogVisible', 'canRestorePopupFocus', 'handleBlockingDialogClosed', 'app-dialog-closed']) {
@@ -76,7 +76,7 @@ for (const marker of ['.catalog-availability-bar', '.game-item.is-device-hidden'
 for (const removedMarker of ['game-eligibility-overlay', 'is-roster-ineligible', 'sortCatalogCards', '현재 명단으로 실행 불가']) {
   if (app.includes(removedMarker) || appCss.includes(removedMarker)) throw new Error(`이전 명단 차단 UX가 남아 있음: ${removedMarker}`)
 }
-for (const marker of ['#wheelScreen.screen', 'display: contents', 'width: min(100%, 560px)', 'font: 700 16px/1.6', 'height: clamp(168px, 28dvh, 220px)', 'max-height: min(36dvh, 260px)', '#wheelCanvas.is-spinning', 'will-change: transform']) {
+for (const marker of ['#wheelScreen.screen', 'display: contents', 'width: min(100%, 560px)', 'font: 700 16px/1.6', 'height: clamp(168px, 28dvh, 220px)', 'max-height: min(36dvh, 260px)', '#wheelCanvas.is-spinning', 'will-change: transform', 'backface-visibility: hidden', 'contain: paint']) {
   if (!appCss.includes(marker)) throw new Error(`기본 룰렛 모바일 안전 규칙 누락: ${marker}`)
 }
 if (app.includes('const duration = reduceMotion ? 180 : 4200')) throw new Error('이전의 짧은 룰렛 회전 시간이 남아 있음')
@@ -308,10 +308,18 @@ if (logicContext.RandomRouletteWheel.parseItems('치킨 | 1\n치킨 | 2').ok) th
 
 const mobileSpinProfile = logicContext.RandomRouletteWheel.getSpinMotionProfile({ mobile: true, reduceMotion: false })
 const desktopSpinProfile = logicContext.RandomRouletteWheel.getSpinMotionProfile({ mobile: false, reduceMotion: false })
-if (mobileSpinProfile.duration !== 8200 || mobileSpinProfile.minTurns !== 11 || mobileSpinProfile.deceleration !== 0.64) {
+if (mobileSpinProfile.duration !== 9000 || mobileSpinProfile.minTurns !== 12 || mobileSpinProfile.deceleration !== 0.68) {
   throw new Error('모바일 룰렛 감속 프로필 오류')
 }
 if (desktopSpinProfile.duration !== 6200 || desktopSpinProfile.minTurns !== 9) throw new Error('PC 룰렛 감속 프로필 오류')
+const reducedMobileSpinProfile = logicContext.RandomRouletteWheel.getSpinMotionProfile({ mobile: true, reduceMotion: true })
+if (reducedMobileSpinProfile.duration !== 6000 || reducedMobileSpinProfile.minTurns !== 6 || reducedMobileSpinProfile.deceleration !== 0.80) {
+  throw new Error('모션 감소 모바일에서 룰렛이 즉시 정지함')
+}
+const compositorFrames = logicContext.RandomRouletteWheel.buildSpinKeyframes(Math.PI * 24, mobileSpinProfile)
+if (compositorFrames.length !== 121 || compositorFrames[0].offset !== 0 || compositorFrames.at(-1).offset !== 1) {
+  throw new Error('모바일 합성 애니메이션 키프레임 오류')
+}
 const easedAt = (progress) => logicContext.RandomRouletteWheel.getSpinEasedProgress(progress, mobileSpinProfile)
 const easingSamples = [0, .1, .36, .6, .8, .9, 1].map(easedAt)
 if (easingSamples[0] !== 0 || easingSamples.at(-1) !== 1 || easingSamples.some((value, index) => index && value <= easingSamples[index - 1])) {
