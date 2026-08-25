@@ -151,6 +151,9 @@
 #wheelCanvas.is-spinning {
   transform-origin: 50% 50%;
   will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  contain: paint;
 }
 
 .wheel-pointer {

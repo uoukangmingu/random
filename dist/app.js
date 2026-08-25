@@ -1,4 +1,4 @@
-/* Random Roulette modular build · 2026-08-25T06:31:49.176Z */
+/* Random Roulette modular build · 2026-08-25T07:39:37.993Z */
 
 ;
 /* ===== src/games/core.js ===== */
@@ -6043,13 +6043,19 @@ function rand(min, max) {
   const SPIN_ACCELERATION_RATIO = 0.12
   const SPIN_CRUISE_RATIO = 0.28
   const SPIN_DECELERATION_RATIO = 0.60
-  const MOBILE_SPIN_ACCELERATION_RATIO = 0.10
+  const MOBILE_SPIN_ACCELERATION_RATIO = 0.06
   const MOBILE_SPIN_CRUISE_RATIO = 0.26
-  const MOBILE_SPIN_DECELERATION_RATIO = 0.64
+  const MOBILE_SPIN_DECELERATION_RATIO = 0.68
+  const REDUCED_MOTION_ACCELERATION_RATIO = 0.05
+  const REDUCED_MOTION_CRUISE_RATIO = 0.15
+  const REDUCED_MOTION_DECELERATION_RATIO = 0.80
+  const SPIN_KEYFRAME_COUNT = 121
   const COLORS = ['#75c9f2', '#8edfcf', '#ffd56f', '#ff9f85', '#b9a7f4', '#f38db0', '#86d7a5', '#8caef4', '#efb76f', '#8dd7dc', '#d49ce5', '#ffbd91']
   let initialized = false
   let running = false
   let animationFrame = null
+  let canvasAnimation = null
+  let spinRunId = 0
   let currentRotation = 0
   let currentItems = []
   let lastWinner = null
@@ -6095,18 +6101,19 @@ function rand(min, max) {
     const mobile = typeof overrides.mobile === 'boolean' ? overrides.mobile : isMobileSpinEnvironment()
     if (reduceMotion) {
       return {
-        duration: 180,
-        minTurns: 0,
+        duration: mobile ? 6000 : 4200,
+        minTurns: mobile ? 6 : 4,
         mobile,
-        acceleration: SPIN_ACCELERATION_RATIO,
-        cruise: SPIN_CRUISE_RATIO,
-        deceleration: SPIN_DECELERATION_RATIO
+        reducedMotion: true,
+        acceleration: REDUCED_MOTION_ACCELERATION_RATIO,
+        cruise: REDUCED_MOTION_CRUISE_RATIO,
+        deceleration: REDUCED_MOTION_DECELERATION_RATIO
       }
     }
     return mobile
       ? {
-          duration: 8200,
-          minTurns: 11,
+          duration: 9000,
+          minTurns: 12,
           mobile: true,
           acceleration: MOBILE_SPIN_ACCELERATION_RATIO,
           cruise: MOBILE_SPIN_CRUISE_RATIO,
@@ -6142,6 +6149,20 @@ function rand(min, max) {
     return Math.min(1, (acceleration / 2 + cruise + decelerationArea) / totalArea)
   }
 
+  // 합성 레이어에서 그대로 재생할 수 있도록 적분된 속도 곡선을 촘촘한 키프레임으로 만든다.
+  // 브라우저가 메인 스레드 작업으로 잠시 바빠도 원판 회전 자체는 끊기거나 건너뛰지 않는다.
+  function buildSpinKeyframes(totalDelta, motionProfile, sampleCount = SPIN_KEYFRAME_COUNT) {
+    const count = Math.max(3, Math.floor(Number(sampleCount) || SPIN_KEYFRAME_COUNT))
+    return Array.from({ length: count }, (_, index) => {
+      const offset = index / (count - 1)
+      const angle = totalDelta * getSpinEasedProgress(offset, motionProfile)
+      return {
+        offset,
+        transform: `rotate(${angle}rad) translateZ(0)`
+      }
+    })
+  }
+
   function setCanvasSpinTransform(canvas, delta) {
     if (!canvas) return false
     canvas.classList.add('is-spinning')
@@ -6153,6 +6174,17 @@ function rand(min, max) {
     if (!canvas) return
     canvas.style.transform = ''
     canvas.classList.remove('is-spinning')
+  }
+
+  function finishVisualSpin({ canvas, items, targetRotation, outcome, runId, animation = null }) {
+    if (!running || runId !== spinRunId) return
+    if (animation && canvasAnimation === animation) canvasAnimation = null
+    animation?.cancel?.()
+    animationFrame = null
+    currentRotation = targetRotation
+    renderWheel(items, currentRotation)
+    clearCanvasSpinTransform(canvas)
+    finishSpin(outcome)
   }
 
   function parseItems(rawText) {
@@ -6426,23 +6458,34 @@ function rand(min, max) {
     const duration = motionProfile.duration
     const startedAt = performance.now()
     const canvas = elements.canvas
+    const runId = ++spinRunId
+    const totalDelta = targetRotation - startRotation
     renderWheel(parsed.items, startRotation)
     setCanvasSpinTransform(canvas, 0)
+
+    if (canvas && typeof canvas.animate === 'function') {
+      const animation = canvas.animate(buildSpinKeyframes(totalDelta, motionProfile), {
+        duration,
+        easing: 'linear',
+        fill: 'forwards'
+      })
+      canvasAnimation = animation
+      animation.finished
+        .then(() => finishVisualSpin({ canvas, items: parsed.items, targetRotation, outcome, runId, animation }))
+        .catch(() => {})
+      return
+    }
 
     const frame = (now) => {
       const progress = Math.min(1, (now - startedAt) / duration)
       const eased = getSpinEasedProgress(progress, motionProfile)
-      currentRotation = startRotation + (targetRotation - startRotation) * eased
+      currentRotation = startRotation + totalDelta * eased
       if (!setCanvasSpinTransform(canvas, currentRotation - startRotation)) renderWheel(parsed.items, currentRotation)
       if (progress < 1 && running) {
         animationFrame = requestAnimationFrame(frame)
         return
       }
-      animationFrame = null
-      currentRotation = targetRotation
-      renderWheel(parsed.items, currentRotation)
-      clearCanvasSpinTransform(canvas)
-      finishSpin(outcome)
+      finishVisualSpin({ canvas, items: parsed.items, targetRotation, outcome, runId })
     }
 
     animationFrame = requestAnimationFrame(frame)
@@ -6490,6 +6533,9 @@ function rand(min, max) {
   function cancelSpin() {
     if (animationFrame) cancelAnimationFrame(animationFrame)
     animationFrame = null
+    spinRunId += 1
+    canvasAnimation?.cancel?.()
+    canvasAnimation = null
     if (running) {
       const elements = getElements()
       renderWheel(currentItems, currentRotation)
@@ -6554,7 +6600,8 @@ function rand(min, max) {
     isRunning: () => running,
     parseItems,
     getSpinMotionProfile,
-    getSpinEasedProgress
+    getSpinEasedProgress,
+    buildSpinKeyframes
   })
 })(window)
 
