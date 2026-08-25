@@ -1,4 +1,4 @@
-/* Random Roulette modular build · 2026-08-25T06:31:49.176Z */
+/* Random Roulette modular build · 2026-08-25T07:39:37.993Z */
 
 /* ===== style.css ===== */
 * {
@@ -28487,6 +28487,9 @@ html.perf-mobile #game4Screen .sim-bomb-blast-ring {
 #wheelCanvas.is-spinning {
   transform-origin: 50% 50%;
   will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  contain: paint;
 }
 
 .wheel-pointer {
