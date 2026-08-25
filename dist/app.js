@@ -1,4 +1,4 @@
-/* Random Roulette modular build · 2026-08-25T04:57:49.617Z */
+/* Random Roulette modular build · 2026-08-25T05:44:02.293Z */
 
 ;
 /* ===== src/games/core.js ===== */
@@ -5686,7 +5686,7 @@ function rand(min, max) {
       .map((item) => item.trim())
       .filter(Boolean)
 
-    if (!tokens.length) return { ok: false, reason: '공용 목록은 선택 사항이야. 저장하려면 항목을 입력해줘.', names: [] }
+    if (!tokens.length) return { ok: true, empty: true, names: [] }
     if (tokens.length < 2) return { ok: false, reason: '선택하려면 최소 2개의 항목이 필요해.', names: tokens }
     if (tokens.length > MAX_NAMES) return { ok: false, reason: `공용 목록은 최대 ${MAX_NAMES}개까지 저장할 수 있어.`, names: tokens }
     if (tokens.some((name) => name.length > MAX_NAME_LENGTH)) {
@@ -5754,9 +5754,11 @@ function rand(min, max) {
     }
 
     if (elements.status) {
-      elements.status.textContent = parsed.ok
-        ? `${previewNames.length}개 항목 확인 완료. 저장하면 각 게임의 입력 형식에 맞춰 반영돼.`
-        : parsed.reason
+      elements.status.textContent = parsed.empty
+        ? '빈 공용 목록으로 저장하면 각 게임에서 직접 입력해서 사용할 수 있어.'
+        : parsed.ok
+          ? `${previewNames.length}개 항목 확인 완료. 저장하면 각 게임의 입력 형식에 맞춰 반영돼.`
+          : parsed.reason
       elements.status.classList.toggle('is-error', !parsed.ok && Boolean(source.trim()))
     }
 
@@ -5783,17 +5785,17 @@ function rand(min, max) {
   }
 
   function clearSavedList() {
-    const elements = getElements()
     names = []
     persist()
-    if (elements.input) elements.input.value = ''
-    render('')
-    if (elements.status) {
-      elements.status.textContent = '공용 목록을 삭제했어. 각 게임에서 입력한 내용은 그대로 유지돼.'
-      elements.status.classList.remove('is-error')
-    }
     global.dispatchEvent(new CustomEvent('roulette-roster-change', { detail: { names: [], items: [] } }))
     global.dispatchEvent(new CustomEvent('roulette-shared-list-change', { detail: { items: [] } }))
+    render('')
+  }
+
+  function resetDraft() {
+    const elements = getElements()
+    if (elements.input) elements.input.value = ''
+    render('')
     elements.input?.focus({ preventScroll: true })
   }
 
@@ -5833,7 +5835,7 @@ function rand(min, max) {
     elements.toggle?.addEventListener('click', open)
     elements.close?.addEventListener('click', close)
     elements.save?.addEventListener('click', saveFromDialog)
-    elements.clear?.addEventListener('click', clearSavedList)
+    elements.clear?.addEventListener('click', resetDraft)
     elements.input?.addEventListener('input', () => render(elements.input.value))
     elements.overlay?.addEventListener('click', (event) => {
       if (event.target === elements.overlay) close()
@@ -5885,7 +5887,8 @@ function rand(min, max) {
     getCount: () => names.length,
     hasRoster: () => names.length >= 2,
     hasSharedList: () => names.length >= 2,
-    clear: clearSavedList
+    clear: clearSavedList,
+    resetDraft
   })
 })(window)
 
@@ -6033,6 +6036,9 @@ function rand(min, max) {
   const MAX_ITEMS = 50
   const MAX_HISTORY = 50
   const TWO_PI = Math.PI * 2
+  const SPIN_ACCELERATION_RATIO = 0.12
+  const SPIN_CRUISE_RATIO = 0.28
+  const SPIN_DECELERATION_RATIO = 0.60
   const COLORS = ['#75c9f2', '#8edfcf', '#ffd56f', '#ff9f85', '#b9a7f4', '#f38db0', '#86d7a5', '#8caef4', '#efb76f', '#8dd7dc', '#d49ce5', '#ffbd91']
   let initialized = false
   let running = false
@@ -6066,6 +6072,57 @@ function rand(min, max) {
   function normalizeAngle(value) {
     const normalized = value % TWO_PI
     return normalized < 0 ? normalized + TWO_PI : normalized
+  }
+
+  function isMobileSpinEnvironment() {
+    if (global.RandomRouletteRegistry?.isPhoneLikeDevice?.()) return true
+    const shortSide = Math.min(Number(global.innerWidth || 0), Number(global.innerHeight || 0))
+    const coarsePointer = global.matchMedia?.('(pointer: coarse)')?.matches === true
+    return shortSide > 0 && shortSide <= 820 && (coarsePointer || Number(global.innerWidth || 0) <= 600)
+  }
+
+  function getSpinMotionProfile(overrides = {}) {
+    const reduceMotion = typeof overrides.reduceMotion === 'boolean'
+      ? overrides.reduceMotion
+      : global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
+    const mobile = typeof overrides.mobile === 'boolean' ? overrides.mobile : isMobileSpinEnvironment()
+    if (reduceMotion) return { duration: 180, minTurns: 0, mobile }
+    return mobile
+      ? { duration: 7200, minTurns: 10, mobile: true }
+      : { duration: 6200, minTurns: 9, mobile: false }
+  }
+
+  // 가속 → 일정 속도 → 긴 감속을 거리 비율로 적분한 물리형 진행 곡선이다.
+  function getSpinEasedProgress(rawProgress) {
+    const progress = Math.max(0, Math.min(1, Number(rawProgress) || 0))
+    const acceleration = SPIN_ACCELERATION_RATIO
+    const cruise = SPIN_CRUISE_RATIO
+    const deceleration = SPIN_DECELERATION_RATIO
+    const totalArea = acceleration / 2 + cruise + deceleration / 2
+
+    if (progress < acceleration) {
+      return (progress * progress / (2 * acceleration)) / totalArea
+    }
+    if (progress < acceleration + cruise) {
+      return (acceleration / 2 + progress - acceleration) / totalArea
+    }
+
+    const phaseProgress = (progress - acceleration - cruise) / deceleration
+    const decelerationArea = deceleration * (phaseProgress - phaseProgress * phaseProgress / 2)
+    return Math.min(1, (acceleration / 2 + cruise + decelerationArea) / totalArea)
+  }
+
+  function setCanvasSpinTransform(canvas, delta) {
+    if (!canvas) return false
+    canvas.classList.add('is-spinning')
+    canvas.style.transform = `rotate(${delta}rad)`
+    return true
+  }
+
+  function clearCanvasSpinTransform(canvas) {
+    if (!canvas) return
+    canvas.style.transform = ''
+    canvas.classList.remove('is-spinning')
   }
 
   function parseItems(rawText) {
@@ -6259,7 +6316,9 @@ function rand(min, max) {
     if (elements.spin) elements.spin.disabled = running
     if (elements.center) elements.center.disabled = running
     if (persist) saveItems(currentItems)
-    requestAnimationFrame(() => renderWheel())
+    requestAnimationFrame(() => {
+      if (!running) renderWheel()
+    })
     return parsed
   }
 
@@ -6331,16 +6390,20 @@ function rand(min, max) {
     const currentModulo = normalizeAngle(currentRotation)
     const alignmentDelta = normalizeAngle(desiredModulo - currentModulo)
     const startRotation = currentRotation
-    const targetRotation = currentRotation + outcome.turns * TWO_PI + alignmentDelta
-    const reduceMotion = global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
-    const duration = reduceMotion ? 180 : 4200
+    const motionProfile = getSpinMotionProfile()
+    const visualTurns = motionProfile.minTurns ? Math.max(outcome.turns, motionProfile.minTurns) : 0
+    const targetRotation = currentRotation + visualTurns * TWO_PI + alignmentDelta
+    const duration = motionProfile.duration
     const startedAt = performance.now()
+    const canvas = elements.canvas
+    renderWheel(parsed.items, startRotation)
+    setCanvasSpinTransform(canvas, 0)
 
     const frame = (now) => {
       const progress = Math.min(1, (now - startedAt) / duration)
-      const eased = 1 - Math.pow(1 - progress, 5)
+      const eased = getSpinEasedProgress(progress)
       currentRotation = startRotation + (targetRotation - startRotation) * eased
-      renderWheel(parsed.items, currentRotation)
+      if (!setCanvasSpinTransform(canvas, currentRotation - startRotation)) renderWheel(parsed.items, currentRotation)
       if (progress < 1 && running) {
         animationFrame = requestAnimationFrame(frame)
         return
@@ -6348,6 +6411,7 @@ function rand(min, max) {
       animationFrame = null
       currentRotation = targetRotation
       renderWheel(parsed.items, currentRotation)
+      clearCanvasSpinTransform(canvas)
       finishSpin(outcome)
     }
 
@@ -6397,8 +6461,10 @@ function rand(min, max) {
     if (animationFrame) cancelAnimationFrame(animationFrame)
     animationFrame = null
     if (running) {
-      setControlsLocked(false)
       const elements = getElements()
+      renderWheel(currentItems, currentRotation)
+      clearCanvasSpinTransform(elements.canvas)
+      setControlsLocked(false)
       if (elements.status) elements.status.textContent = '진행 중이던 룰렛을 종료했어.'
     }
   }
@@ -6433,8 +6499,12 @@ function rand(min, max) {
     global.addEventListener('roulette-roster-change', () => {
       if (followsRoster || !usedSavedItems) useRoster()
     })
-    global.addEventListener('resize', () => requestAnimationFrame(() => renderWheel()), { passive: true })
-    new MutationObserver(() => requestAnimationFrame(() => renderWheel()))
+    global.addEventListener('resize', () => requestAnimationFrame(() => {
+      if (!running) renderWheel()
+    }), { passive: true })
+    new MutationObserver(() => requestAnimationFrame(() => {
+      if (!running) renderWheel()
+    }))
       .observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
     updatePreview({ persist: Boolean(savedItems) })
   }
@@ -6452,7 +6522,9 @@ function rand(min, max) {
     useRoster,
     cancelSpin,
     isRunning: () => running,
-    parseItems
+    parseItems,
+    getSpinMotionProfile,
+    getSpinEasedProgress
   })
 })(window)
 
