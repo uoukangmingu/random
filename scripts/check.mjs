@@ -6,7 +6,7 @@ import { webcrypto } from 'node:crypto'
 
 const root = process.cwd()
 const requiredFiles = [
-  'index.html', 'dist/app.js', 'dist/app.css', 'random-roulette.v3.10.js', 'random-roulette.v3.10.css', 'app.bundle.js', 'app.bundle.css', 'script.min.js', 'style.min.css', 'volume-controls.js', 'manifest.webmanifest', 'sw.js',
+  'index.html', 'dist/app.js', 'dist/app.css', 'random-roulette.v3.11.js', 'random-roulette.v3.11.css', 'app.bundle.js', 'app.bundle.css', 'script.min.js', 'style.min.css', 'volume-controls.js', 'manifest.webmanifest', 'sw.js',
   'assets/matter.min.js', 'assets/app-icon.svg', 'assets/app-icon-192.png', 'assets/app-icon-512.png'
 ]
 
@@ -19,7 +19,7 @@ const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1])
 const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))]
 if (duplicateIds.length) throw new Error(`중복 HTML id: ${duplicateIds.join(', ')}`)
 
-for (const marker of ['wheelScreen', 'rosterOverlay', 'sessionConfirmOverlay', 'manifest.webmanifest', 'volume-controls.js', 'random-roulette.v3.10.js', '__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__', 'emoji-text-fallback', '랜덤 게임 목록', 'unified-game-grid', 'catalogAvailabilitySummary', 'catalogRosterEditBtn', 'luckCarouselCounter', 'utilitySettingsPanel', 'utilitySettingsToggleBtn', 'utilitySettingsCloseBtn', '공용 목록', '입력 비우기', 'aria-label="공용 목록 열기"', 'aria-describedby="rosterDialogDescription"', 'aria-describedby="popupMessage"']) {
+for (const marker of ['wheelScreen', 'rosterOverlay', 'sessionConfirmOverlay', 'manifest.webmanifest', 'volume-controls.js', 'random-roulette.v3.11.js', '__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__', 'emoji-text-fallback', '랜덤 게임 목록', 'unified-game-grid', 'catalogAvailabilitySummary', 'catalogRosterEditBtn', 'luckCarouselCounter', 'utilitySettingsPanel', 'utilitySettingsToggleBtn', 'utilitySettingsCloseBtn', '공용 목록', '입력 비우기', 'aria-label="공용 목록 열기"', 'aria-describedby="rosterDialogDescription"', 'aria-describedby="popupMessage"']) {
   if (!html.includes(marker)) throw new Error(`필수 마커 누락: ${marker}`)
 }
 for (const removedMarker of ['id="menuScreen"', 'id="physicalScreen"', 'id="physicalGameGrid"', '>운 게임 목록<', '>피지컬 게임 목록<', 'class="physical-compat-badge', '모바일 · PC</span>', 'PC 전용</span>', '현재 명단 실행 불가', '참가자 명단 수정', '공용 참가자 명단']) {
@@ -38,8 +38,8 @@ const appCss = await readFile(path.join(root, 'dist', 'app.css'), 'utf8')
 const rootCss = await readFile(path.join(root, 'style.min.css'), 'utf8')
 const deployApp = await readFile(path.join(root, 'app.bundle.js'), 'utf8')
 const deployCss = await readFile(path.join(root, 'app.bundle.css'), 'utf8')
-const versionedApp = await readFile(path.join(root, 'random-roulette.v3.10.js'), 'utf8')
-const versionedCss = await readFile(path.join(root, 'random-roulette.v3.10.css'), 'utf8')
+const versionedApp = await readFile(path.join(root, 'random-roulette.v3.11.js'), 'utf8')
+const versionedCss = await readFile(path.join(root, 'random-roulette.v3.11.css'), 'utf8')
 if (rootApp !== app || deployApp !== app || versionedApp !== app || rootCss !== appCss || deployCss !== appCss || versionedCss !== appCss) {
   throw new Error('배포용 루트 번들이 dist 빌드와 일치하지 않음')
 }
@@ -52,7 +52,7 @@ if (!app.includes("if (historyMode === 'skip')") || !app.includes("commitScreenH
 for (const marker of ['RandomRouletteWheel', 'RandomRouletteRoster', 'RandomRouletteRegistry', 'RandomRouletteWakeLock', 'RandomRouletteUtilitySettings']) {
   if (!app.includes(marker)) throw new Error(`빌드 기능 누락: ${marker}`)
 }
-for (const marker of ['getSpinMotionProfile', 'getSpinEasedProgress', 'SPIN_DECELERATION_RATIO = 0.60', 'setCanvasSpinTransform', 'clearCanvasSpinTransform']) {
+for (const marker of ['getSpinMotionProfile', 'getSpinEasedProgress', 'MOBILE_SPIN_DECELERATION_RATIO = 0.64', 'duration: 8200', 'getSpinEasedProgress(progress, motionProfile)', 'setCanvasSpinTransform', 'clearCanvasSpinTransform']) {
   if (!app.includes(marker)) throw new Error(`룰렛 감속 로직 누락: ${marker}`)
 }
 for (const marker of ['handlePopupDialogKeydown', 'popupLastFocusedElement', 'getFocusableElements(elements.overlay)', "event.key === 'Escape'", 'isBlockingAppDialogVisible', 'canRestorePopupFocus', 'handleBlockingDialogClosed', 'app-dialog-closed']) {
@@ -64,13 +64,13 @@ for (const marker of ['.utility-settings-panel', '.utility-quick-actions', '.uti
 for (const marker of ['app-native-text-cursor', 'cursor: text !important', 'z-index: 10080']) {
   if (!app.includes(marker) && !appCss.includes(marker)) throw new Error(`입력 커서 안전장치 누락: ${marker}`)
 }
-for (const marker of ["showScreen('luck')", 'pickEligibleGameScreen', 'bindGameCatalogItemInteraction', "badgeText: '불가'", 'getEntryAvailability']) {
+for (const marker of ["showScreen('luck')", 'pickEligibleGameScreen', 'bindGameCatalogItemInteraction', "badgeText: '불가'", 'getEntryAvailability', 'getLaunchAvailability']) {
   if (!app.includes(marker)) throw new Error(`통합 게임 목록 로직 누락: ${marker}`)
 }
-for (const marker of ['restoreCatalogOrder', 'setDeviceVisibility', 'syncCatalogDeviceClass', 'catalog-desktop-device', 'userAgentData?.mobile', 'hasDesktopIdentity', 'getDeviceCompatibleGameScreens', 'listReadiness', 'roulette-shared-list-change', 'resetDraft', 'roulette-catalog-refreshed', 'LADDER_MOBILE_MAX_PLAYERS = 5']) {
+for (const marker of ['restoreCatalogOrder', 'setDeviceVisibility', 'syncCatalogDeviceClass', 'catalog-desktop-device', 'userAgentData?.mobile', 'hasDesktopIdentity', 'getDeviceCompatibleGameScreens', 'listReadiness', 'is-list-ineligible', 'catalog-list-status', 'listBlocked', 'roulette-shared-list-change', 'resetDraft', 'roulette-catalog-refreshed', 'LADDER_MOBILE_MAX_PLAYERS = 5']) {
   if (!app.includes(marker)) throw new Error(`게임 목록 UX 로직 누락: ${marker}`)
 }
-for (const marker of ['.catalog-availability-bar', '.game-item.is-device-hidden', 'html:not(.catalog-handheld-device)', 'catalog-desktop-device', 'data-physical-compat="mobile-only"', '--luck-carousel-peek: 10px', '#utilitySettingsPanel .app-settings-action', 'grid-template-columns: repeat(2, minmax(0, 1fr)) !important', 'max-height: min(60dvh, 360px) !important', '.utility-settings-head']) {
+for (const marker of ['.catalog-availability-bar', '.game-item.is-device-hidden', '.game-item.is-list-ineligible', '.catalog-list-status', 'html:not(.catalog-handheld-device)', 'catalog-desktop-device', 'data-physical-compat="mobile-only"', '--luck-carousel-peek: 10px', '#utilitySettingsPanel .app-settings-action', 'grid-template-columns: repeat(2, minmax(0, 1fr)) !important', 'max-height: min(60dvh, 360px) !important', '.utility-settings-head']) {
   if (!appCss.includes(marker)) throw new Error(`게임 목록 UX 스타일 누락: ${marker}`)
 }
 for (const removedMarker of ['game-eligibility-overlay', 'is-roster-ineligible', 'sortCatalogCards', '현재 명단으로 실행 불가']) {
@@ -83,9 +83,9 @@ if (app.includes('const duration = reduceMotion ? 180 : 4200')) throw new Error(
 if (!app.includes("screens[target].classList.add('active')\n  forceScrollToTop()")) {
   throw new Error('화면 전환 시 스크롤 상단 복원 로직 누락')
 }
-const entryAvailabilityChecks = app.match(/const entryAvailability = window\.RandomRouletteRegistry\?\.getEntryAvailability\?\.\(targetScreen\)/g) || []
-if (entryAvailabilityChecks.length < 2) {
-  throw new Error('운·피지컬 게임 직접 진입이 공용 목록이 아닌 기기 호환성만 검사하지 않음')
+const launchAvailabilityChecks = app.match(/const launchAvailability = window\.RandomRouletteRegistry\?\.getLaunchAvailability\?\.\(targetScreen\)/g) || []
+if (launchAvailabilityChecks.length < 2) {
+  throw new Error('운·피지컬 게임 직접 진입이 공용 목록과 기기 조건을 함께 검사하지 않음')
 }
 
 const registrySource = await readFile(path.join(root, 'src/games/registry.js'), 'utf8')
@@ -151,7 +151,27 @@ const registry = registryContext.RandomRouletteRegistry
 if (!registry.getEntryAvailability('game6').ok) throw new Error('공용 목록 없이 데스크톱 호환 게임에 입장할 수 없음')
 const noListStatus = registry.getEligibility('game6')
 if (noListStatus.ok || noListStatus.inputNeeded !== true) throw new Error('공용 목록 없음 상태를 차단이 아닌 게임 내 입력 안내로 판정하지 않음')
+const noListLaunch = registry.getLaunchAvailability('game6')
+if (!noListLaunch.ok || noListLaunch.inputNeeded !== true) throw new Error('공용 목록이 비어 있을 때 게임 직접 진입이 허용되지 않음')
 if (registry.getDeviceCompatibleGameScreens().length !== 11) throw new Error('데스크톱에서 모바일 전용 2종만 제외되지 않음')
+
+let sharedListCount = 13
+registryContext.RandomRouletteRoster = {
+  getCount: () => sharedListCount,
+  hasRoster: () => sharedListCount >= 2,
+  hasSharedList: () => sharedListCount >= 2
+}
+const maxTenWithThirteen = registry.getLaunchAvailability('game5')
+if (maxTenWithThirteen.ok || maxTenWithThirteen.listBlocked !== true || maxTenWithThirteen.count !== 13 || maxTenWithThirteen.max !== 10) {
+  throw new Error('13개 공용 목록에서 최대 10개 게임이 차단되지 않음')
+}
+if (!registry.getLaunchAvailability('game1').ok) throw new Error('13개 공용 목록에서 최대 20개 게임까지 함께 차단됨')
+const eligibleAtThirteen = registry.getEligibleGameScreens()
+if (eligibleAtThirteen.includes('game5') || !eligibleAtThirteen.includes('game1') || !eligibleAtThirteen.includes('wheel')) {
+  throw new Error('13개 공용 목록의 랜덤 게임 후보 필터가 지원 범위와 일치하지 않음')
+}
+sharedListCount = 10
+if (!registry.getLaunchAvailability('game5').ok) throw new Error('10개 공용 목록에서 최대 10개 게임이 실행되지 않음')
 
 const coreSource = await readFile(path.join(root, 'src/games/core.js'), 'utf8')
 const fallbackMapMatch = coreSource.match(/const EMOJI_FALLBACK_MAP = Object\.freeze\((\{[\s\S]*?\})\)\n\nconst EMOJI_FALLBACK_PATTERN/)
@@ -288,10 +308,12 @@ if (logicContext.RandomRouletteWheel.parseItems('치킨 | 1\n치킨 | 2').ok) th
 
 const mobileSpinProfile = logicContext.RandomRouletteWheel.getSpinMotionProfile({ mobile: true, reduceMotion: false })
 const desktopSpinProfile = logicContext.RandomRouletteWheel.getSpinMotionProfile({ mobile: false, reduceMotion: false })
-if (mobileSpinProfile.duration !== 7200 || mobileSpinProfile.minTurns !== 10) throw new Error('모바일 룰렛 감속 프로필 오류')
+if (mobileSpinProfile.duration !== 8200 || mobileSpinProfile.minTurns !== 11 || mobileSpinProfile.deceleration !== 0.64) {
+  throw new Error('모바일 룰렛 감속 프로필 오류')
+}
 if (desktopSpinProfile.duration !== 6200 || desktopSpinProfile.minTurns !== 9) throw new Error('PC 룰렛 감속 프로필 오류')
-const easedAt = (progress) => logicContext.RandomRouletteWheel.getSpinEasedProgress(progress)
-const easingSamples = [0, .12, .4, .6, .8, .9, 1].map(easedAt)
+const easedAt = (progress) => logicContext.RandomRouletteWheel.getSpinEasedProgress(progress, mobileSpinProfile)
+const easingSamples = [0, .1, .36, .6, .8, .9, 1].map(easedAt)
 if (easingSamples[0] !== 0 || easingSamples.at(-1) !== 1 || easingSamples.some((value, index) => index && value <= easingSamples[index - 1])) {
   throw new Error('룰렛 감속 곡선이 0→1로 단조 증가하지 않음')
 }
@@ -311,5 +333,6 @@ const firstRatio = firstWins / 4000
 if (firstRatio < 0.70 || firstRatio > 0.80) throw new Error(`룰렛 가중치 분포 이상: ${firstRatio}`)
 
 execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-wheel-runtime.mjs')], { stdio: 'inherit' })
+execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-catalog-list-runtime.mjs')], { stdio: 'inherit' })
 
 console.log('정적 검사 통과')

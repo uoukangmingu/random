@@ -7,6 +7,9 @@
   const SPIN_ACCELERATION_RATIO = 0.12
   const SPIN_CRUISE_RATIO = 0.28
   const SPIN_DECELERATION_RATIO = 0.60
+  const MOBILE_SPIN_ACCELERATION_RATIO = 0.10
+  const MOBILE_SPIN_CRUISE_RATIO = 0.26
+  const MOBILE_SPIN_DECELERATION_RATIO = 0.64
   const COLORS = ['#75c9f2', '#8edfcf', '#ffd56f', '#ff9f85', '#b9a7f4', '#f38db0', '#86d7a5', '#8caef4', '#efb76f', '#8dd7dc', '#d49ce5', '#ffbd91']
   let initialized = false
   let running = false
@@ -54,18 +57,41 @@
       ? overrides.reduceMotion
       : global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
     const mobile = typeof overrides.mobile === 'boolean' ? overrides.mobile : isMobileSpinEnvironment()
-    if (reduceMotion) return { duration: 180, minTurns: 0, mobile }
+    if (reduceMotion) {
+      return {
+        duration: 180,
+        minTurns: 0,
+        mobile,
+        acceleration: SPIN_ACCELERATION_RATIO,
+        cruise: SPIN_CRUISE_RATIO,
+        deceleration: SPIN_DECELERATION_RATIO
+      }
+    }
     return mobile
-      ? { duration: 7200, minTurns: 10, mobile: true }
-      : { duration: 6200, minTurns: 9, mobile: false }
+      ? {
+          duration: 8200,
+          minTurns: 11,
+          mobile: true,
+          acceleration: MOBILE_SPIN_ACCELERATION_RATIO,
+          cruise: MOBILE_SPIN_CRUISE_RATIO,
+          deceleration: MOBILE_SPIN_DECELERATION_RATIO
+        }
+      : {
+          duration: 6200,
+          minTurns: 9,
+          mobile: false,
+          acceleration: SPIN_ACCELERATION_RATIO,
+          cruise: SPIN_CRUISE_RATIO,
+          deceleration: SPIN_DECELERATION_RATIO
+        }
   }
 
-  // 가속 → 일정 속도 → 긴 감속을 거리 비율로 적분한 물리형 진행 곡선이다.
-  function getSpinEasedProgress(rawProgress) {
+  // 모바일은 감속 구간을 더 길게 배분해 작은 화면에서도 정지 순간이 급하게 느껴지지 않게 한다.
+  function getSpinEasedProgress(rawProgress, motionProfile = {}) {
     const progress = Math.max(0, Math.min(1, Number(rawProgress) || 0))
-    const acceleration = SPIN_ACCELERATION_RATIO
-    const cruise = SPIN_CRUISE_RATIO
-    const deceleration = SPIN_DECELERATION_RATIO
+    const acceleration = motionProfile.acceleration ?? SPIN_ACCELERATION_RATIO
+    const cruise = motionProfile.cruise ?? SPIN_CRUISE_RATIO
+    const deceleration = motionProfile.deceleration ?? SPIN_DECELERATION_RATIO
     const totalArea = acceleration / 2 + cruise + deceleration / 2
 
     if (progress < acceleration) {
@@ -369,7 +395,7 @@
 
     const frame = (now) => {
       const progress = Math.min(1, (now - startedAt) / duration)
-      const eased = getSpinEasedProgress(progress)
+      const eased = getSpinEasedProgress(progress, motionProfile)
       currentRotation = startRotation + (targetRotation - startRotation) * eased
       if (!setCanvasSpinTransform(canvas, currentRotation - startRotation)) renderWheel(parsed.items, currentRotation)
       if (progress < 1 && running) {

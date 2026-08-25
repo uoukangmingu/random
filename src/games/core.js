@@ -4047,15 +4047,17 @@ function handleLuckGameSelection(button) {
       return
     }
 
-    if (selectedGame === 'wheel') {
-      showScreen('wheel')
+    const targetScreen = selectedGame === 'wheel' ? 'wheel' : `game${selectedGame}`
+    const launchAvailability = window.RandomRouletteRegistry?.getLaunchAvailability?.(targetScreen)
+    if (launchAvailability && !launchAvailability.ok) {
+      const title = launchAvailability.listBlocked ? '공용 목록 조건 불일치' : '현재 기기에서 실행 불가'
+      const suffix = launchAvailability.listBlocked ? ' 공용 목록을 수정하거나 비워서 저장해줘.' : ''
+      showPopup(title, `${launchAvailability.reason}${suffix}`, { icon: '⚠️' })
       return
     }
 
-    const targetScreen = `game${selectedGame}`
-    const entryAvailability = window.RandomRouletteRegistry?.getEntryAvailability?.(targetScreen)
-    if (entryAvailability && !entryAvailability.ok) {
-      showPopup('현재 기기에서 실행 불가', entryAvailability.reason, { icon: '⚠️' })
+    if (selectedGame === 'wheel') {
+      showScreen('wheel')
       return
     }
 
@@ -4467,9 +4469,11 @@ function handlePhysicalGameSelection(button) {
   const targetScreen = targetByGame[button.dataset.physicalGame]
   if (!targetScreen) return
 
-  const entryAvailability = window.RandomRouletteRegistry?.getEntryAvailability?.(targetScreen)
-  if (entryAvailability && !entryAvailability.ok) {
-    showPopup('현재 기기에서 실행 불가', entryAvailability.reason, { icon: '⚠️' })
+  const launchAvailability = window.RandomRouletteRegistry?.getLaunchAvailability?.(targetScreen)
+  if (launchAvailability && !launchAvailability.ok) {
+    const title = launchAvailability.listBlocked ? '공용 목록 조건 불일치' : '현재 기기에서 실행 불가'
+    const suffix = launchAvailability.listBlocked ? ' 공용 목록을 수정하거나 비워서 저장해줘.' : ''
+    showPopup(title, `${launchAvailability.reason}${suffix}`, { icon: '⚠️' })
     return
   }
 

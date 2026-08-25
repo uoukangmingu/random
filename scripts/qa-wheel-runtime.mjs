@@ -187,7 +187,7 @@ runFrame()
 now = 0
 context.RandomRouletteWheel.spin()
 
-const sampleTimes = [5000, 5400, 5800, 6200, 6600, 7000]
+const sampleTimes = [5200, 5800, 6400, 7000, 7600, 8000]
 const samples = []
 for (const target of sampleTimes) {
   runUntil(target)
@@ -195,7 +195,7 @@ for (const target of sampleTimes) {
 }
 
 if (!samples.every((sample) => sample.running && Number.isFinite(sample.angle))) {
-  throw new Error('모바일 룰렛이 7초 이전에 종료되거나 회전 transform이 누락됨')
+  throw new Error('모바일 룰렛이 8초 이전에 종료되거나 회전 transform이 누락됨')
 }
 
 const deltas = samples.slice(1).map((sample, index) => sample.angle - samples[index].angle)
@@ -203,8 +203,8 @@ if (!deltas.every((delta, index) => delta > 0 && (index === 0 || delta < deltas[
   throw new Error(`모바일 룰렛 후반 이동량이 단계적으로 감소하지 않음: ${deltas.join(', ')}`)
 }
 
-runUntil(7250)
-if (context.RandomRouletteWheel.isRunning()) throw new Error('모바일 룰렛이 7.2초 이후에도 종료되지 않음')
+runUntil(8250)
+if (context.RandomRouletteWheel.isRunning()) throw new Error('모바일 룰렛이 8.2초 이후에도 종료되지 않음')
 if (elements.wheelCanvas.classList.contains('is-spinning') || elements.wheelCanvas.style.transform) {
   throw new Error('룰렛 종료 후 GPU 회전 상태가 정리되지 않음')
 }
@@ -213,9 +213,9 @@ if (elements.wheelSpinBtn.disabled || elements.wheelResultText.textContent === '
 }
 
 console.log(JSON.stringify({
-  mobileDurationMs: 7200,
+  mobileDurationMs: 8200,
   stillSpinningAtMs: samples.at(-1).time,
-  distancePer400Ms: deltas.map((value) => Number(value.toFixed(4))),
+  distancePer600Ms: deltas.map((value) => Number(value.toFixed(4))),
   finishedAtOrBeforeMs: Math.round(now),
   resultConfirmed: elements.wheelResultText.textContent
 }))

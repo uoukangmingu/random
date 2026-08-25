@@ -80,23 +80,52 @@
     return hidden
   }
 
+  function getSharedListState() {
+    const roster = global.RandomRouletteRoster
+    const count = roster?.getCount?.() || 0
+    const hasSharedList = Boolean(roster?.hasSharedList?.() || roster?.hasRoster?.() || count >= 2)
+    return { count, hasSharedList }
+  }
+
   function getEligibility(screenKey, options = {}) {
     const config = games[screenKey]
     if (!config) return { ok: true, reason: '' }
-    const roster = global.RandomRouletteRoster
-    const count = roster?.getCount?.() || 0
+    const { count, hasSharedList } = getSharedListState()
     const max = typeof config.max === 'function' ? config.max() : config.max
 
     const entry = getEntryAvailability(screenKey)
     if (!entry.ok) return entry
-    if (config.requiresRoster === false && !options.forSmartPick) return { ok: true, reason: '' }
+    if (!hasSharedList) {
+      return { ok: false, inputNeeded: true, reason: `공용 목록 없이 입장해 게임 안에서 ${config.min}개 이상 직접 입력할 수 있어.`, count, min: config.min, max }
+    }
     if (count < config.min) {
-      return { ok: false, inputNeeded: true, reason: `공용 목록이 없어도 입장할 수 있어. 게임 안에서 ${config.min}개 이상 입력해줘.`, count, min: config.min, max }
+      return { ok: false, listBlocked: true, reason: `${config.title}은 ${config.min}~${max}개 항목을 지원해. 현재 공용 목록은 ${count}개라 실행할 수 없어.`, count, min: config.min, max }
     }
     if (count > max) {
-      return { ok: false, inputNeeded: true, reason: `${config.title}은 ${config.min}~${max}개 항목을 지원해. 들어가서 이 게임의 입력만 수정할 수 있어.`, count, min: config.min, max }
+      return { ok: false, listBlocked: true, reason: `${config.title}은 ${config.min}~${max}개 항목을 지원해. 현재 공용 목록은 ${count}개라 실행할 수 없어.`, count, min: config.min, max }
     }
     return { ok: true, reason: '', count, min: config.min, max }
+  }
+
+  function getLaunchAvailability(screenKey) {
+    const config = games[screenKey]
+    if (!config) return { ok: true, reason: '' }
+    const entry = getEntryAvailability(screenKey)
+    if (!entry.ok) return entry
+
+    const { count, hasSharedList } = getSharedListState()
+    const max = typeof config.max === 'function' ? config.max() : config.max
+    if (!hasSharedList) {
+      return {
+        ok: true,
+        inputNeeded: true,
+        reason: `공용 목록 없이 입장해 게임 안에서 ${config.min}~${max}개 항목을 직접 입력할 수 있어.`,
+        count,
+        min: config.min,
+        max
+      }
+    }
+    return getEligibility(screenKey)
   }
 
   function getEntryAvailability(screenKey) {
@@ -113,15 +142,28 @@
 
   function markCard(button, screenKey) {
     if (!button || !screenKey) return
-    const eligibility = getEligibility(screenKey)
-    button.setAttribute('aria-disabled', 'false')
-    button.dataset.listReadiness = eligibility.ok ? 'ready' : 'input'
-    if (eligibility.ok) {
-      delete button.dataset.ineligibleLabel
-      button.removeAttribute('title')
+    const availability = getLaunchAvailability(screenKey)
+    const blocked = availability.listBlocked === true
+    button.setAttribute('aria-disabled', blocked ? 'true' : 'false')
+    button.dataset.listReadiness = blocked ? 'blocked' : availability.inputNeeded ? 'input' : 'ready'
+    button.classList.toggle('is-list-ineligible', blocked)
+
+    let status = button.querySelector('.catalog-list-status')
+    if (blocked) {
+      const label = `공용 목록 ${availability.count}개 · ${availability.min}~${availability.max}개만 가능`
+      button.dataset.ineligibleLabel = label
+      button.title = `${availability.reason} 공용 목록을 수정하거나 비워서 저장해줘.`
+      if (!status) {
+        status = document.createElement('span')
+        status.className = 'catalog-list-status'
+        button.appendChild(status)
+      }
+      status.textContent = label
     } else {
       delete button.dataset.ineligibleLabel
-      button.title = eligibility.reason || '게임 안에서 직접 입력할 수 있어.'
+      status?.remove()
+      if (availability.inputNeeded) button.title = availability.reason
+      else button.removeAttribute('title')
     }
   }
 
@@ -131,10 +173,10 @@
     const gameCards = visibleCards.filter((button) => button.dataset.game !== '8')
     const sharedCount = global.RandomRouletteRoster?.getCount?.() || 0
     const ready = gameCards.filter((button) => button.dataset.listReadiness === 'ready').length
-    const inputNeeded = gameCards.length - ready
+    const blocked = gameCards.filter((button) => button.dataset.listReadiness === 'blocked').length
     const hiddenLabel = isPhoneLikeDevice() ? 'PC 전용' : '모바일 전용'
     const parts = sharedCount >= 2
-      ? [`공용 목록 ${sharedCount}개`, `바로 시작 ${ready}개`, `${inputNeeded}개는 게임 안에서 수정`]
+      ? [`공용 목록 ${sharedCount}개`, `실행 가능 ${ready}개`, blocked ? `조건 불일치 ${blocked}개` : '모든 게임 조건 일치']
       : ['공용 목록은 선택 사항', `${gameCards.length}개 게임 모두 입장 가능`, '게임 안에서 직접 입력']
     if (hiddenCards.length) parts.push(`${hiddenLabel} ${hiddenCards.length}개 숨김`)
     summary.textContent = parts.join(' · ')
@@ -178,7 +220,9 @@
       if (game === '8') {
         button.setAttribute('aria-disabled', 'false')
         button.dataset.listReadiness = 'ready'
+        button.classList.remove('is-list-ineligible')
         delete button.dataset.ineligibleLabel
+        button.querySelector('.catalog-list-status')?.remove()
         button.removeAttribute('title')
         return
       }
@@ -229,6 +273,7 @@
     init,
     games,
     getEligibility,
+    getLaunchAvailability,
     getEntryAvailability,
     getEligibleGameScreens,
     getDeviceCompatibleGameScreens,
