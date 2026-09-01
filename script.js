@@ -1179,9 +1179,12 @@ let luckCarouselScrollTicking = false
 let luckCarouselLoopReady = false
 let luckCarouselLoopJumping = false
 let luckCarouselLoopSettleTimer = null
-let luckCarouselSwipeState = null
+let luckCarouselTouchActive = false
+let luckCarouselTouchStartScrollLeft = 0
+let luckCarouselLastScrollLeft = 0
 let luckCarouselSuppressClickUntil = 0
-const LUCK_CAROUSEL_SWIPE_THRESHOLD_PX = 34
+const LUCK_CAROUSEL_SETTLE_DELAY_MS = 240
+const LUCK_CAROUSEL_CLICK_DRAG_THRESHOLD_PX = 6
 let physicalCarouselActiveIndex = 0
 let physicalCarouselScrollTicking = false
 let physicalCarouselLoopReady = false
@@ -3706,7 +3709,6 @@ function syncResponsiveAfterViewportModeChange() {
   syncRaceMobileLayout()
   syncSimResponsiveLayout()
   updateOrientationGate()
-  initCustomCursor()
 
   if (screens.game1?.classList.contains('active')) {
     fitGameCanvasViewport()
@@ -4304,64 +4306,26 @@ function scrollToLuckCarouselIndex(index, behavior = 'smooth') {
   scrollLuckCarouselToItem(targetItem, behavior)
 }
 
-function moveLuckCarouselBySwipe(direction) {
+function handleLuckCarouselTouchStart() {
   if (!isLuckCarouselMode() || !luckGameGrid) return
 
-  const originalItems = getLuckCarouselOriginalItems()
-  const trackItems = getLuckCarouselTrackItems()
-  if (originalItems.length <= 1 || !trackItems.length) return
-
-  const step = direction < 0 ? -1 : 1
-  const currentItem = getLuckCarouselClosestItem()
-  const currentTrackIndex = currentItem ? trackItems.indexOf(currentItem) : -1
-  const currentIndex = Number.parseInt(currentItem?.dataset.carouselIndex || String(luckCarouselActiveIndex), 10)
-  const targetIndex = getWrappedLuckCarouselIndex(currentIndex + step, originalItems.length)
-  const adjacentItem = currentTrackIndex >= 0 ? trackItems[currentTrackIndex + step] : null
-  const targetItem = adjacentItem && Number.parseInt(adjacentItem.dataset.carouselIndex || '-1', 10) === targetIndex
-    ? adjacentItem
-    : getLuckCarouselItemByIndex(originalItems, targetIndex)
-
-  if (!targetItem) return
-
+  luckCarouselTouchActive = true
+  luckCarouselTouchStartScrollLeft = luckGameGrid.scrollLeft
+  luckCarouselLastScrollLeft = luckGameGrid.scrollLeft
   clearLuckCarouselLoopSettleTimer()
-  updateLuckCarouselActiveIndex(targetIndex, targetItem)
-  scrollLuckCarouselToItem(targetItem, 'smooth')
-  scheduleLuckCarouselLoopNormalize(targetItem)
 }
 
-function handleLuckCarouselPointerDown(event) {
-  if (!isLuckCarouselMode() || event.isPrimary === false || (event.pointerType && event.pointerType === 'mouse')) return
-  luckCarouselSwipeState = {
-    pointerId: event.pointerId,
-    startX: event.clientX,
-    startY: event.clientY
+function finishLuckCarouselTouch() {
+  if (!luckGameGrid) return
+
+  const draggedDistance = Math.abs(luckGameGrid.scrollLeft - luckCarouselTouchStartScrollLeft)
+  luckCarouselTouchActive = false
+
+  if (draggedDistance >= LUCK_CAROUSEL_CLICK_DRAG_THRESHOLD_PX) {
+    luckCarouselSuppressClickUntil = performance.now() + UI_SWIPE_CLICK_SUPPRESS_MS
   }
-}
 
-function getLuckCarouselSwipeDirection(distanceX, distanceY) {
-  if (Math.abs(distanceX) < LUCK_CAROUSEL_SWIPE_THRESHOLD_PX || Math.abs(distanceX) <= Math.abs(distanceY) * 1.1) return 0
-  return distanceX < 0 ? 1 : -1
-}
-
-function handleLuckCarouselPointerUp(event) {
-  if (!luckCarouselSwipeState || event.pointerId !== luckCarouselSwipeState.pointerId) return
-
-  const distanceX = event.clientX - luckCarouselSwipeState.startX
-  const distanceY = event.clientY - luckCarouselSwipeState.startY
-  luckCarouselSwipeState = null
-  const direction = getLuckCarouselSwipeDirection(distanceX, distanceY)
-
-  if (!direction) return
-
-  event.preventDefault()
-  luckCarouselSuppressClickUntil = performance.now() + UI_SWIPE_CLICK_SUPPRESS_MS
-  moveLuckCarouselBySwipe(direction)
-}
-
-function handleLuckCarouselPointerCancel(event) {
-  if (luckCarouselSwipeState && event.pointerId === luckCarouselSwipeState.pointerId) {
-    luckCarouselSwipeState = null
-  }
+  scheduleLuckCarouselLoopNormalize(getLuckCarouselClosestItem())
 }
 
 function suppressLuckCarouselSwipeClick(event) {
@@ -4410,19 +4374,18 @@ function clearLuckCarouselLoopSettleTimer() {
 function scheduleLuckCarouselLoopNormalize(closestItem) {
   clearLuckCarouselLoopSettleTimer()
 
-  if (!isLuckCarouselMode() || !luckGameGrid || !closestItem || luckCarouselLoopJumping) {
+  if (!isLuckCarouselMode() || !luckGameGrid || !closestItem || luckCarouselLoopJumping || luckCarouselTouchActive) {
     return
   }
 
   const loopSet = closestItem.dataset.loopSet || 'center'
-  if (loopSet === 'center') return
-
   const snapshotKey = `${loopSet}:${closestItem.dataset.carouselIndex || ''}`
+  const snapshotScrollLeft = luckGameGrid.scrollLeft
 
   luckCarouselLoopSettleTimer = setTimeout(() => {
     luckCarouselLoopSettleTimer = null
 
-    if (luckCarouselLoopJumping) return
+    if (luckCarouselLoopJumping || luckCarouselTouchActive) return
 
     const settledItem = getLuckCarouselClosestItem()
     if (!settledItem) return
@@ -4430,15 +4393,14 @@ function scheduleLuckCarouselLoopNormalize(closestItem) {
     const settledLoopSet = settledItem.dataset.loopSet || 'center'
     const settledKey = `${settledLoopSet}:${settledItem.dataset.carouselIndex || ''}`
 
-    if (settledKey !== snapshotKey) {
-      if (settledLoopSet !== 'center') {
-        scheduleLuckCarouselLoopNormalize(settledItem)
-      }
+    if (settledKey !== snapshotKey || Math.abs(luckGameGrid.scrollLeft - snapshotScrollLeft) > 0.75) {
+      scheduleLuckCarouselLoopNormalize(settledItem)
       return
     }
 
+    updateLuckCarouselActiveIndex(getLuckCarouselClosestIndex(), settledItem)
     normalizeLuckCarouselLoop(settledItem)
-  }, 180)
+  }, LUCK_CAROUSEL_SETTLE_DELAY_MS)
 }
 
 function normalizeLuckCarouselLoop(closestItem) {
@@ -4465,7 +4427,12 @@ function normalizeLuckCarouselLoop(closestItem) {
   clearLuckCarouselLoopSettleTimer()
   luckCarouselLoopJumping = true
   luckGameGrid.classList.add('is-loop-resetting')
-  luckGameGrid.scrollLeft = getLuckCarouselCenteredLeft(targetItem)
+  // Safari가 이전 스냅 위치를 다시 선택하지 않도록 스냅 해제를 먼저 레이아웃에 반영한다.
+  void luckGameGrid.offsetWidth
+  luckGameGrid.scrollTo({
+    left: getLuckCarouselCenteredLeft(targetItem),
+    behavior: 'auto'
+  })
   updateLuckCarouselActiveIndex(targetIndex, targetItem)
 
   requestAnimationFrame(() => {
@@ -4480,6 +4447,13 @@ function normalizeLuckCarouselLoop(closestItem) {
 
 function handleLuckCarouselScroll() {
   if (!isLuckCarouselMode() || !luckGameGrid) return
+  const movedDistance = Math.abs(luckGameGrid.scrollLeft - luckCarouselLastScrollLeft)
+  luckCarouselLastScrollLeft = luckGameGrid.scrollLeft
+
+  if (luckCarouselTouchActive && movedDistance > 0.5) {
+    luckCarouselSuppressClickUntil = performance.now() + UI_SWIPE_CLICK_SUPPRESS_MS
+  }
+
   if (luckCarouselScrollTicking) return
 
   luckCarouselScrollTicking = true
@@ -4493,6 +4467,17 @@ function handleLuckCarouselScroll() {
   })
 }
 
+function handleLuckCarouselScrollEnd() {
+  if (!isLuckCarouselMode() || !luckGameGrid || luckCarouselTouchActive || luckCarouselLoopJumping) return
+
+  clearLuckCarouselLoopSettleTimer()
+  const closestItem = getLuckCarouselClosestItem()
+  if (!closestItem) return
+
+  updateLuckCarouselActiveIndex(getLuckCarouselClosestIndex(), closestItem)
+  normalizeLuckCarouselLoop(closestItem)
+}
+
 function syncLuckCarousel(options = {}) {
   if (!luckGameGrid) return
 
@@ -4500,7 +4485,9 @@ function syncLuckCarousel(options = {}) {
   const shouldUseCarousel = isLuckCarouselMode()
 
   clearLuckCarouselLoopSettleTimer()
+  luckCarouselTouchActive = false
   luckCarouselLoopJumping = false
+  luckCarouselLastScrollLeft = luckGameGrid.scrollLeft
   luckGameGrid.classList.remove('is-loop-resetting')
 
   ensureLuckCarouselLoop()
@@ -7328,6 +7315,19 @@ function renderRaceTracks() {
   stageHead.appendChild(stageActions)
   raceTrackWrap.appendChild(stageHead)
 
+  const identityLegend = document.createElement('div')
+  identityLegend.className = 'race-mobile-identity-legend'
+  identityLegend.setAttribute('role', 'list')
+  identityLegend.setAttribute('aria-label', '출전 말 번호와 참가자 이름')
+  identityLegend.innerHTML = raceHorses.map((horse, index) => `
+    <div class="race-mobile-identity-chip" role="listitem" style="--horse-color:${horse.color}" title="${index + 1}번 말 · ${escapeHtml(horse.label)}">
+      <span class="race-mobile-identity-number">${index + 1}</span>
+      <span class="race-mobile-identity-name">${escapeHtml(horse.label)}</span>
+    </div>
+  `).join('')
+  raceTrackWrap.style.setProperty('--race-legend-columns', String(Math.min(4, Math.max(1, raceHorses.length))))
+  raceTrackWrap.appendChild(identityLegend)
+
   const laneStack = document.createElement('div')
   laneStack.className = 'race-track-lanes'
   laneStack.classList.toggle('is-vertical-track', shouldUseVerticalRaceTrack())
@@ -7339,11 +7339,14 @@ function renderRaceTracks() {
     lane.className = 'race-lane'
 
     lane.innerHTML = `
-      <div class="race-lane-label">${index + 1}레인</div>
+      <div class="race-lane-label" style="--horse-color:${horse.color}" aria-label="${index + 1}번 레인, ${escapeHtml(horse.label)}">
+        <span class="race-lane-number">${index + 1}</span><span class="race-lane-name">레인</span>
+      </div>
       <div class="race-start-line"></div>
       <div class="race-finish-line"></div>
       <div class="race-track-inner">
-        <div class="race-horse">
+        <div class="race-horse" role="img" aria-label="${index + 1}번 말, ${escapeHtml(horse.label)}">
+          <span class="horse-number-badge" aria-hidden="true">${index + 1}</span>
           <span class="horse-emoji">🐎</span>
           <div class="horse-info">
             <div class="horse-name">${escapeHtml(horse.label)}</div>
@@ -18422,12 +18425,12 @@ document.addEventListener('visibilitychange', () => {
 
 if (luckGameGrid) {
   luckGameGrid.addEventListener('scroll', handleLuckCarouselScroll, { passive: true })
-  luckGameGrid.addEventListener('pointerdown', handleLuckCarouselPointerDown, { passive: true })
+  luckGameGrid.addEventListener('scrollend', handleLuckCarouselScrollEnd, { passive: true })
+  luckGameGrid.addEventListener('touchstart', handleLuckCarouselTouchStart, { passive: true })
+  luckGameGrid.addEventListener('touchend', finishLuckCarouselTouch, { passive: true })
+  luckGameGrid.addEventListener('touchcancel', finishLuckCarouselTouch, { passive: true })
   luckGameGrid.addEventListener('click', suppressLuckCarouselSwipeClick, true)
 }
-
-window.addEventListener('pointerup', handleLuckCarouselPointerUp)
-window.addEventListener('pointercancel', handleLuckCarouselPointerCancel, { passive: true })
 
 window.addEventListener('roulette-catalog-refreshed', () => {
   luckCarouselActiveIndex = 0
@@ -18451,93 +18454,6 @@ window.addEventListener('popstate', (event) => {
 
 
 
-let customCursorEl = null
-let customCursorRaf = null
-let customCursorX = 0
-let customCursorY = 0
-let customCursorHoverState = ''
-
-function canUseCustomCursor() {
-  return window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(pointer: coarse)').matches
-}
-
-function updateCustomCursorPosition(x, y) {
-  if (!customCursorEl) return
-  customCursorX = x
-  customCursorY = y
-
-  if (customCursorRaf) return
-
-  customCursorRaf = requestAnimationFrame(() => {
-    customCursorRaf = null
-    if (!customCursorEl) return
-    customCursorEl.style.setProperty('--cursor-x', `${customCursorX}px`)
-    customCursorEl.style.setProperty('--cursor-y', `${customCursorY}px`)
-  })
-}
-
-function syncCustomCursorState(target) {
-  if (!customCursorEl) return
-
-  const element = target instanceof Element ? target : null
-  const interactive = element?.closest('button, a, input, textarea, select, summary, label, [role="button"], .game-item, .luck-carousel-dot, .physical-carousel-dot, .utility-btn, .action-btn, .back-btn, .popup-btn, .sim-info-btn, .sim-arena-zoom-btn')
-  const textEditable = element?.closest('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"]')
-  const nextState = `${Boolean(interactive)}:${Boolean(textEditable)}`
-
-  if (customCursorHoverState === nextState) return
-  customCursorHoverState = nextState
-
-  customCursorEl.classList.toggle('is-hover', Boolean(interactive))
-  customCursorEl.classList.toggle('is-text', Boolean(textEditable))
-  document.documentElement.classList.toggle('app-native-text-cursor', Boolean(textEditable))
-}
-
-function initCustomCursor() {
-  if (!canUseCustomCursor() || document.getElementById('appCursor')) return
-
-  customCursorEl = document.createElement('div')
-  customCursorEl.id = 'appCursor'
-  customCursorEl.className = 'app-cursor'
-  customCursorEl.setAttribute('aria-hidden', 'true')
-  document.body.appendChild(customCursorEl)
-
-  document.addEventListener('pointermove', (event) => {
-    if (event.pointerType && event.pointerType !== 'mouse') return
-    if (!customCursorEl) return
-    document.documentElement.classList.add('app-custom-cursor')
-    customCursorEl.classList.add('is-visible')
-    updateCustomCursorPosition(event.clientX, event.clientY)
-    syncCustomCursorState(event.target)
-  }, true)
-
-  document.addEventListener('pointerdown', (event) => {
-    if (!customCursorEl) return
-    if (event.pointerType && event.pointerType !== 'mouse') return
-    document.documentElement.classList.add('app-custom-cursor')
-    customCursorEl.classList.add('is-visible')
-    customCursorEl.classList.add('is-press')
-    syncCustomCursorState(event.target)
-  }, true)
-
-  document.addEventListener('pointerup', () => {
-    customCursorEl?.classList.remove('is-press')
-  }, true)
-
-  document.addEventListener('pointerout', (event) => {
-    if (!event.relatedTarget) {
-      customCursorHoverState = ''
-      document.documentElement.classList.remove('app-custom-cursor', 'app-native-text-cursor')
-      customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
-    }
-  }, true)
-
-  window.addEventListener('blur', () => {
-    customCursorHoverState = ''
-    document.documentElement.classList.remove('app-custom-cursor', 'app-native-text-cursor')
-    customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
-  })
-}
-
 applyThemePreference(getSavedThemePreference(), { persist: false })
 updateHellModeControls()
 updateFullscreenToggleButton()
@@ -18555,7 +18471,6 @@ updateRaceTrackZoomButton()
 updateSimArenaZoomButton()
 updateRouletteStageZoomButton()
 updateOrientationGate()
-initCustomCursor()
 installEmojiFallbacks()
 
 setGame1InputLock(false)

@@ -1,15 +1,18 @@
-const CACHE_VERSION = 'random-roulette-v20260825-mobile-swipe-loop-fix-ux15'
+const CACHE_VERSION = 'random-roulette-v20260901-native-cursor-states-ux18'
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './random-roulette.v3.15.css',
+  './random-roulette.v3.18.css',
   './volume-controls.js',
-  './random-roulette.v3.15.js',
+  './random-roulette.v3.18.js',
   './assets/matter.min.js',
   './assets/app-icon.svg',
   './assets/app-icon-192.png',
   './assets/app-icon-512.png',
+  './assets/cursor-arrow.svg',
+  './assets/cursor-hover.svg',
+  './assets/cursor-text.svg',
   './assets/bear-find-start.webp',
   './assets/bear-find-bear.mp4',
   './assets/bear-find-panda.mp4',
