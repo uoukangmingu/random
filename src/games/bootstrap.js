@@ -840,12 +840,12 @@ document.addEventListener('visibilitychange', () => {
 
 if (luckGameGrid) {
   luckGameGrid.addEventListener('scroll', handleLuckCarouselScroll, { passive: true })
-  luckGameGrid.addEventListener('pointerdown', handleLuckCarouselPointerDown, { passive: true })
+  luckGameGrid.addEventListener('scrollend', handleLuckCarouselScrollEnd, { passive: true })
+  luckGameGrid.addEventListener('touchstart', handleLuckCarouselTouchStart, { passive: true })
+  luckGameGrid.addEventListener('touchend', finishLuckCarouselTouch, { passive: true })
+  luckGameGrid.addEventListener('touchcancel', finishLuckCarouselTouch, { passive: true })
   luckGameGrid.addEventListener('click', suppressLuckCarouselSwipeClick, true)
 }
-
-window.addEventListener('pointerup', handleLuckCarouselPointerUp)
-window.addEventListener('pointercancel', handleLuckCarouselPointerCancel, { passive: true })
 
 window.addEventListener('roulette-catalog-refreshed', () => {
   luckCarouselActiveIndex = 0
@@ -869,93 +869,6 @@ window.addEventListener('popstate', (event) => {
 
 
 
-let customCursorEl = null
-let customCursorRaf = null
-let customCursorX = 0
-let customCursorY = 0
-let customCursorHoverState = ''
-
-function canUseCustomCursor() {
-  return window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(pointer: coarse)').matches
-}
-
-function updateCustomCursorPosition(x, y) {
-  if (!customCursorEl) return
-  customCursorX = x
-  customCursorY = y
-
-  if (customCursorRaf) return
-
-  customCursorRaf = requestAnimationFrame(() => {
-    customCursorRaf = null
-    if (!customCursorEl) return
-    customCursorEl.style.setProperty('--cursor-x', `${customCursorX}px`)
-    customCursorEl.style.setProperty('--cursor-y', `${customCursorY}px`)
-  })
-}
-
-function syncCustomCursorState(target) {
-  if (!customCursorEl) return
-
-  const element = target instanceof Element ? target : null
-  const interactive = element?.closest('button, a, input, textarea, select, summary, label, [role="button"], .game-item, .luck-carousel-dot, .physical-carousel-dot, .utility-btn, .action-btn, .back-btn, .popup-btn, .sim-info-btn, .sim-arena-zoom-btn')
-  const textEditable = element?.closest('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"]')
-  const nextState = `${Boolean(interactive)}:${Boolean(textEditable)}`
-
-  if (customCursorHoverState === nextState) return
-  customCursorHoverState = nextState
-
-  customCursorEl.classList.toggle('is-hover', Boolean(interactive))
-  customCursorEl.classList.toggle('is-text', Boolean(textEditable))
-  document.documentElement.classList.toggle('app-native-text-cursor', Boolean(textEditable))
-}
-
-function initCustomCursor() {
-  if (!canUseCustomCursor() || document.getElementById('appCursor')) return
-
-  customCursorEl = document.createElement('div')
-  customCursorEl.id = 'appCursor'
-  customCursorEl.className = 'app-cursor'
-  customCursorEl.setAttribute('aria-hidden', 'true')
-  document.body.appendChild(customCursorEl)
-
-  document.addEventListener('pointermove', (event) => {
-    if (event.pointerType && event.pointerType !== 'mouse') return
-    if (!customCursorEl) return
-    document.documentElement.classList.add('app-custom-cursor')
-    customCursorEl.classList.add('is-visible')
-    updateCustomCursorPosition(event.clientX, event.clientY)
-    syncCustomCursorState(event.target)
-  }, true)
-
-  document.addEventListener('pointerdown', (event) => {
-    if (!customCursorEl) return
-    if (event.pointerType && event.pointerType !== 'mouse') return
-    document.documentElement.classList.add('app-custom-cursor')
-    customCursorEl.classList.add('is-visible')
-    customCursorEl.classList.add('is-press')
-    syncCustomCursorState(event.target)
-  }, true)
-
-  document.addEventListener('pointerup', () => {
-    customCursorEl?.classList.remove('is-press')
-  }, true)
-
-  document.addEventListener('pointerout', (event) => {
-    if (!event.relatedTarget) {
-      customCursorHoverState = ''
-      document.documentElement.classList.remove('app-custom-cursor', 'app-native-text-cursor')
-      customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
-    }
-  }, true)
-
-  window.addEventListener('blur', () => {
-    customCursorHoverState = ''
-    document.documentElement.classList.remove('app-custom-cursor', 'app-native-text-cursor')
-    customCursorEl?.classList.remove('is-visible', 'is-hover', 'is-press', 'is-text')
-  })
-}
-
 applyThemePreference(getSavedThemePreference(), { persist: false })
 updateHellModeControls()
 updateFullscreenToggleButton()
@@ -973,7 +886,6 @@ updateRaceTrackZoomButton()
 updateSimArenaZoomButton()
 updateRouletteStageZoomButton()
 updateOrientationGate()
-initCustomCursor()
 installEmojiFallbacks()
 
 setGame1InputLock(false)

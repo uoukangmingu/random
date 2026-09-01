@@ -1180,9 +1180,12 @@ let luckCarouselScrollTicking = false
 let luckCarouselLoopReady = false
 let luckCarouselLoopJumping = false
 let luckCarouselLoopSettleTimer = null
-let luckCarouselSwipeState = null
+let luckCarouselTouchActive = false
+let luckCarouselTouchStartScrollLeft = 0
+let luckCarouselLastScrollLeft = 0
 let luckCarouselSuppressClickUntil = 0
-const LUCK_CAROUSEL_SWIPE_THRESHOLD_PX = 34
+const LUCK_CAROUSEL_SETTLE_DELAY_MS = 240
+const LUCK_CAROUSEL_CLICK_DRAG_THRESHOLD_PX = 6
 let physicalCarouselActiveIndex = 0
 let physicalCarouselScrollTicking = false
 let physicalCarouselLoopReady = false
@@ -3707,7 +3710,6 @@ function syncResponsiveAfterViewportModeChange() {
   syncRaceMobileLayout()
   syncSimResponsiveLayout()
   updateOrientationGate()
-  initCustomCursor()
 
   if (screens.game1?.classList.contains('active')) {
     fitGameCanvasViewport()
@@ -4305,64 +4307,26 @@ function scrollToLuckCarouselIndex(index, behavior = 'smooth') {
   scrollLuckCarouselToItem(targetItem, behavior)
 }
 
-function moveLuckCarouselBySwipe(direction) {
+function handleLuckCarouselTouchStart() {
   if (!isLuckCarouselMode() || !luckGameGrid) return
 
-  const originalItems = getLuckCarouselOriginalItems()
-  const trackItems = getLuckCarouselTrackItems()
-  if (originalItems.length <= 1 || !trackItems.length) return
-
-  const step = direction < 0 ? -1 : 1
-  const currentItem = getLuckCarouselClosestItem()
-  const currentTrackIndex = currentItem ? trackItems.indexOf(currentItem) : -1
-  const currentIndex = Number.parseInt(currentItem?.dataset.carouselIndex || String(luckCarouselActiveIndex), 10)
-  const targetIndex = getWrappedLuckCarouselIndex(currentIndex + step, originalItems.length)
-  const adjacentItem = currentTrackIndex >= 0 ? trackItems[currentTrackIndex + step] : null
-  const targetItem = adjacentItem && Number.parseInt(adjacentItem.dataset.carouselIndex || '-1', 10) === targetIndex
-    ? adjacentItem
-    : getLuckCarouselItemByIndex(originalItems, targetIndex)
-
-  if (!targetItem) return
-
+  luckCarouselTouchActive = true
+  luckCarouselTouchStartScrollLeft = luckGameGrid.scrollLeft
+  luckCarouselLastScrollLeft = luckGameGrid.scrollLeft
   clearLuckCarouselLoopSettleTimer()
-  updateLuckCarouselActiveIndex(targetIndex, targetItem)
-  scrollLuckCarouselToItem(targetItem, 'smooth')
-  scheduleLuckCarouselLoopNormalize(targetItem)
 }
 
-function handleLuckCarouselPointerDown(event) {
-  if (!isLuckCarouselMode() || event.isPrimary === false || (event.pointerType && event.pointerType === 'mouse')) return
-  luckCarouselSwipeState = {
-    pointerId: event.pointerId,
-    startX: event.clientX,
-    startY: event.clientY
+function finishLuckCarouselTouch() {
+  if (!luckGameGrid) return
+
+  const draggedDistance = Math.abs(luckGameGrid.scrollLeft - luckCarouselTouchStartScrollLeft)
+  luckCarouselTouchActive = false
+
+  if (draggedDistance >= LUCK_CAROUSEL_CLICK_DRAG_THRESHOLD_PX) {
+    luckCarouselSuppressClickUntil = performance.now() + UI_SWIPE_CLICK_SUPPRESS_MS
   }
-}
 
-function getLuckCarouselSwipeDirection(distanceX, distanceY) {
-  if (Math.abs(distanceX) < LUCK_CAROUSEL_SWIPE_THRESHOLD_PX || Math.abs(distanceX) <= Math.abs(distanceY) * 1.1) return 0
-  return distanceX < 0 ? 1 : -1
-}
-
-function handleLuckCarouselPointerUp(event) {
-  if (!luckCarouselSwipeState || event.pointerId !== luckCarouselSwipeState.pointerId) return
-
-  const distanceX = event.clientX - luckCarouselSwipeState.startX
-  const distanceY = event.clientY - luckCarouselSwipeState.startY
-  luckCarouselSwipeState = null
-  const direction = getLuckCarouselSwipeDirection(distanceX, distanceY)
-
-  if (!direction) return
-
-  event.preventDefault()
-  luckCarouselSuppressClickUntil = performance.now() + UI_SWIPE_CLICK_SUPPRESS_MS
-  moveLuckCarouselBySwipe(direction)
-}
-
-function handleLuckCarouselPointerCancel(event) {
-  if (luckCarouselSwipeState && event.pointerId === luckCarouselSwipeState.pointerId) {
-    luckCarouselSwipeState = null
-  }
+  scheduleLuckCarouselLoopNormalize(getLuckCarouselClosestItem())
 }
 
 function suppressLuckCarouselSwipeClick(event) {
@@ -4411,19 +4375,18 @@ function clearLuckCarouselLoopSettleTimer() {
 function scheduleLuckCarouselLoopNormalize(closestItem) {
   clearLuckCarouselLoopSettleTimer()
 
-  if (!isLuckCarouselMode() || !luckGameGrid || !closestItem || luckCarouselLoopJumping) {
+  if (!isLuckCarouselMode() || !luckGameGrid || !closestItem || luckCarouselLoopJumping || luckCarouselTouchActive) {
     return
   }
 
   const loopSet = closestItem.dataset.loopSet || 'center'
-  if (loopSet === 'center') return
-
   const snapshotKey = `${loopSet}:${closestItem.dataset.carouselIndex || ''}`
+  const snapshotScrollLeft = luckGameGrid.scrollLeft
 
   luckCarouselLoopSettleTimer = setTimeout(() => {
     luckCarouselLoopSettleTimer = null
 
-    if (luckCarouselLoopJumping) return
+    if (luckCarouselLoopJumping || luckCarouselTouchActive) return
 
     const settledItem = getLuckCarouselClosestItem()
     if (!settledItem) return
@@ -4431,15 +4394,14 @@ function scheduleLuckCarouselLoopNormalize(closestItem) {
     const settledLoopSet = settledItem.dataset.loopSet || 'center'
     const settledKey = `${settledLoopSet}:${settledItem.dataset.carouselIndex || ''}`
 
-    if (settledKey !== snapshotKey) {
-      if (settledLoopSet !== 'center') {
-        scheduleLuckCarouselLoopNormalize(settledItem)
-      }
+    if (settledKey !== snapshotKey || Math.abs(luckGameGrid.scrollLeft - snapshotScrollLeft) > 0.75) {
+      scheduleLuckCarouselLoopNormalize(settledItem)
       return
     }
 
+    updateLuckCarouselActiveIndex(getLuckCarouselClosestIndex(), settledItem)
     normalizeLuckCarouselLoop(settledItem)
-  }, 180)
+  }, LUCK_CAROUSEL_SETTLE_DELAY_MS)
 }
 
 function normalizeLuckCarouselLoop(closestItem) {
@@ -4466,7 +4428,12 @@ function normalizeLuckCarouselLoop(closestItem) {
   clearLuckCarouselLoopSettleTimer()
   luckCarouselLoopJumping = true
   luckGameGrid.classList.add('is-loop-resetting')
-  luckGameGrid.scrollLeft = getLuckCarouselCenteredLeft(targetItem)
+  // Safari가 이전 스냅 위치를 다시 선택하지 않도록 스냅 해제를 먼저 레이아웃에 반영한다.
+  void luckGameGrid.offsetWidth
+  luckGameGrid.scrollTo({
+    left: getLuckCarouselCenteredLeft(targetItem),
+    behavior: 'auto'
+  })
   updateLuckCarouselActiveIndex(targetIndex, targetItem)
 
   requestAnimationFrame(() => {
@@ -4481,6 +4448,13 @@ function normalizeLuckCarouselLoop(closestItem) {
 
 function handleLuckCarouselScroll() {
   if (!isLuckCarouselMode() || !luckGameGrid) return
+  const movedDistance = Math.abs(luckGameGrid.scrollLeft - luckCarouselLastScrollLeft)
+  luckCarouselLastScrollLeft = luckGameGrid.scrollLeft
+
+  if (luckCarouselTouchActive && movedDistance > 0.5) {
+    luckCarouselSuppressClickUntil = performance.now() + UI_SWIPE_CLICK_SUPPRESS_MS
+  }
+
   if (luckCarouselScrollTicking) return
 
   luckCarouselScrollTicking = true
@@ -4494,6 +4468,17 @@ function handleLuckCarouselScroll() {
   })
 }
 
+function handleLuckCarouselScrollEnd() {
+  if (!isLuckCarouselMode() || !luckGameGrid || luckCarouselTouchActive || luckCarouselLoopJumping) return
+
+  clearLuckCarouselLoopSettleTimer()
+  const closestItem = getLuckCarouselClosestItem()
+  if (!closestItem) return
+
+  updateLuckCarouselActiveIndex(getLuckCarouselClosestIndex(), closestItem)
+  normalizeLuckCarouselLoop(closestItem)
+}
+
 function syncLuckCarousel(options = {}) {
   if (!luckGameGrid) return
 
@@ -4501,7 +4486,9 @@ function syncLuckCarousel(options = {}) {
   const shouldUseCarousel = isLuckCarouselMode()
 
   clearLuckCarouselLoopSettleTimer()
+  luckCarouselTouchActive = false
   luckCarouselLoopJumping = false
+  luckCarouselLastScrollLeft = luckGameGrid.scrollLeft
   luckGameGrid.classList.remove('is-loop-resetting')
 
   ensureLuckCarouselLoop()

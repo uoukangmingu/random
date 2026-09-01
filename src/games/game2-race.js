@@ -201,6 +201,19 @@ function renderRaceTracks() {
   stageHead.appendChild(stageActions)
   raceTrackWrap.appendChild(stageHead)
 
+  const identityLegend = document.createElement('div')
+  identityLegend.className = 'race-mobile-identity-legend'
+  identityLegend.setAttribute('role', 'list')
+  identityLegend.setAttribute('aria-label', '출전 말 번호와 참가자 이름')
+  identityLegend.innerHTML = raceHorses.map((horse, index) => `
+    <div class="race-mobile-identity-chip" role="listitem" style="--horse-color:${horse.color}" title="${index + 1}번 말 · ${escapeHtml(horse.label)}">
+      <span class="race-mobile-identity-number">${index + 1}</span>
+      <span class="race-mobile-identity-name">${escapeHtml(horse.label)}</span>
+    </div>
+  `).join('')
+  raceTrackWrap.style.setProperty('--race-legend-columns', String(Math.min(4, Math.max(1, raceHorses.length))))
+  raceTrackWrap.appendChild(identityLegend)
+
   const laneStack = document.createElement('div')
   laneStack.className = 'race-track-lanes'
   laneStack.classList.toggle('is-vertical-track', shouldUseVerticalRaceTrack())
@@ -212,11 +225,14 @@ function renderRaceTracks() {
     lane.className = 'race-lane'
 
     lane.innerHTML = `
-      <div class="race-lane-label">${index + 1}레인</div>
+      <div class="race-lane-label" style="--horse-color:${horse.color}" aria-label="${index + 1}번 레인, ${escapeHtml(horse.label)}">
+        <span class="race-lane-number">${index + 1}</span><span class="race-lane-name">레인</span>
+      </div>
       <div class="race-start-line"></div>
       <div class="race-finish-line"></div>
       <div class="race-track-inner">
-        <div class="race-horse">
+        <div class="race-horse" role="img" aria-label="${index + 1}번 말, ${escapeHtml(horse.label)}">
+          <span class="horse-number-badge" aria-hidden="true">${index + 1}</span>
           <span class="horse-emoji">🐎</span>
           <div class="horse-info">
             <div class="horse-name">${escapeHtml(horse.label)}</div>

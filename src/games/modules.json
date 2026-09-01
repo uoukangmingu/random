@@ -1,7 +1,7 @@
 [
   {
     "name": "core.js",
-    "bytes": 188463
+    "bytes": 188018
   },
   {
     "name": "game1-drop.js",
@@ -9,7 +9,7 @@
   },
   {
     "name": "game2-race.js",
-    "bytes": 22122
+    "bytes": 23261
   },
   {
     "name": "game3-card-battle.js",
@@ -37,6 +37,6 @@
   },
   {
     "name": "bootstrap.js",
-    "bytes": 28689
+    "bytes": 25390
   }
 ]
