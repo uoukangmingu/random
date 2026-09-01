@@ -10,7 +10,9 @@
     "check": "node scripts/check.mjs",
     "check:wheel-runtime": "node scripts/qa-wheel-runtime.mjs",
     "check:catalog-runtime": "node scripts/qa-catalog-list-runtime.mjs",
-    "check:carousel-runtime": "node scripts/qa-mobile-carousel-runtime.mjs"
+    "check:carousel-runtime": "node scripts/qa-mobile-carousel-runtime.mjs",
+    "check:race-mobile": "node scripts/qa-race-mobile-identities.mjs",
+    "check:cursor-performance": "node scripts/qa-cursor-performance.mjs"
   },
   "devDependencies": {
     "vite": "^8.2.2"

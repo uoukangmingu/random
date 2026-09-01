@@ -1,4 +1,4 @@
-/* Random Roulette modular build · 2026-08-25T08:40:05.487Z */
+/* Random Roulette modular build · 2026-09-01T02:04:24.100Z */
 
 /* ===== style.css ===== */
 * {
@@ -1549,6 +1549,11 @@ body.game1-mode .game-play-area {
   flex: 0 0 auto;
 }
 
+.race-mobile-identity-legend,
+.horse-number-badge {
+  display: none;
+}
+
 .race-track-lanes {
   display: flex;
   flex-direction: column;
@@ -1588,6 +1593,11 @@ body.game1-mode .game-play-area {
   color: var(--brown);
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.race-lane-number,
+.race-lane-name {
+  display: inline;
 }
 
 .race-start-line,
@@ -2041,8 +2051,7 @@ html.perf-low.hell-mode body::before {
 
 @media (prefers-reduced-motion: reduce) {
   .screen.active,
-  .background-deco,
-  .app-cursor {
+  .background-deco {
     animation: none !important;
     transition: none !important;
   }
@@ -8600,6 +8609,7 @@ html.theme-dark .popup.game-info-popup .popup-message::-webkit-scrollbar-thumb {
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y pinch-zoom;
     scrollbar-width: none;
     padding: 4px var(--luck-carousel-peek) 14px;
     scroll-padding-inline: var(--luck-carousel-peek);
@@ -8629,8 +8639,8 @@ html.theme-dark .popup.game-info-popup .popup-message::-webkit-scrollbar-thumb {
     max-width: calc(100% - 76px);
     min-height: 214px;
     scroll-snap-align: center;
-    scroll-snap-stop: normal;
-    touch-action: pan-y pinch-zoom;
+    scroll-snap-stop: always;
+    touch-action: inherit;
     opacity: 0.58;
     transform: scale(0.94);
     filter: saturate(0.78) brightness(0.82);
@@ -10823,91 +10833,40 @@ body,
 }
 
 @media (pointer: fine) {
-  html.app-custom-cursor,
-  html.app-custom-cursor body,
-  html.app-custom-cursor body *,
-  html.app-custom-cursor button,
-  html.app-custom-cursor a,
-  html.app-custom-cursor input,
-  html.app-custom-cursor textarea,
-  html.app-custom-cursor select,
-  html.app-custom-cursor summary,
-  html.app-custom-cursor label {
-    cursor: none !important;
+  html,
+  body {
+    cursor: url('./assets/cursor-arrow.svg') 4 3, default;
   }
 
-  .app-cursor {
-    --cursor-x: 0px;
-    --cursor-y: 0px;
-    --cursor-scale: 0.8;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 24px;
-    height: 24px;
-    border-radius: 999px;
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0;
-    transform: translate3d(var(--cursor-x), var(--cursor-y), 0) translate3d(-50%, -50%, 0) scale(var(--cursor-scale));
-    transition: opacity 0.1s ease, transform 0.03s linear, width 0.12s ease, height 0.12s ease;
-    will-change: transform, opacity;
-    mix-blend-mode: normal;
+  button,
+  a,
+  summary,
+  label,
+  select,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="range"],
+  [role="button"],
+  .game-item,
+  .physical-game-item,
+  .luck-carousel-dot,
+  .physical-carousel-dot,
+  .utility-btn,
+  .action-btn,
+  .back-btn,
+  .popup-btn,
+  .sim-info-btn,
+  .sim-arena-zoom-btn {
+    cursor: url('./assets/cursor-hover.svg') 14 4, pointer !important;
   }
 
-  .app-cursor::before,
-  .app-cursor::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    transition: inherit;
-  }
-
-  .app-cursor::before {
-    border: 1.5px solid var(--cursor-ring);
-    background: color-mix(in srgb, var(--cursor-fill) 88%, transparent 12%);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 0 10px var(--cursor-glow);
-  }
-
-  .app-cursor::after {
-    inset: 50%;
-    width: 6px;
-    height: 6px;
-    margin-left: -3px;
-    margin-top: -3px;
-    border-radius: 999px;
-    background: var(--cursor-core);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--cursor-core) 35%, transparent 65%);
-  }
-
-  .app-cursor.is-visible {
-    opacity: 1;
-  }
-
-  .app-cursor.is-hover {
-    --cursor-scale: 1.12;
-  }
-
-  .app-cursor.is-hover::before {
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.18), 0 0 22px var(--cursor-glow);
-  }
-
-  .app-cursor.is-press {
-    --cursor-scale: 0.92;
-  }
-
-  .app-cursor.is-text {
-    width: 20px;
-    height: 30px;
-  }
-
-  .app-cursor.is-text::after {
-    width: 2.5px;
-    height: 15px;
-    margin-left: -1.25px;
-    margin-top: -7.5px;
-    border-radius: 3px;
+  input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  [contenteditable="true"] {
+    cursor: url('./assets/cursor-text.svg') 16 16, text !important;
   }
 }
 
@@ -12444,8 +12403,7 @@ body.app-active-game .orientation-lock-overlay {
 }
 
 .sim-ball-label,
-.race-horse,
-.app-cursor {
+.race-horse {
   will-change: transform;
 }
 
@@ -13554,23 +13512,6 @@ html.theme-dark .stock-duration-row input[type="range"]::-moz-range-thumb {
 /* =========================
    stock game fine-tune : cursor / compact board / red-blue trend
 ========================= */
-@media (pointer: fine) {
-  .app-cursor {
-    --cursor-scale: 0.8;
-    width: 24px;
-    height: 24px;
-    transition: opacity 0.1s ease, transform 0.03s linear, width 0.12s ease, height 0.12s ease;
-  }
-
-  .app-cursor.is-hover {
-    --cursor-scale: 1.02;
-  }
-
-  .app-cursor.is-press {
-    --cursor-scale: 0.9;
-  }
-}
-
 .stock-live-card {
   padding: 14px;
 }
@@ -27547,6 +27488,126 @@ body.game2-mobile-layout #game2Screen .race-horse .horse-emoji {
   transform-origin: center center !important;
 }
 
+/* 모바일 세로 트랙: 참가자 이름을 숨기지 않고 번호·색상과 함께 항상 대응시킨다. */
+body.race-vertical-track-mode #game2Screen .race-track-wrap,
+#game2Screen .race-track-wrap.is-vertical-track-wrap {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-mobile-identity-legend,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-mobile-identity-legend {
+  display: grid !important;
+  grid-template-columns: repeat(var(--race-legend-columns, 3), minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  width: 100% !important;
+  flex: 0 0 auto !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-mobile-identity-chip,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-mobile-identity-chip {
+  display: flex !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  min-height: 34px !important;
+  padding: 5px 7px !important;
+  gap: 5px !important;
+  border: 2px solid rgba(255, 255, 255, .88) !important;
+  border-radius: 11px !important;
+  background: var(--horse-color, #b9e3ff) !important;
+  color: #102033 !important;
+  box-shadow: 0 4px 10px rgba(50, 65, 82, .12) !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-mobile-identity-number,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-mobile-identity-number {
+  display: grid !important;
+  place-items: center !important;
+  flex: 0 0 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, .94) !important;
+  color: #102033 !important;
+  font: 900 .72rem/1 system-ui, sans-serif !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-mobile-identity-name,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-mobile-identity-name {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: #102033 !important;
+  font-size: .74rem !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-track-lanes,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-track-lanes.is-vertical-track {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: clamp(350px, 58vh, 560px) !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-lane-label,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-lane-label {
+  display: grid !important;
+  place-items: center !important;
+  left: 50% !important;
+  top: 5px !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  transform: translateX(-50%) !important;
+  border: 2px solid rgba(255, 255, 255, .9) !important;
+  border-radius: 50% !important;
+  background: var(--horse-color, #b9e3ff) !important;
+  color: #102033 !important;
+  box-shadow: 0 3px 8px rgba(44, 58, 72, .18) !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-lane-number,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-lane-number {
+  display: block !important;
+  color: #102033 !important;
+  font: 900 .72rem/1 system-ui, sans-serif !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-lane-name,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-lane-name {
+  display: none !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-start-line,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-start-line {
+  top: 34px !important;
+}
+
+body.race-vertical-track-mode #game2Screen .race-track-inner,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .race-track-inner {
+  inset: 54px 0 34px !important;
+}
+
+body.race-vertical-track-mode #game2Screen .horse-number-badge,
+#game2Screen .race-track-wrap.is-vertical-track-wrap .horse-number-badge {
+  position: absolute !important;
+  left: -7px !important;
+  top: -7px !important;
+  z-index: 4 !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  border: 2px solid var(--horse-color, #b9e3ff) !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  color: #102033 !important;
+  box-shadow: 0 2px 6px rgba(32, 48, 68, .22) !important;
+  font: 900 .68rem/1 system-ui, sans-serif !important;
+}
+
 /* =========================================================
    HOME DESKTOP QR PATCH v2
    - 데스크톱 홈 메뉴 박스 왼쪽에 QR 기본 노출
@@ -28935,23 +28996,6 @@ html.theme-dark .app-dialog h3 {
 
 @media (prefers-reduced-motion: reduce) {
   .wheel-result-card.is-winner { animation: none; }
-}
-
-/* 입력 영역에서는 선택·삽입 위치가 분명한 운영체제 기본 I-beam을 사용한다. */
-@media (pointer: fine) {
-  html.app-custom-cursor.app-native-text-cursor input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-  html.app-custom-cursor.app-native-text-cursor textarea,
-  html.app-custom-cursor.app-native-text-cursor [contenteditable="true"] {
-    cursor: text !important;
-  }
-
-  html.app-native-text-cursor .app-cursor {
-    opacity: 0 !important;
-  }
-
-  .app-cursor {
-    z-index: 10080;
-  }
 }
 
 /* 운·피지컬을 한 화면에 모은 통합 게임 목록 */
