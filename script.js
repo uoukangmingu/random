@@ -1,34 +1,377 @@
-const APP_PERFORMANCE_PROFILE = (() => {
-  const coarsePointer = window.matchMedia('(pointer: coarse)').matches
-  const touchCapable = coarsePointer || navigator.maxTouchPoints > 0
-  const shortSide = Math.min(window.innerWidth, window.innerHeight)
-  const isMobile = touchCapable && shortSide <= 1100
+const APP_PERFORMANCE_STORAGE_KEY = 'roulette-performance-preference'
+const APP_PERFORMANCE_CACHE_KEY = 'roulette-performance-auto-cache-v2'
+const APP_PERFORMANCE_LEVEL_ORDER = Object.freeze({ high: 0, balanced: 1, low: 2 })
+
+const APP_PERFORMANCE_MANAGER = (() => {
+  const root = document.documentElement
+  const coarsePointer = window.matchMedia?.('(pointer: coarse)')?.matches === true
+  const touchCapable = coarsePointer || Number(navigator.maxTouchPoints || 0) > 0
+  const shortSide = Math.min(window.innerWidth || 1280, window.innerHeight || 800)
+  const userAgent = navigator.userAgent || ''
+  const platform = navigator.userAgentData?.platform || navigator.platform || ''
+  const mobileIdentity = navigator.userAgentData?.mobile === true || /Android|iPhone|iPod|Mobile/i.test(userAgent)
+  const iPadIdentity = /iPad/i.test(userAgent) || (/Mac/i.test(platform) && Number(navigator.maxTouchPoints || 0) > 1)
+  const desktopIdentity = /Windows|Win32|Win64|Macintosh|macOS|Linux x86_64/i.test(`${userAgent} ${platform}`) && !iPadIdentity
+  const isMobile = touchCapable && !desktopIdentity && (mobileIdentity || iPadIdentity) && shortSide <= 1100
   const memory = Number(navigator.deviceMemory || 0)
   const cpuThreads = Number(navigator.hardwareConcurrency || 0)
   const saveData = Boolean(navigator.connection?.saveData)
-  const lowMemory = memory > 0 && memory <= 4
-  const lowCpu = cpuThreads > 0 && cpuThreads <= 8
-  const isLowEndDesktop = !isMobile && (saveData || lowMemory || lowCpu)
-  const constrained = isMobile || isLowEndDesktop || saveData
+  const validModes = new Set(['auto', 'quality', 'performance'])
+  const validLevels = new Set(['high', 'balanced', 'low'])
+
+  function safeRead(key) {
+    try {
+      return localStorage.getItem(key)
+    } catch (error) {
+      return null
+    }
+  }
+
+  function safeWrite(key, value) {
+    try {
+      localStorage.setItem(key, value)
+    } catch (error) {}
+  }
+
+  function detectHardwareLevel() {
+    if (saveData || (memory > 0 && memory <= 4) || (cpuThreads > 0 && cpuThreads <= 4)) return 'low'
+    // 브라우저의 deviceMemory는 누락되거나 8GB로 반올림되고, 논리 스레드 수는
+    // 내장 GPU·메모리 대역폭을 설명하지 못한다. 자동 모드의 고품질 오판을 막고
+    // 전체 효과가 필요한 사용자는 설정의 고화질 고정을 사용한다.
+    return 'balanced'
+  }
+
+  function getHardwareSignature() {
+    return [
+      isMobile ? 'mobile' : 'desktop',
+      memory || 'unknown-memory',
+      cpuThreads || 'unknown-cpu',
+      Math.round(shortSide / 100) * 100,
+      Math.round((window.devicePixelRatio || 1) * 10) / 10,
+      saveData ? 'save-data' : 'normal-data'
+    ].join(':')
+  }
+
+  function getCachedAutoLevel(fallback) {
+    try {
+      const parsed = JSON.parse(safeRead(APP_PERFORMANCE_CACHE_KEY) || 'null')
+      const fresh = parsed && Date.now() - Number(parsed.savedAt || 0) < 24 * 60 * 60 * 1000
+      if (fresh && parsed.signature === getHardwareSignature() && validLevels.has(parsed.level)) return parsed.level
+    } catch (error) {}
+    return fallback
+  }
+
+  let savedMode = safeRead(APP_PERFORMANCE_STORAGE_KEY)
+  if (!validModes.has(savedMode)) savedMode = 'auto'
+  const hardwareLevel = detectHardwareLevel()
+  const state = {
+    mode: savedMode,
+    hardwareLevel,
+    autoLevel: getCachedAutoLevel(hardwareLevel),
+    effectiveLevel: 'balanced',
+    initialized: false,
+    calibrated: false,
+    lastReason: 'hardware',
+    lastMetrics: null,
+    betterWindows: 0,
+    worseWindows: 0
+  }
+
+  function getRequestedLevel() {
+    if (state.mode === 'quality') return 'high'
+    if (state.mode === 'performance') return 'low'
+    return state.autoLevel
+  }
+
+  function getLevelValues(level = state.effectiveLevel) {
+    if (level === 'high') {
+      return {
+        canvasPixelRatio: isMobile ? 1 : 1.25,
+        animationFrameInterval: 1000 / 60,
+        canvasRenderInterval: 1000 / 60,
+        physicsHz: 60,
+        countRefreshInterval: 80,
+        stockTickInterval: 250,
+        stockSecondaryRenderInterval: 250
+      }
+    }
+    if (level === 'low') {
+      return {
+        canvasPixelRatio: isMobile ? 0.7 : 0.8,
+        animationFrameInterval: 1000 / 30,
+        canvasRenderInterval: 1000 / 24,
+        physicsHz: 60,
+        countRefreshInterval: isMobile ? 250 : 180,
+        stockTickInterval: 750,
+        stockSecondaryRenderInterval: 1500
+      }
+    }
+    return {
+      canvasPixelRatio: isMobile ? (shortSide <= 430 ? 0.8 : 0.9) : 1,
+      animationFrameInterval: 1000 / 30,
+      canvasRenderInterval: 1000 / 30,
+      physicsHz: 60,
+      countRefreshInterval: isMobile ? 200 : 160,
+      stockTickInterval: 500,
+      stockSecondaryRenderInterval: 1000
+    }
+  }
+
+  function describeState() {
+    if (state.mode === 'quality') return '고화질 고정 · 시각 효과를 우선해요.'
+    if (state.mode === 'performance') return '성능 우선 고정 · 시각 효과를 줄여요.'
+    if (!state.calibrated) {
+      const initialLabel = state.effectiveLevel === 'high' ? '고품질' : state.effectiveLevel === 'low' ? '성능 보호' : '균형'
+      return `자동 · ${initialLabel}으로 시작해 실제 프레임을 확인 중이에요.`
+    }
+    if (state.effectiveLevel === 'high') return '자동 · 현재 원활해서 고품질로 실행 중이에요.'
+    if (state.effectiveLevel === 'low') return '자동 · 끊김을 감지해 성능을 보호하고 있어요.'
+    return '자동 · 품질과 부드러움을 균형 조절 중이에요.'
+  }
+
+  function updateControls() {
+    document.querySelectorAll('[data-performance-mode]').forEach((button) => {
+      const selected = button.dataset.performanceMode === state.mode
+      button.classList.toggle('is-active', selected)
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false')
+    })
+    const status = document.getElementById('performanceQualityStatus')
+    const description = describeState()
+    if (status && status.textContent !== description) status.textContent = description
+  }
+
+  function applyEffectiveLevel(level, reason = 'runtime', force = false) {
+    if (!validLevels.has(level)) return
+    const previous = state.effectiveLevel
+    state.effectiveLevel = level
+    state.lastReason = reason
+
+    root.classList.remove('perf-standard', 'perf-low', 'perf-mobile', 'perf-constrained', 'perf-quality-high', 'perf-quality-balanced', 'perf-quality-low')
+    root.classList.add(isMobile ? 'perf-mobile' : level === 'low' ? 'perf-low' : 'perf-standard')
+    root.classList.add(`perf-quality-${level}`)
+    root.classList.toggle('perf-constrained', level !== 'high')
+    root.dataset.performanceMode = state.mode
+    root.dataset.performanceLevel = level
+    updateControls()
+
+    if (force || previous !== level) {
+      window.dispatchEvent(new CustomEvent('roulette-performance-change', {
+        detail: { mode: state.mode, level, previousLevel: previous, reason }
+      }))
+    }
+  }
+
+  function saveAutoLevel() {
+    safeWrite(APP_PERFORMANCE_CACHE_KEY, JSON.stringify({
+      level: state.autoLevel,
+      signature: getHardwareSignature(),
+      savedAt: Date.now()
+    }))
+  }
+
+  function setMode(mode, options = {}) {
+    if (!validModes.has(mode)) return
+    const { persist = true } = options
+    state.mode = mode
+    state.betterWindows = 0
+    state.worseWindows = 0
+    if (persist) safeWrite(APP_PERFORMANCE_STORAGE_KEY, mode)
+    applyEffectiveLevel(getRequestedLevel(), 'user', true)
+  }
+
+  function percentile(sortedValues, ratio) {
+    if (!sortedValues.length) return 0
+    const index = Math.min(sortedValues.length - 1, Math.max(0, Math.floor((sortedValues.length - 1) * ratio)))
+    return sortedValues[index]
+  }
+
+  function classifyWindow(deltas, longTaskDuration) {
+    const sorted = [...deltas].sort((a, b) => a - b)
+    const baseline = Math.max(7, Math.min(34, percentile(sorted, 0.25)))
+    const p90 = percentile(sorted, 0.9)
+    const missedThreshold = Math.max(28, baseline * 1.9)
+    const missedFrames = deltas.filter((delta) => delta > missedThreshold).length
+    const missedRate = deltas.length ? missedFrames / deltas.length : 0
+    const level = p90 > 48 || missedRate > 0.24 || longTaskDuration > 350
+      ? 'low'
+      : p90 > 28 || missedRate > 0.08 || longTaskDuration > 120
+        ? 'balanced'
+        : 'high'
+    return { level, p90, baseline, missedRate, longTaskDuration, samples: deltas.length }
+  }
+
+  function acceptMeasurement(metrics) {
+    state.calibrated = true
+    state.lastMetrics = metrics
+    if (state.mode !== 'auto') {
+      updateControls()
+      return
+    }
+
+    const currentRank = APP_PERFORMANCE_LEVEL_ORDER[state.autoLevel]
+    const measuredRank = APP_PERFORMANCE_LEVEL_ORDER[metrics.level]
+    const hardwareRank = APP_PERFORMANCE_LEVEL_ORDER[state.hardwareLevel]
+    const activeGame = document.body?.classList?.contains?.('app-active-game') === true
+    const severeSlowdown = metrics.p90 > 80 || metrics.missedRate > 0.4 || metrics.longTaskDuration > 600
+
+    if (activeGame && severeSlowdown && currentRank < APP_PERFORMANCE_LEVEL_ORDER.low) {
+      state.autoLevel = 'low'
+      state.worseWindows = 0
+      state.betterWindows = 0
+      saveAutoLevel()
+      applyEffectiveLevel('low', 'measured-emergency')
+      return
+    }
+
+    if (measuredRank > currentRank) {
+      state.worseWindows += 1
+      state.betterWindows = 0
+      const requiredSlowWindows = activeGame ? 1 : 2
+      if (state.worseWindows >= requiredSlowWindows) {
+        const nextRank = Math.min(2, currentRank + 1)
+        state.autoLevel = Object.keys(APP_PERFORMANCE_LEVEL_ORDER).find((level) => APP_PERFORMANCE_LEVEL_ORDER[level] === nextRank) || 'low'
+        state.worseWindows = 0
+        saveAutoLevel()
+        applyEffectiveLevel(state.autoLevel, 'measured-slow')
+      } else {
+        updateControls()
+      }
+      return
+    }
+
+    if (measuredRank < currentRank) {
+      if (currentRank <= hardwareRank) {
+        state.betterWindows = 0
+        state.worseWindows = 0
+        updateControls()
+        return
+      }
+      state.betterWindows += 1
+      state.worseWindows = 0
+      if (state.betterWindows >= 8) {
+        const nextRank = Math.max(hardwareRank, currentRank - 1)
+        state.autoLevel = Object.keys(APP_PERFORMANCE_LEVEL_ORDER).find((level) => APP_PERFORMANCE_LEVEL_ORDER[level] === nextRank) || 'high'
+        state.betterWindows = 0
+        saveAutoLevel()
+        applyEffectiveLevel(state.autoLevel, 'measured-stable')
+      } else {
+        updateControls()
+      }
+      return
+    }
+
+    state.betterWindows = 0
+    state.worseWindows = 0
+    updateControls()
+  }
+
+  function startFrameMonitor() {
+    if (typeof window.requestAnimationFrame !== 'function') return
+    let lastFrameAt = 0
+    let windowStartedAt = 0
+    let deltas = []
+    let longTaskDuration = 0
+    let frameId = null
+    let idleTimer = null
+
+    if (typeof PerformanceObserver === 'function' && PerformanceObserver.supportedEntryTypes?.includes?.('longtask')) {
+      try {
+        const observer = new PerformanceObserver((list) => {
+          if (document.hidden || state.mode !== 'auto') return
+          longTaskDuration += list.getEntries().reduce((sum, entry) => sum + Number(entry.duration || 0), 0)
+        })
+        observer.observe({ type: 'longtask' })
+      } catch (error) {}
+    }
+
+    const resetWindow = (timestamp = 0) => {
+      lastFrameAt = timestamp
+      windowStartedAt = timestamp
+      deltas = []
+      longTaskDuration = 0
+    }
+    const queueFrame = () => {
+      if (!frameId && !document.hidden && state.mode === 'auto') frameId = window.requestAnimationFrame(sample)
+    }
+    const wake = () => {
+      if (idleTimer) clearTimeout(idleTimer)
+      idleTimer = null
+      if (frameId) window.cancelAnimationFrame?.(frameId)
+      frameId = null
+      resetWindow()
+      queueFrame()
+    }
+    const sample = (timestamp) => {
+      frameId = null
+      if (document.hidden || state.mode !== 'auto') { resetWindow(); return }
+      if (!windowStartedAt) resetWindow(timestamp)
+      if (lastFrameAt) {
+        const delta = timestamp - lastFrameAt
+        if (delta >= 4) deltas.push(Math.min(delta, 1500))
+      }
+      lastFrameAt = timestamp
+      if (timestamp - windowStartedAt >= 1500 && (deltas.length >= 10 || timestamp - windowStartedAt >= 2400)) {
+        acceptMeasurement(classifyWindow(deltas, longTaskDuration))
+        resetWindow(timestamp)
+        // Keep monitoring gameplay and ongoing degradation; stable menus can sleep.
+        if (!document.body?.classList?.contains?.('app-active-game') && state.lastMetrics?.level === 'high') {
+          idleTimer = setTimeout(wake, 8000)
+          return
+        }
+      }
+      queueFrame()
+    }
+    document.addEventListener?.('visibilitychange', wake)
+    window.addEventListener('roulette-screen-change', wake)
+    window.addEventListener('roulette-performance-change', (event) => {
+      if (event.detail?.reason === 'user') wake()
+    })
+    queueFrame()
+  }
+
+  function bindControls() {
+    document.querySelectorAll('[data-performance-mode]').forEach((button) => {
+      button.addEventListener('click', () => setMode(button.dataset.performanceMode))
+    })
+    updateControls()
+  }
+
+  function init() {
+    if (state.initialized) return
+    state.initialized = true
+    bindControls()
+    startFrameMonitor()
+  }
+
+  const profile = Object.freeze({
+    get tier() { return isMobile ? 'mobile' : state.effectiveLevel === 'low' ? 'low' : 'standard' },
+    get qualityLevel() { return state.effectiveLevel },
+    get mode() { return state.mode },
+    isMobile,
+    get isLowEndDesktop() { return !isMobile && state.effectiveLevel !== 'high' },
+    get constrained() { return state.effectiveLevel !== 'high' },
+    get canvasPixelRatio() { return getLevelValues().canvasPixelRatio },
+    // 실제 경과 시간과 게임 규칙은 유지하고, 기기 여유에 따라 물리 해석·화면 그리기 밀도만 조절한다.
+    get physicsHz() { return getLevelValues().physicsHz },
+    get animationFrameInterval() { return getLevelValues().animationFrameInterval },
+    get canvasRenderInterval() { return getLevelValues().canvasRenderInterval },
+    get countRefreshInterval() { return getLevelValues().countRefreshInterval },
+    get stockTickInterval() { return getLevelValues().stockTickInterval },
+    get stockSecondaryRenderInterval() { return getLevelValues().stockSecondaryRenderInterval }
+  })
+
+  applyEffectiveLevel(getRequestedLevel(), 'startup', true)
 
   return Object.freeze({
-    tier: isMobile ? 'mobile' : isLowEndDesktop ? 'low' : 'standard',
-    isMobile,
-    isLowEndDesktop,
-    constrained,
-    canvasPixelRatio: isMobile ? (shortSide <= 430 ? 0.8 : 0.9) : isLowEndDesktop ? 1 : 1.25,
-    // 게임 판정은 모든 기기에서 같은 고정 시간축을 사용한다. 성능 차이는 렌더링에만 적용한다.
-    physicsHz: 50,
-    animationFrameInterval: isMobile ? 1000 / 30 : isLowEndDesktop ? 1000 / 40 : 1000 / 60,
-    countRefreshInterval: isMobile ? 200 : isLowEndDesktop ? 120 : 80,
-    stockTickInterval: isMobile ? 500 : isLowEndDesktop ? 400 : 250
+    init,
+    profile,
+    setMode,
+    getState: () => ({ ...state, isMobile, memory, cpuThreads, saveData })
   })
 })()
 
-document.documentElement.classList.add(`perf-${APP_PERFORMANCE_PROFILE.tier}`)
-if (APP_PERFORMANCE_PROFILE.constrained) {
-  document.documentElement.classList.add('perf-constrained')
-}
+const APP_PERFORMANCE_PROFILE = APP_PERFORMANCE_MANAGER.profile
+window.RandomRoulettePerformance = APP_PERFORMANCE_MANAGER
 
 const screens = {
   home: document.getElementById('homeScreen'),
@@ -168,6 +511,7 @@ const emojiSupportCache = new Map()
 let emojiFallbackObserver = null
 let emojiFallbackQueued = false
 let emojiFallbackChecking = false
+const emojiFallbackRoots = new Set()
 
 function resetEmojiRegexes() {
   EMOJI_FALLBACK_PATTERN.lastIndex = 0
@@ -349,7 +693,6 @@ function normalizeUnsupportedEmojis(root = document.body) {
     if (emojiFallbackObserver) {
       emojiFallbackObserver.observe(document.body, {
         childList: true,
-        characterData: true,
         attributes: true,
         subtree: true,
         attributeFilter: ['aria-label', 'title', 'alt']
@@ -359,11 +702,17 @@ function normalizeUnsupportedEmojis(root = document.body) {
 }
 
 function scheduleUnsupportedEmojiNormalization(root = document.body) {
+  const targetRoot = root?.nodeType === Node.TEXT_NODE ? root.parentElement : root
+  if (targetRoot) emojiFallbackRoots.add(targetRoot)
   if (emojiFallbackQueued) return
   emojiFallbackQueued = true
   const run = () => {
     emojiFallbackQueued = false
-    normalizeUnsupportedEmojis(root)
+    const roots = emojiFallbackRoots.has(document.body)
+      ? [document.body]
+      : [...emojiFallbackRoots].filter((target) => target?.isConnected !== false)
+    emojiFallbackRoots.clear()
+    roots.forEach((target) => normalizeUnsupportedEmojis(target))
   }
 
   if (typeof requestAnimationFrame === 'function') {
@@ -376,12 +725,15 @@ function scheduleUnsupportedEmojiNormalization(root = document.body) {
 function installEmojiFallbacks() {
   if (typeof MutationObserver === 'function' && !emojiFallbackObserver) {
     emojiFallbackObserver = new MutationObserver((mutations) => {
-      const changedRoot = mutations.find((mutation) => mutation.target instanceof Element)?.target || document.body
-      scheduleUnsupportedEmojiNormalization(changedRoot)
+      mutations.forEach((mutation) => {
+        const changedRoot = mutation.target instanceof Element
+          ? mutation.target
+          : mutation.target?.parentElement
+        if (changedRoot) scheduleUnsupportedEmojiNormalization(changedRoot)
+      })
     })
     emojiFallbackObserver.observe(document.body, {
       childList: true,
-      characterData: true,
       attributes: true,
       subtree: true,
       attributeFilter: ['aria-label', 'title', 'alt']
@@ -389,10 +741,10 @@ function installEmojiFallbacks() {
   }
 
   const runInitialCheck = () => normalizeUnsupportedEmojis(document.body)
-  if (typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(runInitialCheck)
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(runInitialCheck, { timeout: 900 })
   } else {
-    setTimeout(runInitialCheck, 0)
+    setTimeout(runInitialCheck, 80)
   }
 }
 
@@ -652,17 +1004,12 @@ const ladderRevealBadge = document.getElementById('ladderRevealBadge')
 const ladderCardScreen = document.querySelector('#game7Screen .ladder-card-screen')
 
 
-const matterApi = window.Matter || {}
-const {
-  Engine,
-  Render,
-  Runner,
-  Bodies,
-  Body,
-  Composite,
-  World,
-  Events
-} = matterApi
+let Engine, Render, Runner, Bodies, Body, Composite, World, Events
+function bindMatterPhysics() {
+  ;({ Engine, Render, Runner, Bodies, Body, Composite, World, Events } = window.Matter || {})
+}
+bindMatterPhysics()
+let physicsNavigationToken = 0
 
 function canUseMatterPhysics() {
   return Boolean(window.Matter && Engine && Render && Runner && Bodies && Body && Composite && World && Events)
@@ -671,7 +1018,7 @@ function canUseMatterPhysics() {
 function showMatterUnavailablePopup() {
   showPopup(
     '물리 엔진 로드 실패',
-    '이 게임은 Matter.js 물리 엔진이 필요해. 네트워크가 막혀 있거나 CDN을 불러오지 못하면 담아라!와 볼 배틀은 실행할 수 없어. 인터넷 연결을 확인하거나 Matter.js를 로컬 파일로 포함해야 해.',
+    '게임을 준비하지 못했어요. 인터넷 연결을 확인한 뒤 게임을 다시 선택해 주세요.',
     { icon: '⚠️' }
   )
 }
@@ -680,13 +1027,13 @@ const MAX_SLOT_COUNT = 20
 const BOMB_COUNT = 20
 const SPAWN_INTERVAL_MS = 27
 const BOARD_SIDE_PADDING = 18
+const GAME1_WORLD_COLLISION_CATEGORY = 0x0001
+const GAME1_BALL_COLLISION_CATEGORIES = Object.freeze([0x0002, 0x0004, 0x0008, 0x0010])
 
 const BASE_BOARD_WIDTH = 1366
 const BASE_BOARD_HEIGHT = 768
-const MAX_CANVAS_PIXEL_RATIO = APP_PERFORMANCE_PROFILE.canvasPixelRatio
-
 function getCanvasPixelRatio() {
-  return Math.min(window.devicePixelRatio || 1, MAX_CANVAS_PIXEL_RATIO)
+  return Math.min(window.devicePixelRatio || 1, APP_PERFORMANCE_PROFILE.canvasPixelRatio)
 }
 
 const slotPalette = [
@@ -828,6 +1175,7 @@ const BALLOON_MAX_PLAYERS = 8
 const BALLOON_MIN_BURST_PRESSURE = 48
 const BALLOON_MAX_BURST_PRESSURE = 125
 const BALLOON_PRESS_INTERVAL_MS = 64
+const BALLOON_MIN_HOLD_MS = 600
 const BALLOON_MIN_PRESSURE_STEP = 0.18
 const BALLOON_MAX_PRESSURE_STEP = 0.74
 
@@ -839,6 +1187,10 @@ let balloonCurrentIndex = 0
 let balloonPressure = 0
 let balloonBurstPressure = 0
 let balloonHoldTimer = null
+let balloonTurnHeldMs = 0
+let balloonLastInflateAt = 0
+let balloonTurnRate = 1
+let balloonActivePointerId = null
 let balloonLastValidConfigText = balloonConfigInput ? balloonConfigInput.value : ''
 let balloonLastAppliedRawText = balloonConfigInput ? balloonConfigInput.value : ''
 
@@ -876,13 +1228,16 @@ let circleTapLastAppliedRawText = circleTapConfigInput ? circleTapConfigInput.va
 const KEY_REACT_MIN_PLAYERS = 2
 const KEY_REACT_MAX_PLAYERS = 4
 const KEY_REACT_DEFAULT_KEYS = ['A', 'S', 'K', 'L']
-const KEY_REACT_COUNTDOWN_SECONDS = 5
+const KEY_REACT_COUNTDOWN_SECONDS = 3
+const KEY_REACT_RESPONSE_MS = 3000
 const KEY_REACT_STAY_MIN_MS = 1400
 const KEY_REACT_STAY_MAX_MS = 4200
 
 let keyReactPlayers = []
 let keyReactPhase = 'idle'
 let keyReactTimer = null
+let keyReactFeintTimers = []
+let keyReactFeintText = ''
 let keyReactClickStartedAt = 0
 let keyReactResults = []
 let keyReactCountdownLeft = 0
@@ -1138,11 +1493,14 @@ let render
 let runner
 let world
 let game1PhysicsActive = false
+let game1RenderRaf = null
+let game1RenderLastPaintAt = 0
 let worldBodies = []
 let ballBodies = []
 let movingBodies = []
 let spawnTimers = []
 let game1SpawnSessionId = 0
+let game1RoundRunning = false
 let countTimer = null
 let resizeTimer = null
 let countRefreshQueued = false
@@ -1192,7 +1550,7 @@ let physicalCarouselLoopJumping = false
 let physicalCarouselLoopSettleTimer = null
 
 const RACE_MAX_COUNT = 8
-const RACE_DISTANCE = 2400
+const RACE_DISTANCE = 1600
 const FAST_FORWARD_HOLD_MS = 260
 const FAST_FORWARD_MULTIPLIER = 3
 const FAST_FORWARD_BLOCKED_MESSAGE = '빨리감기 불가능 게임'
@@ -1246,18 +1604,18 @@ const SIM_SUDDEN_DEATH_BASE_DAMAGE = 2
 const SIM_SUDDEN_DEATH_MAX_DAMAGE = 8
 const SIM_SUDDEN_DEATH_DAMAGE_STEP_EVERY = 3
 const SIM_BATTLE_PERFORMANCE = Object.freeze({
-  renderFrameGap: APP_PERFORMANCE_PROFILE.constrained ? 30 : 15,
-  overlayFrameGap: 1000 / (APP_PERFORMANCE_PROFILE.isMobile ? 20 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 25 : 30),
-  rankingInterval: APP_PERFORMANCE_PROFILE.isMobile ? 420 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 280 : 140,
-  effectInterval: APP_PERFORMANCE_PROFILE.isMobile ? 240 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 160 : 80,
-  statusInterval: APP_PERFORMANCE_PROFILE.isMobile ? 280 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 180 : 120,
-  maxTransientEffects: APP_PERFORMANCE_PROFILE.isMobile ? 3 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 5 : 10,
-  showFloatingDamage: !APP_PERFORMANCE_PROFILE.isMobile,
-  canvasPixelRatio: APP_PERFORMANCE_PROFILE.isMobile
-    ? Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 0.7)
-    : APP_PERFORMANCE_PROFILE.isLowEndDesktop
-      ? Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 0.85)
-      : Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 1.1)
+  get renderFrameGap() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 15 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 34 : 30 },
+  get overlayFrameGap() { return 1000 / (APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 30 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 18 : APP_PERFORMANCE_PROFILE.isMobile ? 20 : 25) },
+  get rankingInterval() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 140 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 440 : APP_PERFORMANCE_PROFILE.isMobile ? 420 : 280 },
+  get effectInterval() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 80 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 260 : APP_PERFORMANCE_PROFILE.isMobile ? 240 : 160 },
+  get statusInterval() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 120 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 320 : APP_PERFORMANCE_PROFILE.isMobile ? 280 : 180 },
+  get maxTransientEffects() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 10 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 3 : APP_PERFORMANCE_PROFILE.isMobile ? 3 : 5 },
+  get showFloatingDamage() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' && !APP_PERFORMANCE_PROFILE.isMobile },
+  get canvasPixelRatio() {
+    if (APP_PERFORMANCE_PROFILE.qualityLevel === 'high') return Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 1.1)
+    if (APP_PERFORMANCE_PROFILE.qualityLevel === 'low') return Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, APP_PERFORMANCE_PROFILE.isMobile ? 0.65 : 0.75)
+    return Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, APP_PERFORMANCE_PROFILE.isMobile ? 0.7 : 0.85)
+  }
 })
 const SIM_STAT_KEYS = ['health', 'attack', 'accuracy', 'defense']
 const SIM_STAT_META = {
@@ -1313,6 +1671,7 @@ let simSelectedMap = 'classic'
 let simArenaZoomed = false
 let simArenaZoomBaseRect = null
 let simRenderRaf = null
+let simVisibilityPaused = false
 let simRenderLastPaintAt = 0
 let simOverlayRaf = null
 let simOverlayLastPaintAt = 0
@@ -1359,6 +1718,7 @@ function updateGame1BallCountText() {
 }
 
 function setGame1InputLock(isLocked) {
+  setGameStartButtonRunningState(startGameBtn, isLocked, { busyText: '진행 중' })
   if (!configInput) return
   configInput.disabled = isLocked
   configInput.style.opacity = isLocked ? '0.65' : '1'
@@ -1703,6 +2063,7 @@ const siteAudio = {
   outputLimiter: null,
   bgmFilter: null,
   bgmTimer: null,
+  soundtrackPlayer: null,
   bgmProfileKey: '',
   bgmStep: 0,
   bgmVolume: getSavedVolumePreference(BGM_VOLUME_STORAGE_KEY, AUDIO_DEFAULT_BGM_VOLUME),
@@ -1811,6 +2172,11 @@ const SFX_DUCKING_PROFILES = {
 }
 
 const SCREEN_BGM_PROFILES = {
+  wheel: {
+    key: 'wheel', interval: 214, gain: .06, wave: 'triangle',
+    notes: [293.66, 349.23, 440, 587.33, 440, 349.23],
+    chords: [[146.83, 220], [116.54, 174.61], [174.61, 261.63]], chordEvery: 8
+  },
   home: {
     key: 'home',
     interval: 840,
@@ -2972,6 +3338,7 @@ function playSfx(name) {
 }
 
 function getBgmProfileForScreen(screenKey) {
+  if (screenKey === 'wheel') return SCREEN_BGM_PROFILES.wheel
   if (screenKey === 'home') return SCREEN_BGM_PROFILES.home
   if (screenKey === 'menu') return SCREEN_BGM_PROFILES.menu
   if (screenKey === 'physical') return SCREEN_BGM_PROFILES.physical
@@ -3167,6 +3534,7 @@ function playBgmStep(profile) {
 }
 
 function stopBgm() {
+  siteAudio.soundtrackPlayer?.stop()
   if (siteAudio.bgmTimer) {
     clearInterval(siteAudio.bgmTimer)
     siteAudio.bgmTimer = null
@@ -3175,8 +3543,22 @@ function stopBgm() {
   siteAudio.bgmStep = 0
 }
 
+function getBgmEnergyForScreen(screenKey) {
+  if (screenKey === 'physicalKeyReact' && isKeyReactRunning()) return -1
+  if (screenKey === 'physicalBearFind' && bearFindVideoVisible) return -1
+  if (screenKey === 'wheel') {
+    const phase = window.RandomRouletteWheel?.getPhase?.()
+    return phase === 'stopping' ? 1 : phase === 'spinning' ? .8 : .25
+  }
+  if (screenKey === 'game2' && raceRunning) {
+    return .35 + Math.min(1, Math.max(0, ...raceHorses.map((horse) => horse.progress)) / RACE_DISTANCE) * .65
+  }
+  if (screenKey === 'game3' && battleGameRunning) return battlePhase === 'phase2' ? .85 : .45
+  return window.RandomRouletteSession?.isRunning?.(screenKey) ? .7 : .3
+}
+
 function startBgmForScreen(screenKey = currentScreenKey) {
-  if (!siteAudio.enabled || !siteAudio.unlocked) return
+  if (!siteAudio.enabled || !siteAudio.unlocked || document.hidden) return
 
   const ctx = ensureAudioContext()
   if (!ctx) return
@@ -3187,6 +3569,17 @@ function startBgmForScreen(screenKey = currentScreenKey) {
 
   const profile = getActiveBgmProfile(getBgmProfileForScreen(screenKey))
   if (!profile) return
+  if (!profile.horror && window.RandomRouletteSoundtrack) {
+    const night = isDarkThemeEnabled()
+    const profileKey = `${profile.key}:${night ? 'night' : 'day'}`
+    if (siteAudio.bgmProfileKey === profileKey && siteAudio.soundtrackPlayer?.isPlaying()) return
+    stopBgm()
+    syncBgmFilterForMode()
+    siteAudio.soundtrackPlayer ||= window.RandomRouletteSoundtrack.createPlayer(ctx, siteAudio.bgmGain)
+    siteAudio.bgmProfileKey = profileKey
+    siteAudio.soundtrackPlayer.play(profile.key, { night, getEnergy: () => getBgmEnergyForScreen(screenKey) })
+    return
+  }
   if (siteAudio.bgmProfileKey === profile.key && siteAudio.bgmTimer) return
 
   stopBgm()
@@ -3622,6 +4015,7 @@ function applyThemePreference(theme, options = {}) {
   updateThemeToggleButton()
   refreshSimThemeVisuals()
   refreshExtendedThemeVisuals()
+  startBgmForScreen(currentScreenKey)
 }
 
 function toggleThemePreference() {
@@ -4118,8 +4512,9 @@ function getLuckCarouselTrackItems() {
     : []
 }
 
-function ensureLuckCarouselLoop() {
+function ensureLuckCarouselLoop(options = {}) {
   if (!luckGameGrid) return
+  const { createClones = true } = options
 
   const existingClones = [...luckGameGrid.querySelectorAll('.game-item[data-clone]')]
   if (existingClones.length) {
@@ -4143,7 +4538,7 @@ function ensureLuckCarouselLoop() {
 
   luckCarouselLoopReady = false
 
-  if (originalItems.length <= 1) {
+  if (!createClones || originalItems.length <= 1) {
     luckCarouselLoopReady = true
     return
   }
@@ -4237,6 +4632,11 @@ function getLuckCarouselClosestItem() {
 
 function getLuckCarouselClosestIndex() {
   const closestItem = getLuckCarouselClosestItem()
+  return getLuckCarouselIndexForItem(closestItem)
+}
+
+function getLuckCarouselIndexForItem(item) {
+  const closestItem = item
   if (!closestItem) return 0
 
   const rawIndex = Number.parseInt(closestItem.dataset.carouselIndex || '0', 10)
@@ -4254,6 +4654,9 @@ function updateLuckCarouselActiveIndex(index, closestItem = null) {
   const activeItem = closestItem && trackItems.includes(closestItem)
     ? closestItem
     : trackItems.find((item) => Number.parseInt(item.dataset.carouselIndex || '-1', 10) === safeIndex) || null
+
+  const previousActiveItem = luckGameGrid?.querySelector('.game-item.is-carousel-active') || null
+  if (luckCarouselActiveIndex === safeIndex && previousActiveItem === activeItem) return
 
   luckCarouselActiveIndex = safeIndex
   updateLuckCarouselDots(safeIndex)
@@ -4398,7 +4801,7 @@ function scheduleLuckCarouselLoopNormalize(closestItem) {
       return
     }
 
-    updateLuckCarouselActiveIndex(getLuckCarouselClosestIndex(), settledItem)
+    updateLuckCarouselActiveIndex(getLuckCarouselIndexForItem(settledItem), settledItem)
     normalizeLuckCarouselLoop(settledItem)
   }, LUCK_CAROUSEL_SETTLE_DELAY_MS)
 }
@@ -4460,7 +4863,7 @@ function handleLuckCarouselScroll() {
 
   requestAnimationFrame(() => {
     const closestItem = getLuckCarouselClosestItem()
-    const closestIndex = getLuckCarouselClosestIndex()
+    const closestIndex = getLuckCarouselIndexForItem(closestItem)
     updateLuckCarouselActiveIndex(closestIndex, closestItem)
     scheduleLuckCarouselLoopNormalize(closestItem)
     luckCarouselScrollTicking = false
@@ -4474,7 +4877,7 @@ function handleLuckCarouselScrollEnd() {
   const closestItem = getLuckCarouselClosestItem()
   if (!closestItem) return
 
-  updateLuckCarouselActiveIndex(getLuckCarouselClosestIndex(), closestItem)
+  updateLuckCarouselActiveIndex(getLuckCarouselIndexForItem(closestItem), closestItem)
   normalizeLuckCarouselLoop(closestItem)
 }
 
@@ -4490,7 +4893,7 @@ function syncLuckCarousel(options = {}) {
   luckCarouselLastScrollLeft = luckGameGrid.scrollLeft
   luckGameGrid.classList.remove('is-loop-resetting')
 
-  ensureLuckCarouselLoop()
+  ensureLuckCarouselLoop({ createClones: shouldUseCarousel })
 
   const originalItems = getLuckCarouselOriginalItems()
 
@@ -5292,6 +5695,18 @@ function updatePrevStepButtons() {
 function showScreen(target, options = {}) {
   if (target === 'menu' || target === 'physical') target = 'luck'
   if (!screens[target]) return
+  const navigationToken = ++physicsNavigationToken
+  if ((target === 'game1' || target === 'game4') && !canUseMatterPhysics() && window.RandomRouletteLoader) {
+    window.RandomRouletteLoader.loadPhysics().then(() => {
+      if (navigationToken !== physicsNavigationToken) return
+      bindMatterPhysics()
+      if (canUseMatterPhysics()) showScreen(target, options)
+      else showMatterUnavailablePopup()
+    }).catch(() => {
+      if (navigationToken === physicsNavigationToken) showMatterUnavailablePopup()
+    })
+    return
+  }
 
   window.RandomRouletteUtilitySettings?.close?.()
 
@@ -5493,6 +5908,7 @@ function showScreen(target, options = {}) {
   updateOrientationGate()
 
   currentScreenKey = target
+  window.dispatchEvent(new CustomEvent('roulette-screen-change', { detail: { screen: target } }))
   updatePrevStepButtons()
   scheduleGameStartButtonStateSync()
 
@@ -5685,11 +6101,8 @@ function ensureGameReady() {
     return false
   }
 
-  if (!engine) {
-    initMatterWorld()
-  } else {
-    resumeGame1Physics()
-  }
+  if (!engine && !initMatterWorld()) return false
+  resumeGame1Physics()
 
   if (!currentSlots.length && configInput) {
     const parsed = parseConfigToSlots(configInput.value)
@@ -5710,6 +6123,62 @@ function ensureGameReady() {
   return true
 }
 
+function getGame1BallCollisionFilter(ballIndex = ballBodies.length) {
+  const qualityLevel = APP_PERFORMANCE_PROFILE.qualityLevel
+  if (qualityLevel === 'high') {
+    return { category: GAME1_BALL_COLLISION_CATEGORIES[0], mask: 0xFFFFFFFF }
+  }
+
+  const groupCount = GAME1_BALL_COLLISION_CATEGORIES.length
+  const category = GAME1_BALL_COLLISION_CATEGORIES[ballIndex % groupCount]
+  return {
+    category,
+    mask: qualityLevel === 'low' ? GAME1_WORLD_COLLISION_CATEGORY : GAME1_WORLD_COLLISION_CATEGORY | category
+  }
+}
+
+function syncGame1BallCollisionMode() {
+  ballBodies.forEach((ball, index) => {
+    const collisionFilter = getGame1BallCollisionFilter(index)
+    ball.collisionFilter.category = collisionFilter.category
+    ball.collisionFilter.mask = collisionFilter.mask
+  })
+}
+
+function renderGame1CanvasOnce(timestamp = performance.now()) {
+  if (!render) return
+  game1RenderLastPaintAt = timestamp
+  Render.world(render, timestamp)
+}
+
+function stopGame1RenderLoop() {
+  if (game1RenderRaf) cancelAnimationFrame(game1RenderRaf)
+  game1RenderRaf = null
+  game1RenderLastPaintAt = 0
+}
+
+function startGame1RenderLoop() {
+  stopGame1RenderLoop()
+
+  const frame = (timestamp) => {
+    if (!render || !game1PhysicsActive || !isGame1ActiveScreen() || document.hidden) {
+      game1RenderRaf = null
+      return
+    }
+
+    const gap = APP_PERFORMANCE_PROFILE.canvasRenderInterval
+    const elapsed = timestamp - game1RenderLastPaintAt
+    if (!game1RenderLastPaintAt || elapsed >= gap - 0.5) {
+      const nextPaintAt = game1RenderLastPaintAt ? timestamp - ((elapsed + 0.5) % gap) + 0.5 : timestamp
+      renderGame1CanvasOnce(timestamp)
+      game1RenderLastPaintAt = nextPaintAt
+    }
+    game1RenderRaf = requestAnimationFrame(frame)
+  }
+
+  game1RenderRaf = requestAnimationFrame(frame)
+}
+
 function initMatterWorld() {
   if (!canUseMatterPhysics()) {
     showMatterUnavailablePopup()
@@ -5726,15 +6195,7 @@ function initMatterWorld() {
   world = engine.world
   engine.gravity.y = 1.05
   engine.enableSleeping = true
-  if (APP_PERFORMANCE_PROFILE.isMobile) {
-    engine.positionIterations = 4
-    engine.velocityIterations = 3
-    engine.constraintIterations = 1
-  } else if (APP_PERFORMANCE_PROFILE.isLowEndDesktop) {
-    engine.positionIterations = 5
-    engine.velocityIterations = 3
-    engine.constraintIterations = 1
-  }
+  applyAdaptiveEngineIterations(engine)
 
   render = Render.create({
     element: gameCanvasWrap,
@@ -5751,31 +6212,31 @@ function initMatterWorld() {
   render.canvas.style.position = 'absolute'
   render.canvas.style.inset = '0'
 
-  Render.run(render)
-
   runner = Runner.create()
-  runner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
-  Runner.run(runner, engine)
-  game1PhysicsActive = true
-
   Events.on(engine, 'beforeUpdate', animateMovingBodies)
   Events.on(engine, 'afterUpdate', scheduleRefreshCounts)
   Events.on(engine, 'collisionStart', handleGame1CollisionAudio)
+  resumeGame1Physics()
   return true
 }
 
 function pauseGame1Physics() {
+  game1Timers.pause()
   if (!game1PhysicsActive) return
-  if (render) Render.stop(render)
+  stopGame1RenderLoop()
   if (runner) Runner.stop(runner)
   game1PhysicsActive = false
 }
 
 function resumeGame1Physics() {
+  if (document.hidden) return
+  game1Timers.resume()
   if (game1PhysicsActive || !render || !runner || !engine) return
-  Render.run(render)
+  runner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
+  runner.enabled = true
   Runner.run(runner, engine)
   game1PhysicsActive = true
+  startGame1RenderLoop()
 }
 
 function handleGame1CollisionAudio(event) {
@@ -5783,7 +6244,9 @@ function handleGame1CollisionAudio(event) {
   if (!roundSpawnComplete && !ballBodies.length) return
   if (!event?.pairs?.length) return
 
-  const hasBallCollision = event.pairs.some((pair) => ballBodies.includes(pair.bodyA) || ballBodies.includes(pair.bodyB))
+  const hasBallCollision = event.pairs.some((pair) => (
+    typeof pair.bodyA?.isBombBall === 'boolean' || typeof pair.bodyB?.isBombBall === 'boolean'
+  ))
   if (hasBallCollision) {
     playThrottledSfx('marbleHit', SFX_THROTTLE_MS.marbleHit)
   }
@@ -5813,14 +6276,64 @@ function stopGame1LiveRound() {
   setGame1ShuffleLock(false)
 }
 
+// Timers belonging to the drop game use visible time, just like its physics engine.
+const game1Timers = (() => {
+  const tasks = new Set()
+  let paused = document.hidden
+  function arm(task) {
+    if (paused) return
+    task.startedAt = performance.now()
+    task.id = setTimeout(() => {
+      task.id = null
+      if (paused || !tasks.has(task)) return
+      if (!task.repeat) tasks.delete(task)
+      task.callback()
+      if (task.repeat && tasks.has(task)) {
+        task.remaining = task.repeat
+        arm(task)
+      }
+    }, task.remaining)
+  }
+  function schedule(callback, delay, repeat = 0) {
+    const task = { callback, remaining: Math.max(0, delay || 0), repeat, id: null, startedAt: 0 }
+    tasks.add(task)
+    arm(task)
+    return task
+  }
+  return {
+    timeout: (callback, delay) => schedule(callback, delay),
+    interval: (callback, delay) => schedule(callback, delay, delay),
+    cancel(task) {
+      if (!task) return
+      clearTimeout(task.id)
+      tasks.delete(task)
+    },
+    pause() {
+      if (paused) return
+      paused = true
+      const now = performance.now()
+      tasks.forEach((task) => {
+        clearTimeout(task.id)
+        task.id = null
+        task.remaining = Math.max(0, task.remaining - (now - task.startedAt))
+      })
+    },
+    resume() {
+      if (!paused || document.hidden) return
+      paused = false
+      tasks.forEach(arm)
+    }
+  }
+})()
+
 function clearCountdownTimers() {
-  countdownTimers.forEach((timer) => clearTimeout(timer))
+  countdownTimers.forEach((timer) => game1Timers.cancel(timer))
   countdownTimers = []
 }
 
 function clearSettleWatcher() {
   if (settleWatcherTimer) {
-    clearInterval(settleWatcherTimer)
+    game1Timers.cancel(settleWatcherTimer)
     settleWatcherTimer = null
   }
   settleStableTicks = 0
@@ -5828,13 +6341,14 @@ function clearSettleWatcher() {
 
 function clearFinalWatcher() {
   if (finalWatcherTimer) {
-    clearInterval(finalWatcherTimer)
+    game1Timers.cancel(finalWatcherTimer)
     finalWatcherTimer = null
   }
   finalStableTicks = 0
 }
 
 function resetRoundState() {
+  game1RoundRunning = false
   roundSpawnComplete = false
   bombSequenceStarted = false
   bombSequenceFinished = false
@@ -5855,11 +6369,11 @@ function clearWorldBodies() {
 
 function clearSpawnTimers() {
   releaseFastForward('game1')
-  spawnTimers.forEach((timer) => clearTimeout(timer))
+  spawnTimers.forEach((timer) => game1Timers.cancel(timer))
   spawnTimers = []
 
   if (countTimer) {
-    clearTimeout(countTimer)
+    game1Timers.cancel(countTimer)
     countTimer = null
   }
 
@@ -5997,8 +6511,7 @@ function getSlotCountsPerIndex() {
   return counts
 }
 
-function getAggregatedCounts() {
-  const slotCounts = getSlotCountsPerIndex()
+function getAggregatedCounts(slotCounts = getSlotCountsPerIndex()) {
   const aggregatedMap = new Map()
 
   currentSlots.forEach((slot, index) => {
@@ -6035,7 +6548,7 @@ function finalizeResults() {
 function startSettleWatcher() {
   clearSettleWatcher()
 
-  settleWatcherTimer = setInterval(() => {
+  settleWatcherTimer = game1Timers.interval(() => {
     if (!roundSpawnComplete || bombSequenceStarted || finalResultsShown) return
 
     if (areAllBallsCalm()) {
@@ -6061,7 +6574,7 @@ function startBombCountdown() {
   const countdownStepDelay = getScaledDelay(1000, 'game1', 120)
 
   countdownValues.forEach((value, index) => {
-    const timer = setTimeout(() => {
+    const timer = game1Timers.timeout(() => {
       playThrottledSfx('countdown', SFX_THROTTLE_MS.countdown)
       if (statusText) {
         statusText.textContent = `폭탄 폭발까지 ${value}...`
@@ -6070,7 +6583,7 @@ function startBombCountdown() {
     countdownTimers.push(timer)
   })
 
-  const explodeTimer = setTimeout(() => {
+  const explodeTimer = game1Timers.timeout(() => {
     triggerBombExplosionChain()
   }, countdownStepDelay * countdownValues.length)
   countdownTimers.push(explodeTimer)
@@ -6132,7 +6645,7 @@ function triggerBombExplosionChain() {
   }
 
   bombs.forEach((bomb, index) => {
-    const timer = setTimeout(() => {
+    const timer = game1Timers.timeout(() => {
       playThrottledSfx('chainExplosion', SFX_THROTTLE_MS.chainExplosion)
       explodeSingleBomb(bomb, index + 1, bombs.length)
 
@@ -6140,7 +6653,7 @@ function triggerBombExplosionChain() {
         ballBodies = ballBodies.filter((ball) => !ball.isBombBall)
         bombSequenceFinished = true
 
-        const doneTimer = setTimeout(() => {
+        const doneTimer = game1Timers.timeout(() => {
           if (statusText) {
             statusText.textContent = '폭발 종료. 남은 구슬 정리 중...'
           }
@@ -6165,7 +6678,7 @@ function startResultCountdown() {
   const countdownStepDelay = getScaledDelay(1000, 'game1', 120)
 
   countdownValues.forEach((value, index) => {
-    const timer = setTimeout(() => {
+    const timer = game1Timers.timeout(() => {
       if (!areUndroppedNormalBallsCalm()) {
         resultCountdownStarted = false
         if (statusText) {
@@ -6184,7 +6697,7 @@ function startResultCountdown() {
     countdownTimers.push(timer)
   })
 
-  const revealTimer = setTimeout(() => {
+  const revealTimer = game1Timers.timeout(() => {
     if (!areUndroppedNormalBallsCalm()) {
       resultCountdownStarted = false
       if (statusText) {
@@ -6203,7 +6716,7 @@ function startResultCountdown() {
 function startFinalResultsWatcher() {
   clearFinalWatcher()
 
-  finalWatcherTimer = setInterval(() => {
+  finalWatcherTimer = game1Timers.interval(() => {
     if (finalResultsShown || !bombSequenceFinished) return
 
     const undroppedBalls = getUndroppedNormalBalls()
@@ -6675,31 +7188,44 @@ function renderSlotsOverlay() {
   })
 }
 
-function updateLegendWithAggregatedCounts() {
+function updateLegendWithAggregatedCounts(aggregatedCounts = getAggregatedCounts()) {
   if (!slotLegend) return
-
-  slotLegend.innerHTML = ''
-
-  const aggregatedCounts = getAggregatedCounts().sort((a, b) => {
+  const sortedCounts = [...aggregatedCounts].sort((a, b) => {
     if (b.count !== a.count) return b.count - a.count
     return a.name.localeCompare(b.name, 'ko')
   })
 
-  aggregatedCounts.forEach((item) => {
-    const color = getColorForName(item.name)
+  const nodeMap = new Map([...slotLegend.children].map((node) => [node.dataset.legendName, node]))
+  const fragment = document.createDocumentFragment()
+  sortedCounts.forEach((item) => {
+    let chip = nodeMap.get(item.name)
+    if (!chip) {
+      const color = getColorForName(item.name)
+      chip = document.createElement('div')
+      chip.className = 'legend-chip'
+      chip.dataset.legendName = item.name
 
-    const chip = document.createElement('div')
-    chip.className = 'legend-chip'
-    chip.innerHTML = `
-      <span class="legend-dot" style="background:${color}"></span>
-      <span>${escapeHtml(item.name)} (${item.count}개)</span>
-    `
-    slotLegend.appendChild(chip)
+      const dot = document.createElement('span')
+      dot.className = 'legend-dot'
+      dot.style.background = color
+
+      const label = document.createElement('span')
+      label.append(document.createTextNode(`${item.name} (`))
+      const count = document.createElement('span')
+      count.className = 'legend-count'
+      label.append(count, document.createTextNode(')'))
+      chip.append(dot, label)
+    }
+    const countNode = chip.querySelector('.legend-count')
+    if (countNode) countNode.textContent = `${item.count}개`
+    fragment.appendChild(chip)
   })
+  slotLegend.replaceChildren(fragment)
 }
 
 function createBall(x, y, options = {}) {
   const isBomb = Boolean(options.isBomb)
+  const collisionFilter = getGame1BallCollisionFilter()
 
   if (!isBomb) {
     const palette = getBallPaletteByTheme()
@@ -6710,6 +7236,7 @@ function createBall(x, y, options = {}) {
       friction: 0.002,
       frictionAir: 0.0008,
       density: 0.0018,
+      collisionFilter,
       render: {
         fillStyle: color,
         strokeStyle: game1Theme.ballStroke,
@@ -6736,6 +7263,7 @@ function createBall(x, y, options = {}) {
     friction: 0.002,
     frictionAir: 0.0008,
     density: 0.0022,
+    collisionFilter,
     render: {
       fillStyle: bombColor,
       strokeStyle: '#5c5c5c',
@@ -6758,6 +7286,7 @@ function spawnBalls() {
   resetRoundState()
   game1SpawnSessionId += 1
   const spawnSessionId = game1SpawnSessionId
+  game1RoundRunning = true
 
   const normalBallCount = getCurrentNormalBallCount()
   const totalDropCount = getCurrentTotalDropCount()
@@ -6771,41 +7300,41 @@ function spawnBalls() {
   let spawned = 0
   let nextIndex = 0
 
-  const scheduleNextSpawn = (delay = 0) => {
-    const timer = setTimeout(() => {
-      if (spawnSessionId !== game1SpawnSessionId || !isGame1ActiveScreen()) return
-      if (nextIndex >= mixedOrder.length) return
+  const dropNextBall = () => {
+    if (spawnSessionId !== game1SpawnSessionId || !isGame1ActiveScreen()) return
+    if (nextIndex >= mixedOrder.length) return
 
-      const isBomb = mixedOrder[nextIndex]
-      nextIndex += 1
+    const isBomb = mixedOrder[nextIndex]
+    nextIndex += 1
 
-      const x = S(30) + Math.random() * (boardWidth - S(60))
-      const y = S(22) + Math.random() * S(12)
+    const x = S(30) + Math.random() * (boardWidth - S(60))
+    const y = S(22) + Math.random() * S(12)
 
-      createBall(x, y, { isBomb })
-      playThrottledSfx(isBomb ? 'bombFuse' : 'marbleDrop', isBomb ? 160 : SFX_THROTTLE_MS.marbleDrop)
-      spawned += 1
+    createBall(x, y, { isBomb })
+    playThrottledSfx(isBomb ? 'bombFuse' : 'marbleDrop', isBomb ? 160 : SFX_THROTTLE_MS.marbleDrop)
+    spawned += 1
 
+    if (statusText) {
+      statusText.textContent = `구슬이 떨어지는 중... ${spawned}/${totalDropCount}`
+    }
+
+    if (spawned >= totalDropCount) {
+      spawnTimers = []
+      roundSpawnComplete = true
       if (statusText) {
-        statusText.textContent = `구슬이 떨어지는 중... ${spawned}/${totalDropCount}`
+        statusText.textContent = `구슬 ${normalBallCount}개 + 폭탄 ${BOMB_COUNT}개 투하 완료. 멈추는 중...`
       }
+      startSettleWatcher()
+      return
+    }
 
-      if (spawned >= totalDropCount) {
-        roundSpawnComplete = true
-        if (statusText) {
-          statusText.textContent = `구슬 ${normalBallCount}개 + 폭탄 ${BOMB_COUNT}개 투하 완료. 멈추는 중...`
-        }
-        startSettleWatcher()
-        return
-      }
-
-      scheduleNextSpawn(getScaledDelay(SPAWN_INTERVAL_MS, 'game1', 4))
-    }, delay)
-
-    spawnTimers.push(timer)
+    // Keep only the pending task instead of retaining every completed timeout.
+    spawnTimers = [game1Timers.timeout(dropNextBall, getScaledDelay(SPAWN_INTERVAL_MS, 'game1', 4))]
   }
 
-  scheduleNextSpawn(0)
+  // A visible first ball and running state are available in the same click.
+  dropNextBall()
+  scheduleGameStartButtonStateSync()
 }
 
 function refreshCounts() {
@@ -6820,7 +7349,7 @@ function refreshCounts() {
     }
   })
 
-  updateLegendWithAggregatedCounts()
+  updateLegendWithAggregatedCounts(getAggregatedCounts(slotCounts))
 }
 
 function clearBallsOnly() {
@@ -6857,6 +7386,8 @@ function startRound() {
     return
   }
 
+  if (!engine && !ensureGameReady()) return
+  resumeGame1Physics()
   clearBallsOnly()
   refreshCounts()
   setDrawerState(false)
@@ -6916,7 +7447,7 @@ function resetRound() {
 }
 
 function hasLiveRound() {
-  return ballBodies.length > 0 && !finalResultsShown
+  return (game1RoundRunning || ballBodies.length > 0) && !finalResultsShown
 }
 
 function getScaledDelay(baseDelay, gameKey, minDelay = 50) {
@@ -7387,7 +7918,19 @@ function updateHorsePosition(horse) {
   }
 }
 
+function updateRaceDramaHud() {
+  const hud = document.getElementById('raceDramaHud')
+  if (!hud) return
+  const progress = Math.max(0, ...raceHorses.map((horse) => horse.progress)) / RACE_DISTANCE
+  const complete = raceHorses.length > 0 && raceHorses.every((horse) => horse.finished)
+  const stage = complete ? '결승 통과' : progress >= .7 ? '라스트 스퍼트' : progress >= .35 ? '추격전' : raceRunning ? '레이스 시작' : '출발 대기'
+  const message = `${stage} · ${Math.min(100, Math.floor(progress * 100))}%`
+  if (hud.textContent !== message) hud.textContent = message
+  hud.classList.toggle('is-climax', !complete && progress >= .7)
+}
+
 function renderRaceRanking() {
+  updateRaceDramaHud()
   if (!raceRankingList) return
 
   raceRankingList.innerHTML = ''
@@ -7481,11 +8024,13 @@ function stopRaceLoop() {
   }
 }
 
-function resetRaceHorseStates() {
+function resetRaceHorseStates({ reroll = false } = {}) {
   raceFinishOrder = []
   raceLeaderName = ''
 
   raceHorses.forEach((horse) => {
+    if (reroll) Object.assign(horse, window.RandomRouletteGameplay.createRaceForm())
+    horse.finishElapsedMs = 0
     horse.progress = 0
     horse.finished = false
     horse.finishOrder = 0
@@ -7717,10 +8262,11 @@ function pushAutoCommentary() {
   }
 }
 
-function finishHorse(horse) {
+function finishHorse(horse, finishElapsedMs = raceElapsedMs) {
   if (horse.finished) return
 
   horse.finished = true
+  horse.finishElapsedMs = finishElapsedMs
   horse.progress = RACE_DISTANCE
   horse.finishOrder = raceFinishOrder.length + 1
   horse.currentStatus = '완주'
@@ -7742,7 +8288,7 @@ function finishHorse(horse) {
 function showRaceResultsPopup() {
   const html = raceFinishOrder
     .map((horse, index) => {
-      return `<span style="display:block;margin:8px 0;"><strong>${index + 1}위. ${escapeHtml(horse.label)}</strong></span>`
+      return `<span style="display:block;margin:8px 0;"><strong>${index + 1}위. ${escapeHtml(horse.label)}</strong> · ${(horse.finishElapsedMs / 1000).toFixed(2)}초</span>`
     })
     .join('')
 
@@ -7753,7 +8299,7 @@ function showRaceResultsPopup() {
 }
 
 function raceFrame(timestamp) {
-  if (!raceRunning) return
+  if (!raceRunning || document.hidden) return
 
   if (!raceLastTimestamp) {
     raceLastTimestamp = timestamp
@@ -7766,7 +8312,9 @@ function raceFrame(timestamp) {
 
   playThrottledSfx('raceHoof', SFX_THROTTLE_MS.raceHoof)
   const speedMultiplier = getFastForwardMultiplier('game2')
-  const rawDt = Math.min(0.05, (timestamp - raceLastTimestamp) / 1000)
+  // This is a distance simulation, so dropped frames must not slow the race clock.
+  // Bound long foreground stalls; visibility changes reset the timestamp separately.
+  const rawDt = Math.max(0, Math.min(1, (timestamp - raceLastTimestamp) / 1000))
   const dt = rawDt * speedMultiplier
   raceLastTimestamp = timestamp
   raceElapsedMs += dt * 1000
@@ -7780,6 +8328,7 @@ function raceFrame(timestamp) {
     : 0
   const spread = leaderProgress - tailProgress
   const rankMap = new Map(activeRanking.map((horse, index) => [horse.id, index]))
+  const crossings = []
 
   raceHorses.forEach((horse) => {
     if (horse.finished) return
@@ -7831,6 +8380,7 @@ function raceFrame(timestamp) {
     speed += packBias
     speed += comebackBoost
     speed += lateKick
+    speed += window.RandomRouletteGameplay.raceSprintBoost(progressRatio, horse)
     speed -= leaderDrag
     speed -= fatiguePenalty
 
@@ -7852,15 +8402,21 @@ function raceFrame(timestamp) {
     speed -= horse.slowPenalty
     speed = Math.max(2, speed)
 
+    const before = horse.progress
     horse.progress += speed * dt
 
     if (horse.progress >= RACE_DISTANCE) {
-      finishHorse(horse)
+      const fraction = clampValue((RACE_DISTANCE - before) / Math.max(.000001, horse.progress - before), 0, 1)
+      crossings.push({ horse, fraction })
     }
 
     updateHorsePosition(horse)
   })
 
+  // Resolve all crossings together so array/lane order cannot decide a close finish.
+  window.RandomRouletteGameplay.sortRaceFinishers(crossings).forEach(({ horse, fraction }) => {
+    finishHorse(horse, raceElapsedMs - dt * 1000 + fraction * dt * 1000)
+  })
   maybeCommentLeaderChange()
 
   if (!raceLastRankingRenderAt || timestamp - raceLastRankingRenderAt >= 120) {
@@ -7903,7 +8459,7 @@ function setBattleShuffleLock(isLocked) {
 
 function updateBattleDescription() {
   if (!battleDesc) return
-  battleDesc.textContent = `총 ${battlePlayers.length || 0}명이 카드 5장으로 중간 계산과 최종 점수 순위를 겨루는 게임이다.`
+  battleDesc.textContent = `총 ${battlePlayers.length || 0}명. 첫 3장으로 점수를 만들고, 남은 연산 기호와 숫자는 원하는 순서로 공개한다.`
 }
 
 function formatBattleValue(value) {
@@ -8212,6 +8768,7 @@ function createBattleCardElement(card, { flipped = false, actualIndex = null } =
     cardEl.dataset.cardIndex = String(actualIndex)
   }
   cardEl.setAttribute('role', 'button')
+  if (actualIndex !== null) cardEl.setAttribute('aria-label', `${actualIndex + 1}번째 카드`)
   cardEl.setAttribute('tabindex', '-1')
   cardEl.setAttribute('aria-disabled', 'true')
   cardEl.innerHTML = `
@@ -8336,12 +8893,12 @@ function updateBattlePlayerSubText(player) {
   if (!player.phase2Revealed?.[1]) remainingPhase2.push('5번째')
 
   if (remainingPhase2.length === 2) {
-    subText.textContent = '4번째 또는 5번째 카드를 원하는 순서로 공개'
+    subText.textContent = '연산 기호 또는 숫자, 원하는 카드부터 공개해줘.'
     return
   }
 
   if (remainingPhase2.length === 1) {
-    subText.textContent = `${remainingPhase2[0]} 카드를 선택해 공개`
+    subText.textContent = `${remainingPhase2[0]} 카드가 남았어. 공개하면 최종 점수가 완성돼.`
     return
   }
 
@@ -8442,6 +8999,14 @@ function canFlipBattleCard(player, cardIndex) {
 }
 
 function refreshBattleCardAvailability() {
+  const badge = document.getElementById('battleStageBadge')
+  if (badge) {
+    const finalReady = battlePhase === 'phase2'
+    badge.textContent = battlePhase === 'phase1' ? `1차 연산 · ${battleRoundPlayers.filter((p) => p.phase1Done).length}/${battleRoundPlayers.length}`
+      : battlePhase === 'phase2' ? '후반 두 장 · 순서 자유'
+      : battlePhase === 'done' ? '최종 결과' : battlePhase === 'dealing' ? '카드를 섞는 중' : '카드 공개 대기'
+    badge.classList.toggle('is-climax', battlePhase === 'phase2' && finalReady)
+  }
   battleRoundPlayers.forEach((player) => {
     const row = getBattleRowElement(player.id)
     if (!row) return
@@ -8667,11 +9232,8 @@ async function handleBattleCardReveal(player, cardIndex) {
     player.phase1Done = true
     playSfx('battleFormula')
 
-    await showPopupAndWait(
-      `${player.label}의 1차 수식 완성`,
-      `${getBattlePhase1FormulaText(player)}`,
-      { icon: '🧮' }
-    )
+    if (battleStatusText) battleStatusText.textContent = `${player.label} · ${getBattlePhase1FormulaText(player)}`
+    await sleep(420)
     if (!isBattleFlowActive(token)) return
 
     await condenseBattlePlayerRow(player, token)
@@ -8681,7 +9243,7 @@ async function handleBattleCardReveal(player, cardIndex) {
     if (pendingPhase1 === 0) {
       battlePhase = 'phase2'
       if (battleStatusText) {
-        battleStatusText.textContent = '모든 참가자의 1차 결과 카드가 공개되었다. 이제 4번째와 5번째 카드를 원하는 순서로 열 수 있다.'
+        battleStatusText.textContent = '1차 결과 공개 완료! 연산 기호와 숫자 중 원하는 카드를 먼저 열어줘.'
       }
     } else if (battleStatusText) {
       battleStatusText.textContent = `아직 ${pendingPhase1}명의 1차 결과 카드가 남아 있다.`
@@ -8702,6 +9264,7 @@ async function handleBattleCardReveal(player, cardIndex) {
     }
 
     player.phase2Revealed[phase2Index] = true
+    updateAllBattlePlayerSubTexts()
     const remainingPhase2 = [3, 4].filter((index) => {
       const mappedIndex = index === 3 ? 0 : 1
       return !player.phase2Revealed[mappedIndex]
@@ -8710,7 +9273,7 @@ async function handleBattleCardReveal(player, cardIndex) {
     if (remainingPhase2.length > 0) {
       updateBattlePlayerSubText(player)
       if (battleStatusText) {
-        battleStatusText.textContent = `${player.label}의 ${cardIndex + 1}번째 카드가 공개되었다. 남은 ${remainingPhase2[0] + 1}번째 카드도 원하는 때에 공개해줘.`
+        battleStatusText.textContent = `${player.label}의 ${cardIndex === 3 ? '연산 기호' : '숫자'} 공개! 남은 ${cardIndex === 3 ? '숫자' : '연산 기호'}가 최종 점수를 결정해.`
       }
       battleInteractionLocked = false
       refreshBattleCardAvailability()
@@ -8756,6 +9319,7 @@ async function startBattleGame() {
 
   battleRoundPlayers = buildBattleRoundPlayers()
   prepareBattleRoundRows(battleRoundPlayers)
+  refreshBattleCardAvailability()
 
   await playBattleShuffleAnimation(token)
   if (!isBattleFlowActive(token)) return
@@ -9899,6 +10463,7 @@ function resetSimCardsOnly() {
 }
 
 function clearSimArena() {
+  simVisibilityPaused = false
   resetSimSuddenDeathState()
   closeSimArenaZoom()
 
@@ -10690,14 +11255,18 @@ function startSimRenderLoop() {
   simRenderLastPaintAt = 0
 
   const renderFrame = (timestamp) => {
-    if (!simArenaRender) {
+    if (!simArenaRender || document.hidden || !screens.game4?.classList.contains('active')) {
       simRenderRaf = null
       return
     }
 
-    const shouldPaint = simBattleFinished || !simRenderLastPaintAt || timestamp - simRenderLastPaintAt >= SIM_BATTLE_PERFORMANCE.renderFrameGap
+    const gap = SIM_BATTLE_PERFORMANCE.renderFrameGap
+    const elapsed = timestamp - simRenderLastPaintAt
+    const shouldPaint = simBattleFinished || !simRenderLastPaintAt || elapsed >= gap - 0.5
     if (shouldPaint) {
+      const nextPaintAt = simRenderLastPaintAt ? timestamp - ((elapsed + 0.5) % gap) + 0.5 : timestamp
       renderSimCanvasOnce(timestamp)
+      simRenderLastPaintAt = nextPaintAt
     }
 
     if (simBattleFinished) {
@@ -10721,15 +11290,7 @@ function initSimArena() {
   simArenaWorld = simArenaEngine.world
   simArenaEngine.gravity.y = 0
   simArenaEngine.enableSleeping = true
-  if (APP_PERFORMANCE_PROFILE.isMobile) {
-    simArenaEngine.positionIterations = 4
-    simArenaEngine.velocityIterations = 3
-    simArenaEngine.constraintIterations = 1
-  } else if (APP_PERFORMANCE_PROFILE.isLowEndDesktop) {
-    simArenaEngine.positionIterations = 5
-    simArenaEngine.velocityIterations = 3
-    simArenaEngine.constraintIterations = 1
-  }
+  applyAdaptiveEngineIterations(simArenaEngine)
 
   simArenaRender = Matter.Render.create({
     element: simArenaWrap,
@@ -10751,6 +11312,7 @@ function initSimArena() {
   startSimRenderLoop()
   simArenaRunner = Matter.Runner.create()
   simArenaRunner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
+  simArenaRunner.isFixed = true
   Matter.Runner.run(simArenaRunner, simArenaEngine)
   syncFastForwardRuntime('game4')
 
@@ -12971,8 +13533,9 @@ const STOCK_MIN_DURATION = 10
 const STOCK_MAX_DURATION = 60
 const STOCK_DURATION_STEP = 5
 const STOCK_TICK_MS = 250
-const STOCK_RENDER_INTERVAL_MS = APP_PERFORMANCE_PROFILE.stockTickInterval
-const STOCK_SCHEDULER_INTERVAL_MS = 50
+// 시장 가격은 250ms 고정 시간축으로 계산한다. 스케줄러는 100ms마다 누적 시간을
+// 따라잡아 불필요한 초당 20회 깨우기를 절반으로 줄이되 결과 시계는 바꾸지 않는다.
+const STOCK_SCHEDULER_INTERVAL_MS = 100
 const STOCK_HISTORY_LENGTH = 44
 const STOCK_MAX_HOLDINGS = 4
 const STOCK_UNIT_WON = 10000
@@ -13077,6 +13640,7 @@ let stockGameInterval = null
 let stockLogicAccumulatorMs = 0
 let stockLastSchedulerAt = 0
 let stockLastRenderAt = 0
+let stockLastSecondaryRenderAt = 0
 let stockSetupTurnIndex = 0
 let stockMarket = []
 let stockFocusedSelectionId = ''
@@ -14266,6 +14830,7 @@ function finishStockGame() {
   stockLogicAccumulatorMs = 0
   stockLastSchedulerAt = 0
   stockLastRenderAt = 0
+  stockLastSecondaryRenderAt = 0
   finalizeStockAutoSell()
   setStockInputLock(false)
   setStockSetupLock(false)
@@ -14276,7 +14841,7 @@ function finishStockGame() {
 }
 
 function tickStockGame() {
-  if (!stockGameRunning) return
+  if (!stockGameRunning || document.hidden) return
 
   const now = performance.now()
   const elapsedSinceScheduler = stockLastSchedulerAt
@@ -14292,13 +14857,17 @@ function tickStockGame() {
     stockMarket.forEach((stock) => updateSingleStockTick(stock, tickIndex))
   }
 
-  if (!stockLastRenderAt || now - stockLastRenderAt >= STOCK_RENDER_INTERVAL_MS) {
+  if (!stockLastRenderAt || now - stockLastRenderAt >= APP_PERFORMANCE_PROFILE.stockTickInterval) {
     stockLastRenderAt = now
     renderStockBoard()
-    renderStockPlayerSummary()
-    renderStockPortfolio()
-    renderStockRanking()
     renderStockTimer()
+
+    if (!stockLastSecondaryRenderAt || now - stockLastSecondaryRenderAt >= APP_PERFORMANCE_PROFILE.stockSecondaryRenderInterval) {
+      stockLastSecondaryRenderAt = now
+      renderStockPlayerSummary()
+      renderStockPortfolio()
+      renderStockRanking()
+    }
   }
 
   if (stockElapsedMs >= stockDurationSeconds * 1000) {
@@ -14337,6 +14906,7 @@ function startStockGame() {
   stockLogicAccumulatorMs = 0
   stockLastSchedulerAt = performance.now()
   stockLastRenderAt = 0
+  stockLastSecondaryRenderAt = stockLastSchedulerAt
   setStockInputLock(true)
   setStockSetupLock(true)
   updateStockStatus('실시간 변동 시작! 중간 매도 없이 끝까지 지켜보는 관찰형 주식게임이야.')
@@ -14381,6 +14951,7 @@ function stopStockGame(options = {}) {
   stockLogicAccumulatorMs = 0
   stockLastSchedulerAt = 0
   stockLastRenderAt = 0
+  stockLastSecondaryRenderAt = 0
 
   if (!preserveSetup) {
     stockGameFinished = false
@@ -14466,7 +15037,7 @@ function startRace() {
   }
 
   renderRacePreview()
-  resetRaceHorseStates()
+  resetRaceHorseStates({ reroll: true })
 
   raceRunning = true
   raceFinished = false
@@ -14474,6 +15045,7 @@ function startRace() {
   raceElapsedMs = 0
   setRaceInputLock(true)
   setRaceShuffleLock(true)
+  updateRaceDramaHud()
 
   playSfx('raceStart')
   addRaceCommentary('게이트 오픈, 경주가 시작되었습니다! 셔플한 레인 순서와 지정 색상 그대로 출발합니다.')
@@ -15327,7 +15899,7 @@ function updateBalloonFromInput(options = {}) {
     balloonLastAppliedRawText = balloonConfigInput.value
 
     if (balloonStatusText && !balloonGameStarted) {
-      balloonStatusText.textContent = '참가자 등록 완료. 시작을 누르면 첫 참가자부터 풍선을 누를 수 있어.'
+      balloonStatusText.textContent = '참가자 등록 완료. 시작 차례는 무작위로 정해져. 0.6초 이상 누른 뒤 넘겨줘.'
     }
 
     if (render) renderBalloonGame()
@@ -15386,7 +15958,9 @@ function updateBalloonVisual() {
   }
 
   if (balloonPressureLabel) {
-    balloonPressureLabel.textContent = balloonPopped ? '터짐' : (balloonGameStarted ? '언제 터질까?' : '꾹 누르기')
+    balloonPressureLabel.textContent = balloonPopped ? '터짐' : balloonGameStarted
+      ? balloonTurnHeldMs < BALLOON_MIN_HOLD_MS ? `${((BALLOON_MIN_HOLD_MS - balloonTurnHeldMs) / 1000).toFixed(1)}초 더 누르기` : '손을 떼면 다음 차례'
+      : '0.6초 이상 꾹 누르기'
   }
 
   if (balloonPressureFill) {
@@ -15466,7 +16040,7 @@ function renderBalloonGame() {
       if (balloonPopped) {
         balloonStageHint.textContent = '풍선이 터졌어. 지금 휴대폰을 들고 있던 사람이 당첨이야.'
       } else if (balloonHolding) {
-        balloonStageHint.textContent = '누르는 중... 손을 떼면 다음 차례로 넘어가.'
+        balloonStageHint.textContent = '누르는 중… 0.6초 이상 누른 뒤 손을 떼면 다음 차례로 넘어가.'
       } else if (balloonGameStarted) {
         balloonStageHint.textContent = `${currentColorName} 색 차례. 현재 들고 있는 사람이 풍선을 길게 눌러줘.`
       } else {
@@ -15475,9 +16049,9 @@ function renderBalloonGame() {
     } else if (balloonPopped && currentPlayer) {
       balloonStageHint.textContent = `${currentPlayer.label}님이 풍선을 터뜨렸어. 리셋 후 다시 시작할 수 있어.`
     } else if (balloonHolding && currentPlayer) {
-      balloonStageHint.textContent = `${currentPlayer.label}님이 누르는 중... 손을 떼기 전까지 계속 커져.`
+      balloonStageHint.textContent = `${currentPlayer.label}님이 누르는 중… 오래 누를수록 더 빠르게 커져.`
     } else if (balloonGameStarted && currentPlayer) {
-      balloonStageHint.textContent = `${currentPlayer.label}님 차례. 풍선을 길게 누르고, 무섭다 싶으면 손을 떼서 다음 사람에게 넘겨.`
+      balloonStageHint.textContent = `${currentPlayer.label}님 차례. 0.6초 이상 누른 뒤 손을 떼면 넘어가. 이번엔 얼마나 빨리 커질까?`
     } else {
       balloonStageHint.textContent = '시작을 누른 뒤, 현재 차례의 참가자가 풍선을 길게 눌러줘.'
     }
@@ -15524,7 +16098,9 @@ function startBalloonGame() {
   balloonGameStarted = true
   balloonPopped = false
   balloonHolding = false
-  balloonCurrentIndex = 0
+  balloonCurrentIndex = Math.floor(Math.random() * balloonPlayers.length)
+  balloonTurnHeldMs = 0
+  balloonTurnRate = rand(.85, 1.35)
   balloonPressure = 0
   balloonBurstPressure = Number(rand(BALLOON_MIN_BURST_PRESSURE, BALLOON_MAX_BURST_PRESSURE).toFixed(3))
 
@@ -15548,6 +16124,7 @@ function stopBalloonHold() {
     balloonHoldTimer = null
   }
   balloonHolding = false
+  balloonActivePointerId = null
   updateBalloonVisual()
 }
 
@@ -15576,7 +16153,7 @@ function resetBalloonGame() {
   if (balloonStatusText) {
     balloonStatusText.textContent = passMode
       ? '시작을 누른 뒤 휴대폰을 넘겨줘. 풍선 색이 바뀌면 다음 사람이 누르면 돼.'
-      : '참가자를 등록한 뒤 시작을 누르면 첫 번째 참가자부터 풍선을 꾹 누를 수 있다.'
+      : '시작 차례는 무작위로 정해져. 0.6초 이상 누른 뒤 손을 떼면 다음 차례로 넘어가.'
   }
 
   if (!passMode) {
@@ -15590,6 +16167,8 @@ function advanceBalloonTurn() {
 
   const passMode = isUsingBalloonPhonePassMode()
   balloonCurrentIndex = (balloonCurrentIndex + 1) % balloonPlayers.length
+  balloonTurnHeldMs = 0
+  balloonTurnRate = rand(.85, 1.35)
   const currentPlayer = getCurrentBalloonPlayer()
 
   if (balloonStatusText && currentPlayer) {
@@ -15652,7 +16231,11 @@ function popBalloon() {
 function inflateBalloonOnce() {
   if (!balloonGameStarted || balloonPopped || !balloonHolding) return
 
-  balloonPressure += rand(BALLOON_MIN_PRESSURE_STEP, BALLOON_MAX_PRESSURE_STEP)
+  const now = performance.now()
+  const elapsedMs = Math.max(0, Math.min(160, now - balloonLastInflateAt))
+  balloonLastInflateAt = now
+  balloonTurnHeldMs += elapsedMs
+  balloonPressure += window.RandomRouletteGameplay.balloonGrowth({ elapsedMs, heldMs: balloonTurnHeldMs, turnRate: balloonTurnRate })
   playThrottledSfx('balloonInflate', SFX_THROTTLE_MS.balloonInflate)
 
   if (balloonPressure >= balloonBurstPressure) {
@@ -15663,7 +16246,6 @@ function inflateBalloonOnce() {
   }
 
   updateBalloonVisual()
-  renderBalloonPlayers()
 }
 
 function startBalloonPress(event) {
@@ -15686,6 +16268,8 @@ function startBalloonPress(event) {
   if (balloonHolding) return
 
   balloonHolding = true
+  balloonLastInflateAt = performance.now()
+  balloonActivePointerId = event?.pointerId ?? null
 
   if (balloonPressArea && event?.pointerId !== undefined && typeof balloonPressArea.setPointerCapture === 'function') {
     try {
@@ -15704,6 +16288,9 @@ function startBalloonPress(event) {
 
 function endBalloonPress(event) {
   if (!balloonHolding) return
+  if (event?.pointerId !== undefined && balloonActivePointerId !== null && event.pointerId !== balloonActivePointerId) return
+  if (event?.type !== 'pointercancel') inflateBalloonOnce()
+  const canPass = balloonTurnHeldMs >= BALLOON_MIN_HOLD_MS && event?.type !== 'pointercancel'
 
   if (balloonPressArea && event?.pointerId !== undefined && typeof balloonPressArea.releasePointerCapture === 'function') {
     try {
@@ -15714,7 +16301,11 @@ function endBalloonPress(event) {
   stopBalloonHold()
 
   if (!balloonPopped && balloonGameStarted) {
-    advanceBalloonTurn()
+    if (canPass) advanceBalloonTurn()
+    else {
+      renderBalloonGame()
+      if (balloonStageHint) balloonStageHint.textContent = '같은 차례야. 0.6초 이상 누른 뒤 손을 떼면 다음 사람에게 넘어가.'
+    }
   }
 }
 
@@ -16417,7 +17008,8 @@ function getKeyReactResultLabel(player) {
     return '대기'
   }
 
-  if (result.status === 'false-start') return '실격'
+  if (result.status === 'false-start') return '너무 빠름 · 실격'
+  if (result.status === 'timeout') return '시간 초과'
 
   const rank = getValidKeyReactResults().findIndex((item) => item.playerId === player.id) + 1
   return `${rank}위 · ${result.reactionMs}ms`
@@ -16534,6 +17126,7 @@ function updateKeyReactPhaseVisuals() {
     keyReactStage.classList.remove('is-idle', 'is-countdown', 'is-stay', 'is-click', 'is-finished', 'is-desktop-blocked')
     keyReactStage.classList.add(`is-${keyReactPhase}`)
     keyReactStage.classList.toggle('is-desktop-blocked', !canPlayKeyReactOnThisDevice())
+    keyReactStage.classList.toggle('is-feint', keyReactPhase === 'stay' && Boolean(keyReactFeintText))
   }
 
   if (keyReactPhaseBadge) {
@@ -16558,7 +17151,7 @@ function updateKeyReactPhaseVisuals() {
     } else if (keyReactPhase === 'countdown') {
       keyReactSignalText.textContent = String(keyReactCountdownLeft)
     } else if (keyReactPhase === 'stay') {
-      keyReactSignalText.textContent = 'STAY...'
+      keyReactSignalText.textContent = keyReactFeintText || 'STAY...'
     } else if (keyReactPhase === 'click') {
       keyReactSignalText.textContent = 'CLICK!'
     } else if (keyReactPhase === 'finished') {
@@ -16574,11 +17167,11 @@ function updateKeyReactPhaseVisuals() {
     } else if (keyReactPhase === 'countdown') {
       keyReactSignalSubText.textContent = '카운트다운이 끝나면 STAY가 나타납니다. 아직 게임 입력은 받지 않습니다.'
     } else if (keyReactPhase === 'stay') {
-      keyReactSignalSubText.textContent = '아직 누르면 안 됩니다. 랜덤한 순간 CLICK으로 바뀝니다.'
+      keyReactSignalSubText.textContent = 'STAY·WAIT·HOLD는 대기 신호! CLICK에서만 눌러주세요.'
     } else if (keyReactPhase === 'click') {
-      keyReactSignalSubText.textContent = '지금 자신의 지정 키를 눌러주세요.'
+      keyReactSignalSubText.textContent = '3초 안에 자신의 지정 키를 눌러주세요!'
     } else if (keyReactPhase === 'finished') {
-      keyReactSignalSubText.textContent = '모든 참가자의 입력이 완료되었습니다. 리셋 후 다시 시작할 수 있습니다.'
+      keyReactSignalSubText.textContent = '결과가 확정되었습니다. 시작을 눌러 같은 참가자로 다시 도전하세요.'
     } else {
       keyReactSignalSubText.textContent = '시작을 누르면 곧 STAY...가 표시됩니다.'
     }
@@ -16676,7 +17269,7 @@ function renderKeyReactRanking() {
       <div class="key-react-ranking-item${isValid ? ' is-valid' : ' is-false-start'}">
         <span class="key-react-rank-badge">${isValid ? `${rank}위` : '실격'}</span>
         <strong>${escapeHtml(result.label)}</strong>
-        <span>${isValid ? `${result.reactionMs}ms` : 'STAY 입력'}</span>
+        <span>${isValid ? `${result.reactionMs}ms` : result.status === 'timeout' ? '시간 초과' : '대기 중 입력'}</span>
       </div>
     `
   }).join('')
@@ -16744,7 +17337,7 @@ function setKeyReactPlayerKey(playerId, key) {
     const duplicateKeys = getKeyReactDuplicateKeys()
     keyReactStatusText.textContent = duplicateKeys.size
       ? '중복된 키가 있어. 참가자별 키는 서로 달라야 해.'
-      : '키 지정 완료. 시작을 누르면 5초 카운트다운 후 STAY가 뜨고, 랜덤한 순간 CLICK으로 바뀐다.'
+      : '키 지정 완료. 시작을 누르면 3초 카운트다운 후 STAY가 뜨고, 랜덤한 순간 CLICK으로 바뀐다.'
   }
 
   renderKeyReactGame()
@@ -16867,9 +17460,22 @@ function beginKeyReactStayPhase(roundToken = keyReactRoundToken) {
   keyReactPhase = 'stay'
   keyReactCountdownLeft = 0
 
-  const stayDuration = Math.round(
-    KEY_REACT_STAY_MIN_MS + Math.random() * (KEY_REACT_STAY_MAX_MS - KEY_REACT_STAY_MIN_MS)
-  )
+  const pattern = window.RandomRouletteGameplay.reactionPattern()
+  const stayDuration = pattern.duration
+  keyReactFeintText = ''
+  pattern.feints.forEach((feint) => {
+    keyReactFeintTimers.push(setTimeout(() => {
+      if (roundToken !== keyReactRoundToken || keyReactPhase !== 'stay') return
+      keyReactFeintText = feint.text
+      updateKeyReactPhaseVisuals()
+      playSfx('stayBeep')
+      keyReactFeintTimers.push(setTimeout(() => {
+        if (roundToken !== keyReactRoundToken || keyReactPhase !== 'stay') return
+        keyReactFeintText = ''
+        updateKeyReactPhaseVisuals()
+      }, feint.duration))
+    }, feint.at))
+  })
 
   if (keyReactStatusText) {
     keyReactStatusText.textContent = 'STAY... 아직 누르면 실격이야. 언제 CLICK으로 바뀔지 몰라.'
@@ -16891,6 +17497,7 @@ function triggerKeyReactClick() {
   }
 
   keyReactPhase = 'click'
+  keyReactFeintText = ''
   keyReactCountdownLeft = 0
   keyReactClickStartedAt = performance.now()
   playSfx('clickSignal')
@@ -16900,9 +17507,18 @@ function triggerKeyReactClick() {
   }
 
   renderKeyReactGame()
+  const token = keyReactRoundToken
+  keyReactTimer = setTimeout(() => {
+    if (token !== keyReactRoundToken || keyReactPhase !== 'click') return
+    keyReactPlayers.filter((player) => !getKeyReactPlayerResult(player.id))
+      .forEach((player) => recordKeyReactResult(player, 'timeout'))
+  }, KEY_REACT_RESPONSE_MS)
 }
 
 function clearKeyReactTimer() {
+  keyReactFeintTimers.forEach((timer) => clearTimeout(timer))
+  keyReactFeintTimers = []
+  keyReactFeintText = ''
   if (keyReactTimer) {
     clearTimeout(keyReactTimer)
     keyReactTimer = null
@@ -16939,7 +17555,7 @@ function resetKeyReactGame() {
   setKeyReactInputLock(false)
 
   if (keyReactStatusText) {
-    keyReactStatusText.textContent = '참가자와 키를 지정한 뒤 시작을 누르면 5초 카운트다운 후 STAY가 뜨고, 랜덤한 순간 CLICK으로 바뀐다.'
+    keyReactStatusText.textContent = '참가자와 키를 지정한 뒤 시작을 누르면 3초 카운트다운 후 STAY가 뜨고, 랜덤한 순간 CLICK으로 바뀐다.'
   }
 
   updateKeyReactFromInput({ render: false })
@@ -16956,7 +17572,7 @@ function finishKeyReactGame() {
   setKeyReactInputLock(false)
 
   if (keyReactStatusText) {
-    keyReactStatusText.textContent = '모든 참가자의 입력이 완료됐어. 순위가 확정됐어.'
+    keyReactStatusText.textContent = '이번 라운드가 끝났어. 참가자별 결과를 확인해줘.'
   }
 
   renderKeyReactGame()
@@ -16973,7 +17589,7 @@ function showKeyReactResultsPopup() {
           <div class="key-react-popup-item${isValid ? ' is-valid' : ' is-false-start'}">
             <span>${isValid ? `${rank}위` : '실격'}</span>
             <strong>${escapeHtml(result.label)}</strong>
-            <em>${isValid ? `${result.reactionMs}ms` : 'STAY에서 먼저 누름'}</em>
+            <em>${isValid ? `${result.reactionMs}ms` : result.status === 'timeout' ? '3초 내 입력 없음' : '대기 중 먼저 누름'}</em>
           </div>
         `
       }).join('')}</div>`
@@ -16985,7 +17601,7 @@ function showKeyReactResultsPopup() {
 function recordKeyReactResult(player, status, reactionMs = null) {
   if (!player || getKeyReactPlayerResult(player.id)) return
 
-  playSfx(status === 'false-start' ? 'falseStart' : 'keyHit')
+  if (status !== 'timeout') playSfx(status === 'false-start' ? 'falseStart' : 'keyHit')
 
   keyReactResults.push({
     playerId: player.id,
@@ -16998,6 +17614,8 @@ function recordKeyReactResult(player, status, reactionMs = null) {
   if (keyReactStatusText) {
     if (status === 'false-start') {
       keyReactStatusText.textContent = `${player.label}님이 STAY 중에 눌러 실격 처리됐어.`
+    } else if (status === 'timeout') {
+      keyReactStatusText.textContent = `${player.label}님 시간 초과. 다음 라운드에 다시 도전해봐.`
     } else {
       const rank = getValidKeyReactResults().length
       keyReactStatusText.textContent = `${rank}위 ${player.label}님 · ${reactionMs}ms`
@@ -17583,6 +18201,55 @@ function playBearFindCurrentTurn() {
     })
   }
 }
+
+function applyAdaptiveEngineIterations(activeEngine) {
+  if (!activeEngine) return
+  if (APP_PERFORMANCE_PROFILE.qualityLevel === 'high') {
+    activeEngine.positionIterations = 6
+    activeEngine.velocityIterations = 4
+    activeEngine.constraintIterations = 2
+    return
+  }
+  if (APP_PERFORMANCE_PROFILE.qualityLevel === 'low') {
+    activeEngine.positionIterations = 3
+    activeEngine.velocityIterations = 2
+    activeEngine.constraintIterations = 1
+    return
+  }
+  activeEngine.positionIterations = 4
+  activeEngine.velocityIterations = 3
+  activeEngine.constraintIterations = 1
+}
+
+function applyAdaptivePerformanceToActiveGames() {
+  applyAdaptiveEngineIterations(engine)
+  applyAdaptiveEngineIterations(simArenaEngine)
+  syncGame1BallCollisionMode()
+
+  if (runner) {
+    runner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
+    runner.isFixed = true
+  }
+  if (simArenaRunner) {
+    simArenaRunner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
+    simArenaRunner.isFixed = true
+  }
+
+  if (render && typeof Render?.setPixelRatio === 'function') {
+    Render.setPixelRatio(render, getCanvasPixelRatio())
+  }
+  if (simArenaRender && typeof Matter?.Render?.setPixelRatio === 'function') {
+    Matter.Render.setPixelRatio(
+      simArenaRender,
+      Math.min(window.devicePixelRatio || 1, SIM_BATTLE_PERFORMANCE.canvasPixelRatio)
+    )
+  }
+  if (bearFindVideo && !bearFindVideoVisible) {
+    bearFindVideo.preload = APP_PERFORMANCE_PROFILE.constrained ? 'metadata' : 'auto'
+  }
+}
+
+window.addEventListener('roulette-performance-change', applyAdaptivePerformanceToActiveGames)
 
 if (startBtn) {
   startBtn.addEventListener('click', () => showScreen('luck'))
@@ -18407,21 +19074,53 @@ window.addEventListener('orientationchange', () => {
   }, 150)
 })
 
-document.addEventListener('visibilitychange', () => {
+function syncGameVisibility() {
   if (document.hidden) {
-    if (screens.game2?.classList.contains('active')) {
-      stopRaceLoop()
+    if (raceAnimationFrame) cancelAnimationFrame(raceAnimationFrame)
+    raceAnimationFrame = null
+    if (raceEventTimer) clearTimeout(raceEventTimer)
+    if (raceCommentaryTimer) clearTimeout(raceCommentaryTimer)
+    raceEventTimer = null
+    raceCommentaryTimer = null
+    raceLastTimestamp = 0
+    pauseGame1Physics()
+    if (simArenaRunner) {
+      Runner.stop(simArenaRunner)
+      simVisibilityPaused = simBattleRunning
     }
-    if (screens.game1?.classList.contains('active')) {
-      pauseGame1Physics()
+    if (simRenderRaf) cancelAnimationFrame(simRenderRaf)
+    simRenderRaf = null
+    if (stockGameInterval) clearInterval(stockGameInterval)
+    stockGameInterval = null
+    stockLastSchedulerAt = 0
+    if (balloonHolding) {
+      stopBalloonHold()
+      renderBalloonGame()
+    }
+    if (isKeyReactRunning()) {
+      stopKeyReactGame({ preservePlayers: true })
+      if (keyReactStatusText) keyReactStatusText.textContent = '화면을 벗어나 이번 라운드를 취소했어. 시작을 눌러 다시 도전해줘.'
     }
     return
   }
-
-  if (screens.game1?.classList.contains('active')) {
-    resumeGame1Physics()
+  if (screens.game1?.classList.contains('active')) resumeGame1Physics()
+  if (screens.game2?.classList.contains('active') && raceRunning && !raceFinished && !raceAnimationFrame) {
+    raceLastTimestamp = 0
+    scheduleRaceEventLoop()
+    scheduleRaceCommentaryLoop()
+    raceAnimationFrame = requestAnimationFrame(raceFrame)
   }
-})
+  if (screens.game4?.classList.contains('active') && simArenaRunner && simBattleRunning && simVisibilityPaused) {
+    simVisibilityPaused = false
+    Runner.run(simArenaRunner, simArenaEngine)
+    startSimRenderLoop()
+  }
+  if (screens.game6?.classList.contains('active') && stockGameRunning && !stockGameInterval) {
+    stockLastSchedulerAt = performance.now()
+    stockGameInterval = setInterval(tickStockGame, STOCK_SCHEDULER_INTERVAL_MS)
+  }
+}
+document.addEventListener('visibilitychange', syncGameVisibility)
 
 if (luckGameGrid) {
   luckGameGrid.addEventListener('scroll', handleLuckCarouselScroll, { passive: true })

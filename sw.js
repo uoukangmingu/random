@@ -1,35 +1,21 @@
-const CACHE_VERSION = 'random-roulette-v20260901-native-cursor-states-ux18'
+const CACHE_VERSION = 'random-roulette-v20260909-drop-speed27'
 const CORE_ASSETS = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './random-roulette.v3.18.css',
-  './volume-controls.js',
-  './random-roulette.v3.18.js',
-  './assets/matter.min.js',
-  './assets/app-icon.svg',
-  './assets/app-icon-192.png',
-  './assets/app-icon-512.png',
-  './assets/cursor-arrow.svg',
-  './assets/cursor-hover.svg',
-  './assets/cursor-text.svg',
-  './assets/bear-find-start.webp',
-  './assets/bear-find-bear.mp4',
-  './assets/bear-find-panda.mp4',
-  './assets/bear-find-bear-mobile.mp4',
-  './assets/bear-find-panda-mobile.mp4',
-  './assets/home-qr-light.png',
-  './assets/home-qr-dark.png'
+  './', './index.html', './manifest.webmanifest',
+  './shell.v3.27.css', './shell.v3.27.js',
+  './assets/app-icon.svg', './assets/app-icon-192.png', './assets/app-icon-512.png',
+  './assets/cursor-arrow.svg', './assets/cursor-hover.svg', './assets/cursor-text.svg',
+  './assets/home-qr-light.png', './assets/home-qr-dark.png'
 ]
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting()))
+  // Let existing tabs finish their games before activating the next release.
+  event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(CORE_ASSETS)))
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_VERSION).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith('random-roulette-') && key !== CACHE_VERSION).map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   )
 })
@@ -71,11 +57,13 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          const copy = response.clone()
-          caches.open(CACHE_VERSION).then((cache) => cache.put('./index.html', copy))
+          if (response.ok) {
+            const copy = response.clone()
+            event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.put('./index.html', copy)).catch(() => {}))
+          }
           return response
         })
-        .catch(() => caches.match('./index.html'))
+        .catch(async () => (await caches.match('./index.html')) || Response.error())
     )
     return
   }
@@ -94,9 +82,9 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((cached) => {
       if (cached) return cached
       return fetch(event.request).then((response) => {
-        if (response.ok) {
+        if (response.ok && response.status !== 206 && !/\.mp4$/i.test(url.pathname)) {
           const copy = response.clone()
-          caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, copy))
+          event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, copy)).catch(() => {}))
         }
         return response
       })
