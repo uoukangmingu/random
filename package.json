@@ -1,7 +1,7 @@
 {
   "name": "random-roulette-webapp",
   "private": true,
-  "version": "3.27.0",
+  "version": "3.28.0",
   "scripts": {
     "dev": "vite",
     "icons": "python3 scripts/generate_icons.py",

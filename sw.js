@@ -1,7 +1,7 @@
-const CACHE_VERSION = 'random-roulette-v20260909-drop-speed27'
+const CACHE_VERSION = 'random-roulette-v20260910-wheel-speed28'
 const CORE_ASSETS = [
   './', './index.html', './manifest.webmanifest',
-  './shell.v3.27.css', './shell.v3.27.js',
+  './shell.v3.28.css', './shell.v3.28.js',
   './assets/app-icon.svg', './assets/app-icon-192.png', './assets/app-icon-512.png',
   './assets/cursor-arrow.svg', './assets/cursor-hover.svg', './assets/cursor-text.svg',
   './assets/home-qr-light.png', './assets/home-qr-dark.png'
