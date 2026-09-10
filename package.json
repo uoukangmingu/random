@@ -1,7 +1,7 @@
 {
   "name": "random-roulette-webapp",
   "private": true,
-  "version": "3.28.0",
+  "version": "3.29.0",
   "scripts": {
     "dev": "vite",
     "icons": "python3 scripts/generate_icons.py",
@@ -20,7 +20,8 @@
     "check:upgrade-runtime": "node scripts/qa-upgrade-runtime.mjs",
     "check:gameplay-runtime": "node scripts/qa-gameplay-runtime.mjs",
     "check:soundtrack-runtime": "node scripts/qa-soundtrack-runtime.mjs",
-    "check:drop-runtime": "node scripts/qa-drop-runtime.mjs"
+    "check:drop-runtime": "node scripts/qa-drop-runtime.mjs",
+    "check:ball-battle-runtime": "node scripts/qa-ball-battle-runtime.mjs"
   },
   "devDependencies": {
     "vite": "^8.2.2"
