@@ -371,7 +371,7 @@
                   <div class="wheel-speed-field"><input id="wheelSpeedInput" type="number" inputmode="decimal" min="0.5" max="10" step="any" value="1" autocomplete="off" aria-describedby="wheelSpeedHelp wheelSpeedStatus" /><span aria-hidden="true">배</span></div>
                 </div>
                 <p id="wheelSpeedHelp" class="wheel-option-help">0.5–10배 · 2를 입력하면 2배 빨라져.<br />당첨 확률은 항목 가중치대로 유지돼.</p>
-                <p id="wheelSpeedStatus" class="wheel-speed-status" aria-live="polite">현재 1배 · 시작 전에 조절해줘.</p>
+                <p id="wheelSpeedStatus" class="wheel-speed-status" aria-live="polite">현재 1배 · 회전 중에도 조절할 수 있어.</p>
               </div>
               <div class="wheel-option-row">
                 <label class="wheel-checkbox"><input id="wheelAutoRemoveCheckbox" type="checkbox" /> 당첨 항목 자동 제거</label>
@@ -386,6 +386,7 @@
               <div class="wheel-canvas-shell">
                 <div class="wheel-pointer" aria-hidden="true">▼</div>
                 <canvas id="wheelCanvas" width="720" height="720" aria-label="기본 원판 룰렛"></canvas>
+                <canvas id="wheelMotionCanvas" class="wheel-motion-canvas" width="720" height="720" aria-hidden="true" hidden></canvas>
                 <button id="wheelCenterButton" class="wheel-center-button" type="button" aria-label="SPIN 원판 룰렛 돌리기">SPIN</button>
               </div>
               <div id="wheelSpinProgress" class="wheel-spin-progress" role="progressbar" aria-label="룰렛 진행" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span id="wheelSpinProgressFill"></span></div>

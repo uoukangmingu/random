@@ -265,3 +265,6 @@ html.theme-dark .gameplay-stage-badge:not(.is-climax) { background: #19364e; col
 #wheelScreen .wheel-speed-field > span { font-size: .875rem; color: var(--ui-muted); }
 #wheelScreen .wheel-speed-status { margin: 7px 0 0; color: var(--control-focus); font-size: .8125rem; line-height: 1.6; }
 #wheelScreen .wheel-speed-status.is-error { color: var(--form-error); }
+
+/* v3.28: cached angular trails make high speed visible without per-frame painting. */
+#wheelScreen .wheel-motion-canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; pointer-events: none; z-index: 1; transform-origin: 50% 50%; will-change: transform; backface-visibility: hidden; contain: paint; }

@@ -24,6 +24,7 @@
   let fallbackFrame = null
   let lastSpinFrameAt = null
   let spinSession = null
+  let motionTextures = null
   let speedMultiplier = 1
   let storageAvailable = true
   let resultVisualItems = null
@@ -45,6 +46,7 @@
       status: document.getElementById('wheelInputStatus'),
       weight: document.getElementById('wheelTotalWeightBadge'),
       canvas: document.getElementById('wheelCanvas'),
+      motionCanvas: document.getElementById('wheelMotionCanvas'),
       resultCard: document.getElementById('wheelResultCard'),
       result: document.getElementById('wheelResultText'),
       resultNote: document.getElementById('wheelResultNote'),
@@ -102,9 +104,15 @@
     let message = '0.5~10 사이의 숫자를 입력해줘.'
     if (valid) {
       speedMultiplier = value
-      message = global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
-        ? '기기의 모션 줄이기 설정에 따라 느리게 회전해.'
-        : `현재 ${value}배 · 시작 전에 조절해줘.`
+      message = running ? `현재 ${value}배 · 회전 중에도 바로 적용돼.` : `현재 ${value}배 · 회전 중에도 조절할 수 있어.`
+      if (spinSession && !spinSession.stopRequested && value !== spinSession.profile.speedMultiplier) {
+        spinSession.profile = getSpinMotionProfile({ speedMultiplier: value })
+        spinSession.ramp = {
+          startedAt: spinSession.elapsedMs, startRotation: currentRotation,
+          startSpeed: spinSession.currentSpeed, targetSpeed: spinSession.profile.maxSpeed
+        }
+        if (elements.status) elements.status.textContent = `${value}배 속도 적용 중 · 원하는 순간 STOP을 눌러줘.`
+      }
       if (persist) {
         try { localStorage.setItem(SPEED_STORAGE_KEY, String(value)) }
         catch (error) { message = `현재 ${value}배 · 이 기기에 설정을 저장하지 못했어.` }
@@ -127,29 +135,36 @@
     const multiplier = parseSpeedMultiplier(overrides.speedMultiplier ?? speedMultiplier) ?? 1
     return {
       mobile, reducedMotion, speedMultiplier: multiplier,
-      maxSpeed: TWO_PI * (reducedMotion ? .6 : 14 * multiplier),
-      accelerationMs: reducedMotion ? 160 : 260,
-      stopDurationMs: reducedMotion ? 2400 : 4800
+      // The user's explicit game-speed control takes precedence over ambient motion preferences.
+      // Reduced-motion CSS still suppresses decorative effects elsewhere in the app.
+      maxSpeed: TWO_PI * 14 * multiplier,
+      accelerationMs: 260,
+      stopDurationMs: 4800
     }
   }
 
   function getCruiseAngle(elapsedMs, profile) {
+    return getSpeedRampMotion(elapsedMs, 0, profile.maxSpeed, profile.accelerationMs).distance
+  }
+
+  function getSpeedRampMotion(elapsedMs, startSpeed, targetSpeed, accelerationMs) {
     const seconds = Math.max(0, elapsedMs) / 1000
-    const acceleration = profile.accelerationMs / 1000
-    return profile.maxSpeed * (seconds < acceleration
-      ? seconds * seconds / (2 * acceleration)
-      : seconds - acceleration / 2)
+    const acceleration = accelerationMs / 1000
+    const rampTime = Math.min(seconds, acceleration)
+    const change = targetSpeed - startSpeed
+    return {
+      distance: startSpeed * rampTime + change * rampTime * rampTime / (2 * acceleration)
+        + targetSpeed * Math.max(0, seconds - acceleration),
+      speed: startSpeed + change * rampTime / acceleration
+    }
   }
 
   function createStopPlan(rotation, desiredModulo, profile) {
     const alignment = normalizeAngle(desiredModulo - normalizeAngle(rotation))
     const preferredDistance = profile.maxSpeed * profile.stopDurationMs / 3000
-    const turns = profile.reducedMotion ? (alignment < TWO_PI * .1 ? 1 : 0)
-      : Math.max(1, Math.round((preferredDistance - alignment) / TWO_PI))
+    const turns = Math.max(1, Math.round((preferredDistance - alignment) / TWO_PI))
     const distance = turns * TWO_PI + alignment
-    const durationMs = profile.reducedMotion
-      ? Math.max(600, Math.min(profile.stopDurationMs, 3000 * distance / profile.maxSpeed))
-      : 3000 * distance / profile.maxSpeed
+    const durationMs = 3000 * distance / profile.maxSpeed
     return { startRotation: rotation, targetRotation: rotation + distance, distance, durationMs,
       initialSlope: profile.maxSpeed * durationMs / (1000 * distance) }
   }
@@ -162,15 +177,78 @@
 
   function setCanvasSpinTransform(canvas, delta) {
     if (!canvas) return false
-    // One compositor-friendly write per frame; never redraw labels during a spin.
+    // Rotate cached textures; never redraw labels on every frame.
     canvas.style.transform = `rotate(${delta}rad)`
+    const motionCanvas = getElements().motionCanvas
+    if (motionCanvas && !motionCanvas.hidden) motionCanvas.style.transform = canvas.style.transform
     return true
+  }
+
+  function prepareMotionTextures(canvas) {
+    motionTextures = null
+    const overlay = getElements().motionCanvas
+    if (!canvas || !overlay) return
+    const size = Math.min(512, canvas.width)
+    const base = document.createElement('canvas')
+    const context = base.getContext?.('2d')
+    if (!context || !overlay.getContext?.('2d')) return
+    base.width = base.height = size
+    context.drawImage(canvas, 0, 0, size, size)
+    overlay.width = overlay.height = size
+    motionTextures = { base, size, variants: new Map(), level: 0 }
+  }
+
+  function syncMotionTexture(speed) {
+    if (!motionTextures) return
+    // Temporal trails prevent very fast wheels from looking like slow, sharp snapshots.
+    const turnsPerSecond = Math.max(0, speed) / TWO_PI
+    const level = turnsPerSecond < 2 ? 0 : turnsPerSecond < 10 ? 1 : turnsPerSecond < 24 ? 2
+      : turnsPerSecond < 50 ? 3 : turnsPerSecond < 90 ? 4 : 5
+    if (level === motionTextures.level) return
+    motionTextures.level = level
+    const { canvas, motionCanvas } = getElements()
+    if (level === 0) {
+      canvas.style.opacity = ''
+      motionCanvas.hidden = true
+      return
+    }
+    const { size, base, variants } = motionTextures
+    if (!variants.has(level)) {
+      const texture = document.createElement('canvas')
+      texture.width = texture.height = size
+      const context = texture.getContext('2d')
+      const sweep = [0, .24, .65, 1.4, 2.3, 3.2][level]
+      const samples = 24
+      context.globalCompositeOperation = 'lighter'
+      context.globalAlpha = 1 / samples
+      for (let i = 0; i < samples; i++) {
+        context.save()
+        context.translate(size / 2, size / 2)
+        context.rotate(-sweep * i / (samples - 1))
+        context.drawImage(base, -size / 2, -size / 2)
+        context.restore()
+      }
+      variants.set(level, texture)
+    }
+    const context = motionCanvas.getContext('2d')
+    context.clearRect(0, 0, size, size)
+    context.drawImage(variants.get(level), 0, 0)
+    motionCanvas.hidden = false
+    canvas.style.opacity = '0'
   }
 
   function clearCanvasSpinTransform(canvas) {
     if (!canvas) return
     canvas.style.transform = ''
+    canvas.style.opacity = ''
     canvas.classList.remove('is-spinning')
+    const motionCanvas = getElements().motionCanvas
+    if (motionCanvas) {
+      motionCanvas.hidden = true
+      motionCanvas.style.transform = ''
+      motionCanvas.width = motionCanvas.height = 1
+    }
+    motionTextures = null
   }
 
   function finishVisualSpin({ canvas, items, targetRotation, outcome, runId }) {
@@ -376,15 +454,17 @@
     const elements = getElements()
     const stopping = running && Boolean(spinSession?.stopRequested)
     const spinning = running && !stopping
+    const invalidSpeed = !running && parseSpeedMultiplier(elements.speed?.value ?? speedMultiplier) === null
+    if (elements.speed) elements.speed.disabled = stopping
     if (elements.center) {
       elements.center.textContent = stopping ? '감속 중' : spinning ? 'STOP' : 'SPIN'
       elements.center.setAttribute('aria-label', stopping ? '원판 감속 중' : spinning ? 'STOP 원판 서서히 멈추기' : 'SPIN 원판 룰렛 돌리기')
-      elements.center.disabled = stopping
+      elements.center.disabled = stopping || invalidSpeed
       elements.center.classList.toggle('is-stop', spinning)
     }
     if (elements.spin) {
       elements.spin.textContent = stopping ? '멈추는 중…' : spinning ? 'STOP · 멈추기' : 'SPIN · 돌리기'
-      elements.spin.disabled = stopping
+      elements.spin.disabled = stopping || invalidSpeed
       elements.spin.classList.toggle('is-stop', spinning)
     }
     elements.screen?.classList.toggle('wheel-is-running', running)
@@ -397,7 +477,7 @@
   function setControlsLocked(locked) {
     const elements = getElements()
     running = locked
-    for (const control of [elements.input, elements.useRoster, elements.autoRemove, elements.editItems, elements.speed]) {
+    for (const control of [elements.input, elements.useRoster, elements.autoRemove]) {
       if (control) control.disabled = locked
     }
     updateSpinButtonState()
@@ -524,15 +604,20 @@
     const runId = ++spinRunId
     const startRotation = normalizeAngle(currentRotation)
     const desiredModulo = normalizeAngle(-getSelectedCenterOffset(parsed.items, outcome.selectedIndex))
-    const session = { elapsedMs: 0, stopRequested: false, brake: null }
+    const session = {
+      elapsedMs: 0, stopRequested: false, brake: null, profile, currentSpeed: 0,
+      ramp: { startedAt: 0, startRotation, startSpeed: 0, targetSpeed: profile.maxSpeed }
+    }
     spinSession = session
     setControlsLocked(true)
     if (elements.result) elements.result.textContent = '고속 회전 중'
     if (elements.resultNote) elements.resultNote.textContent = '원하는 순간 STOP을 누르면 서서히 멈춰.'
-    if (elements.status) elements.status.textContent = profile.reducedMotion ? 'SPIN! 원하는 순간 STOP을 눌러줘.' : `SPIN! ${profile.speedMultiplier}배 속도 · 원하는 순간 STOP을 눌러줘.`
+    if (elements.status) elements.status.textContent = `SPIN! ${profile.speedMultiplier}배 속도 · 원하는 순간 STOP을 눌러줘.`
+    if (elements.speedStatus) elements.speedStatus.textContent = `현재 ${profile.speedMultiplier}배 · 회전 중에도 바로 적용돼.`
     elements.resultCard?.classList.remove('is-winner')
     if (typeof playSfx === 'function') playSfx('rouletteSpin')
     renderWheel(parsed.items, startRotation)
+    prepareMotionTextures(canvas)
     canvas?.classList.add('is-spinning')
     setCanvasSpinTransform(canvas, 0)
     lastSpinFrameAt = performance.now()
@@ -542,14 +627,20 @@
       session.elapsedMs += lastSpinFrameAt === null ? 0 : Math.max(0, now - lastSpinFrameAt)
       lastSpinFrameAt = now
       if (!session.brake) {
-        currentRotation = startRotation + getCruiseAngle(session.elapsedMs, profile)
+        const ramp = session.ramp
+        const motion = getSpeedRampMotion(session.elapsedMs - ramp.startedAt, ramp.startSpeed, ramp.targetSpeed, session.profile.accelerationMs)
+        currentRotation = ramp.startRotation + motion.distance
+        session.currentSpeed = motion.speed
         if (session.stopRequested && session.elapsedMs >= profile.accelerationMs) {
-          session.brake = { ...createStopPlan(currentRotation, desiredModulo, profile), startedAt: session.elapsedMs }
+          session.brake = { ...createStopPlan(currentRotation, desiredModulo, { ...session.profile, maxSpeed: session.currentSpeed }), startedAt: session.elapsedMs }
         }
       }
       if (session.brake) {
         const brake = session.brake
         const progress = Math.min(1, (session.elapsedMs - brake.startedAt) / brake.durationMs)
+        session.currentSpeed = (brake.distance * 1000 / brake.durationMs) * (
+          -6 * progress * progress + 6 * progress + brake.initialSlope * (3 * progress * progress - 4 * progress + 1)
+        )
         currentRotation = brake.startRotation + brake.distance * getBrakeProgress(progress, brake.initialSlope)
         const percent = Math.floor(progress * 100)
         if (percent !== lastPercent) {
@@ -562,6 +653,7 @@
           return
         }
       }
+      syncMotionTexture(session.currentSpeed)
       setCanvasSpinTransform(canvas, currentRotation - startRotation)
       animationFrame = requestAnimationFrame(frame)
     }
@@ -693,8 +785,9 @@
     elements.remove?.addEventListener('click', () => removeLastWinner())
     elements.useRoster?.addEventListener('click', useRoster)
     elements.editItems?.addEventListener('click', () => {
-      elements.input?.scrollIntoView({ block: 'center', behavior: 'auto' })
-      elements.input?.focus({ preventScroll: true })
+      const control = running ? elements.speed : elements.input
+      control?.scrollIntoView({ block: 'center', behavior: 'auto' })
+      control?.focus({ preventScroll: true })
     })
     elements.clearHistory?.addEventListener('click', clearHistory)
     global.addEventListener('roulette-roster-change', () => {
@@ -752,6 +845,7 @@
     parseSpeedMultiplier,
     getSpinMotionProfile,
     getCruiseAngle,
+    getSpeedRampMotion,
     createStopPlan,
     getBrakeProgress
   })

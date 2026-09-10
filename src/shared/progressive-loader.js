@@ -52,15 +52,15 @@
     if (appPromise) return appPromise
     appPromise = (async () => {
       await Promise.all([
-        loadResource('runtime.v3.27.css', 'style'),
-        loadResource('app-markup.v3.27.js'),
+        loadResource('runtime.v3.28.css', 'style'),
+        loadResource('app-markup.v3.28.js'),
         loadResource('volume-controls.js?v=20260909')
       ])
-      await loadResource('runtime.v3.27.js')
+      await loadResource('runtime.v3.28.js')
       if (!global.RandomRouletteApp?.ready) throw new Error('APP_INITIALIZATION_FAILED')
       ready = true
       // The complete stylesheet now contains the shell rules in the same order.
-      document.querySelector('link[href="shell.v3.27.css"]')?.remove()
+      document.querySelector('link[href="shell.v3.28.css"]')?.remove()
       document.removeEventListener('click', handleDeferredAction, true)
       document.removeEventListener('pointerdown', warmOnIntent, true)
       document.removeEventListener('keydown', warmOnIntent, true)
