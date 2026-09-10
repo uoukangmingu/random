@@ -6,7 +6,7 @@ import { webcrypto } from 'node:crypto'
 
 const root = process.cwd()
 const requiredFiles = [
-  'index.html', 'dist/app.js', 'dist/app.css', 'random-roulette.v3.18.js', 'random-roulette.v3.18.css', 'app.bundle.js', 'app.bundle.css', 'script.min.js', 'style.min.css', 'volume-controls.js', 'manifest.webmanifest', 'sw.js',
+  'index.html', 'dist/app.js', 'dist/app.css', 'random-roulette.v3.21.js', 'random-roulette.v3.21.css', 'app.bundle.js', 'app.bundle.css', 'script.min.js', 'style.min.css', 'volume-controls.js', 'manifest.webmanifest', 'sw.js',
   'assets/matter.min.js', 'assets/app-icon.svg', 'assets/app-icon-192.png', 'assets/app-icon-512.png', 'assets/cursor-arrow.svg', 'assets/cursor-hover.svg', 'assets/cursor-text.svg'
 ]
 
@@ -14,12 +14,12 @@ for (const relativePath of requiredFiles) await access(path.join(root, relativeP
 execFileSync(process.execPath, ['--check', path.join(root, 'dist', 'app.js')], { stdio: 'inherit' })
 execFileSync(process.execPath, ['--check', path.join(root, 'sw.js')], { stdio: 'inherit' })
 
-const html = await readFile(path.join(root, 'index.html'), 'utf8')
+const html = await readFile(path.join(root, 'src/index.template.html'), 'utf8')
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1])
 const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))]
 if (duplicateIds.length) throw new Error(`중복 HTML id: ${duplicateIds.join(', ')}`)
 
-for (const marker of ['wheelScreen', 'rosterOverlay', 'sessionConfirmOverlay', 'manifest.webmanifest', 'volume-controls.js', 'random-roulette.v3.18.js', '__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__', 'emoji-text-fallback', '랜덤 게임 목록', 'unified-game-grid', 'catalogAvailabilitySummary', 'catalogRosterEditBtn', 'luckCarouselCounter', 'utilitySettingsPanel', 'utilitySettingsToggleBtn', 'utilitySettingsCloseBtn', '공용 목록', '입력 비우기', 'aria-label="공용 목록 열기"', 'aria-describedby="rosterDialogDescription"', 'aria-describedby="popupMessage"']) {
+for (const marker of ['wheelScreen', 'rosterOverlay', 'sessionConfirmOverlay', 'manifest.webmanifest', 'volume-controls.js', 'random-roulette.v3.21.js', '__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__', 'emoji-text-fallback', '랜덤 게임 목록', 'unified-game-grid', 'catalogAvailabilitySummary', 'catalogRosterEditBtn', 'luckCarouselCounter', 'utilitySettingsPanel', 'utilitySettingsToggleBtn', 'utilitySettingsCloseBtn', 'performanceQualityStatus', 'data-performance-mode="auto"', 'data-performance-mode="quality"', 'data-performance-mode="performance"', '공용 목록', '입력 비우기', 'aria-label="공용 목록 열기"', 'aria-describedby="rosterDialogDescription"', 'aria-describedby="popupMessage"']) {
   if (!html.includes(marker)) throw new Error(`필수 마커 누락: ${marker}`)
 }
 for (const removedMarker of ['id="menuScreen"', 'id="physicalScreen"', 'id="physicalGameGrid"', 'id="luckCarouselPrevBtn"', 'id="luckCarouselNextBtn"', '>운 게임 목록<', '>피지컬 게임 목록<', 'class="physical-compat-badge', 'class="luck-carousel-nav-btn', '모바일 · PC</span>', 'PC 전용</span>', '현재 명단 실행 불가', '참가자 명단 수정', '공용 참가자 명단']) {
@@ -38,8 +38,8 @@ const appCss = await readFile(path.join(root, 'dist', 'app.css'), 'utf8')
 const rootCss = await readFile(path.join(root, 'style.min.css'), 'utf8')
 const deployApp = await readFile(path.join(root, 'app.bundle.js'), 'utf8')
 const deployCss = await readFile(path.join(root, 'app.bundle.css'), 'utf8')
-const versionedApp = await readFile(path.join(root, 'random-roulette.v3.18.js'), 'utf8')
-const versionedCss = await readFile(path.join(root, 'random-roulette.v3.18.css'), 'utf8')
+const versionedApp = await readFile(path.join(root, 'random-roulette.v3.21.js'), 'utf8')
+const versionedCss = await readFile(path.join(root, 'random-roulette.v3.21.css'), 'utf8')
 if (rootApp !== app || deployApp !== app || versionedApp !== app || rootCss !== appCss || deployCss !== appCss || versionedCss !== appCss) {
   throw new Error('배포용 루트 번들이 dist 빌드와 일치하지 않음')
 }
@@ -49,17 +49,23 @@ if (!app.includes('\n;\n/* ===== src/shared/game-engine.js ===== */')) {
 if (!app.includes("if (historyMode === 'skip')") || !app.includes("commitScreenHistory(previousScreenKey, 'push')")) {
   throw new Error('진행 중 이동 취소 시 화면 기록 복원 로직 누락')
 }
-for (const marker of ['RandomRouletteWheel', 'RandomRouletteRoster', 'RandomRouletteRegistry', 'RandomRouletteWakeLock', 'RandomRouletteUtilitySettings']) {
+for (const marker of ['RandomRouletteWheel', 'RandomRouletteRoster', 'RandomRouletteRegistry', 'RandomRouletteWakeLock', 'RandomRouletteUtilitySettings', 'RandomRoulettePerformance']) {
   if (!app.includes(marker)) throw new Error(`빌드 기능 누락: ${marker}`)
 }
-for (const marker of ['getSpinMotionProfile', 'getSpinEasedProgress', 'MOBILE_SPIN_DECELERATION_RATIO = 0.68', 'duration: 9000', 'buildSpinKeyframes', 'SPIN_KEYFRAME_COUNT = 121', "typeof canvas.animate === 'function'", 'animation.finished', 'getSpinEasedProgress(progress, motionProfile)', 'setCanvasSpinTransform', 'clearCanvasSpinTransform']) {
-  if (!app.includes(marker)) throw new Error(`룰렛 감속 로직 누락: ${marker}`)
+for (const marker of ['roulette-performance-preference', 'roulette-performance-auto-cache-v2', 'detectHardwareLevel', "return 'balanced'", 'classifyWindow', 'missedRate', 'requiredSlowWindows = activeGame ? 1 : 2', 'betterWindows >= 8', 'deltas.length >= 10', 'measured-emergency', 'roulette-performance-change', 'applyAdaptivePerformanceToActiveGames', 'APP_PERFORMANCE_PROFILE.stockTickInterval', 'APP_PERFORMANCE_PROFILE.stockSecondaryRenderInterval', 'getGame1BallCollisionFilter', 'startGame1RenderLoop', 'ensureLuckCarouselLoop({ createClones: shouldUseCarousel })']) {
+  if (!app.includes(marker)) throw new Error(`자동 성능 조절 로직 누락: ${marker}`)
+}
+for (const marker of ['getSpinMotionProfile', 'getCruiseAngle', 'requestStop', 'createStopPlan', 'getBrakeProgress', 'animationFrame = requestAnimationFrame(frame)', 'finishVisualSpin', 'setCanvasSpinTransform', 'clearCanvasSpinTransform', 'RandomRouletteSoundtrack']) {
+  if (!app.includes(marker)) throw new Error(`회전·음악 로직 누락: ${marker}`)
 }
 for (const marker of ['handlePopupDialogKeydown', 'popupLastFocusedElement', 'getFocusableElements(elements.overlay)', "event.key === 'Escape'", 'isBlockingAppDialogVisible', 'canRestorePopupFocus', 'handleBlockingDialogClosed', 'app-dialog-closed']) {
   if (!app.includes(marker)) throw new Error(`대화상자 접근성 로직 누락: ${marker}`)
 }
 for (const marker of ['.utility-settings-panel', '.utility-quick-actions', '.utility-settings-panel .utility-volume-panel', 'display: grid !important', 'padding-bottom: calc(78px + env(safe-area-inset-bottom))']) {
   if (!appCss.includes(marker)) throw new Error(`접이식 설정 패널 스타일 누락: ${marker}`)
+}
+for (const marker of ['.utility-performance-panel', '.performance-mode-options', '.performance-mode-btn.is-active', '.performance-quality-status']) {
+  if (!appCss.includes(marker)) throw new Error(`성능 모드 설정 스타일 누락: ${marker}`)
 }
 for (const marker of ["url('./assets/cursor-arrow.svg') 4 3, default", "url('./assets/cursor-hover.svg') 14 4, pointer !important", "url('./assets/cursor-text.svg') 16 16, text !important"]) {
   if (!appCss.includes(marker)) throw new Error(`정적 네이티브 커서 규칙 누락: ${marker}`)
@@ -199,7 +205,7 @@ const fallbackMapMatch = coreSource.match(/const EMOJI_FALLBACK_MAP = Object\.fr
 if (!fallbackMapMatch) throw new Error('이모지 대체표를 읽을 수 없음')
 const fallbackMap = vm.runInNewContext(`(${fallbackMapMatch[1]})`)
 const emojiSources = [
-  await readFile(path.join(root, 'index.html'), 'utf8'),
+  await readFile(path.join(root, 'src/index.template.html'), 'utf8'),
   coreSource.replace(fallbackMapMatch[1], '{}'),
   ...await Promise.all([
     'src/games/wheel.js', 'src/games/registry.js', 'src/games/game1-drop.js', 'src/games/game2-race.js',
@@ -219,9 +225,10 @@ const unsafeFinalFallbacks = Object.entries(fallbackMap).filter(([, candidates])
   return !Array.from(String(list.at(-1) || '')).every((character) => character.codePointAt(0) <= 0x7f)
 })
 if (unsafeFinalFallbacks.length) throw new Error(`ASCII 최종 대체 누락: ${unsafeFinalFallbacks.map(([emoji]) => emoji).join(' ')}`)
-for (const marker of ['__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__', "['\\uFFFF', '\\u{10FFFF}', '\\uE000', '�']", 'matchesMissingGlyph', 'supported = false', 'requestAnimationFrame(runInitialCheck)']) {
+for (const marker of ['__RANDOM_ROULETTE_FORCE_EMOJI_FALLBACK__', "['\\uFFFF', '\\u{10FFFF}', '\\uE000', '�']", 'matchesMissingGlyph', 'supported = false', 'requestIdleCallback(runInitialCheck', 'emojiFallbackRoots']) {
   if (!coreSource.includes(marker)) throw new Error(`이모지 렌더링 안전장치 누락: ${marker}`)
 }
+if (coreSource.includes('characterData: true')) throw new Error('이모지 감시가 모든 텍스트 변경을 전역 관찰해 반복 DOM 갱신을 방해함')
 
 const volumeUi = await readFile(path.join(root, 'volume-controls.js'), 'utf8')
 execFileSync(process.execPath, ['--check', path.join(root, 'volume-controls.js')], { stdio: 'inherit' })
@@ -280,11 +287,14 @@ class MockHTMLElement {
   focus() {}
   replaceChildren() {}
   querySelectorAll() { return [] }
+  setAttribute(name, value) { this[name] = String(value) }
+  getClientRects() { return [{}] }
+  dispatchEvent(event) { this.listeners.get(event.type)?.(event) }
 }
 
 const rosterElementIds = [
   'rosterOverlay', 'rosterToggleBtn', 'rosterCloseBtn', 'rosterInput', 'rosterPreview',
-  'rosterStatus', 'rosterSaveBtn', 'rosterClearBtn', 'rosterCountBadge'
+  'rosterStatus', 'rosterSaveBtn', 'rosterClearBtn', 'rosterCountBadge', 'raceConfigInput', 'battleConfigInput'
 ]
 const rosterElements = Object.fromEntries(rosterElementIds.map((id) => [id, new MockHTMLElement()]))
 rosterElements.rosterOverlay.classList.add('hidden')
@@ -314,6 +324,8 @@ rosterUiContext.window = rosterUiContext
 vm.createContext(rosterUiContext)
 vm.runInContext(await readFile(path.join(root, 'src/shared/roster.js'), 'utf8'), rosterUiContext, { filename: 'src/shared/roster.js' })
 rosterUiContext.RandomRouletteRoster.init()
+if (rosterElements.raceConfigInput.value !== '기존1, 기존2') throw new Error('공용 목록 초기 반영 실패')
+rosterElements.battleConfigInput.value = '게임에서 따로 입력한 목록'
 rosterUiContext.RandomRouletteRoster.open()
 rosterElements.rosterClearBtn.click()
 if (JSON.parse(rosterStorage.get('roulette-shared-roster-v1')).length !== 2) throw new Error('입력 비우기가 저장 목록을 즉시 삭제함')
@@ -322,36 +334,45 @@ rosterElements.rosterSaveBtn.click()
 if (JSON.parse(rosterStorage.get('roulette-shared-roster-v1')).length !== 0 || rosterUiContext.RandomRouletteRoster.getCount() !== 0) {
   throw new Error('빈 공용 목록 저장이 기존 저장값을 0개로 갱신하지 않음')
 }
+if (rosterElements.raceConfigInput.value !== '') throw new Error('공용 목록 비우기 이후 이전 참가자가 남아 있음')
+if (rosterElements.battleConfigInput.value !== '게임에서 따로 입력한 목록') throw new Error('공용 목록 비우기가 별도 입력을 삭제함')
+rosterUiContext.RandomRouletteRoster.open()
+rosterElements.rosterInput.value = '새 항목1\n새 항목2'
+rosterUiContext.localStorage.setItem = () => { throw new Error('quota') }
+rosterElements.rosterSaveBtn.click()
+if (rosterUiContext.RandomRouletteRoster.getCount() !== 0 || !rosterElements.rosterStatus.textContent.includes('저장하지 못')) throw new Error('저장 실패를 정상 저장으로 처리함')
+rosterUiContext.localStorage.setItem = (key, value) => rosterStorage.set(key, value)
+rosterUiContext.RandomRouletteSession = { isRunning: () => true }
+rosterElements.rosterSaveBtn.click()
+if (rosterUiContext.RandomRouletteRoster.getCount() !== 0) throw new Error('진행 중인 게임의 참가자 목록이 변경됨')
+rosterUiContext.RandomRouletteSession = { isRunning: () => false }
+rosterElements.rosterSaveBtn.click()
+if (rosterUiContext.RandomRouletteRoster.getCount() !== 2) throw new Error('게임 종료 후 목록 저장 불가')
 
 const wheelParse = logicContext.RandomRouletteWheel.parseItems('치킨 | 3\n피자 | 1')
 if (!wheelParse.ok || wheelParse.items[0].weight !== 3) throw new Error('룰렛 가중치 파싱 실패')
 if (logicContext.RandomRouletteWheel.parseItems('치킨 | 1\n치킨 | 2').ok) throw new Error('룰렛 중복 항목 검사가 동작하지 않음')
+for (const weight of ['-1', 'abc', 'NaN', 'Infinity', '0', '100001', '']) {
+  if (logicContext.RandomRouletteWheel.parseItems(`치킨 | ${weight}\n피자 | 1`).ok) throw new Error(`잘못된 가중치를 허용함: ${weight}`)
+}
+if (!logicContext.RandomRouletteWheel.parseItems('치킨 | .5\n피자 | 1').ok) throw new Error('소수점 가중치 파싱 실패')
+if (logicContext.RandomRouletteWheel.parseItems('가 | 1\n가 | 1').ok) throw new Error('동일한 한글 표기의 중복 검사가 동작하지 않음')
 
 const mobileSpinProfile = logicContext.RandomRouletteWheel.getSpinMotionProfile({ mobile: true, reduceMotion: false })
 const desktopSpinProfile = logicContext.RandomRouletteWheel.getSpinMotionProfile({ mobile: false, reduceMotion: false })
-if (mobileSpinProfile.duration !== 9000 || mobileSpinProfile.minTurns !== 12 || mobileSpinProfile.deceleration !== 0.68) {
-  throw new Error('모바일 룰렛 감속 프로필 오류')
-}
-if (desktopSpinProfile.duration !== 6200 || desktopSpinProfile.minTurns !== 9) throw new Error('PC 룰렛 감속 프로필 오류')
+if (mobileSpinProfile.maxSpeed !== Math.PI * 28 || desktopSpinProfile.maxSpeed !== Math.PI * 28) throw new Error('초고속 회전 속도 오류')
 const reducedMobileSpinProfile = logicContext.RandomRouletteWheel.getSpinMotionProfile({ mobile: true, reduceMotion: true })
-if (reducedMobileSpinProfile.duration !== 6000 || reducedMobileSpinProfile.minTurns !== 6 || reducedMobileSpinProfile.deceleration !== 0.80) {
-  throw new Error('모션 감소 모바일에서 룰렛이 즉시 정지함')
-}
-const compositorFrames = logicContext.RandomRouletteWheel.buildSpinKeyframes(Math.PI * 24, mobileSpinProfile)
-if (compositorFrames.length !== 121 || compositorFrames[0].offset !== 0 || compositorFrames.at(-1).offset !== 1) {
-  throw new Error('모바일 합성 애니메이션 키프레임 오류')
-}
-const easedAt = (progress) => logicContext.RandomRouletteWheel.getSpinEasedProgress(progress, mobileSpinProfile)
+if (reducedMobileSpinProfile.maxSpeed >= mobileSpinProfile.maxSpeed || reducedMobileSpinProfile.stopDurationMs !== 2400) throw new Error('모션 감소 프로필 오류')
+const brake = logicContext.RandomRouletteWheel.createStopPlan(43.1, 1.4, mobileSpinProfile)
+if (brake.durationMs < 4600 || brake.durationMs > 5000) throw new Error('STOP 감속 시간 오류')
+if (Math.abs((brake.targetRotation % (Math.PI * 2)) - 1.4) > .000001) throw new Error('STOP 후 당첨 구간 정렬 오류')
+const easedAt = (progress) => logicContext.RandomRouletteWheel.getBrakeProgress(progress, brake.initialSlope)
 const easingSamples = [0, .1, .36, .6, .8, .9, 1].map(easedAt)
-if (easingSamples[0] !== 0 || easingSamples.at(-1) !== 1 || easingSamples.some((value, index) => index && value <= easingSamples[index - 1])) {
-  throw new Error('룰렛 감속 곡선이 0→1로 단조 증가하지 않음')
-}
+if (easingSamples[0] !== 0 || easingSamples.at(-1) !== 1 || easingSamples.some((value, index) => index && value <= easingSamples[index - 1])) throw new Error('감속 곡선 오류')
 const middleDistance = easedAt(.7) - easedAt(.6)
 const lateDistance = easedAt(.9) - easedAt(.8)
 const finalDistance = easedAt(1) - easedAt(.9)
-if (!(middleDistance > lateDistance && lateDistance > finalDistance && finalDistance > 0)) {
-  throw new Error('룰렛 후반 속도가 단계적으로 감소하지 않음')
-}
+if (!(middleDistance > lateDistance && lateDistance > finalDistance && finalDistance > 0)) throw new Error('후반 속도가 감소하지 않음')
 
 let firstWins = 0
 const sampleItems = [{ label: 'A', weight: 3 }, { label: 'B', weight: 1 }]
@@ -366,5 +387,14 @@ execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-mobile-carousel-r
 execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-race-mobile-identities.mjs')], { stdio: 'inherit' })
 execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-catalog-list-runtime.mjs')], { stdio: 'inherit' })
 execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-cursor-performance.mjs')], { stdio: 'inherit' })
+execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-adaptive-performance.mjs')], { stdio: 'inherit' })
+execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-sustained-performance.mjs')], { stdio: 'inherit' })
 
-console.log('정적 검사 통과')
+execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-progressive-runtime.mjs')], { stdio: 'inherit' })
+console.log('정적·모의 실행 검사 통과')
+
+execFileSync(process.execPath, ['scripts/qa-upgrade-runtime.mjs'], { cwd: root, stdio: 'inherit' })
+
+execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-gameplay-runtime.mjs')], { stdio: 'inherit' })
+execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-soundtrack-runtime.mjs')], { stdio: 'inherit' })
+execFileSync(process.execPath, [path.join(root, 'scripts', 'qa-drop-runtime.mjs')], { stdio: 'inherit' })

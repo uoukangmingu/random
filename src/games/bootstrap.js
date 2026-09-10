@@ -822,21 +822,53 @@ window.addEventListener('orientationchange', () => {
   }, 150)
 })
 
-document.addEventListener('visibilitychange', () => {
+function syncGameVisibility() {
   if (document.hidden) {
-    if (screens.game2?.classList.contains('active')) {
-      stopRaceLoop()
+    if (raceAnimationFrame) cancelAnimationFrame(raceAnimationFrame)
+    raceAnimationFrame = null
+    if (raceEventTimer) clearTimeout(raceEventTimer)
+    if (raceCommentaryTimer) clearTimeout(raceCommentaryTimer)
+    raceEventTimer = null
+    raceCommentaryTimer = null
+    raceLastTimestamp = 0
+    pauseGame1Physics()
+    if (simArenaRunner) {
+      Runner.stop(simArenaRunner)
+      simVisibilityPaused = simBattleRunning
     }
-    if (screens.game1?.classList.contains('active')) {
-      pauseGame1Physics()
+    if (simRenderRaf) cancelAnimationFrame(simRenderRaf)
+    simRenderRaf = null
+    if (stockGameInterval) clearInterval(stockGameInterval)
+    stockGameInterval = null
+    stockLastSchedulerAt = 0
+    if (balloonHolding) {
+      stopBalloonHold()
+      renderBalloonGame()
+    }
+    if (isKeyReactRunning()) {
+      stopKeyReactGame({ preservePlayers: true })
+      if (keyReactStatusText) keyReactStatusText.textContent = '화면을 벗어나 이번 라운드를 취소했어. 시작을 눌러 다시 도전해줘.'
     }
     return
   }
-
-  if (screens.game1?.classList.contains('active')) {
-    resumeGame1Physics()
+  if (screens.game1?.classList.contains('active')) resumeGame1Physics()
+  if (screens.game2?.classList.contains('active') && raceRunning && !raceFinished && !raceAnimationFrame) {
+    raceLastTimestamp = 0
+    scheduleRaceEventLoop()
+    scheduleRaceCommentaryLoop()
+    raceAnimationFrame = requestAnimationFrame(raceFrame)
   }
-})
+  if (screens.game4?.classList.contains('active') && simArenaRunner && simBattleRunning && simVisibilityPaused) {
+    simVisibilityPaused = false
+    Runner.run(simArenaRunner, simArenaEngine)
+    startSimRenderLoop()
+  }
+  if (screens.game6?.classList.contains('active') && stockGameRunning && !stockGameInterval) {
+    stockLastSchedulerAt = performance.now()
+    stockGameInterval = setInterval(tickStockGame, STOCK_SCHEDULER_INTERVAL_MS)
+  }
+}
+document.addEventListener('visibilitychange', syncGameVisibility)
 
 if (luckGameGrid) {
   luckGameGrid.addEventListener('scroll', handleLuckCarouselScroll, { passive: true })

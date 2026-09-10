@@ -616,6 +616,7 @@ function resetSimCardsOnly() {
 }
 
 function clearSimArena() {
+  simVisibilityPaused = false
   resetSimSuddenDeathState()
   closeSimArenaZoom()
 
@@ -1407,14 +1408,18 @@ function startSimRenderLoop() {
   simRenderLastPaintAt = 0
 
   const renderFrame = (timestamp) => {
-    if (!simArenaRender) {
+    if (!simArenaRender || document.hidden || !screens.game4?.classList.contains('active')) {
       simRenderRaf = null
       return
     }
 
-    const shouldPaint = simBattleFinished || !simRenderLastPaintAt || timestamp - simRenderLastPaintAt >= SIM_BATTLE_PERFORMANCE.renderFrameGap
+    const gap = SIM_BATTLE_PERFORMANCE.renderFrameGap
+    const elapsed = timestamp - simRenderLastPaintAt
+    const shouldPaint = simBattleFinished || !simRenderLastPaintAt || elapsed >= gap - 0.5
     if (shouldPaint) {
+      const nextPaintAt = simRenderLastPaintAt ? timestamp - ((elapsed + 0.5) % gap) + 0.5 : timestamp
       renderSimCanvasOnce(timestamp)
+      simRenderLastPaintAt = nextPaintAt
     }
 
     if (simBattleFinished) {
@@ -1438,15 +1443,7 @@ function initSimArena() {
   simArenaWorld = simArenaEngine.world
   simArenaEngine.gravity.y = 0
   simArenaEngine.enableSleeping = true
-  if (APP_PERFORMANCE_PROFILE.isMobile) {
-    simArenaEngine.positionIterations = 4
-    simArenaEngine.velocityIterations = 3
-    simArenaEngine.constraintIterations = 1
-  } else if (APP_PERFORMANCE_PROFILE.isLowEndDesktop) {
-    simArenaEngine.positionIterations = 5
-    simArenaEngine.velocityIterations = 3
-    simArenaEngine.constraintIterations = 1
-  }
+  applyAdaptiveEngineIterations(simArenaEngine)
 
   simArenaRender = Matter.Render.create({
     element: simArenaWrap,
@@ -1468,6 +1465,7 @@ function initSimArena() {
   startSimRenderLoop()
   simArenaRunner = Matter.Runner.create()
   simArenaRunner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
+  simArenaRunner.isFixed = true
   Matter.Runner.run(simArenaRunner, simArenaEngine)
   syncFastForwardRuntime('game4')
 

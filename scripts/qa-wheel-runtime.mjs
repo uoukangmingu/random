@@ -2,6 +2,7 @@ import { webcrypto } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import vm from 'node:vm'
+import assert from 'node:assert/strict'
 
 const root = path.resolve(import.meta.dirname, '..')
 const simulatedFps = 30
@@ -82,6 +83,7 @@ class MockElement {
   }
 
   focus() {}
+  setAttribute(name, value) { this[name] = String(value) }
 }
 
 const canvasContext = new Proxy({}, {
@@ -111,50 +113,8 @@ class MockCanvas extends MockElement {
     return type === '2d' ? canvasContext : null
   }
 
-  animate(keyframes, options) {
-    const startedAt = now
-    let cancelled = false
-    let frameId = null
-    let resolveFinished
-    let rejectFinished
-    const finished = new Promise((resolve, reject) => {
-      resolveFinished = resolve
-      rejectFinished = reject
-    })
-    const angles = keyframes.map((keyframe) => {
-      const match = String(keyframe.transform || '').match(/rotate\(([-+0-9.eE]+)rad\)/)
-      return match ? Number(match[1]) : 0
-    })
-    const animation = {
-      finished,
-      keyframes,
-      options,
-      cancel() {
-        if (cancelled) return
-        cancelled = true
-        if (frameId) frameQueue = frameQueue.filter((frame) => frame.id !== frameId)
-        rejectFinished(new Error('animation cancelled'))
-      }
-    }
-    this.lastAnimation = animation
-
-    const tick = (timestamp) => {
-      if (cancelled) return
-      const progress = Math.min(1, (timestamp - startedAt) / options.duration)
-      const scaled = progress * (keyframes.length - 1)
-      const lowerIndex = Math.floor(scaled)
-      const upperIndex = Math.min(keyframes.length - 1, lowerIndex + 1)
-      const blend = scaled - lowerIndex
-      const angle = angles[lowerIndex] + (angles[upperIndex] - angles[lowerIndex]) * blend
-      this.style.transform = `rotate(${angle}rad)`
-      if (progress < 1) {
-        frameId = queueFrame(tick)
-      } else {
-        resolveFinished(animation)
-      }
-    }
-    frameId = queueFrame(tick)
-    return animation
+  animate() {
+    throw new Error('Wheel rotation must work without Web Animations')
   }
 }
 
@@ -162,7 +122,8 @@ const elementIds = [
   'wheelItemsInput', 'wheelAutoRemoveCheckbox', 'wheelUseRosterBtn', 'wheelSpinBtn',
   'wheelCenterButton', 'wheelRespinnerBtn', 'wheelRemoveWinnerBtn', 'wheelInputStatus',
   'wheelTotalWeightBadge', 'wheelResultCard', 'wheelResultText', 'wheelHistoryList',
-  'wheelClearHistoryBtn'
+  'wheelClearHistoryBtn', 'wheelSpinProgress', 'wheelSpinProgressFill', 'wheelResultNote', 'wheelHistoryCount',
+  'wheelSpeedInput', 'wheelSpeedStatus'
 ]
 const elements = Object.fromEntries(elementIds.map((id) => [id, new MockElement()]))
 elements.wheelCanvas = new MockCanvas()
@@ -177,6 +138,8 @@ const context = {
   Intl,
   Math,
   Uint32Array,
+  setTimeout,
+  clearTimeout,
   devicePixelRatio: 2,
   innerWidth: 390,
   innerHeight: 844,
@@ -188,7 +151,8 @@ const context = {
   document: {
     documentElement,
     getElementById: (id) => elements[id] || null,
-    createElement: () => new MockElement()
+    createElement: () => new MockElement(),
+    addEventListener() {}
   },
   MutationObserver: class MutationObserver {
     observe() {}
@@ -238,44 +202,72 @@ runFrame()
 now = 0
 context.RandomRouletteWheel.spin()
 
-const animationRecord = elements.wheelCanvas.lastAnimation
-if (!animationRecord || animationRecord.options.duration !== 9000 || animationRecord.keyframes.length !== 121) {
-  throw new Error('모바일 합성 애니메이션이 9초·121개 키프레임으로 시작되지 않음')
-}
+if (!context.RandomRouletteWheel.isRunning()) throw new Error('룰렛이 시작되지 않음')
 
-const sampleTimes = [5800, 6400, 7000, 7600, 8200, 8800]
+// SPIN never chooses an automatic stopping time. Both controls remain usable.
+runUntil(20000)
+if (!context.RandomRouletteWheel.isRunning()) throw new Error('STOP 전에 자동 종료됨')
+if (elements.wheelCenterButton.textContent !== 'STOP' || elements.wheelCenterButton.disabled || elements.wheelSpinBtn.disabled) throw new Error('STOP 조작 불가')
+if (storage.get('roulette-basic-wheel-history-v1') && JSON.parse(storage.get('roulette-basic-wheel-history-v1')).length) throw new Error('STOP 전에 결과 저장됨')
+const cruiseStart = readAngle()
+runUntil(21000)
+const cruiseTurnsPerSecond = (readAngle() - cruiseStart) / (Math.PI * 2)
+if (Math.abs(cruiseTurnsPerSecond - 14) > .01) throw new Error('고속 회전 속도 오류')
+context.RandomRouletteWheel.requestStop()
+if (!elements.wheelCenterButton.disabled || context.RandomRouletteWheel.requestStop() !== false) throw new Error('STOP 중복 처리 오류')
+const sampleTimes = [21700, 22400, 23100, 23800, 24500, 25200]
 const samples = []
 for (const target of sampleTimes) {
   runUntil(target)
   samples.push({ time: Math.round(now), angle: readAngle(), running: context.RandomRouletteWheel.isRunning() })
 }
-
-if (!samples.every((sample) => sample.running && Number.isFinite(sample.angle))) {
-  throw new Error('모바일 룰렛이 8.8초 이전에 종료되거나 합성 회전 transform이 누락됨')
-}
-
+if (!samples.every((sample) => sample.running && Number.isFinite(sample.angle))) throw new Error('감속 중 회전이 끊김')
 const deltas = samples.slice(1).map((sample, index) => sample.angle - samples[index].angle)
-if (!deltas.every((delta, index) => delta > 0 && (index === 0 || delta < deltas[index - 1]))) {
-  throw new Error(`모바일 룰렛 후반 이동량이 단계적으로 감소하지 않음: ${deltas.join(', ')}`)
-}
+if (!deltas.every((delta, index) => delta > 0 && (index === 0 || delta < deltas[index - 1]))) throw new Error('감속 속도가 순차 감소하지 않음')
+runUntil(26400)
+if (context.RandomRouletteWheel.isRunning()) throw new Error('STOP 후 감속이 종료되지 않음')
+if (elements.wheelCanvas.classList.contains('is-spinning') || elements.wheelCanvas.style.transform) throw new Error('회전 상태 정리 누락')
+if (elements.wheelSpinBtn.disabled || elements.wheelCenterButton.textContent !== 'SPIN') throw new Error('SPIN 조작 복원 실패')
+if (JSON.parse(storage.get('roulette-basic-wheel-history-v1')).length !== 1) throw new Error('결과가 한 번만 저장되지 않음')
+console.log(JSON.stringify({ simulatedFps, manualStop: true, noAutomaticStopAfterSeconds: 20, cruiseTurnsPerSecond: Number(cruiseTurnsPerSecond.toFixed(2)), decelerationPer700ms: deltas.map(n=>Number(n.toFixed(4))), resultConfirmed: elements.wheelResultText.textContent }))
 
-runUntil(9050)
-await Promise.resolve()
-await Promise.resolve()
-if (context.RandomRouletteWheel.isRunning()) throw new Error('모바일 룰렛이 9초 이후에도 종료되지 않음')
-if (elements.wheelCanvas.classList.contains('is-spinning') || elements.wheelCanvas.style.transform) {
-  throw new Error('룰렛 종료 후 GPU 회전 상태가 정리되지 않음')
+// Numeric speed is independent of selection weights, survives reload and locks per spin.
+function enterSpeed(value) {
+  elements.wheelSpeedInput.value = value
+  elements.wheelSpeedInput.listeners.get('input')()
 }
-if (elements.wheelSpinBtn.disabled || elements.wheelResultText.textContent === '룰렛 회전 중…') {
-  throw new Error('룰렛 종료 후 결과 확정 또는 조작 잠금 해제가 누락됨')
+for (const value of ['', '0', '-1', '.49', '10.1', 'Infinity', 'abc']) {
+  enterSpeed(value)
+  assert(elements.wheelSpinBtn.disabled)
+  assert.equal(elements.wheelSpeedInput['aria-invalid'], 'true')
+  context.RandomRouletteWheel.spin()
+  assert(!context.RandomRouletteWheel.isRunning())
 }
-
-console.log(JSON.stringify({
-  mobileDurationMs: 9000,
-  simulatedFps,
-  compositorKeyframes: animationRecord.keyframes.length,
-  stillSpinningAtMs: samples.at(-1).time,
-  distancePer600Ms: deltas.map((value) => Number(value.toFixed(4))),
-  finishedAtOrBeforeMs: Math.round(now),
-  resultConfirmed: elements.wheelResultText.textContent
-}))
+const speedResults = []
+for (const multiplier of [.5, 2, 2.75, 10]) {
+  enterSpeed(String(multiplier))
+  assert(!elements.wheelSpinBtn.disabled)
+  assert.equal(storage.get('roulette-basic-wheel-speed-v1'), String(multiplier))
+  context.RandomRouletteWheel.spin()
+  assert(elements.wheelSpeedInput.disabled)
+  runUntil(now + 1000)
+  const before = readAngle()
+  runUntil(now + 1000)
+  const actual = (readAngle() - before) / (Math.PI * 2)
+  assert(Math.abs(actual - 14 * multiplier) < .01)
+  context.RandomRouletteWheel.requestStop()
+  runUntil(now + 6000)
+  assert(!context.RandomRouletteWheel.isRunning())
+  assert(!elements.wheelSpeedInput.disabled)
+  const last = JSON.parse(storage.get('roulette-basic-wheel-history-v1'))[0]
+  assert.equal(last.selectedWeight, 1)
+  assert.equal(last.totalWeight, 3)
+  speedResults.push({multiplier,turnsPerSecond:Number(actual.toFixed(2))})
+}
+assert.equal(JSON.parse(storage.get('roulette-basic-wheel-history-v1')).length, 5)
+const profile = context.RandomRouletteWheel.getSpinMotionProfile({reduceMotion:true,speedMultiplier:10})
+assert.equal(profile.maxSpeed, Math.PI * 2 * .6)
+vm.runInContext(await readFile(path.join(root,'src/games/wheel.js'),'utf8'),context)
+context.RandomRouletteWheel.init()
+assert.equal(elements.wheelSpeedInput.value, '10', 'Speed setting must survive a reload')
+console.log(JSON.stringify({speedResults,invalidSpeedBlocked:true,persisted:true,selectionWeightsPreserved:true,reducedMotionPreserved:true}))

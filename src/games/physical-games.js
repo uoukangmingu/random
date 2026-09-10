@@ -48,7 +48,7 @@ function updateBalloonFromInput(options = {}) {
     balloonLastAppliedRawText = balloonConfigInput.value
 
     if (balloonStatusText && !balloonGameStarted) {
-      balloonStatusText.textContent = '참가자 등록 완료. 시작을 누르면 첫 참가자부터 풍선을 누를 수 있어.'
+      balloonStatusText.textContent = '참가자 등록 완료. 시작 차례는 무작위로 정해져. 0.6초 이상 누른 뒤 넘겨줘.'
     }
 
     if (render) renderBalloonGame()
@@ -107,7 +107,9 @@ function updateBalloonVisual() {
   }
 
   if (balloonPressureLabel) {
-    balloonPressureLabel.textContent = balloonPopped ? '터짐' : (balloonGameStarted ? '언제 터질까?' : '꾹 누르기')
+    balloonPressureLabel.textContent = balloonPopped ? '터짐' : balloonGameStarted
+      ? balloonTurnHeldMs < BALLOON_MIN_HOLD_MS ? `${((BALLOON_MIN_HOLD_MS - balloonTurnHeldMs) / 1000).toFixed(1)}초 더 누르기` : '손을 떼면 다음 차례'
+      : '0.6초 이상 꾹 누르기'
   }
 
   if (balloonPressureFill) {
@@ -187,7 +189,7 @@ function renderBalloonGame() {
       if (balloonPopped) {
         balloonStageHint.textContent = '풍선이 터졌어. 지금 휴대폰을 들고 있던 사람이 당첨이야.'
       } else if (balloonHolding) {
-        balloonStageHint.textContent = '누르는 중... 손을 떼면 다음 차례로 넘어가.'
+        balloonStageHint.textContent = '누르는 중… 0.6초 이상 누른 뒤 손을 떼면 다음 차례로 넘어가.'
       } else if (balloonGameStarted) {
         balloonStageHint.textContent = `${currentColorName} 색 차례. 현재 들고 있는 사람이 풍선을 길게 눌러줘.`
       } else {
@@ -196,9 +198,9 @@ function renderBalloonGame() {
     } else if (balloonPopped && currentPlayer) {
       balloonStageHint.textContent = `${currentPlayer.label}님이 풍선을 터뜨렸어. 리셋 후 다시 시작할 수 있어.`
     } else if (balloonHolding && currentPlayer) {
-      balloonStageHint.textContent = `${currentPlayer.label}님이 누르는 중... 손을 떼기 전까지 계속 커져.`
+      balloonStageHint.textContent = `${currentPlayer.label}님이 누르는 중… 오래 누를수록 더 빠르게 커져.`
     } else if (balloonGameStarted && currentPlayer) {
-      balloonStageHint.textContent = `${currentPlayer.label}님 차례. 풍선을 길게 누르고, 무섭다 싶으면 손을 떼서 다음 사람에게 넘겨.`
+      balloonStageHint.textContent = `${currentPlayer.label}님 차례. 0.6초 이상 누른 뒤 손을 떼면 넘어가. 이번엔 얼마나 빨리 커질까?`
     } else {
       balloonStageHint.textContent = '시작을 누른 뒤, 현재 차례의 참가자가 풍선을 길게 눌러줘.'
     }
@@ -245,7 +247,9 @@ function startBalloonGame() {
   balloonGameStarted = true
   balloonPopped = false
   balloonHolding = false
-  balloonCurrentIndex = 0
+  balloonCurrentIndex = Math.floor(Math.random() * balloonPlayers.length)
+  balloonTurnHeldMs = 0
+  balloonTurnRate = rand(.85, 1.35)
   balloonPressure = 0
   balloonBurstPressure = Number(rand(BALLOON_MIN_BURST_PRESSURE, BALLOON_MAX_BURST_PRESSURE).toFixed(3))
 
@@ -269,6 +273,7 @@ function stopBalloonHold() {
     balloonHoldTimer = null
   }
   balloonHolding = false
+  balloonActivePointerId = null
   updateBalloonVisual()
 }
 
@@ -297,7 +302,7 @@ function resetBalloonGame() {
   if (balloonStatusText) {
     balloonStatusText.textContent = passMode
       ? '시작을 누른 뒤 휴대폰을 넘겨줘. 풍선 색이 바뀌면 다음 사람이 누르면 돼.'
-      : '참가자를 등록한 뒤 시작을 누르면 첫 번째 참가자부터 풍선을 꾹 누를 수 있다.'
+      : '시작 차례는 무작위로 정해져. 0.6초 이상 누른 뒤 손을 떼면 다음 차례로 넘어가.'
   }
 
   if (!passMode) {
@@ -311,6 +316,8 @@ function advanceBalloonTurn() {
 
   const passMode = isUsingBalloonPhonePassMode()
   balloonCurrentIndex = (balloonCurrentIndex + 1) % balloonPlayers.length
+  balloonTurnHeldMs = 0
+  balloonTurnRate = rand(.85, 1.35)
   const currentPlayer = getCurrentBalloonPlayer()
 
   if (balloonStatusText && currentPlayer) {
@@ -373,7 +380,11 @@ function popBalloon() {
 function inflateBalloonOnce() {
   if (!balloonGameStarted || balloonPopped || !balloonHolding) return
 
-  balloonPressure += rand(BALLOON_MIN_PRESSURE_STEP, BALLOON_MAX_PRESSURE_STEP)
+  const now = performance.now()
+  const elapsedMs = Math.max(0, Math.min(160, now - balloonLastInflateAt))
+  balloonLastInflateAt = now
+  balloonTurnHeldMs += elapsedMs
+  balloonPressure += window.RandomRouletteGameplay.balloonGrowth({ elapsedMs, heldMs: balloonTurnHeldMs, turnRate: balloonTurnRate })
   playThrottledSfx('balloonInflate', SFX_THROTTLE_MS.balloonInflate)
 
   if (balloonPressure >= balloonBurstPressure) {
@@ -384,7 +395,6 @@ function inflateBalloonOnce() {
   }
 
   updateBalloonVisual()
-  renderBalloonPlayers()
 }
 
 function startBalloonPress(event) {
@@ -407,6 +417,8 @@ function startBalloonPress(event) {
   if (balloonHolding) return
 
   balloonHolding = true
+  balloonLastInflateAt = performance.now()
+  balloonActivePointerId = event?.pointerId ?? null
 
   if (balloonPressArea && event?.pointerId !== undefined && typeof balloonPressArea.setPointerCapture === 'function') {
     try {
@@ -425,6 +437,9 @@ function startBalloonPress(event) {
 
 function endBalloonPress(event) {
   if (!balloonHolding) return
+  if (event?.pointerId !== undefined && balloonActivePointerId !== null && event.pointerId !== balloonActivePointerId) return
+  if (event?.type !== 'pointercancel') inflateBalloonOnce()
+  const canPass = balloonTurnHeldMs >= BALLOON_MIN_HOLD_MS && event?.type !== 'pointercancel'
 
   if (balloonPressArea && event?.pointerId !== undefined && typeof balloonPressArea.releasePointerCapture === 'function') {
     try {
@@ -435,7 +450,11 @@ function endBalloonPress(event) {
   stopBalloonHold()
 
   if (!balloonPopped && balloonGameStarted) {
-    advanceBalloonTurn()
+    if (canPass) advanceBalloonTurn()
+    else {
+      renderBalloonGame()
+      if (balloonStageHint) balloonStageHint.textContent = '같은 차례야. 0.6초 이상 누른 뒤 손을 떼면 다음 사람에게 넘어가.'
+    }
   }
 }
 
@@ -1138,7 +1157,8 @@ function getKeyReactResultLabel(player) {
     return '대기'
   }
 
-  if (result.status === 'false-start') return '실격'
+  if (result.status === 'false-start') return '너무 빠름 · 실격'
+  if (result.status === 'timeout') return '시간 초과'
 
   const rank = getValidKeyReactResults().findIndex((item) => item.playerId === player.id) + 1
   return `${rank}위 · ${result.reactionMs}ms`
@@ -1255,6 +1275,7 @@ function updateKeyReactPhaseVisuals() {
     keyReactStage.classList.remove('is-idle', 'is-countdown', 'is-stay', 'is-click', 'is-finished', 'is-desktop-blocked')
     keyReactStage.classList.add(`is-${keyReactPhase}`)
     keyReactStage.classList.toggle('is-desktop-blocked', !canPlayKeyReactOnThisDevice())
+    keyReactStage.classList.toggle('is-feint', keyReactPhase === 'stay' && Boolean(keyReactFeintText))
   }
 
   if (keyReactPhaseBadge) {
@@ -1279,7 +1300,7 @@ function updateKeyReactPhaseVisuals() {
     } else if (keyReactPhase === 'countdown') {
       keyReactSignalText.textContent = String(keyReactCountdownLeft)
     } else if (keyReactPhase === 'stay') {
-      keyReactSignalText.textContent = 'STAY...'
+      keyReactSignalText.textContent = keyReactFeintText || 'STAY...'
     } else if (keyReactPhase === 'click') {
       keyReactSignalText.textContent = 'CLICK!'
     } else if (keyReactPhase === 'finished') {
@@ -1295,11 +1316,11 @@ function updateKeyReactPhaseVisuals() {
     } else if (keyReactPhase === 'countdown') {
       keyReactSignalSubText.textContent = '카운트다운이 끝나면 STAY가 나타납니다. 아직 게임 입력은 받지 않습니다.'
     } else if (keyReactPhase === 'stay') {
-      keyReactSignalSubText.textContent = '아직 누르면 안 됩니다. 랜덤한 순간 CLICK으로 바뀝니다.'
+      keyReactSignalSubText.textContent = 'STAY·WAIT·HOLD는 대기 신호! CLICK에서만 눌러주세요.'
     } else if (keyReactPhase === 'click') {
-      keyReactSignalSubText.textContent = '지금 자신의 지정 키를 눌러주세요.'
+      keyReactSignalSubText.textContent = '3초 안에 자신의 지정 키를 눌러주세요!'
     } else if (keyReactPhase === 'finished') {
-      keyReactSignalSubText.textContent = '모든 참가자의 입력이 완료되었습니다. 리셋 후 다시 시작할 수 있습니다.'
+      keyReactSignalSubText.textContent = '결과가 확정되었습니다. 시작을 눌러 같은 참가자로 다시 도전하세요.'
     } else {
       keyReactSignalSubText.textContent = '시작을 누르면 곧 STAY...가 표시됩니다.'
     }
@@ -1397,7 +1418,7 @@ function renderKeyReactRanking() {
       <div class="key-react-ranking-item${isValid ? ' is-valid' : ' is-false-start'}">
         <span class="key-react-rank-badge">${isValid ? `${rank}위` : '실격'}</span>
         <strong>${escapeHtml(result.label)}</strong>
-        <span>${isValid ? `${result.reactionMs}ms` : 'STAY 입력'}</span>
+        <span>${isValid ? `${result.reactionMs}ms` : result.status === 'timeout' ? '시간 초과' : '대기 중 입력'}</span>
       </div>
     `
   }).join('')
@@ -1465,7 +1486,7 @@ function setKeyReactPlayerKey(playerId, key) {
     const duplicateKeys = getKeyReactDuplicateKeys()
     keyReactStatusText.textContent = duplicateKeys.size
       ? '중복된 키가 있어. 참가자별 키는 서로 달라야 해.'
-      : '키 지정 완료. 시작을 누르면 5초 카운트다운 후 STAY가 뜨고, 랜덤한 순간 CLICK으로 바뀐다.'
+      : '키 지정 완료. 시작을 누르면 3초 카운트다운 후 STAY가 뜨고, 랜덤한 순간 CLICK으로 바뀐다.'
   }
 
   renderKeyReactGame()
@@ -1588,9 +1609,22 @@ function beginKeyReactStayPhase(roundToken = keyReactRoundToken) {
   keyReactPhase = 'stay'
   keyReactCountdownLeft = 0
 
-  const stayDuration = Math.round(
-    KEY_REACT_STAY_MIN_MS + Math.random() * (KEY_REACT_STAY_MAX_MS - KEY_REACT_STAY_MIN_MS)
-  )
+  const pattern = window.RandomRouletteGameplay.reactionPattern()
+  const stayDuration = pattern.duration
+  keyReactFeintText = ''
+  pattern.feints.forEach((feint) => {
+    keyReactFeintTimers.push(setTimeout(() => {
+      if (roundToken !== keyReactRoundToken || keyReactPhase !== 'stay') return
+      keyReactFeintText = feint.text
+      updateKeyReactPhaseVisuals()
+      playSfx('stayBeep')
+      keyReactFeintTimers.push(setTimeout(() => {
+        if (roundToken !== keyReactRoundToken || keyReactPhase !== 'stay') return
+        keyReactFeintText = ''
+        updateKeyReactPhaseVisuals()
+      }, feint.duration))
+    }, feint.at))
+  })
 
   if (keyReactStatusText) {
     keyReactStatusText.textContent = 'STAY... 아직 누르면 실격이야. 언제 CLICK으로 바뀔지 몰라.'
@@ -1612,6 +1646,7 @@ function triggerKeyReactClick() {
   }
 
   keyReactPhase = 'click'
+  keyReactFeintText = ''
   keyReactCountdownLeft = 0
   keyReactClickStartedAt = performance.now()
   playSfx('clickSignal')
@@ -1621,9 +1656,18 @@ function triggerKeyReactClick() {
   }
 
   renderKeyReactGame()
+  const token = keyReactRoundToken
+  keyReactTimer = setTimeout(() => {
+    if (token !== keyReactRoundToken || keyReactPhase !== 'click') return
+    keyReactPlayers.filter((player) => !getKeyReactPlayerResult(player.id))
+      .forEach((player) => recordKeyReactResult(player, 'timeout'))
+  }, KEY_REACT_RESPONSE_MS)
 }
 
 function clearKeyReactTimer() {
+  keyReactFeintTimers.forEach((timer) => clearTimeout(timer))
+  keyReactFeintTimers = []
+  keyReactFeintText = ''
   if (keyReactTimer) {
     clearTimeout(keyReactTimer)
     keyReactTimer = null
@@ -1660,7 +1704,7 @@ function resetKeyReactGame() {
   setKeyReactInputLock(false)
 
   if (keyReactStatusText) {
-    keyReactStatusText.textContent = '참가자와 키를 지정한 뒤 시작을 누르면 5초 카운트다운 후 STAY가 뜨고, 랜덤한 순간 CLICK으로 바뀐다.'
+    keyReactStatusText.textContent = '참가자와 키를 지정한 뒤 시작을 누르면 3초 카운트다운 후 STAY가 뜨고, 랜덤한 순간 CLICK으로 바뀐다.'
   }
 
   updateKeyReactFromInput({ render: false })
@@ -1677,7 +1721,7 @@ function finishKeyReactGame() {
   setKeyReactInputLock(false)
 
   if (keyReactStatusText) {
-    keyReactStatusText.textContent = '모든 참가자의 입력이 완료됐어. 순위가 확정됐어.'
+    keyReactStatusText.textContent = '이번 라운드가 끝났어. 참가자별 결과를 확인해줘.'
   }
 
   renderKeyReactGame()
@@ -1694,7 +1738,7 @@ function showKeyReactResultsPopup() {
           <div class="key-react-popup-item${isValid ? ' is-valid' : ' is-false-start'}">
             <span>${isValid ? `${rank}위` : '실격'}</span>
             <strong>${escapeHtml(result.label)}</strong>
-            <em>${isValid ? `${result.reactionMs}ms` : 'STAY에서 먼저 누름'}</em>
+            <em>${isValid ? `${result.reactionMs}ms` : result.status === 'timeout' ? '3초 내 입력 없음' : '대기 중 먼저 누름'}</em>
           </div>
         `
       }).join('')}</div>`
@@ -1706,7 +1750,7 @@ function showKeyReactResultsPopup() {
 function recordKeyReactResult(player, status, reactionMs = null) {
   if (!player || getKeyReactPlayerResult(player.id)) return
 
-  playSfx(status === 'false-start' ? 'falseStart' : 'keyHit')
+  if (status !== 'timeout') playSfx(status === 'false-start' ? 'falseStart' : 'keyHit')
 
   keyReactResults.push({
     playerId: player.id,
@@ -1719,6 +1763,8 @@ function recordKeyReactResult(player, status, reactionMs = null) {
   if (keyReactStatusText) {
     if (status === 'false-start') {
       keyReactStatusText.textContent = `${player.label}님이 STAY 중에 눌러 실격 처리됐어.`
+    } else if (status === 'timeout') {
+      keyReactStatusText.textContent = `${player.label}님 시간 초과. 다음 라운드에 다시 도전해봐.`
     } else {
       const rank = getValidKeyReactResults().length
       keyReactStatusText.textContent = `${rank}위 ${player.label}님 · ${reactionMs}ms`
@@ -2304,3 +2350,52 @@ function playBearFindCurrentTurn() {
     })
   }
 }
+
+function applyAdaptiveEngineIterations(activeEngine) {
+  if (!activeEngine) return
+  if (APP_PERFORMANCE_PROFILE.qualityLevel === 'high') {
+    activeEngine.positionIterations = 6
+    activeEngine.velocityIterations = 4
+    activeEngine.constraintIterations = 2
+    return
+  }
+  if (APP_PERFORMANCE_PROFILE.qualityLevel === 'low') {
+    activeEngine.positionIterations = 3
+    activeEngine.velocityIterations = 2
+    activeEngine.constraintIterations = 1
+    return
+  }
+  activeEngine.positionIterations = 4
+  activeEngine.velocityIterations = 3
+  activeEngine.constraintIterations = 1
+}
+
+function applyAdaptivePerformanceToActiveGames() {
+  applyAdaptiveEngineIterations(engine)
+  applyAdaptiveEngineIterations(simArenaEngine)
+  syncGame1BallCollisionMode()
+
+  if (runner) {
+    runner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
+    runner.isFixed = true
+  }
+  if (simArenaRunner) {
+    simArenaRunner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
+    simArenaRunner.isFixed = true
+  }
+
+  if (render && typeof Render?.setPixelRatio === 'function') {
+    Render.setPixelRatio(render, getCanvasPixelRatio())
+  }
+  if (simArenaRender && typeof Matter?.Render?.setPixelRatio === 'function') {
+    Matter.Render.setPixelRatio(
+      simArenaRender,
+      Math.min(window.devicePixelRatio || 1, SIM_BATTLE_PERFORMANCE.canvasPixelRatio)
+    )
+  }
+  if (bearFindVideo && !bearFindVideoVisible) {
+    bearFindVideo.preload = APP_PERFORMANCE_PROFILE.constrained ? 'metadata' : 'auto'
+  }
+}
+
+window.addEventListener('roulette-performance-change', applyAdaptivePerformanceToActiveGames)

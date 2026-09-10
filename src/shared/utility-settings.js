@@ -27,6 +27,7 @@
     toggle.title = open ? '화면 설정 닫기' : '화면 설정 열기'
     document.body.classList.toggle('utility-settings-open', open)
 
+    if (open) panel.querySelector('button')?.focus({ preventScroll: true })
     if (!open && restoreFocus) toggle.focus({ preventScroll: true })
   }
 
@@ -49,6 +50,11 @@
       if (!isOpen() || !(event.target instanceof Node) || controls.contains(event.target)) return
       close()
     })
+
+    document.addEventListener('focusin', (event) => {
+      if (isOpen() && event.target instanceof Node && !controls.contains(event.target)) close()
+    })
+    global.addEventListener('roulette-screen-change', () => close())
 
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape' || !isOpen()) return

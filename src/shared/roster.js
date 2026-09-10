@@ -5,9 +5,12 @@
   let names = []
   let initialized = false
   let lastFocusedElement = null
+  let cachedElements = null
+  let renderFrame = null
+  const appliedInputs = new Map()
 
   function getElements() {
-    return {
+    return cachedElements || (cachedElements = {
       overlay: document.getElementById('rosterOverlay'),
       toggle: document.getElementById('rosterToggleBtn'),
       close: document.getElementById('rosterCloseBtn'),
@@ -17,13 +20,13 @@
       save: document.getElementById('rosterSaveBtn'),
       clear: document.getElementById('rosterClearBtn'),
       count: document.getElementById('rosterCountBadge')
-    }
+    })
   }
 
   function parse(rawText) {
     const tokens = String(rawText || '')
       .split(/[\n,]+/)
-      .map((item) => item.trim())
+      .map((item) => item.trim().normalize('NFC'))
       .filter(Boolean)
 
     if (!tokens.length) return { ok: true, empty: true, names: [] }
@@ -54,28 +57,50 @@
     return [...names]
   }
 
-  function persist() {
+  function persist(nextNames = names) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(names))
-    } catch (error) {}
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextNames))
+      return true
+    } catch (error) {
+      const { status } = getElements()
+      if (status) {
+        status.textContent = '목록을 저장하지 못했어. 브라우저의 저장 공간을 확인한 뒤 다시 눌러줘.'
+        status.classList.add('is-error')
+      }
+      return false
+    }
   }
 
   function setInputValue(id, value) {
     const input = document.getElementById(id)
     if (!input) return
+    if (input.value === value) return
     input.value = value
     input.dispatchEvent(new Event('input', { bubbles: true }))
     input.dispatchEvent(new Event('change', { bubbles: true }))
   }
 
   function syncToGames() {
-    if (!names.length) return
+    if (!names.length) {
+      for (const [id, value] of appliedInputs) {
+        const input = document.getElementById(id)
+        if (input && input.value === value && !input.disabled) setInputValue(id, '')
+      }
+      appliedInputs.clear()
+      return
+    }
+    const apply = (id, value) => {
+      const input = document.getElementById(id)
+      if (!input || input.disabled) return
+      setInputValue(id, value)
+      appliedInputs.set(id, value)
+    }
     const listText = names.join(', ')
     ;['raceConfigInput', 'battleConfigInput', 'simConfigInput', 'navalConfigInput', 'stockConfigInput', 'balloonConfigInput', 'circleTapConfigInput', 'keyReactConfigInput']
-      .forEach((id) => setInputValue(id, listText))
-    setInputValue('configInput', names.map((name) => `${name}*1`).join(', '))
-    setInputValue('ladderConfigInput', names.map((name, index) => `${name}(${index + 1})`).join(', '))
-    setInputValue('bearFindCountInput', String(names.length))
+      .forEach((id) => apply(id, listText))
+    apply('configInput', names.map((name) => `${name}*1`).join(', '))
+    apply('ladderConfigInput', names.map((name, index) => `${name}(${index + 1})`).join(', '))
+    apply('bearFindCountInput', String(names.length))
   }
 
   function render(rawText = null) {
@@ -103,19 +128,24 @@
     }
 
     if (elements.save) elements.save.disabled = !parsed.ok
+    elements.input?.setAttribute('aria-invalid', String(!parsed.ok))
     if (elements.count) elements.count.textContent = String(names.length)
   }
 
   function saveFromDialog() {
     const elements = getElements()
+    if (global.RandomRouletteSession?.isRunning?.()) {
+      if (elements.status) elements.status.textContent = '게임이 진행 중이야. 이번 게임이 끝난 뒤 목록을 변경해줘.'
+      return false
+    }
     const parsed = parse(elements.input?.value || '')
     if (!parsed.ok) {
       render(elements.input?.value || '')
       return false
     }
 
+    if (!persist(parsed.names)) return false
     names = parsed.names
-    persist()
     syncToGames()
     render()
     global.dispatchEvent(new CustomEvent('roulette-roster-change', { detail: { names: [...names], items: [...names] } }))
@@ -125,8 +155,9 @@
   }
 
   function clearSavedList() {
+    if (global.RandomRouletteSession?.isRunning?.() || !persist([])) return false
     names = []
-    persist()
+    syncToGames()
     global.dispatchEvent(new CustomEvent('roulette-roster-change', { detail: { names: [], items: [] } }))
     global.dispatchEvent(new CustomEvent('roulette-shared-list-change', { detail: { items: [] } }))
     render('')
@@ -149,6 +180,7 @@
     const elements = getElements()
     if (!elements.overlay) return
     lastFocusedElement = document.activeElement
+    global.RandomRouletteUtilitySettings?.close?.()
     elements.input.value = names.join('\n')
     elements.overlay.classList.remove('hidden')
     render(elements.input.value)
@@ -162,7 +194,9 @@
   function close() {
     const elements = getElements()
     elements.overlay?.classList.add('hidden')
-    if (lastFocusedElement instanceof HTMLElement && lastFocusedElement.isConnected) lastFocusedElement.focus({ preventScroll: true })
+    if (lastFocusedElement instanceof HTMLElement && lastFocusedElement.isConnected && lastFocusedElement.getClientRects().length) {
+      lastFocusedElement.focus({ preventScroll: true })
+    } else document.getElementById('utilitySettingsToggleBtn')?.focus({ preventScroll: true })
     lastFocusedElement = null
     document.dispatchEvent(new CustomEvent('app-dialog-closed', { detail: { dialog: 'roster' } }))
   }
@@ -176,12 +210,21 @@
     elements.close?.addEventListener('click', close)
     elements.save?.addEventListener('click', saveFromDialog)
     elements.clear?.addEventListener('click', resetDraft)
-    elements.input?.addEventListener('input', () => render(elements.input.value))
+    elements.input?.addEventListener('input', () => {
+      if (renderFrame !== null) return
+      renderFrame = requestAnimationFrame(() => { renderFrame = null; render(elements.input.value) })
+    })
     elements.overlay?.addEventListener('click', (event) => {
       if (event.target === elements.overlay) close()
     })
     document.addEventListener('keydown', (event) => {
       if (elements.overlay?.classList.contains('hidden')) return
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.isComposing) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        saveFromDialog()
+        return
+      }
       if (event.key === 'Escape') {
         event.preventDefault()
         event.stopImmediatePropagation()

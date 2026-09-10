@@ -162,11 +162,8 @@ function ensureGameReady() {
     return false
   }
 
-  if (!engine) {
-    initMatterWorld()
-  } else {
-    resumeGame1Physics()
-  }
+  if (!engine && !initMatterWorld()) return false
+  resumeGame1Physics()
 
   if (!currentSlots.length && configInput) {
     const parsed = parseConfigToSlots(configInput.value)
@@ -187,6 +184,62 @@ function ensureGameReady() {
   return true
 }
 
+function getGame1BallCollisionFilter(ballIndex = ballBodies.length) {
+  const qualityLevel = APP_PERFORMANCE_PROFILE.qualityLevel
+  if (qualityLevel === 'high') {
+    return { category: GAME1_BALL_COLLISION_CATEGORIES[0], mask: 0xFFFFFFFF }
+  }
+
+  const groupCount = GAME1_BALL_COLLISION_CATEGORIES.length
+  const category = GAME1_BALL_COLLISION_CATEGORIES[ballIndex % groupCount]
+  return {
+    category,
+    mask: qualityLevel === 'low' ? GAME1_WORLD_COLLISION_CATEGORY : GAME1_WORLD_COLLISION_CATEGORY | category
+  }
+}
+
+function syncGame1BallCollisionMode() {
+  ballBodies.forEach((ball, index) => {
+    const collisionFilter = getGame1BallCollisionFilter(index)
+    ball.collisionFilter.category = collisionFilter.category
+    ball.collisionFilter.mask = collisionFilter.mask
+  })
+}
+
+function renderGame1CanvasOnce(timestamp = performance.now()) {
+  if (!render) return
+  game1RenderLastPaintAt = timestamp
+  Render.world(render, timestamp)
+}
+
+function stopGame1RenderLoop() {
+  if (game1RenderRaf) cancelAnimationFrame(game1RenderRaf)
+  game1RenderRaf = null
+  game1RenderLastPaintAt = 0
+}
+
+function startGame1RenderLoop() {
+  stopGame1RenderLoop()
+
+  const frame = (timestamp) => {
+    if (!render || !game1PhysicsActive || !isGame1ActiveScreen() || document.hidden) {
+      game1RenderRaf = null
+      return
+    }
+
+    const gap = APP_PERFORMANCE_PROFILE.canvasRenderInterval
+    const elapsed = timestamp - game1RenderLastPaintAt
+    if (!game1RenderLastPaintAt || elapsed >= gap - 0.5) {
+      const nextPaintAt = game1RenderLastPaintAt ? timestamp - ((elapsed + 0.5) % gap) + 0.5 : timestamp
+      renderGame1CanvasOnce(timestamp)
+      game1RenderLastPaintAt = nextPaintAt
+    }
+    game1RenderRaf = requestAnimationFrame(frame)
+  }
+
+  game1RenderRaf = requestAnimationFrame(frame)
+}
+
 function initMatterWorld() {
   if (!canUseMatterPhysics()) {
     showMatterUnavailablePopup()
@@ -203,15 +256,7 @@ function initMatterWorld() {
   world = engine.world
   engine.gravity.y = 1.05
   engine.enableSleeping = true
-  if (APP_PERFORMANCE_PROFILE.isMobile) {
-    engine.positionIterations = 4
-    engine.velocityIterations = 3
-    engine.constraintIterations = 1
-  } else if (APP_PERFORMANCE_PROFILE.isLowEndDesktop) {
-    engine.positionIterations = 5
-    engine.velocityIterations = 3
-    engine.constraintIterations = 1
-  }
+  applyAdaptiveEngineIterations(engine)
 
   render = Render.create({
     element: gameCanvasWrap,
@@ -228,31 +273,31 @@ function initMatterWorld() {
   render.canvas.style.position = 'absolute'
   render.canvas.style.inset = '0'
 
-  Render.run(render)
-
   runner = Runner.create()
-  runner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
-  Runner.run(runner, engine)
-  game1PhysicsActive = true
-
   Events.on(engine, 'beforeUpdate', animateMovingBodies)
   Events.on(engine, 'afterUpdate', scheduleRefreshCounts)
   Events.on(engine, 'collisionStart', handleGame1CollisionAudio)
+  resumeGame1Physics()
   return true
 }
 
 function pauseGame1Physics() {
+  game1Timers.pause()
   if (!game1PhysicsActive) return
-  if (render) Render.stop(render)
+  stopGame1RenderLoop()
   if (runner) Runner.stop(runner)
   game1PhysicsActive = false
 }
 
 function resumeGame1Physics() {
+  if (document.hidden) return
+  game1Timers.resume()
   if (game1PhysicsActive || !render || !runner || !engine) return
-  Render.run(render)
+  runner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
+  runner.enabled = true
   Runner.run(runner, engine)
   game1PhysicsActive = true
+  startGame1RenderLoop()
 }
 
 function handleGame1CollisionAudio(event) {
@@ -260,7 +305,9 @@ function handleGame1CollisionAudio(event) {
   if (!roundSpawnComplete && !ballBodies.length) return
   if (!event?.pairs?.length) return
 
-  const hasBallCollision = event.pairs.some((pair) => ballBodies.includes(pair.bodyA) || ballBodies.includes(pair.bodyB))
+  const hasBallCollision = event.pairs.some((pair) => (
+    typeof pair.bodyA?.isBombBall === 'boolean' || typeof pair.bodyB?.isBombBall === 'boolean'
+  ))
   if (hasBallCollision) {
     playThrottledSfx('marbleHit', SFX_THROTTLE_MS.marbleHit)
   }
@@ -290,14 +337,64 @@ function stopGame1LiveRound() {
   setGame1ShuffleLock(false)
 }
 
+// Timers belonging to the drop game use visible time, just like its physics engine.
+const game1Timers = (() => {
+  const tasks = new Set()
+  let paused = document.hidden
+  function arm(task) {
+    if (paused) return
+    task.startedAt = performance.now()
+    task.id = setTimeout(() => {
+      task.id = null
+      if (paused || !tasks.has(task)) return
+      if (!task.repeat) tasks.delete(task)
+      task.callback()
+      if (task.repeat && tasks.has(task)) {
+        task.remaining = task.repeat
+        arm(task)
+      }
+    }, task.remaining)
+  }
+  function schedule(callback, delay, repeat = 0) {
+    const task = { callback, remaining: Math.max(0, delay || 0), repeat, id: null, startedAt: 0 }
+    tasks.add(task)
+    arm(task)
+    return task
+  }
+  return {
+    timeout: (callback, delay) => schedule(callback, delay),
+    interval: (callback, delay) => schedule(callback, delay, delay),
+    cancel(task) {
+      if (!task) return
+      clearTimeout(task.id)
+      tasks.delete(task)
+    },
+    pause() {
+      if (paused) return
+      paused = true
+      const now = performance.now()
+      tasks.forEach((task) => {
+        clearTimeout(task.id)
+        task.id = null
+        task.remaining = Math.max(0, task.remaining - (now - task.startedAt))
+      })
+    },
+    resume() {
+      if (!paused || document.hidden) return
+      paused = false
+      tasks.forEach(arm)
+    }
+  }
+})()
+
 function clearCountdownTimers() {
-  countdownTimers.forEach((timer) => clearTimeout(timer))
+  countdownTimers.forEach((timer) => game1Timers.cancel(timer))
   countdownTimers = []
 }
 
 function clearSettleWatcher() {
   if (settleWatcherTimer) {
-    clearInterval(settleWatcherTimer)
+    game1Timers.cancel(settleWatcherTimer)
     settleWatcherTimer = null
   }
   settleStableTicks = 0
@@ -305,13 +402,14 @@ function clearSettleWatcher() {
 
 function clearFinalWatcher() {
   if (finalWatcherTimer) {
-    clearInterval(finalWatcherTimer)
+    game1Timers.cancel(finalWatcherTimer)
     finalWatcherTimer = null
   }
   finalStableTicks = 0
 }
 
 function resetRoundState() {
+  game1RoundRunning = false
   roundSpawnComplete = false
   bombSequenceStarted = false
   bombSequenceFinished = false
@@ -332,11 +430,11 @@ function clearWorldBodies() {
 
 function clearSpawnTimers() {
   releaseFastForward('game1')
-  spawnTimers.forEach((timer) => clearTimeout(timer))
+  spawnTimers.forEach((timer) => game1Timers.cancel(timer))
   spawnTimers = []
 
   if (countTimer) {
-    clearTimeout(countTimer)
+    game1Timers.cancel(countTimer)
     countTimer = null
   }
 
@@ -474,8 +572,7 @@ function getSlotCountsPerIndex() {
   return counts
 }
 
-function getAggregatedCounts() {
-  const slotCounts = getSlotCountsPerIndex()
+function getAggregatedCounts(slotCounts = getSlotCountsPerIndex()) {
   const aggregatedMap = new Map()
 
   currentSlots.forEach((slot, index) => {
@@ -512,7 +609,7 @@ function finalizeResults() {
 function startSettleWatcher() {
   clearSettleWatcher()
 
-  settleWatcherTimer = setInterval(() => {
+  settleWatcherTimer = game1Timers.interval(() => {
     if (!roundSpawnComplete || bombSequenceStarted || finalResultsShown) return
 
     if (areAllBallsCalm()) {
@@ -538,7 +635,7 @@ function startBombCountdown() {
   const countdownStepDelay = getScaledDelay(1000, 'game1', 120)
 
   countdownValues.forEach((value, index) => {
-    const timer = setTimeout(() => {
+    const timer = game1Timers.timeout(() => {
       playThrottledSfx('countdown', SFX_THROTTLE_MS.countdown)
       if (statusText) {
         statusText.textContent = `폭탄 폭발까지 ${value}...`
@@ -547,7 +644,7 @@ function startBombCountdown() {
     countdownTimers.push(timer)
   })
 
-  const explodeTimer = setTimeout(() => {
+  const explodeTimer = game1Timers.timeout(() => {
     triggerBombExplosionChain()
   }, countdownStepDelay * countdownValues.length)
   countdownTimers.push(explodeTimer)
@@ -609,7 +706,7 @@ function triggerBombExplosionChain() {
   }
 
   bombs.forEach((bomb, index) => {
-    const timer = setTimeout(() => {
+    const timer = game1Timers.timeout(() => {
       playThrottledSfx('chainExplosion', SFX_THROTTLE_MS.chainExplosion)
       explodeSingleBomb(bomb, index + 1, bombs.length)
 
@@ -617,7 +714,7 @@ function triggerBombExplosionChain() {
         ballBodies = ballBodies.filter((ball) => !ball.isBombBall)
         bombSequenceFinished = true
 
-        const doneTimer = setTimeout(() => {
+        const doneTimer = game1Timers.timeout(() => {
           if (statusText) {
             statusText.textContent = '폭발 종료. 남은 구슬 정리 중...'
           }
@@ -642,7 +739,7 @@ function startResultCountdown() {
   const countdownStepDelay = getScaledDelay(1000, 'game1', 120)
 
   countdownValues.forEach((value, index) => {
-    const timer = setTimeout(() => {
+    const timer = game1Timers.timeout(() => {
       if (!areUndroppedNormalBallsCalm()) {
         resultCountdownStarted = false
         if (statusText) {
@@ -661,7 +758,7 @@ function startResultCountdown() {
     countdownTimers.push(timer)
   })
 
-  const revealTimer = setTimeout(() => {
+  const revealTimer = game1Timers.timeout(() => {
     if (!areUndroppedNormalBallsCalm()) {
       resultCountdownStarted = false
       if (statusText) {
@@ -680,7 +777,7 @@ function startResultCountdown() {
 function startFinalResultsWatcher() {
   clearFinalWatcher()
 
-  finalWatcherTimer = setInterval(() => {
+  finalWatcherTimer = game1Timers.interval(() => {
     if (finalResultsShown || !bombSequenceFinished) return
 
     const undroppedBalls = getUndroppedNormalBalls()
@@ -1152,31 +1249,44 @@ function renderSlotsOverlay() {
   })
 }
 
-function updateLegendWithAggregatedCounts() {
+function updateLegendWithAggregatedCounts(aggregatedCounts = getAggregatedCounts()) {
   if (!slotLegend) return
-
-  slotLegend.innerHTML = ''
-
-  const aggregatedCounts = getAggregatedCounts().sort((a, b) => {
+  const sortedCounts = [...aggregatedCounts].sort((a, b) => {
     if (b.count !== a.count) return b.count - a.count
     return a.name.localeCompare(b.name, 'ko')
   })
 
-  aggregatedCounts.forEach((item) => {
-    const color = getColorForName(item.name)
+  const nodeMap = new Map([...slotLegend.children].map((node) => [node.dataset.legendName, node]))
+  const fragment = document.createDocumentFragment()
+  sortedCounts.forEach((item) => {
+    let chip = nodeMap.get(item.name)
+    if (!chip) {
+      const color = getColorForName(item.name)
+      chip = document.createElement('div')
+      chip.className = 'legend-chip'
+      chip.dataset.legendName = item.name
 
-    const chip = document.createElement('div')
-    chip.className = 'legend-chip'
-    chip.innerHTML = `
-      <span class="legend-dot" style="background:${color}"></span>
-      <span>${escapeHtml(item.name)} (${item.count}개)</span>
-    `
-    slotLegend.appendChild(chip)
+      const dot = document.createElement('span')
+      dot.className = 'legend-dot'
+      dot.style.background = color
+
+      const label = document.createElement('span')
+      label.append(document.createTextNode(`${item.name} (`))
+      const count = document.createElement('span')
+      count.className = 'legend-count'
+      label.append(count, document.createTextNode(')'))
+      chip.append(dot, label)
+    }
+    const countNode = chip.querySelector('.legend-count')
+    if (countNode) countNode.textContent = `${item.count}개`
+    fragment.appendChild(chip)
   })
+  slotLegend.replaceChildren(fragment)
 }
 
 function createBall(x, y, options = {}) {
   const isBomb = Boolean(options.isBomb)
+  const collisionFilter = getGame1BallCollisionFilter()
 
   if (!isBomb) {
     const palette = getBallPaletteByTheme()
@@ -1187,6 +1297,7 @@ function createBall(x, y, options = {}) {
       friction: 0.002,
       frictionAir: 0.0008,
       density: 0.0018,
+      collisionFilter,
       render: {
         fillStyle: color,
         strokeStyle: game1Theme.ballStroke,
@@ -1213,6 +1324,7 @@ function createBall(x, y, options = {}) {
     friction: 0.002,
     frictionAir: 0.0008,
     density: 0.0022,
+    collisionFilter,
     render: {
       fillStyle: bombColor,
       strokeStyle: '#5c5c5c',
@@ -1235,6 +1347,7 @@ function spawnBalls() {
   resetRoundState()
   game1SpawnSessionId += 1
   const spawnSessionId = game1SpawnSessionId
+  game1RoundRunning = true
 
   const normalBallCount = getCurrentNormalBallCount()
   const totalDropCount = getCurrentTotalDropCount()
@@ -1248,41 +1361,41 @@ function spawnBalls() {
   let spawned = 0
   let nextIndex = 0
 
-  const scheduleNextSpawn = (delay = 0) => {
-    const timer = setTimeout(() => {
-      if (spawnSessionId !== game1SpawnSessionId || !isGame1ActiveScreen()) return
-      if (nextIndex >= mixedOrder.length) return
+  const dropNextBall = () => {
+    if (spawnSessionId !== game1SpawnSessionId || !isGame1ActiveScreen()) return
+    if (nextIndex >= mixedOrder.length) return
 
-      const isBomb = mixedOrder[nextIndex]
-      nextIndex += 1
+    const isBomb = mixedOrder[nextIndex]
+    nextIndex += 1
 
-      const x = S(30) + Math.random() * (boardWidth - S(60))
-      const y = S(22) + Math.random() * S(12)
+    const x = S(30) + Math.random() * (boardWidth - S(60))
+    const y = S(22) + Math.random() * S(12)
 
-      createBall(x, y, { isBomb })
-      playThrottledSfx(isBomb ? 'bombFuse' : 'marbleDrop', isBomb ? 160 : SFX_THROTTLE_MS.marbleDrop)
-      spawned += 1
+    createBall(x, y, { isBomb })
+    playThrottledSfx(isBomb ? 'bombFuse' : 'marbleDrop', isBomb ? 160 : SFX_THROTTLE_MS.marbleDrop)
+    spawned += 1
 
+    if (statusText) {
+      statusText.textContent = `구슬이 떨어지는 중... ${spawned}/${totalDropCount}`
+    }
+
+    if (spawned >= totalDropCount) {
+      spawnTimers = []
+      roundSpawnComplete = true
       if (statusText) {
-        statusText.textContent = `구슬이 떨어지는 중... ${spawned}/${totalDropCount}`
+        statusText.textContent = `구슬 ${normalBallCount}개 + 폭탄 ${BOMB_COUNT}개 투하 완료. 멈추는 중...`
       }
+      startSettleWatcher()
+      return
+    }
 
-      if (spawned >= totalDropCount) {
-        roundSpawnComplete = true
-        if (statusText) {
-          statusText.textContent = `구슬 ${normalBallCount}개 + 폭탄 ${BOMB_COUNT}개 투하 완료. 멈추는 중...`
-        }
-        startSettleWatcher()
-        return
-      }
-
-      scheduleNextSpawn(getScaledDelay(SPAWN_INTERVAL_MS, 'game1', 4))
-    }, delay)
-
-    spawnTimers.push(timer)
+    // Keep only the pending task instead of retaining every completed timeout.
+    spawnTimers = [game1Timers.timeout(dropNextBall, getScaledDelay(SPAWN_INTERVAL_MS, 'game1', 4))]
   }
 
-  scheduleNextSpawn(0)
+  // A visible first ball and running state are available in the same click.
+  dropNextBall()
+  scheduleGameStartButtonStateSync()
 }
 
 function refreshCounts() {
@@ -1297,7 +1410,7 @@ function refreshCounts() {
     }
   })
 
-  updateLegendWithAggregatedCounts()
+  updateLegendWithAggregatedCounts(getAggregatedCounts(slotCounts))
 }
 
 function clearBallsOnly() {
@@ -1334,6 +1447,8 @@ function startRound() {
     return
   }
 
+  if (!engine && !ensureGameReady()) return
+  resumeGame1Physics()
   clearBallsOnly()
   refreshCounts()
   setDrawerState(false)
@@ -1393,7 +1508,7 @@ function resetRound() {
 }
 
 function hasLiveRound() {
-  return ballBodies.length > 0 && !finalResultsShown
+  return (game1RoundRunning || ballBodies.length > 0) && !finalResultsShown
 }
 
 function getScaledDelay(baseDelay, gameKey, minDelay = 50) {

@@ -15,7 +15,7 @@ function setBattleShuffleLock(isLocked) {
 
 function updateBattleDescription() {
   if (!battleDesc) return
-  battleDesc.textContent = `총 ${battlePlayers.length || 0}명이 카드 5장으로 중간 계산과 최종 점수 순위를 겨루는 게임이다.`
+  battleDesc.textContent = `총 ${battlePlayers.length || 0}명. 첫 3장으로 점수를 만들고, 남은 연산 기호와 숫자는 원하는 순서로 공개한다.`
 }
 
 function formatBattleValue(value) {
@@ -324,6 +324,7 @@ function createBattleCardElement(card, { flipped = false, actualIndex = null } =
     cardEl.dataset.cardIndex = String(actualIndex)
   }
   cardEl.setAttribute('role', 'button')
+  if (actualIndex !== null) cardEl.setAttribute('aria-label', `${actualIndex + 1}번째 카드`)
   cardEl.setAttribute('tabindex', '-1')
   cardEl.setAttribute('aria-disabled', 'true')
   cardEl.innerHTML = `
@@ -448,12 +449,12 @@ function updateBattlePlayerSubText(player) {
   if (!player.phase2Revealed?.[1]) remainingPhase2.push('5번째')
 
   if (remainingPhase2.length === 2) {
-    subText.textContent = '4번째 또는 5번째 카드를 원하는 순서로 공개'
+    subText.textContent = '연산 기호 또는 숫자, 원하는 카드부터 공개해줘.'
     return
   }
 
   if (remainingPhase2.length === 1) {
-    subText.textContent = `${remainingPhase2[0]} 카드를 선택해 공개`
+    subText.textContent = `${remainingPhase2[0]} 카드가 남았어. 공개하면 최종 점수가 완성돼.`
     return
   }
 
@@ -554,6 +555,14 @@ function canFlipBattleCard(player, cardIndex) {
 }
 
 function refreshBattleCardAvailability() {
+  const badge = document.getElementById('battleStageBadge')
+  if (badge) {
+    const finalReady = battlePhase === 'phase2'
+    badge.textContent = battlePhase === 'phase1' ? `1차 연산 · ${battleRoundPlayers.filter((p) => p.phase1Done).length}/${battleRoundPlayers.length}`
+      : battlePhase === 'phase2' ? '후반 두 장 · 순서 자유'
+      : battlePhase === 'done' ? '최종 결과' : battlePhase === 'dealing' ? '카드를 섞는 중' : '카드 공개 대기'
+    badge.classList.toggle('is-climax', battlePhase === 'phase2' && finalReady)
+  }
   battleRoundPlayers.forEach((player) => {
     const row = getBattleRowElement(player.id)
     if (!row) return
@@ -779,11 +788,8 @@ async function handleBattleCardReveal(player, cardIndex) {
     player.phase1Done = true
     playSfx('battleFormula')
 
-    await showPopupAndWait(
-      `${player.label}의 1차 수식 완성`,
-      `${getBattlePhase1FormulaText(player)}`,
-      { icon: '🧮' }
-    )
+    if (battleStatusText) battleStatusText.textContent = `${player.label} · ${getBattlePhase1FormulaText(player)}`
+    await sleep(420)
     if (!isBattleFlowActive(token)) return
 
     await condenseBattlePlayerRow(player, token)
@@ -793,7 +799,7 @@ async function handleBattleCardReveal(player, cardIndex) {
     if (pendingPhase1 === 0) {
       battlePhase = 'phase2'
       if (battleStatusText) {
-        battleStatusText.textContent = '모든 참가자의 1차 결과 카드가 공개되었다. 이제 4번째와 5번째 카드를 원하는 순서로 열 수 있다.'
+        battleStatusText.textContent = '1차 결과 공개 완료! 연산 기호와 숫자 중 원하는 카드를 먼저 열어줘.'
       }
     } else if (battleStatusText) {
       battleStatusText.textContent = `아직 ${pendingPhase1}명의 1차 결과 카드가 남아 있다.`
@@ -814,6 +820,7 @@ async function handleBattleCardReveal(player, cardIndex) {
     }
 
     player.phase2Revealed[phase2Index] = true
+    updateAllBattlePlayerSubTexts()
     const remainingPhase2 = [3, 4].filter((index) => {
       const mappedIndex = index === 3 ? 0 : 1
       return !player.phase2Revealed[mappedIndex]
@@ -822,7 +829,7 @@ async function handleBattleCardReveal(player, cardIndex) {
     if (remainingPhase2.length > 0) {
       updateBattlePlayerSubText(player)
       if (battleStatusText) {
-        battleStatusText.textContent = `${player.label}의 ${cardIndex + 1}번째 카드가 공개되었다. 남은 ${remainingPhase2[0] + 1}번째 카드도 원하는 때에 공개해줘.`
+        battleStatusText.textContent = `${player.label}의 ${cardIndex === 3 ? '연산 기호' : '숫자'} 공개! 남은 ${cardIndex === 3 ? '숫자' : '연산 기호'}가 최종 점수를 결정해.`
       }
       battleInteractionLocked = false
       refreshBattleCardAvailability()
@@ -868,6 +875,7 @@ async function startBattleGame() {
 
   battleRoundPlayers = buildBattleRoundPlayers()
   prepareBattleRoundRows(battleRoundPlayers)
+  refreshBattleCardAvailability()
 
   await playBattleShuffleAnimation(token)
   if (!isBattleFlowActive(token)) return

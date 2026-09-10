@@ -273,7 +273,19 @@ function updateHorsePosition(horse) {
   }
 }
 
+function updateRaceDramaHud() {
+  const hud = document.getElementById('raceDramaHud')
+  if (!hud) return
+  const progress = Math.max(0, ...raceHorses.map((horse) => horse.progress)) / RACE_DISTANCE
+  const complete = raceHorses.length > 0 && raceHorses.every((horse) => horse.finished)
+  const stage = complete ? '결승 통과' : progress >= .7 ? '라스트 스퍼트' : progress >= .35 ? '추격전' : raceRunning ? '레이스 시작' : '출발 대기'
+  const message = `${stage} · ${Math.min(100, Math.floor(progress * 100))}%`
+  if (hud.textContent !== message) hud.textContent = message
+  hud.classList.toggle('is-climax', !complete && progress >= .7)
+}
+
 function renderRaceRanking() {
+  updateRaceDramaHud()
   if (!raceRankingList) return
 
   raceRankingList.innerHTML = ''
@@ -367,11 +379,13 @@ function stopRaceLoop() {
   }
 }
 
-function resetRaceHorseStates() {
+function resetRaceHorseStates({ reroll = false } = {}) {
   raceFinishOrder = []
   raceLeaderName = ''
 
   raceHorses.forEach((horse) => {
+    if (reroll) Object.assign(horse, window.RandomRouletteGameplay.createRaceForm())
+    horse.finishElapsedMs = 0
     horse.progress = 0
     horse.finished = false
     horse.finishOrder = 0
@@ -603,10 +617,11 @@ function pushAutoCommentary() {
   }
 }
 
-function finishHorse(horse) {
+function finishHorse(horse, finishElapsedMs = raceElapsedMs) {
   if (horse.finished) return
 
   horse.finished = true
+  horse.finishElapsedMs = finishElapsedMs
   horse.progress = RACE_DISTANCE
   horse.finishOrder = raceFinishOrder.length + 1
   horse.currentStatus = '완주'
@@ -628,7 +643,7 @@ function finishHorse(horse) {
 function showRaceResultsPopup() {
   const html = raceFinishOrder
     .map((horse, index) => {
-      return `<span style="display:block;margin:8px 0;"><strong>${index + 1}위. ${escapeHtml(horse.label)}</strong></span>`
+      return `<span style="display:block;margin:8px 0;"><strong>${index + 1}위. ${escapeHtml(horse.label)}</strong> · ${(horse.finishElapsedMs / 1000).toFixed(2)}초</span>`
     })
     .join('')
 
@@ -639,7 +654,7 @@ function showRaceResultsPopup() {
 }
 
 function raceFrame(timestamp) {
-  if (!raceRunning) return
+  if (!raceRunning || document.hidden) return
 
   if (!raceLastTimestamp) {
     raceLastTimestamp = timestamp
@@ -652,7 +667,9 @@ function raceFrame(timestamp) {
 
   playThrottledSfx('raceHoof', SFX_THROTTLE_MS.raceHoof)
   const speedMultiplier = getFastForwardMultiplier('game2')
-  const rawDt = Math.min(0.05, (timestamp - raceLastTimestamp) / 1000)
+  // This is a distance simulation, so dropped frames must not slow the race clock.
+  // Bound long foreground stalls; visibility changes reset the timestamp separately.
+  const rawDt = Math.max(0, Math.min(1, (timestamp - raceLastTimestamp) / 1000))
   const dt = rawDt * speedMultiplier
   raceLastTimestamp = timestamp
   raceElapsedMs += dt * 1000
@@ -666,6 +683,7 @@ function raceFrame(timestamp) {
     : 0
   const spread = leaderProgress - tailProgress
   const rankMap = new Map(activeRanking.map((horse, index) => [horse.id, index]))
+  const crossings = []
 
   raceHorses.forEach((horse) => {
     if (horse.finished) return
@@ -717,6 +735,7 @@ function raceFrame(timestamp) {
     speed += packBias
     speed += comebackBoost
     speed += lateKick
+    speed += window.RandomRouletteGameplay.raceSprintBoost(progressRatio, horse)
     speed -= leaderDrag
     speed -= fatiguePenalty
 
@@ -738,15 +757,21 @@ function raceFrame(timestamp) {
     speed -= horse.slowPenalty
     speed = Math.max(2, speed)
 
+    const before = horse.progress
     horse.progress += speed * dt
 
     if (horse.progress >= RACE_DISTANCE) {
-      finishHorse(horse)
+      const fraction = clampValue((RACE_DISTANCE - before) / Math.max(.000001, horse.progress - before), 0, 1)
+      crossings.push({ horse, fraction })
     }
 
     updateHorsePosition(horse)
   })
 
+  // Resolve all crossings together so array/lane order cannot decide a close finish.
+  window.RandomRouletteGameplay.sortRaceFinishers(crossings).forEach(({ horse, fraction }) => {
+    finishHorse(horse, raceElapsedMs - dt * 1000 + fraction * dt * 1000)
+  })
   maybeCommentLeaderChange()
 
   if (!raceLastRankingRenderAt || timestamp - raceLastRankingRenderAt >= 120) {

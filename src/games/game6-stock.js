@@ -5,8 +5,9 @@ const STOCK_MIN_DURATION = 10
 const STOCK_MAX_DURATION = 60
 const STOCK_DURATION_STEP = 5
 const STOCK_TICK_MS = 250
-const STOCK_RENDER_INTERVAL_MS = APP_PERFORMANCE_PROFILE.stockTickInterval
-const STOCK_SCHEDULER_INTERVAL_MS = 50
+// 시장 가격은 250ms 고정 시간축으로 계산한다. 스케줄러는 100ms마다 누적 시간을
+// 따라잡아 불필요한 초당 20회 깨우기를 절반으로 줄이되 결과 시계는 바꾸지 않는다.
+const STOCK_SCHEDULER_INTERVAL_MS = 100
 const STOCK_HISTORY_LENGTH = 44
 const STOCK_MAX_HOLDINGS = 4
 const STOCK_UNIT_WON = 10000
@@ -111,6 +112,7 @@ let stockGameInterval = null
 let stockLogicAccumulatorMs = 0
 let stockLastSchedulerAt = 0
 let stockLastRenderAt = 0
+let stockLastSecondaryRenderAt = 0
 let stockSetupTurnIndex = 0
 let stockMarket = []
 let stockFocusedSelectionId = ''
@@ -1300,6 +1302,7 @@ function finishStockGame() {
   stockLogicAccumulatorMs = 0
   stockLastSchedulerAt = 0
   stockLastRenderAt = 0
+  stockLastSecondaryRenderAt = 0
   finalizeStockAutoSell()
   setStockInputLock(false)
   setStockSetupLock(false)
@@ -1310,7 +1313,7 @@ function finishStockGame() {
 }
 
 function tickStockGame() {
-  if (!stockGameRunning) return
+  if (!stockGameRunning || document.hidden) return
 
   const now = performance.now()
   const elapsedSinceScheduler = stockLastSchedulerAt
@@ -1326,13 +1329,17 @@ function tickStockGame() {
     stockMarket.forEach((stock) => updateSingleStockTick(stock, tickIndex))
   }
 
-  if (!stockLastRenderAt || now - stockLastRenderAt >= STOCK_RENDER_INTERVAL_MS) {
+  if (!stockLastRenderAt || now - stockLastRenderAt >= APP_PERFORMANCE_PROFILE.stockTickInterval) {
     stockLastRenderAt = now
     renderStockBoard()
-    renderStockPlayerSummary()
-    renderStockPortfolio()
-    renderStockRanking()
     renderStockTimer()
+
+    if (!stockLastSecondaryRenderAt || now - stockLastSecondaryRenderAt >= APP_PERFORMANCE_PROFILE.stockSecondaryRenderInterval) {
+      stockLastSecondaryRenderAt = now
+      renderStockPlayerSummary()
+      renderStockPortfolio()
+      renderStockRanking()
+    }
   }
 
   if (stockElapsedMs >= stockDurationSeconds * 1000) {
@@ -1371,6 +1378,7 @@ function startStockGame() {
   stockLogicAccumulatorMs = 0
   stockLastSchedulerAt = performance.now()
   stockLastRenderAt = 0
+  stockLastSecondaryRenderAt = stockLastSchedulerAt
   setStockInputLock(true)
   setStockSetupLock(true)
   updateStockStatus('실시간 변동 시작! 중간 매도 없이 끝까지 지켜보는 관찰형 주식게임이야.')
@@ -1415,6 +1423,7 @@ function stopStockGame(options = {}) {
   stockLogicAccumulatorMs = 0
   stockLastSchedulerAt = 0
   stockLastRenderAt = 0
+  stockLastSecondaryRenderAt = 0
 
   if (!preserveSetup) {
     stockGameFinished = false
@@ -1500,7 +1509,7 @@ function startRace() {
   }
 
   renderRacePreview()
-  resetRaceHorseStates()
+  resetRaceHorseStates({ reroll: true })
 
   raceRunning = true
   raceFinished = false
@@ -1508,6 +1517,7 @@ function startRace() {
   raceElapsedMs = 0
   setRaceInputLock(true)
   setRaceShuffleLock(true)
+  updateRaceDramaHud()
 
   playSfx('raceStart')
   addRaceCommentary('게이트 오픈, 경주가 시작되었습니다! 셔플한 레인 순서와 지정 색상 그대로 출발합니다.')

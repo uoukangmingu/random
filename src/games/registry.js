@@ -23,6 +23,8 @@
     balloon: 'physicalBalloon', 'bomb-pass': 'physicalBomb', 'shrinking-circle': 'physicalCircle',
     'stay-click': 'physicalKeyReact', 'bear-find': 'physicalBearFind'
   })
+  let resizeFrame = null
+  let lastDeviceIdentity = null
 
   function isPhoneLikeDevice() {
     const nav = global.navigator || {}
@@ -198,6 +200,7 @@
     const grid = document.getElementById('luckGameGrid')
     if (!grid) return
     syncCatalogDeviceClass()
+    lastDeviceIdentity = isPhoneLikeDevice()
     grid.querySelectorAll('.game-item[data-clone]').forEach((clone) => clone.remove())
     const cards = [...grid.querySelectorAll(':scope > .game-item:not([data-clone])')]
     cards.forEach((button, index) => {
@@ -265,7 +268,12 @@
       global.RandomRouletteRoster?.open?.()
     })
     global.addEventListener('roulette-roster-change', refreshCards)
-    global.addEventListener('resize', refreshCards, { passive: true })
+    global.addEventListener('resize', () => {
+      // Width changes do not change the OS or roster. The carousel owns layout.
+      // Rebuilding every card and clone on each resize caused unnecessary work.
+      if (lastDeviceIdentity === isPhoneLikeDevice() || resizeFrame !== null) return
+      resizeFrame = global.requestAnimationFrame(() => { resizeFrame = null; refreshCards() })
+    }, { passive: true })
     refreshCards()
   }
 

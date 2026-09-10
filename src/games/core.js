@@ -1,35 +1,378 @@
 /* generated from script.js · core.js */
-const APP_PERFORMANCE_PROFILE = (() => {
-  const coarsePointer = window.matchMedia('(pointer: coarse)').matches
-  const touchCapable = coarsePointer || navigator.maxTouchPoints > 0
-  const shortSide = Math.min(window.innerWidth, window.innerHeight)
-  const isMobile = touchCapable && shortSide <= 1100
+const APP_PERFORMANCE_STORAGE_KEY = 'roulette-performance-preference'
+const APP_PERFORMANCE_CACHE_KEY = 'roulette-performance-auto-cache-v2'
+const APP_PERFORMANCE_LEVEL_ORDER = Object.freeze({ high: 0, balanced: 1, low: 2 })
+
+const APP_PERFORMANCE_MANAGER = (() => {
+  const root = document.documentElement
+  const coarsePointer = window.matchMedia?.('(pointer: coarse)')?.matches === true
+  const touchCapable = coarsePointer || Number(navigator.maxTouchPoints || 0) > 0
+  const shortSide = Math.min(window.innerWidth || 1280, window.innerHeight || 800)
+  const userAgent = navigator.userAgent || ''
+  const platform = navigator.userAgentData?.platform || navigator.platform || ''
+  const mobileIdentity = navigator.userAgentData?.mobile === true || /Android|iPhone|iPod|Mobile/i.test(userAgent)
+  const iPadIdentity = /iPad/i.test(userAgent) || (/Mac/i.test(platform) && Number(navigator.maxTouchPoints || 0) > 1)
+  const desktopIdentity = /Windows|Win32|Win64|Macintosh|macOS|Linux x86_64/i.test(`${userAgent} ${platform}`) && !iPadIdentity
+  const isMobile = touchCapable && !desktopIdentity && (mobileIdentity || iPadIdentity) && shortSide <= 1100
   const memory = Number(navigator.deviceMemory || 0)
   const cpuThreads = Number(navigator.hardwareConcurrency || 0)
   const saveData = Boolean(navigator.connection?.saveData)
-  const lowMemory = memory > 0 && memory <= 4
-  const lowCpu = cpuThreads > 0 && cpuThreads <= 8
-  const isLowEndDesktop = !isMobile && (saveData || lowMemory || lowCpu)
-  const constrained = isMobile || isLowEndDesktop || saveData
+  const validModes = new Set(['auto', 'quality', 'performance'])
+  const validLevels = new Set(['high', 'balanced', 'low'])
+
+  function safeRead(key) {
+    try {
+      return localStorage.getItem(key)
+    } catch (error) {
+      return null
+    }
+  }
+
+  function safeWrite(key, value) {
+    try {
+      localStorage.setItem(key, value)
+    } catch (error) {}
+  }
+
+  function detectHardwareLevel() {
+    if (saveData || (memory > 0 && memory <= 4) || (cpuThreads > 0 && cpuThreads <= 4)) return 'low'
+    // 브라우저의 deviceMemory는 누락되거나 8GB로 반올림되고, 논리 스레드 수는
+    // 내장 GPU·메모리 대역폭을 설명하지 못한다. 자동 모드의 고품질 오판을 막고
+    // 전체 효과가 필요한 사용자는 설정의 고화질 고정을 사용한다.
+    return 'balanced'
+  }
+
+  function getHardwareSignature() {
+    return [
+      isMobile ? 'mobile' : 'desktop',
+      memory || 'unknown-memory',
+      cpuThreads || 'unknown-cpu',
+      Math.round(shortSide / 100) * 100,
+      Math.round((window.devicePixelRatio || 1) * 10) / 10,
+      saveData ? 'save-data' : 'normal-data'
+    ].join(':')
+  }
+
+  function getCachedAutoLevel(fallback) {
+    try {
+      const parsed = JSON.parse(safeRead(APP_PERFORMANCE_CACHE_KEY) || 'null')
+      const fresh = parsed && Date.now() - Number(parsed.savedAt || 0) < 24 * 60 * 60 * 1000
+      if (fresh && parsed.signature === getHardwareSignature() && validLevels.has(parsed.level)) return parsed.level
+    } catch (error) {}
+    return fallback
+  }
+
+  let savedMode = safeRead(APP_PERFORMANCE_STORAGE_KEY)
+  if (!validModes.has(savedMode)) savedMode = 'auto'
+  const hardwareLevel = detectHardwareLevel()
+  const state = {
+    mode: savedMode,
+    hardwareLevel,
+    autoLevel: getCachedAutoLevel(hardwareLevel),
+    effectiveLevel: 'balanced',
+    initialized: false,
+    calibrated: false,
+    lastReason: 'hardware',
+    lastMetrics: null,
+    betterWindows: 0,
+    worseWindows: 0
+  }
+
+  function getRequestedLevel() {
+    if (state.mode === 'quality') return 'high'
+    if (state.mode === 'performance') return 'low'
+    return state.autoLevel
+  }
+
+  function getLevelValues(level = state.effectiveLevel) {
+    if (level === 'high') {
+      return {
+        canvasPixelRatio: isMobile ? 1 : 1.25,
+        animationFrameInterval: 1000 / 60,
+        canvasRenderInterval: 1000 / 60,
+        physicsHz: 60,
+        countRefreshInterval: 80,
+        stockTickInterval: 250,
+        stockSecondaryRenderInterval: 250
+      }
+    }
+    if (level === 'low') {
+      return {
+        canvasPixelRatio: isMobile ? 0.7 : 0.8,
+        animationFrameInterval: 1000 / 30,
+        canvasRenderInterval: 1000 / 24,
+        physicsHz: 60,
+        countRefreshInterval: isMobile ? 250 : 180,
+        stockTickInterval: 750,
+        stockSecondaryRenderInterval: 1500
+      }
+    }
+    return {
+      canvasPixelRatio: isMobile ? (shortSide <= 430 ? 0.8 : 0.9) : 1,
+      animationFrameInterval: 1000 / 30,
+      canvasRenderInterval: 1000 / 30,
+      physicsHz: 60,
+      countRefreshInterval: isMobile ? 200 : 160,
+      stockTickInterval: 500,
+      stockSecondaryRenderInterval: 1000
+    }
+  }
+
+  function describeState() {
+    if (state.mode === 'quality') return '고화질 고정 · 시각 효과를 우선해요.'
+    if (state.mode === 'performance') return '성능 우선 고정 · 시각 효과를 줄여요.'
+    if (!state.calibrated) {
+      const initialLabel = state.effectiveLevel === 'high' ? '고품질' : state.effectiveLevel === 'low' ? '성능 보호' : '균형'
+      return `자동 · ${initialLabel}으로 시작해 실제 프레임을 확인 중이에요.`
+    }
+    if (state.effectiveLevel === 'high') return '자동 · 현재 원활해서 고품질로 실행 중이에요.'
+    if (state.effectiveLevel === 'low') return '자동 · 끊김을 감지해 성능을 보호하고 있어요.'
+    return '자동 · 품질과 부드러움을 균형 조절 중이에요.'
+  }
+
+  function updateControls() {
+    document.querySelectorAll('[data-performance-mode]').forEach((button) => {
+      const selected = button.dataset.performanceMode === state.mode
+      button.classList.toggle('is-active', selected)
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false')
+    })
+    const status = document.getElementById('performanceQualityStatus')
+    const description = describeState()
+    if (status && status.textContent !== description) status.textContent = description
+  }
+
+  function applyEffectiveLevel(level, reason = 'runtime', force = false) {
+    if (!validLevels.has(level)) return
+    const previous = state.effectiveLevel
+    state.effectiveLevel = level
+    state.lastReason = reason
+
+    root.classList.remove('perf-standard', 'perf-low', 'perf-mobile', 'perf-constrained', 'perf-quality-high', 'perf-quality-balanced', 'perf-quality-low')
+    root.classList.add(isMobile ? 'perf-mobile' : level === 'low' ? 'perf-low' : 'perf-standard')
+    root.classList.add(`perf-quality-${level}`)
+    root.classList.toggle('perf-constrained', level !== 'high')
+    root.dataset.performanceMode = state.mode
+    root.dataset.performanceLevel = level
+    updateControls()
+
+    if (force || previous !== level) {
+      window.dispatchEvent(new CustomEvent('roulette-performance-change', {
+        detail: { mode: state.mode, level, previousLevel: previous, reason }
+      }))
+    }
+  }
+
+  function saveAutoLevel() {
+    safeWrite(APP_PERFORMANCE_CACHE_KEY, JSON.stringify({
+      level: state.autoLevel,
+      signature: getHardwareSignature(),
+      savedAt: Date.now()
+    }))
+  }
+
+  function setMode(mode, options = {}) {
+    if (!validModes.has(mode)) return
+    const { persist = true } = options
+    state.mode = mode
+    state.betterWindows = 0
+    state.worseWindows = 0
+    if (persist) safeWrite(APP_PERFORMANCE_STORAGE_KEY, mode)
+    applyEffectiveLevel(getRequestedLevel(), 'user', true)
+  }
+
+  function percentile(sortedValues, ratio) {
+    if (!sortedValues.length) return 0
+    const index = Math.min(sortedValues.length - 1, Math.max(0, Math.floor((sortedValues.length - 1) * ratio)))
+    return sortedValues[index]
+  }
+
+  function classifyWindow(deltas, longTaskDuration) {
+    const sorted = [...deltas].sort((a, b) => a - b)
+    const baseline = Math.max(7, Math.min(34, percentile(sorted, 0.25)))
+    const p90 = percentile(sorted, 0.9)
+    const missedThreshold = Math.max(28, baseline * 1.9)
+    const missedFrames = deltas.filter((delta) => delta > missedThreshold).length
+    const missedRate = deltas.length ? missedFrames / deltas.length : 0
+    const level = p90 > 48 || missedRate > 0.24 || longTaskDuration > 350
+      ? 'low'
+      : p90 > 28 || missedRate > 0.08 || longTaskDuration > 120
+        ? 'balanced'
+        : 'high'
+    return { level, p90, baseline, missedRate, longTaskDuration, samples: deltas.length }
+  }
+
+  function acceptMeasurement(metrics) {
+    state.calibrated = true
+    state.lastMetrics = metrics
+    if (state.mode !== 'auto') {
+      updateControls()
+      return
+    }
+
+    const currentRank = APP_PERFORMANCE_LEVEL_ORDER[state.autoLevel]
+    const measuredRank = APP_PERFORMANCE_LEVEL_ORDER[metrics.level]
+    const hardwareRank = APP_PERFORMANCE_LEVEL_ORDER[state.hardwareLevel]
+    const activeGame = document.body?.classList?.contains?.('app-active-game') === true
+    const severeSlowdown = metrics.p90 > 80 || metrics.missedRate > 0.4 || metrics.longTaskDuration > 600
+
+    if (activeGame && severeSlowdown && currentRank < APP_PERFORMANCE_LEVEL_ORDER.low) {
+      state.autoLevel = 'low'
+      state.worseWindows = 0
+      state.betterWindows = 0
+      saveAutoLevel()
+      applyEffectiveLevel('low', 'measured-emergency')
+      return
+    }
+
+    if (measuredRank > currentRank) {
+      state.worseWindows += 1
+      state.betterWindows = 0
+      const requiredSlowWindows = activeGame ? 1 : 2
+      if (state.worseWindows >= requiredSlowWindows) {
+        const nextRank = Math.min(2, currentRank + 1)
+        state.autoLevel = Object.keys(APP_PERFORMANCE_LEVEL_ORDER).find((level) => APP_PERFORMANCE_LEVEL_ORDER[level] === nextRank) || 'low'
+        state.worseWindows = 0
+        saveAutoLevel()
+        applyEffectiveLevel(state.autoLevel, 'measured-slow')
+      } else {
+        updateControls()
+      }
+      return
+    }
+
+    if (measuredRank < currentRank) {
+      if (currentRank <= hardwareRank) {
+        state.betterWindows = 0
+        state.worseWindows = 0
+        updateControls()
+        return
+      }
+      state.betterWindows += 1
+      state.worseWindows = 0
+      if (state.betterWindows >= 8) {
+        const nextRank = Math.max(hardwareRank, currentRank - 1)
+        state.autoLevel = Object.keys(APP_PERFORMANCE_LEVEL_ORDER).find((level) => APP_PERFORMANCE_LEVEL_ORDER[level] === nextRank) || 'high'
+        state.betterWindows = 0
+        saveAutoLevel()
+        applyEffectiveLevel(state.autoLevel, 'measured-stable')
+      } else {
+        updateControls()
+      }
+      return
+    }
+
+    state.betterWindows = 0
+    state.worseWindows = 0
+    updateControls()
+  }
+
+  function startFrameMonitor() {
+    if (typeof window.requestAnimationFrame !== 'function') return
+    let lastFrameAt = 0
+    let windowStartedAt = 0
+    let deltas = []
+    let longTaskDuration = 0
+    let frameId = null
+    let idleTimer = null
+
+    if (typeof PerformanceObserver === 'function' && PerformanceObserver.supportedEntryTypes?.includes?.('longtask')) {
+      try {
+        const observer = new PerformanceObserver((list) => {
+          if (document.hidden || state.mode !== 'auto') return
+          longTaskDuration += list.getEntries().reduce((sum, entry) => sum + Number(entry.duration || 0), 0)
+        })
+        observer.observe({ type: 'longtask' })
+      } catch (error) {}
+    }
+
+    const resetWindow = (timestamp = 0) => {
+      lastFrameAt = timestamp
+      windowStartedAt = timestamp
+      deltas = []
+      longTaskDuration = 0
+    }
+    const queueFrame = () => {
+      if (!frameId && !document.hidden && state.mode === 'auto') frameId = window.requestAnimationFrame(sample)
+    }
+    const wake = () => {
+      if (idleTimer) clearTimeout(idleTimer)
+      idleTimer = null
+      if (frameId) window.cancelAnimationFrame?.(frameId)
+      frameId = null
+      resetWindow()
+      queueFrame()
+    }
+    const sample = (timestamp) => {
+      frameId = null
+      if (document.hidden || state.mode !== 'auto') { resetWindow(); return }
+      if (!windowStartedAt) resetWindow(timestamp)
+      if (lastFrameAt) {
+        const delta = timestamp - lastFrameAt
+        if (delta >= 4) deltas.push(Math.min(delta, 1500))
+      }
+      lastFrameAt = timestamp
+      if (timestamp - windowStartedAt >= 1500 && (deltas.length >= 10 || timestamp - windowStartedAt >= 2400)) {
+        acceptMeasurement(classifyWindow(deltas, longTaskDuration))
+        resetWindow(timestamp)
+        // Keep monitoring gameplay and ongoing degradation; stable menus can sleep.
+        if (!document.body?.classList?.contains?.('app-active-game') && state.lastMetrics?.level === 'high') {
+          idleTimer = setTimeout(wake, 8000)
+          return
+        }
+      }
+      queueFrame()
+    }
+    document.addEventListener?.('visibilitychange', wake)
+    window.addEventListener('roulette-screen-change', wake)
+    window.addEventListener('roulette-performance-change', (event) => {
+      if (event.detail?.reason === 'user') wake()
+    })
+    queueFrame()
+  }
+
+  function bindControls() {
+    document.querySelectorAll('[data-performance-mode]').forEach((button) => {
+      button.addEventListener('click', () => setMode(button.dataset.performanceMode))
+    })
+    updateControls()
+  }
+
+  function init() {
+    if (state.initialized) return
+    state.initialized = true
+    bindControls()
+    startFrameMonitor()
+  }
+
+  const profile = Object.freeze({
+    get tier() { return isMobile ? 'mobile' : state.effectiveLevel === 'low' ? 'low' : 'standard' },
+    get qualityLevel() { return state.effectiveLevel },
+    get mode() { return state.mode },
+    isMobile,
+    get isLowEndDesktop() { return !isMobile && state.effectiveLevel !== 'high' },
+    get constrained() { return state.effectiveLevel !== 'high' },
+    get canvasPixelRatio() { return getLevelValues().canvasPixelRatio },
+    // 실제 경과 시간과 게임 규칙은 유지하고, 기기 여유에 따라 물리 해석·화면 그리기 밀도만 조절한다.
+    get physicsHz() { return getLevelValues().physicsHz },
+    get animationFrameInterval() { return getLevelValues().animationFrameInterval },
+    get canvasRenderInterval() { return getLevelValues().canvasRenderInterval },
+    get countRefreshInterval() { return getLevelValues().countRefreshInterval },
+    get stockTickInterval() { return getLevelValues().stockTickInterval },
+    get stockSecondaryRenderInterval() { return getLevelValues().stockSecondaryRenderInterval }
+  })
+
+  applyEffectiveLevel(getRequestedLevel(), 'startup', true)
 
   return Object.freeze({
-    tier: isMobile ? 'mobile' : isLowEndDesktop ? 'low' : 'standard',
-    isMobile,
-    isLowEndDesktop,
-    constrained,
-    canvasPixelRatio: isMobile ? (shortSide <= 430 ? 0.8 : 0.9) : isLowEndDesktop ? 1 : 1.25,
-    // 게임 판정은 모든 기기에서 같은 고정 시간축을 사용한다. 성능 차이는 렌더링에만 적용한다.
-    physicsHz: 50,
-    animationFrameInterval: isMobile ? 1000 / 30 : isLowEndDesktop ? 1000 / 40 : 1000 / 60,
-    countRefreshInterval: isMobile ? 200 : isLowEndDesktop ? 120 : 80,
-    stockTickInterval: isMobile ? 500 : isLowEndDesktop ? 400 : 250
+    init,
+    profile,
+    setMode,
+    getState: () => ({ ...state, isMobile, memory, cpuThreads, saveData })
   })
 })()
 
-document.documentElement.classList.add(`perf-${APP_PERFORMANCE_PROFILE.tier}`)
-if (APP_PERFORMANCE_PROFILE.constrained) {
-  document.documentElement.classList.add('perf-constrained')
-}
+const APP_PERFORMANCE_PROFILE = APP_PERFORMANCE_MANAGER.profile
+window.RandomRoulettePerformance = APP_PERFORMANCE_MANAGER
 
 const screens = {
   home: document.getElementById('homeScreen'),
@@ -169,6 +512,7 @@ const emojiSupportCache = new Map()
 let emojiFallbackObserver = null
 let emojiFallbackQueued = false
 let emojiFallbackChecking = false
+const emojiFallbackRoots = new Set()
 
 function resetEmojiRegexes() {
   EMOJI_FALLBACK_PATTERN.lastIndex = 0
@@ -350,7 +694,6 @@ function normalizeUnsupportedEmojis(root = document.body) {
     if (emojiFallbackObserver) {
       emojiFallbackObserver.observe(document.body, {
         childList: true,
-        characterData: true,
         attributes: true,
         subtree: true,
         attributeFilter: ['aria-label', 'title', 'alt']
@@ -360,11 +703,17 @@ function normalizeUnsupportedEmojis(root = document.body) {
 }
 
 function scheduleUnsupportedEmojiNormalization(root = document.body) {
+  const targetRoot = root?.nodeType === Node.TEXT_NODE ? root.parentElement : root
+  if (targetRoot) emojiFallbackRoots.add(targetRoot)
   if (emojiFallbackQueued) return
   emojiFallbackQueued = true
   const run = () => {
     emojiFallbackQueued = false
-    normalizeUnsupportedEmojis(root)
+    const roots = emojiFallbackRoots.has(document.body)
+      ? [document.body]
+      : [...emojiFallbackRoots].filter((target) => target?.isConnected !== false)
+    emojiFallbackRoots.clear()
+    roots.forEach((target) => normalizeUnsupportedEmojis(target))
   }
 
   if (typeof requestAnimationFrame === 'function') {
@@ -377,12 +726,15 @@ function scheduleUnsupportedEmojiNormalization(root = document.body) {
 function installEmojiFallbacks() {
   if (typeof MutationObserver === 'function' && !emojiFallbackObserver) {
     emojiFallbackObserver = new MutationObserver((mutations) => {
-      const changedRoot = mutations.find((mutation) => mutation.target instanceof Element)?.target || document.body
-      scheduleUnsupportedEmojiNormalization(changedRoot)
+      mutations.forEach((mutation) => {
+        const changedRoot = mutation.target instanceof Element
+          ? mutation.target
+          : mutation.target?.parentElement
+        if (changedRoot) scheduleUnsupportedEmojiNormalization(changedRoot)
+      })
     })
     emojiFallbackObserver.observe(document.body, {
       childList: true,
-      characterData: true,
       attributes: true,
       subtree: true,
       attributeFilter: ['aria-label', 'title', 'alt']
@@ -390,10 +742,10 @@ function installEmojiFallbacks() {
   }
 
   const runInitialCheck = () => normalizeUnsupportedEmojis(document.body)
-  if (typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(runInitialCheck)
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(runInitialCheck, { timeout: 900 })
   } else {
-    setTimeout(runInitialCheck, 0)
+    setTimeout(runInitialCheck, 80)
   }
 }
 
@@ -653,17 +1005,12 @@ const ladderRevealBadge = document.getElementById('ladderRevealBadge')
 const ladderCardScreen = document.querySelector('#game7Screen .ladder-card-screen')
 
 
-const matterApi = window.Matter || {}
-const {
-  Engine,
-  Render,
-  Runner,
-  Bodies,
-  Body,
-  Composite,
-  World,
-  Events
-} = matterApi
+let Engine, Render, Runner, Bodies, Body, Composite, World, Events
+function bindMatterPhysics() {
+  ;({ Engine, Render, Runner, Bodies, Body, Composite, World, Events } = window.Matter || {})
+}
+bindMatterPhysics()
+let physicsNavigationToken = 0
 
 function canUseMatterPhysics() {
   return Boolean(window.Matter && Engine && Render && Runner && Bodies && Body && Composite && World && Events)
@@ -672,7 +1019,7 @@ function canUseMatterPhysics() {
 function showMatterUnavailablePopup() {
   showPopup(
     '물리 엔진 로드 실패',
-    '이 게임은 Matter.js 물리 엔진이 필요해. 네트워크가 막혀 있거나 CDN을 불러오지 못하면 담아라!와 볼 배틀은 실행할 수 없어. 인터넷 연결을 확인하거나 Matter.js를 로컬 파일로 포함해야 해.',
+    '게임을 준비하지 못했어요. 인터넷 연결을 확인한 뒤 게임을 다시 선택해 주세요.',
     { icon: '⚠️' }
   )
 }
@@ -681,13 +1028,13 @@ const MAX_SLOT_COUNT = 20
 const BOMB_COUNT = 20
 const SPAWN_INTERVAL_MS = 27
 const BOARD_SIDE_PADDING = 18
+const GAME1_WORLD_COLLISION_CATEGORY = 0x0001
+const GAME1_BALL_COLLISION_CATEGORIES = Object.freeze([0x0002, 0x0004, 0x0008, 0x0010])
 
 const BASE_BOARD_WIDTH = 1366
 const BASE_BOARD_HEIGHT = 768
-const MAX_CANVAS_PIXEL_RATIO = APP_PERFORMANCE_PROFILE.canvasPixelRatio
-
 function getCanvasPixelRatio() {
-  return Math.min(window.devicePixelRatio || 1, MAX_CANVAS_PIXEL_RATIO)
+  return Math.min(window.devicePixelRatio || 1, APP_PERFORMANCE_PROFILE.canvasPixelRatio)
 }
 
 const slotPalette = [
@@ -829,6 +1176,7 @@ const BALLOON_MAX_PLAYERS = 8
 const BALLOON_MIN_BURST_PRESSURE = 48
 const BALLOON_MAX_BURST_PRESSURE = 125
 const BALLOON_PRESS_INTERVAL_MS = 64
+const BALLOON_MIN_HOLD_MS = 600
 const BALLOON_MIN_PRESSURE_STEP = 0.18
 const BALLOON_MAX_PRESSURE_STEP = 0.74
 
@@ -840,6 +1188,10 @@ let balloonCurrentIndex = 0
 let balloonPressure = 0
 let balloonBurstPressure = 0
 let balloonHoldTimer = null
+let balloonTurnHeldMs = 0
+let balloonLastInflateAt = 0
+let balloonTurnRate = 1
+let balloonActivePointerId = null
 let balloonLastValidConfigText = balloonConfigInput ? balloonConfigInput.value : ''
 let balloonLastAppliedRawText = balloonConfigInput ? balloonConfigInput.value : ''
 
@@ -877,13 +1229,16 @@ let circleTapLastAppliedRawText = circleTapConfigInput ? circleTapConfigInput.va
 const KEY_REACT_MIN_PLAYERS = 2
 const KEY_REACT_MAX_PLAYERS = 4
 const KEY_REACT_DEFAULT_KEYS = ['A', 'S', 'K', 'L']
-const KEY_REACT_COUNTDOWN_SECONDS = 5
+const KEY_REACT_COUNTDOWN_SECONDS = 3
+const KEY_REACT_RESPONSE_MS = 3000
 const KEY_REACT_STAY_MIN_MS = 1400
 const KEY_REACT_STAY_MAX_MS = 4200
 
 let keyReactPlayers = []
 let keyReactPhase = 'idle'
 let keyReactTimer = null
+let keyReactFeintTimers = []
+let keyReactFeintText = ''
 let keyReactClickStartedAt = 0
 let keyReactResults = []
 let keyReactCountdownLeft = 0
@@ -1139,11 +1494,14 @@ let render
 let runner
 let world
 let game1PhysicsActive = false
+let game1RenderRaf = null
+let game1RenderLastPaintAt = 0
 let worldBodies = []
 let ballBodies = []
 let movingBodies = []
 let spawnTimers = []
 let game1SpawnSessionId = 0
+let game1RoundRunning = false
 let countTimer = null
 let resizeTimer = null
 let countRefreshQueued = false
@@ -1193,7 +1551,7 @@ let physicalCarouselLoopJumping = false
 let physicalCarouselLoopSettleTimer = null
 
 const RACE_MAX_COUNT = 8
-const RACE_DISTANCE = 2400
+const RACE_DISTANCE = 1600
 const FAST_FORWARD_HOLD_MS = 260
 const FAST_FORWARD_MULTIPLIER = 3
 const FAST_FORWARD_BLOCKED_MESSAGE = '빨리감기 불가능 게임'
@@ -1247,18 +1605,18 @@ const SIM_SUDDEN_DEATH_BASE_DAMAGE = 2
 const SIM_SUDDEN_DEATH_MAX_DAMAGE = 8
 const SIM_SUDDEN_DEATH_DAMAGE_STEP_EVERY = 3
 const SIM_BATTLE_PERFORMANCE = Object.freeze({
-  renderFrameGap: APP_PERFORMANCE_PROFILE.constrained ? 30 : 15,
-  overlayFrameGap: 1000 / (APP_PERFORMANCE_PROFILE.isMobile ? 20 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 25 : 30),
-  rankingInterval: APP_PERFORMANCE_PROFILE.isMobile ? 420 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 280 : 140,
-  effectInterval: APP_PERFORMANCE_PROFILE.isMobile ? 240 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 160 : 80,
-  statusInterval: APP_PERFORMANCE_PROFILE.isMobile ? 280 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 180 : 120,
-  maxTransientEffects: APP_PERFORMANCE_PROFILE.isMobile ? 3 : APP_PERFORMANCE_PROFILE.isLowEndDesktop ? 5 : 10,
-  showFloatingDamage: !APP_PERFORMANCE_PROFILE.isMobile,
-  canvasPixelRatio: APP_PERFORMANCE_PROFILE.isMobile
-    ? Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 0.7)
-    : APP_PERFORMANCE_PROFILE.isLowEndDesktop
-      ? Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 0.85)
-      : Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 1.1)
+  get renderFrameGap() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 15 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 34 : 30 },
+  get overlayFrameGap() { return 1000 / (APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 30 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 18 : APP_PERFORMANCE_PROFILE.isMobile ? 20 : 25) },
+  get rankingInterval() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 140 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 440 : APP_PERFORMANCE_PROFILE.isMobile ? 420 : 280 },
+  get effectInterval() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 80 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 260 : APP_PERFORMANCE_PROFILE.isMobile ? 240 : 160 },
+  get statusInterval() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 120 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 320 : APP_PERFORMANCE_PROFILE.isMobile ? 280 : 180 },
+  get maxTransientEffects() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 10 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 3 : APP_PERFORMANCE_PROFILE.isMobile ? 3 : 5 },
+  get showFloatingDamage() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' && !APP_PERFORMANCE_PROFILE.isMobile },
+  get canvasPixelRatio() {
+    if (APP_PERFORMANCE_PROFILE.qualityLevel === 'high') return Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 1.1)
+    if (APP_PERFORMANCE_PROFILE.qualityLevel === 'low') return Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, APP_PERFORMANCE_PROFILE.isMobile ? 0.65 : 0.75)
+    return Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, APP_PERFORMANCE_PROFILE.isMobile ? 0.7 : 0.85)
+  }
 })
 const SIM_STAT_KEYS = ['health', 'attack', 'accuracy', 'defense']
 const SIM_STAT_META = {
@@ -1314,6 +1672,7 @@ let simSelectedMap = 'classic'
 let simArenaZoomed = false
 let simArenaZoomBaseRect = null
 let simRenderRaf = null
+let simVisibilityPaused = false
 let simRenderLastPaintAt = 0
 let simOverlayRaf = null
 let simOverlayLastPaintAt = 0
@@ -1360,6 +1719,7 @@ function updateGame1BallCountText() {
 }
 
 function setGame1InputLock(isLocked) {
+  setGameStartButtonRunningState(startGameBtn, isLocked, { busyText: '진행 중' })
   if (!configInput) return
   configInput.disabled = isLocked
   configInput.style.opacity = isLocked ? '0.65' : '1'
@@ -1704,6 +2064,7 @@ const siteAudio = {
   outputLimiter: null,
   bgmFilter: null,
   bgmTimer: null,
+  soundtrackPlayer: null,
   bgmProfileKey: '',
   bgmStep: 0,
   bgmVolume: getSavedVolumePreference(BGM_VOLUME_STORAGE_KEY, AUDIO_DEFAULT_BGM_VOLUME),
@@ -1812,6 +2173,11 @@ const SFX_DUCKING_PROFILES = {
 }
 
 const SCREEN_BGM_PROFILES = {
+  wheel: {
+    key: 'wheel', interval: 214, gain: .06, wave: 'triangle',
+    notes: [293.66, 349.23, 440, 587.33, 440, 349.23],
+    chords: [[146.83, 220], [116.54, 174.61], [174.61, 261.63]], chordEvery: 8
+  },
   home: {
     key: 'home',
     interval: 840,
@@ -2973,6 +3339,7 @@ function playSfx(name) {
 }
 
 function getBgmProfileForScreen(screenKey) {
+  if (screenKey === 'wheel') return SCREEN_BGM_PROFILES.wheel
   if (screenKey === 'home') return SCREEN_BGM_PROFILES.home
   if (screenKey === 'menu') return SCREEN_BGM_PROFILES.menu
   if (screenKey === 'physical') return SCREEN_BGM_PROFILES.physical
@@ -3168,6 +3535,7 @@ function playBgmStep(profile) {
 }
 
 function stopBgm() {
+  siteAudio.soundtrackPlayer?.stop()
   if (siteAudio.bgmTimer) {
     clearInterval(siteAudio.bgmTimer)
     siteAudio.bgmTimer = null
@@ -3176,8 +3544,22 @@ function stopBgm() {
   siteAudio.bgmStep = 0
 }
 
+function getBgmEnergyForScreen(screenKey) {
+  if (screenKey === 'physicalKeyReact' && isKeyReactRunning()) return -1
+  if (screenKey === 'physicalBearFind' && bearFindVideoVisible) return -1
+  if (screenKey === 'wheel') {
+    const phase = window.RandomRouletteWheel?.getPhase?.()
+    return phase === 'stopping' ? 1 : phase === 'spinning' ? .8 : .25
+  }
+  if (screenKey === 'game2' && raceRunning) {
+    return .35 + Math.min(1, Math.max(0, ...raceHorses.map((horse) => horse.progress)) / RACE_DISTANCE) * .65
+  }
+  if (screenKey === 'game3' && battleGameRunning) return battlePhase === 'phase2' ? .85 : .45
+  return window.RandomRouletteSession?.isRunning?.(screenKey) ? .7 : .3
+}
+
 function startBgmForScreen(screenKey = currentScreenKey) {
-  if (!siteAudio.enabled || !siteAudio.unlocked) return
+  if (!siteAudio.enabled || !siteAudio.unlocked || document.hidden) return
 
   const ctx = ensureAudioContext()
   if (!ctx) return
@@ -3188,6 +3570,17 @@ function startBgmForScreen(screenKey = currentScreenKey) {
 
   const profile = getActiveBgmProfile(getBgmProfileForScreen(screenKey))
   if (!profile) return
+  if (!profile.horror && window.RandomRouletteSoundtrack) {
+    const night = isDarkThemeEnabled()
+    const profileKey = `${profile.key}:${night ? 'night' : 'day'}`
+    if (siteAudio.bgmProfileKey === profileKey && siteAudio.soundtrackPlayer?.isPlaying()) return
+    stopBgm()
+    syncBgmFilterForMode()
+    siteAudio.soundtrackPlayer ||= window.RandomRouletteSoundtrack.createPlayer(ctx, siteAudio.bgmGain)
+    siteAudio.bgmProfileKey = profileKey
+    siteAudio.soundtrackPlayer.play(profile.key, { night, getEnergy: () => getBgmEnergyForScreen(screenKey) })
+    return
+  }
   if (siteAudio.bgmProfileKey === profile.key && siteAudio.bgmTimer) return
 
   stopBgm()
@@ -3623,6 +4016,7 @@ function applyThemePreference(theme, options = {}) {
   updateThemeToggleButton()
   refreshSimThemeVisuals()
   refreshExtendedThemeVisuals()
+  startBgmForScreen(currentScreenKey)
 }
 
 function toggleThemePreference() {
@@ -4119,8 +4513,9 @@ function getLuckCarouselTrackItems() {
     : []
 }
 
-function ensureLuckCarouselLoop() {
+function ensureLuckCarouselLoop(options = {}) {
   if (!luckGameGrid) return
+  const { createClones = true } = options
 
   const existingClones = [...luckGameGrid.querySelectorAll('.game-item[data-clone]')]
   if (existingClones.length) {
@@ -4144,7 +4539,7 @@ function ensureLuckCarouselLoop() {
 
   luckCarouselLoopReady = false
 
-  if (originalItems.length <= 1) {
+  if (!createClones || originalItems.length <= 1) {
     luckCarouselLoopReady = true
     return
   }
@@ -4238,6 +4633,11 @@ function getLuckCarouselClosestItem() {
 
 function getLuckCarouselClosestIndex() {
   const closestItem = getLuckCarouselClosestItem()
+  return getLuckCarouselIndexForItem(closestItem)
+}
+
+function getLuckCarouselIndexForItem(item) {
+  const closestItem = item
   if (!closestItem) return 0
 
   const rawIndex = Number.parseInt(closestItem.dataset.carouselIndex || '0', 10)
@@ -4255,6 +4655,9 @@ function updateLuckCarouselActiveIndex(index, closestItem = null) {
   const activeItem = closestItem && trackItems.includes(closestItem)
     ? closestItem
     : trackItems.find((item) => Number.parseInt(item.dataset.carouselIndex || '-1', 10) === safeIndex) || null
+
+  const previousActiveItem = luckGameGrid?.querySelector('.game-item.is-carousel-active') || null
+  if (luckCarouselActiveIndex === safeIndex && previousActiveItem === activeItem) return
 
   luckCarouselActiveIndex = safeIndex
   updateLuckCarouselDots(safeIndex)
@@ -4399,7 +4802,7 @@ function scheduleLuckCarouselLoopNormalize(closestItem) {
       return
     }
 
-    updateLuckCarouselActiveIndex(getLuckCarouselClosestIndex(), settledItem)
+    updateLuckCarouselActiveIndex(getLuckCarouselIndexForItem(settledItem), settledItem)
     normalizeLuckCarouselLoop(settledItem)
   }, LUCK_CAROUSEL_SETTLE_DELAY_MS)
 }
@@ -4461,7 +4864,7 @@ function handleLuckCarouselScroll() {
 
   requestAnimationFrame(() => {
     const closestItem = getLuckCarouselClosestItem()
-    const closestIndex = getLuckCarouselClosestIndex()
+    const closestIndex = getLuckCarouselIndexForItem(closestItem)
     updateLuckCarouselActiveIndex(closestIndex, closestItem)
     scheduleLuckCarouselLoopNormalize(closestItem)
     luckCarouselScrollTicking = false
@@ -4475,7 +4878,7 @@ function handleLuckCarouselScrollEnd() {
   const closestItem = getLuckCarouselClosestItem()
   if (!closestItem) return
 
-  updateLuckCarouselActiveIndex(getLuckCarouselClosestIndex(), closestItem)
+  updateLuckCarouselActiveIndex(getLuckCarouselIndexForItem(closestItem), closestItem)
   normalizeLuckCarouselLoop(closestItem)
 }
 
@@ -4491,7 +4894,7 @@ function syncLuckCarousel(options = {}) {
   luckCarouselLastScrollLeft = luckGameGrid.scrollLeft
   luckGameGrid.classList.remove('is-loop-resetting')
 
-  ensureLuckCarouselLoop()
+  ensureLuckCarouselLoop({ createClones: shouldUseCarousel })
 
   const originalItems = getLuckCarouselOriginalItems()
 
@@ -5293,6 +5696,18 @@ function updatePrevStepButtons() {
 function showScreen(target, options = {}) {
   if (target === 'menu' || target === 'physical') target = 'luck'
   if (!screens[target]) return
+  const navigationToken = ++physicsNavigationToken
+  if ((target === 'game1' || target === 'game4') && !canUseMatterPhysics() && window.RandomRouletteLoader) {
+    window.RandomRouletteLoader.loadPhysics().then(() => {
+      if (navigationToken !== physicsNavigationToken) return
+      bindMatterPhysics()
+      if (canUseMatterPhysics()) showScreen(target, options)
+      else showMatterUnavailablePopup()
+    }).catch(() => {
+      if (navigationToken === physicsNavigationToken) showMatterUnavailablePopup()
+    })
+    return
+  }
 
   window.RandomRouletteUtilitySettings?.close?.()
 
@@ -5494,6 +5909,7 @@ function showScreen(target, options = {}) {
   updateOrientationGate()
 
   currentScreenKey = target
+  window.dispatchEvent(new CustomEvent('roulette-screen-change', { detail: { screen: target } }))
   updatePrevStepButtons()
   scheduleGameStartButtonStateSync()
 

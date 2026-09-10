@@ -1,3 +1,4 @@
+import { buildProgressive } from './build-progressive.mjs'
 import { execFileSync } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -10,8 +11,10 @@ await mkdir(distDir, { recursive: true })
 
 const scriptOrder = [
   'src/games/core.js',
+  'src/shared/soundtrack.js',
   'src/shared/rng.js',
   'src/shared/game-engine.js',
+  'src/shared/gameplay-rules.js',
   'src/shared/utility-settings.js',
   'src/shared/roster.js',
   'src/shared/session-guard.js',
@@ -38,7 +41,7 @@ for (const relativePath of scriptOrder) {
   scriptParts.push(`\n;\n/* ===== ${relativePath} ===== */\n${content.trim()}\n`)
 }
 
-const cssOrder = ['style.css', 'src/styles/features.css']
+const cssOrder = ['style.css', 'src/styles/features.css', 'src/styles/polish.css']
 const cssParts = []
 for (const relativePath of cssOrder) {
   const content = await readFile(path.join(root, relativePath), 'utf8')
@@ -51,11 +54,13 @@ const appCss = banner + cssParts.join('\n')
 await Promise.all([
   writeFile(path.join(distDir, 'app.js'), appJs, 'utf8'),
   writeFile(path.join(distDir, 'app.css'), appCss, 'utf8'),
-  writeFile(path.join(root, 'random-roulette.v3.18.js'), appJs, 'utf8'),
-  writeFile(path.join(root, 'random-roulette.v3.18.css'), appCss, 'utf8'),
+  writeFile(path.join(root, 'random-roulette.v3.21.js'), appJs, 'utf8'),
+  writeFile(path.join(root, 'random-roulette.v3.21.css'), appCss, 'utf8'),
   writeFile(path.join(root, 'app.bundle.js'), appJs, 'utf8'),
   writeFile(path.join(root, 'app.bundle.css'), appCss, 'utf8'),
   writeFile(path.join(root, 'script.min.js'), appJs, 'utf8'),
   writeFile(path.join(root, 'style.min.css'), appCss, 'utf8')
 ])
-console.log(`빌드 완료: dist + v3.18 배포 번들 + 호환 루트 번들`)
+console.log(`빌드 완료: dist + v3.21 배포 번들 + 호환 루트 번들`)
+
+await buildProgressive(appJs, appCss)

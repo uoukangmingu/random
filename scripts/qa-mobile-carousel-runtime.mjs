@@ -5,7 +5,7 @@ import vm from 'node:vm'
 const root = path.resolve(import.meta.dirname, '..')
 const [coreSource, html, appSource] = await Promise.all([
   readFile(path.join(root, 'src/games/core.js'), 'utf8'),
-  readFile(path.join(root, 'index.html'), 'utf8'),
+  readFile(path.join(root, 'src/index.template.html'), 'utf8'),
   readFile(path.join(root, 'script.js'), 'utf8')
 ])
 
@@ -65,7 +65,9 @@ for (const marker of [
   "addEventListener('touchcancel', finishLuckCarouselTouch, { passive: true })",
   "addEventListener('scrollend', handleLuckCarouselScrollEnd, { passive: true })",
   'LUCK_CAROUSEL_SETTLE_DELAY_MS = 240',
-  'LUCK_CAROUSEL_CLICK_DRAG_THRESHOLD_PX = 6'
+  'LUCK_CAROUSEL_CLICK_DRAG_THRESHOLD_PX = 6',
+  'ensureLuckCarouselLoop({ createClones: shouldUseCarousel })',
+  'if (!createClones || originalItems.length <= 1)'
 ]) {
   if (!appSource.includes(marker)) throw new Error(`iPhone 네이티브 스크롤 안전장치 누락: ${marker}`)
 }
@@ -93,5 +95,6 @@ console.log(JSON.stringify({
   safariPointerCancelDependency: false,
   scrollSettleDelayMs: 240,
   verticalScrollPreserved: true,
+  desktopCloneSets: 0,
   bidirectionalLoop: true
 }))

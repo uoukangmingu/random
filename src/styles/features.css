@@ -820,6 +820,71 @@ html.theme-dark .utility-settings-panel {
   font-size: .86rem;
 }
 
+.utility-performance-panel {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--ui-line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--ui-surface) 88%, var(--ui-blue) 12%);
+  color: var(--ui-text);
+}
+
+.utility-performance-panel legend {
+  padding: 0 5px;
+  font-size: .78rem;
+  font-weight: 900;
+  color: var(--ui-muted);
+}
+
+.performance-mode-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.performance-mode-btn {
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 5px;
+  border: 1px solid var(--ui-line);
+  border-radius: 12px;
+  background: var(--ui-surface);
+  color: var(--ui-muted);
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 900;
+  line-height: 1.15;
+  cursor: pointer;
+}
+
+.performance-mode-btn.is-active,
+.performance-mode-btn[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--ui-blue) 72%, var(--ui-line));
+  background: color-mix(in srgb, var(--ui-blue) 22%, var(--ui-surface));
+  color: var(--ui-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-blue) 32%, transparent);
+}
+
+.performance-mode-btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ui-blue) 66%, transparent);
+  outline-offset: 2px;
+}
+
+.performance-quality-status {
+  min-height: 2.4em;
+  margin: 7px 2px 0;
+  color: var(--ui-muted);
+  font-size: .71rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+html.theme-dark .utility-performance-panel {
+  background: color-mix(in srgb, var(--ui-surface) 88%, var(--ui-blue) 12%);
+}
+
 .utility-settings-panel .utility-volume-panel,
 html.theme-dark .utility-settings-panel .utility-volume-panel {
   grid-column: 1 / -1;
@@ -879,16 +944,13 @@ html.theme-dark .utility-settings-panel .utility-volume-panel {
   display: none;
 }
 
-/* 목록·홈에서는 빠른 버튼 전용 우측 레일을 확보해 카드 클릭 영역과 겹치지 않게 한다. */
-@media (min-width: 1025px) {
+/* Equal gutters center the menu; a narrow utility column stays outside its cards. */
+@media (min-width: 768px) {
   body:not(.app-active-game) .app {
-    padding-right: 140px !important;
+    padding-inline: clamp(68px, 5vw, 84px) !important;
   }
-}
-
-@media (min-width: 768px) and (max-width: 1024px) {
-  body:not(.app-active-game) .app {
-    padding-right: 122px !important;
+  body:not(.app-active-game) .utility-quick-actions {
+    flex-direction: column;
   }
 }
 
@@ -978,4 +1040,113 @@ html.theme-dark .utility-settings-panel .utility-volume-panel {
     grid-template-columns: 42px minmax(0, 1fr) 38px;
     gap: 7px;
   }
+}
+
+/* 실제 저사양 보호 단계: 색상·정보·핵심 상태는 유지하고 합성 비용만 제거한다. */
+html.perf-constrained .background-deco {
+  animation: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+  will-change: auto !important;
+}
+
+/* 데스크톱 자동·성능 모드에서는 GPU 드라이버 편차가 큰 백드롭 합성을 전면 차단한다. */
+html.perf-constrained body *,
+html.perf-constrained body *::before,
+html.perf-constrained body *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.perf-constrained body.app-active-game .background-deco {
+  display: none !important;
+}
+
+html.perf-constrained.hell-mode,
+html.perf-constrained.hell-mode::before,
+html.perf-constrained.hell-mode::after,
+html.perf-constrained.hell-mode body::before,
+html.perf-constrained.hell-mode body::after {
+  animation: none !important;
+}
+
+html.perf-quality-balanced body.app-active-game .race-horse,
+html.perf-quality-balanced body.app-active-game .sim-ball-label,
+html.perf-quality-balanced body.app-active-game .stock-ranking-item,
+html.perf-quality-balanced body.app-active-game .battle-row {
+  box-shadow: 0 2px 6px rgba(37, 73, 96, 0.12) !important;
+}
+
+html.perf-quality-low .background-deco {
+  display: none !important;
+}
+
+html.perf-quality-low .small-badge,
+html.perf-quality-low .game-mini-badge,
+html.perf-quality-low .game-icon,
+html.perf-quality-low .utility-btn-icon,
+html.perf-quality-low .race-horse,
+html.perf-quality-low .horse-number-badge,
+html.perf-quality-low .stock-sector-chip,
+html.perf-quality-low .stock-timer-badge {
+  animation: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+html.perf-quality-low .card,
+html.perf-quality-low .game-item,
+html.perf-quality-low .utility-settings-panel,
+html.perf-quality-low .app-dialog,
+html.perf-quality-low .popup,
+html.perf-quality-low .controls-wrap,
+html.perf-quality-low .game-canvas-wrap,
+html.perf-quality-low .race-track-wrap,
+html.perf-quality-low .sim-arena-wrap,
+html.perf-quality-low .stock-chart-card,
+html.perf-quality-low .stock-portfolio-card,
+html.perf-quality-low .stock-ranking-item {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+  box-shadow: 0 3px 9px rgba(37, 73, 96, 0.10) !important;
+}
+
+html.perf-quality-low .screen.active,
+html.perf-quality-low .game-card,
+html.perf-quality-low .game-item,
+html.perf-quality-low button,
+html.perf-quality-low input,
+html.perf-quality-low textarea {
+  transition-duration: 80ms !important;
+}
+
+html.perf-quality-low #game1Screen .slot-box,
+html.perf-quality-low #game2Screen .race-lane,
+html.perf-quality-low #game4Screen .sim-ball-label,
+html.perf-quality-low #game6Screen .stock-chart-shell {
+  contain: layout paint style;
+}
+
+html.perf-quality-low #game4Screen .sim-hit-burst,
+html.perf-quality-low #game4Screen .sim-decay-burst,
+html.perf-quality-low #game4Screen .sim-bomb-blast-core,
+html.perf-quality-low #game4Screen .sim-bomb-blast-ring {
+  mix-blend-mode: normal !important;
+}
+
+/* 성능 우선은 색·테두리·핵심 움직임을 남기고 재도색 비용이 큰 광원 합성만 제거한다. */
+html.perf-quality-low body.app-active-game .screen.active *,
+html.perf-quality-low body.app-active-game .screen.active *::before,
+html.perf-quality-low body.app-active-game .screen.active *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+html.perf-quality-low body.app-active-game [class*="glow"],
+html.perf-quality-low body.app-active-game [class*="burst"],
+html.perf-quality-low body.app-active-game [class*="spark"],
+html.perf-quality-low body.app-active-game [class*="particle"] {
+  filter: none !important;
+  mix-blend-mode: normal !important;
 }

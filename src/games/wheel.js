@@ -1,24 +1,16 @@
 (function installWeightedWheel(global) {
   const ITEMS_STORAGE_KEY = 'roulette-basic-wheel-items-v1'
   const HISTORY_STORAGE_KEY = 'roulette-basic-wheel-history-v1'
+  const OPTIONS_STORAGE_KEY = 'roulette-basic-wheel-options-v1'
+  const DRAFT_STORAGE_KEY = 'roulette-basic-wheel-draft-v1'
+  const SPEED_STORAGE_KEY = 'roulette-basic-wheel-speed-v1'
   const MAX_ITEMS = 50
   const MAX_HISTORY = 50
   const TWO_PI = Math.PI * 2
-  const SPIN_ACCELERATION_RATIO = 0.12
-  const SPIN_CRUISE_RATIO = 0.28
-  const SPIN_DECELERATION_RATIO = 0.60
-  const MOBILE_SPIN_ACCELERATION_RATIO = 0.06
-  const MOBILE_SPIN_CRUISE_RATIO = 0.26
-  const MOBILE_SPIN_DECELERATION_RATIO = 0.68
-  const REDUCED_MOTION_ACCELERATION_RATIO = 0.05
-  const REDUCED_MOTION_CRUISE_RATIO = 0.15
-  const REDUCED_MOTION_DECELERATION_RATIO = 0.80
-  const SPIN_KEYFRAME_COUNT = 121
   const COLORS = ['#75c9f2', '#8edfcf', '#ffd56f', '#ff9f85', '#b9a7f4', '#f38db0', '#86d7a5', '#8caef4', '#efb76f', '#8dd7dc', '#d49ce5', '#ffbd91']
   let initialized = false
   let running = false
   let animationFrame = null
-  let canvasAnimation = null
   let spinRunId = 0
   let currentRotation = 0
   let currentItems = []
@@ -26,24 +18,62 @@
   let history = []
   let usedSavedItems = false
   let followsRoster = false
+  let cachedElements = null
+  let previewFrame = null
+  let saveTimer = null
+  let fallbackFrame = null
+  let lastSpinFrameAt = null
+  let spinSession = null
+  let speedMultiplier = 1
+  let storageAvailable = true
+  let resultVisualItems = null
+  let resultVisualRotation = 0
+  const historyDateFormat = new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
   function getElements() {
-    return {
+    return cachedElements || (cachedElements = {
+      screen: document.getElementById('wheelScreen'),
       input: document.getElementById('wheelItemsInput'),
       autoRemove: document.getElementById('wheelAutoRemoveCheckbox'),
+      speed: document.getElementById('wheelSpeedInput'),
+      speedStatus: document.getElementById('wheelSpeedStatus'),
       useRoster: document.getElementById('wheelUseRosterBtn'),
+      editItems: document.getElementById('wheelEditItemsBtn'),
       spin: document.getElementById('wheelSpinBtn'),
       center: document.getElementById('wheelCenterButton'),
-      respin: document.getElementById('wheelRespinnerBtn'),
       remove: document.getElementById('wheelRemoveWinnerBtn'),
       status: document.getElementById('wheelInputStatus'),
       weight: document.getElementById('wheelTotalWeightBadge'),
       canvas: document.getElementById('wheelCanvas'),
       resultCard: document.getElementById('wheelResultCard'),
       result: document.getElementById('wheelResultText'),
+      resultNote: document.getElementById('wheelResultNote'),
+      progress: document.getElementById('wheelSpinProgress'),
+      progressFill: document.getElementById('wheelSpinProgressFill'),
       history: document.getElementById('wheelHistoryList'),
+      historyCount: document.getElementById('wheelHistoryCount'),
       clearHistory: document.getElementById('wheelClearHistoryBtn')
-    }
+    })
+  }
+
+  function queuePreview() {
+    if (previewFrame !== null) return
+    previewFrame = requestAnimationFrame(() => {
+      previewFrame = null
+      if (!running && !document.hidden) renderWheel()
+    })
+  }
+
+  function flushItemSave() {
+    if (saveTimer === null) return
+    global.clearTimeout(saveTimer)
+    saveTimer = null
+    saveItems(currentItems)
+  }
+
+  function scheduleItemSave() {
+    global.clearTimeout(saveTimer)
+    saveTimer = global.setTimeout(flushItemSave, 220)
   }
 
   function normalizeAngle(value) {
@@ -58,78 +88,81 @@
     return shortSide > 0 && shortSide <= 820 && (coarsePointer || Number(global.innerWidth || 0) <= 600)
   }
 
+  function parseSpeedMultiplier(value) {
+    const number = typeof value === 'string' && !value.trim() ? NaN : Number(value)
+    return Number.isFinite(number) && number >= .5 && number <= 10 ? number : null
+  }
+
+  function updateSpeed({ persist = true } = {}) {
+    const elements = getElements()
+    const value = parseSpeedMultiplier(elements.speed?.value ?? speedMultiplier)
+    const valid = value !== null
+    elements.speed?.setAttribute('aria-invalid', String(!valid))
+    elements.speedStatus?.classList.toggle('is-error', !valid)
+    let message = '0.5~10 사이의 숫자를 입력해줘.'
+    if (valid) {
+      speedMultiplier = value
+      message = global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+        ? '기기의 모션 줄이기 설정에 따라 느리게 회전해.'
+        : `현재 ${value}배 · 시작 전에 조절해줘.`
+      if (persist) {
+        try { localStorage.setItem(SPEED_STORAGE_KEY, String(value)) }
+        catch (error) { message = `현재 ${value}배 · 이 기기에 설정을 저장하지 못했어.` }
+      }
+    }
+    if (elements.speedStatus) elements.speedStatus.textContent = message
+    if (!running) {
+      const disabled = !valid || !parseItems(elements.input?.value || '').ok
+      if (elements.spin) elements.spin.disabled = disabled
+      if (elements.center) elements.center.disabled = disabled
+    }
+    return valid
+  }
+
   function getSpinMotionProfile(overrides = {}) {
-    const reduceMotion = typeof overrides.reduceMotion === 'boolean'
+    const reducedMotion = typeof overrides.reduceMotion === 'boolean'
       ? overrides.reduceMotion
       : global.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
     const mobile = typeof overrides.mobile === 'boolean' ? overrides.mobile : isMobileSpinEnvironment()
-    if (reduceMotion) {
-      return {
-        duration: mobile ? 6000 : 4200,
-        minTurns: mobile ? 6 : 4,
-        mobile,
-        reducedMotion: true,
-        acceleration: REDUCED_MOTION_ACCELERATION_RATIO,
-        cruise: REDUCED_MOTION_CRUISE_RATIO,
-        deceleration: REDUCED_MOTION_DECELERATION_RATIO
-      }
+    const multiplier = parseSpeedMultiplier(overrides.speedMultiplier ?? speedMultiplier) ?? 1
+    return {
+      mobile, reducedMotion, speedMultiplier: multiplier,
+      maxSpeed: TWO_PI * (reducedMotion ? .6 : 14 * multiplier),
+      accelerationMs: reducedMotion ? 160 : 260,
+      stopDurationMs: reducedMotion ? 2400 : 4800
     }
-    return mobile
-      ? {
-          duration: 9000,
-          minTurns: 12,
-          mobile: true,
-          acceleration: MOBILE_SPIN_ACCELERATION_RATIO,
-          cruise: MOBILE_SPIN_CRUISE_RATIO,
-          deceleration: MOBILE_SPIN_DECELERATION_RATIO
-        }
-      : {
-          duration: 6200,
-          minTurns: 9,
-          mobile: false,
-          acceleration: SPIN_ACCELERATION_RATIO,
-          cruise: SPIN_CRUISE_RATIO,
-          deceleration: SPIN_DECELERATION_RATIO
-        }
   }
 
-  // 모바일은 감속 구간을 더 길게 배분해 작은 화면에서도 정지 순간이 급하게 느껴지지 않게 한다.
-  function getSpinEasedProgress(rawProgress, motionProfile = {}) {
-    const progress = Math.max(0, Math.min(1, Number(rawProgress) || 0))
-    const acceleration = motionProfile.acceleration ?? SPIN_ACCELERATION_RATIO
-    const cruise = motionProfile.cruise ?? SPIN_CRUISE_RATIO
-    const deceleration = motionProfile.deceleration ?? SPIN_DECELERATION_RATIO
-    const totalArea = acceleration / 2 + cruise + deceleration / 2
-
-    if (progress < acceleration) {
-      return (progress * progress / (2 * acceleration)) / totalArea
-    }
-    if (progress < acceleration + cruise) {
-      return (acceleration / 2 + progress - acceleration) / totalArea
-    }
-
-    const phaseProgress = (progress - acceleration - cruise) / deceleration
-    const decelerationArea = deceleration * (phaseProgress - phaseProgress * phaseProgress / 2)
-    return Math.min(1, (acceleration / 2 + cruise + decelerationArea) / totalArea)
+  function getCruiseAngle(elapsedMs, profile) {
+    const seconds = Math.max(0, elapsedMs) / 1000
+    const acceleration = profile.accelerationMs / 1000
+    return profile.maxSpeed * (seconds < acceleration
+      ? seconds * seconds / (2 * acceleration)
+      : seconds - acceleration / 2)
   }
 
-  // 합성 레이어에서 그대로 재생할 수 있도록 적분된 속도 곡선을 촘촘한 키프레임으로 만든다.
-  // 브라우저가 메인 스레드 작업으로 잠시 바빠도 원판 회전 자체는 끊기거나 건너뛰지 않는다.
-  function buildSpinKeyframes(totalDelta, motionProfile, sampleCount = SPIN_KEYFRAME_COUNT) {
-    const count = Math.max(3, Math.floor(Number(sampleCount) || SPIN_KEYFRAME_COUNT))
-    return Array.from({ length: count }, (_, index) => {
-      const offset = index / (count - 1)
-      const angle = totalDelta * getSpinEasedProgress(offset, motionProfile)
-      return {
-        offset,
-        transform: `rotate(${angle}rad) translateZ(0)`
-      }
-    })
+  function createStopPlan(rotation, desiredModulo, profile) {
+    const alignment = normalizeAngle(desiredModulo - normalizeAngle(rotation))
+    const preferredDistance = profile.maxSpeed * profile.stopDurationMs / 3000
+    const turns = profile.reducedMotion ? (alignment < TWO_PI * .1 ? 1 : 0)
+      : Math.max(1, Math.round((preferredDistance - alignment) / TWO_PI))
+    const distance = turns * TWO_PI + alignment
+    const durationMs = profile.reducedMotion
+      ? Math.max(600, Math.min(profile.stopDurationMs, 3000 * distance / profile.maxSpeed))
+      : 3000 * distance / profile.maxSpeed
+    return { startRotation: rotation, targetRotation: rotation + distance, distance, durationMs,
+      initialSlope: profile.maxSpeed * durationMs / (1000 * distance) }
+  }
+
+  function getBrakeProgress(rawProgress, initialSlope = 3) {
+    const p = Math.max(0, Math.min(1, rawProgress))
+    // Hermite curve: preserve entry speed, land on the selected wedge with zero speed.
+    return (-2 * p * p * p + 3 * p * p) + initialSlope * (p * p * p - 2 * p * p + p)
   }
 
   function setCanvasSpinTransform(canvas, delta) {
     if (!canvas) return false
-    canvas.classList.add('is-spinning')
+    // One compositor-friendly write per frame; never redraw labels during a spin.
     canvas.style.transform = `rotate(${delta}rad)`
     return true
   }
@@ -140,12 +173,14 @@
     canvas.classList.remove('is-spinning')
   }
 
-  function finishVisualSpin({ canvas, items, targetRotation, outcome, runId, animation = null }) {
+  function finishVisualSpin({ canvas, items, targetRotation, outcome, runId }) {
     if (!running || runId !== spinRunId) return
-    if (animation && canvasAnimation === animation) canvasAnimation = null
-    animation?.cancel?.()
     animationFrame = null
-    currentRotation = targetRotation
+    currentRotation = normalizeAngle(targetRotation)
+    resultVisualItems = items
+    resultVisualRotation = currentRotation
+    fallbackFrame = null
+    spinSession = null
     renderWheel(items, currentRotation)
     clearCanvasSpinTransform(canvas)
     finishSpin(outcome)
@@ -161,8 +196,9 @@
     for (const row of rows) {
       const text = row.trim()
       if (!text) continue
-      const match = text.match(/^(.*?)\s*(?:\||\*)\s*(\d+(?:\.\d+)?)\s*$/)
-      const label = (match ? match[1] : text).trim()
+      const match = text.match(/^(.*?)\s*(?:\||\*)\s*(\d+(?:\.\d+)?|\.\d+)\s*$/)
+      if (/[|*]/.test(text) && !match) return { ok: false, reason: '가중치는 0보다 큰 숫자로 입력해줘. 예: 치킨 | 3', items }
+      const label = (match ? match[1] : text).trim().normalize('NFC')
       const weight = match ? Number(match[2]) : 1
       const key = label.toLocaleLowerCase('ko-KR')
 
@@ -201,14 +237,25 @@
   function saveItems(items) {
     try {
       localStorage.setItem(ITEMS_STORAGE_KEY, JSON.stringify(items))
+      localStorage.setItem(DRAFT_STORAGE_KEY, getElements().input?.value || '')
       usedSavedItems = true
-    } catch (error) {}
+      storageAvailable = true
+    } catch (error) {
+      storageAvailable = false
+      const status = getElements().status
+      if (status) status.textContent = '현재 창에서는 사용할 수 있지만, 항목을 이 기기에 저장하지 못했어.'
+    }
   }
 
   function loadHistory() {
     try {
       const saved = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || '[]')
-      history = Array.isArray(saved) ? saved.slice(0, MAX_HISTORY) : []
+      history = Array.isArray(saved) ? saved.filter((record) =>
+        record && typeof record.winner === 'string' && record.winner.length <= 40 &&
+        Number.isFinite(record.selectedWeight) && record.selectedWeight > 0 &&
+        Number.isFinite(record.totalWeight) && record.totalWeight >= record.selectedWeight &&
+        Number.isFinite(record.createdAt) && Number.isFinite(new Date(record.createdAt).getTime())
+      ).slice(0, MAX_HISTORY) : []
     } catch (error) {
       history = []
     }
@@ -217,12 +264,17 @@
   function saveHistory() {
     try {
       localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)))
-    } catch (error) {}
+    } catch (error) {
+      storageAvailable = false
+    }
   }
 
   function renderHistory() {
-    const list = getElements().history
+    const elements = getElements()
+    const list = elements.history
     if (!list) return
+    if (elements.historyCount) elements.historyCount.textContent = String(history.length)
+    if (elements.clearHistory) elements.clearHistory.disabled = !history.length
     list.replaceChildren()
 
     if (!history.length) {
@@ -239,10 +291,14 @@
       const winner = document.createElement('strong')
       const time = document.createElement('time')
       rank.textContent = String(index + 1)
-      winner.textContent = `${record.winner} · 가중치 ${record.selectedWeight}/${record.totalWeight}`
+      winner.textContent = record.winner
+      const detail = document.createElement('small')
+      const percentage = record.selectedWeight / record.totalWeight * 100
+      detail.textContent = `당첨 확률 ${percentage < 0.01 ? '0.01% 미만' : `${Number(percentage.toFixed(2))}%`}`
+      winner.appendChild(detail)
       const date = new Date(record.createdAt)
       time.dateTime = date.toISOString()
-      time.textContent = new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
+      time.textContent = historyDateFormat.format(date)
       item.append(rank, winner, time)
       list.appendChild(item)
     })
@@ -255,12 +311,14 @@
     return `${clipped}…`
   }
 
-  function renderWheel(items = currentItems, rotation = currentRotation) {
-    const canvas = getElements().canvas
-    if (!canvas || !items.length) return
+  function renderWheel(items = resultVisualItems || currentItems, rotation = resultVisualItems ? resultVisualRotation : currentRotation) {
+    const { canvas, screen } = getElements()
+    if (!canvas || document.hidden || (screen && !screen.classList.contains('active'))) return
     const rect = canvas.getBoundingClientRect()
-    const cssSize = Math.max(300, Math.min(rect.width || 720, rect.height || 720))
-    const dpr = Math.min(global.devicePixelRatio || 1, 2)
+    if (!rect.width || !rect.height) return
+    const cssSize = Math.max(1, Math.min(rect.width, rect.height))
+    const level = global.RandomRoulettePerformance?.profile?.qualityLevel
+    const dpr = Math.min(global.devicePixelRatio || 1, level === 'low' ? 1.25 : level === 'balanced' ? 1.5 : 2)
     const pixelSize = Math.round(cssSize * dpr)
     if (canvas.width !== pixelSize || canvas.height !== pixelSize) {
       canvas.width = pixelSize
@@ -271,6 +329,7 @@
     if (!context) return
     context.setTransform(dpr, 0, 0, dpr, 0, 0)
     context.clearRect(0, 0, cssSize, cssSize)
+    if (!items.length) return
     const center = cssSize / 2
     const radius = center - 12
     const totalWeight = items.reduce((sum, item) => sum + item.weight, 0)
@@ -313,38 +372,66 @@
     context.stroke()
   }
 
+  function updateSpinButtonState() {
+    const elements = getElements()
+    const stopping = running && Boolean(spinSession?.stopRequested)
+    const spinning = running && !stopping
+    if (elements.center) {
+      elements.center.textContent = stopping ? '감속 중' : spinning ? 'STOP' : 'SPIN'
+      elements.center.setAttribute('aria-label', stopping ? '원판 감속 중' : spinning ? 'STOP 원판 서서히 멈추기' : 'SPIN 원판 룰렛 돌리기')
+      elements.center.disabled = stopping
+      elements.center.classList.toggle('is-stop', spinning)
+    }
+    if (elements.spin) {
+      elements.spin.textContent = stopping ? '멈추는 중…' : spinning ? 'STOP · 멈추기' : 'SPIN · 돌리기'
+      elements.spin.disabled = stopping
+      elements.spin.classList.toggle('is-stop', spinning)
+    }
+    elements.screen?.classList.toggle('wheel-is-running', running)
+    elements.screen?.classList.toggle('wheel-is-cruising', spinning)
+    elements.screen?.classList.toggle('wheel-is-stopping', stopping)
+    if (elements.progress) elements.progress.hidden = !stopping
+    if (!stopping && elements.progressFill) elements.progressFill.style.transform = 'scaleX(0)'
+  }
+
   function setControlsLocked(locked) {
     const elements = getElements()
     running = locked
-    if (elements.input) elements.input.disabled = locked
-    if (elements.spin) elements.spin.disabled = locked
-    if (elements.center) elements.center.disabled = locked
-    if (elements.useRoster) elements.useRoster.disabled = locked
-    if (elements.respin) elements.respin.disabled = locked || !lastWinner
-    if (elements.remove) elements.remove.disabled = locked || !lastWinner
+    for (const control of [elements.input, elements.useRoster, elements.autoRemove, elements.editItems, elements.speed]) {
+      if (control) control.disabled = locked
+    }
+    updateSpinButtonState()
+    if (elements.remove) elements.remove.disabled = locked || !lastWinner || currentItems.length < 3
     global.RandomRouletteWakeLock?.sync?.(locked)
   }
 
   function updatePreview({ persist = true } = {}) {
     const elements = getElements()
     const parsed = parseItems(elements.input?.value || '')
+    elements.input?.setAttribute('aria-invalid', String(!parsed.ok))
+    elements.status?.classList.toggle('is-error', !parsed.ok)
     if (!parsed.ok) {
+      currentItems = parsed.items
+      if (persist) scheduleItemSave()
       if (elements.status) elements.status.textContent = parsed.reason
+      if (elements.weight) elements.weight.textContent = '항목 확인'
       if (elements.spin) elements.spin.disabled = true
       if (elements.center) elements.center.disabled = true
+      if (elements.remove) elements.remove.disabled = true
+      queuePreview()
       return parsed
     }
 
     currentItems = parsed.items
     const totalWeight = currentItems.reduce((sum, item) => sum + item.weight, 0)
-    if (elements.status) elements.status.textContent = `${currentItems.length}개 항목 확인 완료. 결과 계산과 애니메이션은 서로 분리되어 실행돼.`
+    if (elements.status) elements.status.textContent = `${currentItems.length}개 준비 완료. SPIN으로 돌리고 STOP으로 멈춰줘.`
     if (elements.weight) elements.weight.textContent = `총 가중치 ${Number(totalWeight.toFixed(2))}`
-    if (elements.spin) elements.spin.disabled = running
-    if (elements.center) elements.center.disabled = running
-    if (persist) saveItems(currentItems)
-    requestAnimationFrame(() => {
-      if (!running) renderWheel()
-    })
+    const spinDisabled = running ? Boolean(spinSession?.stopRequested) : parseSpeedMultiplier(elements.speed?.value ?? speedMultiplier) === null
+    if (elements.spin) elements.spin.disabled = spinDisabled
+    if (elements.center) elements.center.disabled = spinDisabled
+    if (elements.remove) elements.remove.disabled = running || !lastWinner || currentItems.length < 3
+    if (persist) scheduleItemSave()
+    queuePreview()
     return parsed
   }
 
@@ -358,7 +445,7 @@
     history.unshift({
       winner: outcome.winner,
       selectedWeight: outcome.selectedWeight,
-      totalWeight: Number(outcome.totalWeight.toFixed(2)),
+      totalWeight: outcome.totalWeight,
       seed: outcome.seed,
       createdAt: outcome.createdAt
     })
@@ -377,10 +464,14 @@
       void elements.resultCard.offsetWidth
       elements.resultCard.classList.add('is-winner')
     }
-    if (elements.status) elements.status.textContent = `당첨 결과: ${outcome.winner} · seed ${outcome.seed}`
-    if (elements.respin) elements.respin.disabled = false
-    if (elements.remove) elements.remove.disabled = false
+    if (elements.status) elements.status.textContent = currentItems.length < 3
+      ? `“${outcome.winner}” 당첨! 항목이 2개 남아 같은 항목으로 다시 돌릴 수 있어.`
+      : `“${outcome.winner}” 당첨! 한 번 더 돌리거나 당첨 항목을 제외할 수 있어.`
+    if (elements.spin) elements.spin.textContent = 'SPIN · 한 번 더'
+    if (elements.resultNote) elements.resultNote.textContent = '위쪽 화살표가 가리키는 항목이 당첨!'
+    if (elements.remove) elements.remove.disabled = currentItems.length < 3
     recordOutcome(outcome)
+    if (!storageAvailable && elements.status) elements.status.textContent = `“${outcome.winner}” 당첨! 기록을 이 기기에 저장하지 못했어.`
     if (typeof playSfx === 'function') playSfx('stockFinal')
 
     if (elements.autoRemove?.checked) {
@@ -388,14 +479,35 @@
     }
   }
 
+  function requestStop() {
+    if (!running || !spinSession || spinSession.stopRequested) return false
+    spinSession.stopRequested = true
+    updateSpinButtonState()
+    const elements = getElements()
+    if (elements.result) elements.result.textContent = '어디에 멈출까?'
+    if (elements.resultNote) elements.resultNote.textContent = '서서히 멈추고 있어. 화살표 아래 당첨 항목을 확인해줘.'
+    if (elements.status) elements.status.textContent = 'STOP! 천천히 멈출 때까지 기다려줘.'
+    elements.progress?.setAttribute('aria-valuenow', '0')
+    return true
+  }
+
+  function toggleSpin() {
+    if (running) requestStop()
+    else spin()
+  }
+
   function spin() {
     if (running) return
+    if (!updateSpeed()) {
+      getElements().speed?.focus()
+      return
+    }
     const parsed = updatePreview()
     if (!parsed.ok) {
       showPopup('룰렛 항목 확인', parsed.reason, { icon: '⚠️' })
       return
     }
-
+    flushItemSave()
     let outcome
     try {
       outcome = global.RandomRouletteEngine.calculateWeightedOutcome(parsed.items)
@@ -404,54 +516,56 @@
       return
     }
 
-    setControlsLocked(true)
+    resultVisualItems = null
     lastWinner = null
     const elements = getElements()
-    if (elements.result) elements.result.textContent = '룰렛 회전 중…'
-    if (elements.status) elements.status.textContent = '당첨 결과 계산 완료. 원판 애니메이션으로 결과를 보여주는 중이야.'
-    if (typeof playSfx === 'function') playSfx('rouletteSpin')
-
-    const centerOffset = getSelectedCenterOffset(parsed.items, outcome.selectedIndex)
-    const desiredModulo = normalizeAngle(-centerOffset)
-    const currentModulo = normalizeAngle(currentRotation)
-    const alignmentDelta = normalizeAngle(desiredModulo - currentModulo)
-    const startRotation = currentRotation
-    const motionProfile = getSpinMotionProfile()
-    const visualTurns = motionProfile.minTurns ? Math.max(outcome.turns, motionProfile.minTurns) : 0
-    const targetRotation = currentRotation + visualTurns * TWO_PI + alignmentDelta
-    const duration = motionProfile.duration
-    const startedAt = performance.now()
     const canvas = elements.canvas
+    const profile = getSpinMotionProfile()
     const runId = ++spinRunId
-    const totalDelta = targetRotation - startRotation
+    const startRotation = normalizeAngle(currentRotation)
+    const desiredModulo = normalizeAngle(-getSelectedCenterOffset(parsed.items, outcome.selectedIndex))
+    const session = { elapsedMs: 0, stopRequested: false, brake: null }
+    spinSession = session
+    setControlsLocked(true)
+    if (elements.result) elements.result.textContent = '고속 회전 중'
+    if (elements.resultNote) elements.resultNote.textContent = '원하는 순간 STOP을 누르면 서서히 멈춰.'
+    if (elements.status) elements.status.textContent = profile.reducedMotion ? 'SPIN! 원하는 순간 STOP을 눌러줘.' : `SPIN! ${profile.speedMultiplier}배 속도 · 원하는 순간 STOP을 눌러줘.`
+    elements.resultCard?.classList.remove('is-winner')
+    if (typeof playSfx === 'function') playSfx('rouletteSpin')
     renderWheel(parsed.items, startRotation)
+    canvas?.classList.add('is-spinning')
     setCanvasSpinTransform(canvas, 0)
-
-    if (canvas && typeof canvas.animate === 'function') {
-      const animation = canvas.animate(buildSpinKeyframes(totalDelta, motionProfile), {
-        duration,
-        easing: 'linear',
-        fill: 'forwards'
-      })
-      canvasAnimation = animation
-      animation.finished
-        .then(() => finishVisualSpin({ canvas, items: parsed.items, targetRotation, outcome, runId, animation }))
-        .catch(() => {})
-      return
-    }
-
+    lastSpinFrameAt = performance.now()
+    let lastPercent = -1
     const frame = (now) => {
-      const progress = Math.min(1, (now - startedAt) / duration)
-      const eased = getSpinEasedProgress(progress, motionProfile)
-      currentRotation = startRotation + totalDelta * eased
-      if (!setCanvasSpinTransform(canvas, currentRotation - startRotation)) renderWheel(parsed.items, currentRotation)
-      if (progress < 1 && running) {
-        animationFrame = requestAnimationFrame(frame)
-        return
+      if (document.hidden || !running || runId !== spinRunId) { animationFrame = null; return }
+      session.elapsedMs += lastSpinFrameAt === null ? 0 : Math.max(0, now - lastSpinFrameAt)
+      lastSpinFrameAt = now
+      if (!session.brake) {
+        currentRotation = startRotation + getCruiseAngle(session.elapsedMs, profile)
+        if (session.stopRequested && session.elapsedMs >= profile.accelerationMs) {
+          session.brake = { ...createStopPlan(currentRotation, desiredModulo, profile), startedAt: session.elapsedMs }
+        }
       }
-      finishVisualSpin({ canvas, items: parsed.items, targetRotation, outcome, runId })
+      if (session.brake) {
+        const brake = session.brake
+        const progress = Math.min(1, (session.elapsedMs - brake.startedAt) / brake.durationMs)
+        currentRotation = brake.startRotation + brake.distance * getBrakeProgress(progress, brake.initialSlope)
+        const percent = Math.floor(progress * 100)
+        if (percent !== lastPercent) {
+          lastPercent = percent
+          elements.progress?.setAttribute('aria-valuenow', String(percent))
+          if (elements.progressFill) elements.progressFill.style.transform = `scaleX(${progress})`
+        }
+        if (progress >= 1) {
+          finishVisualSpin({ canvas, items: parsed.items, targetRotation: brake.targetRotation, outcome, runId })
+          return
+        }
+      }
+      setCanvasSpinTransform(canvas, currentRotation - startRotation)
+      animationFrame = requestAnimationFrame(frame)
     }
-
+    fallbackFrame = frame
     animationFrame = requestAnimationFrame(frame)
   }
 
@@ -469,23 +583,38 @@
     followsRoster = false
     if (elements.input) elements.input.value = serializeItems(nextItems)
     saveItems(nextItems)
+    const totalWeight = nextItems.reduce((total, item) => total + item.weight, 0)
+    if (elements.weight) elements.weight.textContent = `총 가중치 ${Number(totalWeight.toFixed(2))}`
     lastWinner = null
     if (elements.remove) elements.remove.disabled = true
-    if (elements.respin) elements.respin.disabled = false
-    if (elements.status) elements.status.textContent = `“${winner}” 항목을 제거했어. 남은 항목은 ${nextItems.length}개야.`
-    renderWheel(nextItems, currentRotation)
+    if (elements.status) elements.status.textContent = `다음 추첨에서 “${winner}” 제외 · 남은 항목 ${nextItems.length}개`
+    if (elements.resultNote) elements.resultNote.textContent = `다음 추첨에서는 “${winner}” 제외`
+    // Preserve the winning wedge until the next spin or input edit.
+    queuePreview()
     return true
   }
 
+  function resetResultPreview() {
+    const elements = getElements()
+    lastWinner = null
+    resultVisualItems = null
+    if (elements.result) elements.result.textContent = '새 추첨 준비'
+    if (elements.resultNote) elements.resultNote.textContent = '항목을 확인하고 룰렛을 돌려봐.'
+    if (elements.spin) elements.spin.textContent = 'SPIN · 돌리기'
+    elements.resultCard?.classList.remove('is-winner')
+  }
+
   function useRoster() {
+    if (running) return false
     const rosterNames = global.RandomRouletteRoster?.getNames?.() || []
     if (rosterNames.length < 2) {
-      showPopup('공용 목록이 비어 있어', '목록을 만들거나 현재 룰렛 입력창에 항목을 직접 적어줘.', { icon: '☷' })
+      followsRoster = true
       global.RandomRouletteRoster?.open?.()
       return false
     }
     const elements = getElements()
     currentItems = rosterNames.map((label) => ({ label, weight: 1 }))
+    resetResultPreview()
     followsRoster = true
     if (elements.input) elements.input.value = serializeItems(currentItems)
     lastWinner = null
@@ -498,13 +627,16 @@
     if (animationFrame) cancelAnimationFrame(animationFrame)
     animationFrame = null
     spinRunId += 1
-    canvasAnimation?.cancel?.()
-    canvasAnimation = null
+    fallbackFrame = null
+    spinSession = null
+    currentRotation = normalizeAngle(currentRotation)
     if (running) {
       const elements = getElements()
       renderWheel(currentItems, currentRotation)
       clearCanvasSpinTransform(elements.canvas)
       setControlsLocked(false)
+      if (elements.result) elements.result.textContent = '추첨 취소'
+      if (elements.resultNote) elements.resultNote.textContent = '항목을 확인하고 다시 시작할 수 있어.'
       if (elements.status) elements.status.textContent = '진행 중이던 룰렛을 종료했어.'
     }
   }
@@ -524,47 +656,103 @@
       currentItems = savedItems
       elements.input.value = serializeItems(savedItems)
     }
+    try {
+      const draft = localStorage.getItem(DRAFT_STORAGE_KEY)
+      if (draft !== null && draft.length <= 8000 && elements.input) {
+        elements.input.value = draft
+        usedSavedItems = true
+      }
+    } catch (error) {}
     loadHistory()
     renderHistory()
+    try {
+      speedMultiplier = parseSpeedMultiplier(localStorage.getItem(SPEED_STORAGE_KEY)) ?? 1
+    } catch (error) { speedMultiplier = 1 }
+    if (elements.speed) elements.speed.value = String(speedMultiplier)
+    updateSpeed({ persist: false })
+    elements.speed?.addEventListener('input', () => updateSpeed())
+    elements.speed?.addEventListener('change', () => updateSpeed())
+    elements.speed?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') { event.preventDefault(); spin() }
+    })
+    try {
+      if (elements.autoRemove) elements.autoRemove.checked = localStorage.getItem(OPTIONS_STORAGE_KEY) === 'true'
+    } catch (error) {}
+    elements.autoRemove?.addEventListener('change', () => {
+      try { localStorage.setItem(OPTIONS_STORAGE_KEY, String(elements.autoRemove.checked)) } catch (error) {}
+    })
     elements.input?.addEventListener('input', () => {
       followsRoster = false
+      resetResultPreview()
       updatePreview()
     })
-    elements.spin?.addEventListener('click', spin)
-    elements.center?.addEventListener('click', spin)
-    elements.respin?.addEventListener('click', spin)
+    elements.input?.addEventListener('blur', flushItemSave)
+    global.addEventListener('pagehide', flushItemSave)
+    elements.spin?.addEventListener('click', toggleSpin)
+    elements.center?.addEventListener('click', toggleSpin)
     elements.remove?.addEventListener('click', () => removeLastWinner())
     elements.useRoster?.addEventListener('click', useRoster)
+    elements.editItems?.addEventListener('click', () => {
+      elements.input?.scrollIntoView({ block: 'center', behavior: 'auto' })
+      elements.input?.focus({ preventScroll: true })
+    })
     elements.clearHistory?.addEventListener('click', clearHistory)
     global.addEventListener('roulette-roster-change', () => {
-      if (followsRoster || !usedSavedItems) useRoster()
+      if (running) return
+      if (global.RandomRouletteRoster?.getCount?.() === 0) {
+        if (followsRoster) {
+          if (elements.input) elements.input.value = ''
+          currentItems = []
+          resetResultPreview()
+          saveItems([])
+          lastWinner = null
+          followsRoster = false
+          updatePreview({ persist: false })
+        }
+      } else if (followsRoster || !usedSavedItems) useRoster()
     })
-    global.addEventListener('resize', () => requestAnimationFrame(() => {
-      if (!running) renderWheel()
-    }), { passive: true })
-    new MutationObserver(() => requestAnimationFrame(() => {
-      if (!running) renderWheel()
-    }))
+    global.addEventListener('resize', queuePreview, { passive: true })
+    global.addEventListener('roulette-screen-change', () => { flushItemSave(); queuePreview() })
+    new MutationObserver(queuePreview)
       .observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    if (typeof global.ResizeObserver === 'function' && elements.canvas) {
+      new global.ResizeObserver(queuePreview).observe(elements.canvas)
+    }
+    document.fonts?.ready?.then(queuePreview)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        flushItemSave()
+        if (animationFrame) cancelAnimationFrame(animationFrame)
+        animationFrame = null
+        lastSpinFrameAt = null
+      } else if (running) {
+        if (fallbackFrame && !animationFrame) animationFrame = requestAnimationFrame(fallbackFrame)
+      } else queuePreview()
+    })
     updatePreview({ persist: Boolean(savedItems) })
   }
 
   function ensureReady() {
     init()
     if (!usedSavedItems && global.RandomRouletteRoster?.hasRoster?.()) useRoster()
-    requestAnimationFrame(() => renderWheel())
+    queuePreview()
   }
 
   global.RandomRouletteWheel = Object.freeze({
     init,
     ensureReady,
     spin,
+    requestStop,
+    toggleSpin,
+    getPhase: () => !running ? 'idle' : spinSession?.stopRequested ? 'stopping' : 'spinning',
     useRoster,
     cancelSpin,
     isRunning: () => running,
     parseItems,
+    parseSpeedMultiplier,
     getSpinMotionProfile,
-    getSpinEasedProgress,
-    buildSpinKeyframes
+    getCruiseAngle,
+    createStopPlan,
+    getBrakeProgress
   })
 })(window)
