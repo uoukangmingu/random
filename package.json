@@ -1,7 +1,7 @@
 {
   "name": "random-roulette-webapp",
   "private": true,
-  "version": "2.0.0",
+  "version": "3.27.0",
   "scripts": {
     "dev": "vite",
     "icons": "python3 scripts/generate_icons.py",
@@ -12,7 +12,15 @@
     "check:catalog-runtime": "node scripts/qa-catalog-list-runtime.mjs",
     "check:carousel-runtime": "node scripts/qa-mobile-carousel-runtime.mjs",
     "check:race-mobile": "node scripts/qa-race-mobile-identities.mjs",
-    "check:cursor-performance": "node scripts/qa-cursor-performance.mjs"
+    "check:cursor-performance": "node scripts/qa-cursor-performance.mjs",
+    "check:adaptive-performance": "node scripts/qa-adaptive-performance.mjs",
+    "check:sustained-performance": "node scripts/qa-sustained-performance.mjs",
+    "benchmark:game1": "node scripts/benchmark-game1-physics.mjs",
+    "check:progressive-runtime": "node scripts/qa-progressive-runtime.mjs",
+    "check:upgrade-runtime": "node scripts/qa-upgrade-runtime.mjs",
+    "check:gameplay-runtime": "node scripts/qa-gameplay-runtime.mjs",
+    "check:soundtrack-runtime": "node scripts/qa-soundtrack-runtime.mjs",
+    "check:drop-runtime": "node scripts/qa-drop-runtime.mjs"
   },
   "devDependencies": {
     "vite": "^8.2.2"

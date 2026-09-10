@@ -1,0 +1,60 @@
+{
+  "comparison": "v3.22 / v3.23 / v3.24 / v3.25 / v3.26 generated assets / v3.27",
+  "scope": "Raw file bytes and gzip bytes; excludes fonts/images. Not measured load time or device FPS.",
+  "metrics": {
+    "initial_code": {
+      "v3.22_bytes": 112087,
+      "v3.22_gzip_bytes": 23951,
+      "v3.23_bytes": 95878,
+      "v3.23_gzip_bytes": 21211,
+      "v3.24_bytes": 96027,
+      "v3.24_gzip_bytes": 21234,
+      "reduction_vs_v3.22_percent": 14.33,
+      "v3.25_bytes": 96027,
+      "v3.25_gzip_bytes": 21234,
+      "change_vs_v3.24_percent": 0.0,
+      "v3.26_bytes": 96027,
+      "v3.26_gzip_bytes": 21232,
+      "change_vs_v3.25_percent": 0.0,
+      "v3.27_bytes": 96003,
+      "v3.27_gzip_bytes": 21236,
+      "change_vs_v3.26_percent": -0.02
+    },
+    "game_javascript": {
+      "v3.22_bytes": 555311,
+      "v3.22_gzip_bytes": 131024,
+      "v3.23_bytes": 462130,
+      "v3.23_gzip_bytes": 117499,
+      "v3.24_bytes": 463314,
+      "v3.24_gzip_bytes": 117871,
+      "reduction_vs_v3.22_percent": 13.69,
+      "v3.25_bytes": 469047,
+      "v3.25_gzip_bytes": 119755,
+      "change_vs_v3.24_percent": 1.24,
+      "v3.26_bytes": 479271,
+      "v3.26_gzip_bytes": 123677,
+      "change_vs_v3.25_percent": 2.18,
+      "v3.27_bytes": 480845,
+      "v3.27_gzip_bytes": 124221,
+      "change_vs_v3.26_percent": 0.33
+    },
+    "game_css": {
+      "v3.22_bytes": 569250,
+      "v3.22_gzip_bytes": 90439,
+      "v3.23_bytes": 575012,
+      "v3.23_gzip_bytes": 91566,
+      "v3.24_bytes": 580800,
+      "v3.24_gzip_bytes": 92459,
+      "reduction_vs_v3.22_percent": -2.26,
+      "v3.25_bytes": 581754,
+      "v3.25_gzip_bytes": 92692,
+      "change_vs_v3.24_percent": 0.16,
+      "v3.26_bytes": 582103,
+      "v3.26_gzip_bytes": 92772,
+      "change_vs_v3.25_percent": 0.06,
+      "v3.27_bytes": 583102,
+      "v3.27_gzip_bytes": 92908,
+      "change_vs_v3.26_percent": 0.17
+    }
+  }
+}
