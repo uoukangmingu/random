@@ -117,11 +117,24 @@ assert.equal(independent.element('wheelSpinProgress').hidden, true)
 assert.equal(independent.element('wheelHistoryCount').textContent, '1')
 
 const reduced = wheelHarness({ reduced: true })
+reduced.element('wheelSpeedInput').value = '3'
+reduced.element('wheelSpeedInput').dispatchEvent({type:'input'})
 reduced.context.RandomRouletteWheel.spin()
 reduced.advance(1000)
-assert(reduced.context.RandomRouletteWheel.isRunning(), 'reduced motion still needs visible draw feedback')
+const readAngle = harness => Number(harness.canvas.style.transform.match(/rotate\(([-+0-9.eE]+)rad\)/)[1])
+const reducedBefore = readAngle(reduced)
+reduced.advance(1000)
+assert(Math.abs((readAngle(reduced)-reducedBefore)/(Math.PI*2)-42) < .01,
+  'OS reduced-motion preference must not silently override the chosen 3x game speed')
+reduced.element('wheelSpeedInput').value = '10'
+reduced.element('wheelSpeedInput').dispatchEvent({type:'input'})
+reduced.advance(500)
+const reducedFastBefore = readAngle(reduced)
+reduced.advance(1000)
+assert(Math.abs((readAngle(reduced)-reducedFastBefore)/(Math.PI*2)-140) < .01,
+  'Live speed changes must work with OS reduced motion enabled')
 reduced.context.RandomRouletteWheel.requestStop()
-reduced.advance(2700)
+reduced.advance(5400)
 assert(!reduced.context.RandomRouletteWheel.isRunning())
 assert.equal(JSON.parse(reduced.storage.get('roulette-basic-wheel-history-v1')).length, 1)
 
@@ -164,4 +177,4 @@ for (let i = 0; i < 8; i++) await Promise.resolve()
 assert.equal(released, 1, 'a late wake lock must be released after the game stops')
 assert(!wakeContext.RandomRouletteWakeLock.isActive())
 
-console.log(JSON.stringify({ resizeDrawsPer100Events: 1, canvasPaintsPerSpin: 2, inactiveWheelPaints: 0, lowModeDpr: 1.25, hiddenTimeExcluded: true, rotationIndependentOfWebAnimations: true, reducedMotionShortSpin: true, malformedHistoryRecovered: true, emptyDraftRestored: true, lateWakeLockReleased: true }))
+console.log(JSON.stringify({ resizeDrawsPer100Events: 1, canvasPaintsPerSpin: 2, inactiveWheelPaints: 0, lowModeDpr: 1.25, hiddenTimeExcluded: true, rotationIndependentOfWebAnimations: true, reducedMotionUsesChosenSpeed: '3x→10x verified', malformedHistoryRecovered: true, emptyDraftRestored: true, lateWakeLockReleased: true }))

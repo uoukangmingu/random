@@ -5,7 +5,7 @@ import vm from 'node:vm'
 const source = await readFile('script.js', 'utf8')
 const shell = await readFile('index.html', 'utf8')
 const template = await readFile('src/index.template.html', 'utf8')
-const markup = await readFile('app-markup.v3.27.js', 'utf8')
+const markup = await readFile('app-markup.v3.28.js', 'utf8')
 const sw = await readFile('sw.js', 'utf8')
 const metrics = JSON.parse(await readFile('BUILD_METRICS.json', 'utf8'))
 assert(metrics.initialScriptBytes < 5000 && metrics.initialCssBytes < 110000)
@@ -26,11 +26,11 @@ assert(!/\.mp4|matter\.min|runtime\.v/.test(precache), 'Heavy assets must not be
 for (const match of precache.matchAll(/'\.\/([^']*)'/g)) {
   if (match[1]) await access(`dist/${match[1]}`)
 }
-for (const name of ['shell.v3.27.js', 'runtime.v3.27.js', 'app-markup.v3.27.js', 'sw.js']) {
+for (const name of ['shell.v3.28.js', 'runtime.v3.28.js', 'app-markup.v3.28.js', 'sw.js']) {
   new vm.Script(await readFile(`dist/${name}`, 'utf8'), { filename: name })
 }
 
-const loader = await readFile('shell.v3.27.js', 'utf8')
+const loader = await readFile('shell.v3.28.js', 'utf8')
 async function exerciseLoader(failOnce = false) {
   const requests = [], listeners = new Map()
   let actionCount = 0, ready = false
@@ -49,8 +49,8 @@ async function exerciseLoader(failOnce = false) {
         const url = node.src || node.href
         requests.push(url)
         queueMicrotask(() => {
-          if (failOnce && url.includes('runtime.v3.27.css')) { failOnce = false; node.onerror(); return }
-          if (url === 'runtime.v3.27.js') { ready = true; context.RandomRouletteApp = { ready: true } }
+          if (failOnce && url.includes('runtime.v3.28.css')) { failOnce = false; node.onerror(); return }
+          if (url === 'runtime.v3.28.js') { ready = true; context.RandomRouletteApp = { ready: true } }
           node.onload()
         })
       } }
@@ -68,7 +68,7 @@ async function exerciseLoader(failOnce = false) {
     await handler(event)
   }
   assert.equal(actionCount, 1, 'Deferred double click must launch exactly once')
-  assert.equal(requests.filter((url) => url === 'runtime.v3.27.js').length, 1)
+  assert.equal(requests.filter((url) => url === 'runtime.v3.28.js').length, 1)
   assert(!requests.some((url) => url.includes('matter')))
   await Promise.all([context.RandomRouletteLoader.loadPhysics(), context.RandomRouletteLoader.loadPhysics()])
   assert.equal(requests.filter((url) => url.includes('matter')).length, 1)

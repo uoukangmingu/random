@@ -10,6 +10,7 @@ const frameMs = 1000 / simulatedFps
 let now = 0
 let nextFrameId = 1
 let frameQueue = []
+let textureDraws = 0
 
 function queueFrame(callback) {
   const id = nextFrameId
@@ -88,6 +89,7 @@ class MockElement {
 
 const canvasContext = new Proxy({}, {
   get(target, property) {
+    if (property === 'drawImage') return () => { textureDraws++ }
     if (property === 'measureText') return (text) => ({ width: String(text).length * 10 })
     if (!(property in target)) target[property] = () => {}
     return target[property]
@@ -127,6 +129,8 @@ const elementIds = [
 ]
 const elements = Object.fromEntries(elementIds.map((id) => [id, new MockElement()]))
 elements.wheelCanvas = new MockCanvas()
+elements.wheelMotionCanvas = new MockCanvas()
+elements.wheelMotionCanvas.hidden = true
 elements.wheelItemsInput.value = '점심 A | 1\n점심 B | 1\n점심 C | 1'
 
 const storage = new Map()
@@ -151,7 +155,7 @@ const context = {
   document: {
     documentElement,
     getElementById: (id) => elements[id] || null,
-    createElement: () => new MockElement(),
+    createElement: (tag) => tag === 'canvas' ? new MockCanvas() : new MockElement(),
     addEventListener() {}
   },
   MutationObserver: class MutationObserver {
@@ -231,7 +235,7 @@ if (elements.wheelSpinBtn.disabled || elements.wheelCenterButton.textContent !==
 if (JSON.parse(storage.get('roulette-basic-wheel-history-v1')).length !== 1) throw new Error('결과가 한 번만 저장되지 않음')
 console.log(JSON.stringify({ simulatedFps, manualStop: true, noAutomaticStopAfterSeconds: 20, cruiseTurnsPerSecond: Number(cruiseTurnsPerSecond.toFixed(2)), decelerationPer700ms: deltas.map(n=>Number(n.toFixed(4))), resultConfirmed: elements.wheelResultText.textContent }))
 
-// Numeric speed is independent of selection weights, survives reload and locks per spin.
+// Numeric speed is independent of selection weights and is editable while cruising.
 function enterSpeed(value) {
   elements.wheelSpeedInput.value = value
   elements.wheelSpeedInput.listeners.get('input')()
@@ -249,13 +253,14 @@ for (const multiplier of [.5, 2, 2.75, 10]) {
   assert(!elements.wheelSpinBtn.disabled)
   assert.equal(storage.get('roulette-basic-wheel-speed-v1'), String(multiplier))
   context.RandomRouletteWheel.spin()
-  assert(elements.wheelSpeedInput.disabled)
+  assert(!elements.wheelSpeedInput.disabled)
   runUntil(now + 1000)
   const before = readAngle()
   runUntil(now + 1000)
   const actual = (readAngle() - before) / (Math.PI * 2)
   assert(Math.abs(actual - 14 * multiplier) < .01)
   context.RandomRouletteWheel.requestStop()
+  assert(elements.wheelSpeedInput.disabled, 'Speed changes must lock once braking starts')
   runUntil(now + 6000)
   assert(!context.RandomRouletteWheel.isRunning())
   assert(!elements.wheelSpeedInput.disabled)
@@ -266,8 +271,34 @@ for (const multiplier of [.5, 2, 2.75, 10]) {
 }
 assert.equal(JSON.parse(storage.get('roulette-basic-wheel-history-v1')).length, 5)
 const profile = context.RandomRouletteWheel.getSpinMotionProfile({reduceMotion:true,speedMultiplier:10})
-assert.equal(profile.maxSpeed, Math.PI * 2 * .6)
+assert.equal(profile.maxSpeed, Math.PI * 2 * 140)
+
+// Raise and lower speed without restarting the current wheel or redrawing it every frame.
+enterSpeed('1'); context.RandomRouletteWheel.spin(); runUntil(now + 1000)
+const firstAngle = readAngle()
+enterSpeed('10')
+assert.equal(readAngle(), firstAngle, 'Live speed input must not jump the wheel angle')
+runUntil(now + 500)
+const fastStart = readAngle(), drawCount = textureDraws
+runUntil(now + 1000)
+assert(Math.abs((readAngle()-fastStart)/(Math.PI*2)-140) < .01)
+assert.equal(textureDraws, drawCount, 'Stable high-speed frames must reuse the cached texture')
+assert.equal(elements.wheelCanvas.style.opacity, '0')
+assert.equal(elements.wheelMotionCanvas.hidden, false)
+assert.equal(elements.wheelMotionCanvas.style.transform, elements.wheelCanvas.style.transform)
+enterSpeed('')
+assert(!elements.wheelSpinBtn.disabled, 'A temporarily empty speed input must not disable STOP')
+enterSpeed('2'); runUntil(now + 500)
+const slowStart = readAngle(); runUntil(now + 1000)
+assert(Math.abs((readAngle()-slowStart)/(Math.PI*2)-28) < .01)
+context.RandomRouletteWheel.requestStop(); runUntil(now + 6000)
+assert.equal(elements.wheelMotionCanvas.hidden, true)
+assert.equal(elements.wheelCanvas.style.opacity, '')
+assert.equal(elements.wheelMotionCanvas.width, 1, 'The transient texture must be released after stopping')
+assert.equal(JSON.parse(storage.get('roulette-basic-wheel-history-v1')).length, 6, 'Live speed changes must keep one outcome')
+
+enterSpeed('10')
 vm.runInContext(await readFile(path.join(root,'src/games/wheel.js'),'utf8'),context)
 context.RandomRouletteWheel.init()
 assert.equal(elements.wheelSpeedInput.value, '10', 'Speed setting must survive a reload')
-console.log(JSON.stringify({speedResults,invalidSpeedBlocked:true,persisted:true,selectionWeightsPreserved:true,reducedMotionPreserved:true}))
+console.log(JSON.stringify({speedResults,invalidSpeedBlocked:true,persisted:true,selectionWeightsPreserved:true,reducedMotionRespectsUserSpeed:true,liveChanges:'1→10→2, one outcome',stableSpeedTextureRedraws:0}))

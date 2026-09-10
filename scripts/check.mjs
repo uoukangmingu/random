@@ -362,7 +362,7 @@ const mobileSpinProfile = logicContext.RandomRouletteWheel.getSpinMotionProfile(
 const desktopSpinProfile = logicContext.RandomRouletteWheel.getSpinMotionProfile({ mobile: false, reduceMotion: false })
 if (mobileSpinProfile.maxSpeed !== Math.PI * 28 || desktopSpinProfile.maxSpeed !== Math.PI * 28) throw new Error('초고속 회전 속도 오류')
 const reducedMobileSpinProfile = logicContext.RandomRouletteWheel.getSpinMotionProfile({ mobile: true, reduceMotion: true })
-if (reducedMobileSpinProfile.maxSpeed >= mobileSpinProfile.maxSpeed || reducedMobileSpinProfile.stopDurationMs !== 2400) throw new Error('모션 감소 프로필 오류')
+if (reducedMobileSpinProfile.maxSpeed !== mobileSpinProfile.maxSpeed || reducedMobileSpinProfile.stopDurationMs !== mobileSpinProfile.stopDurationMs) throw new Error('기기의 모션 감소 설정이 룰렛 속도를 덮어씀')
 const brake = logicContext.RandomRouletteWheel.createStopPlan(43.1, 1.4, mobileSpinProfile)
 if (brake.durationMs < 4600 || brake.durationMs > 5000) throw new Error('STOP 감속 시간 오류')
 if (Math.abs((brake.targetRotation % (Math.PI * 2)) - 1.4) > .000001) throw new Error('STOP 후 당첨 구간 정렬 오류')

@@ -46,12 +46,12 @@ export async function buildProgressive(appJs, appCss) {
   const screens = mainMatch[1].replace(home, '')
   let shell = template.replace(mainMatch[0], `<main class="app">${home}</main>`)
   shell = shell.replace(/<script src="[^"]+"><\/script>/g, '')
-  shell = shell.replace('random-roulette.v3.21.css', 'shell.v3.27.css')
+  shell = shell.replace('random-roulette.v3.21.css', 'shell.v3.28.css')
   shell = shell.replace('<body>', '<body class="home-screen-mode">')
   shell = shell.replace('</main>', '</main><p id="appLoadStatus" role="status" aria-live="polite"></p>')
   // Fonts must never block the first screen when the font server is slow or unavailable.
   shell = shell.replace(/(<link\s+href="https:\/\/fonts.googleapis.com[\s\S]*?rel="stylesheet")/, '$1 media="print" onload="this.media=\'all\'"')
-  shell = shell.replace('</body>', '<script defer src="shell.v3.27.js"></script>\n<noscript>게임을 실행하려면 브라우저에서 JavaScript를 켜 주세요.</noscript>\n</body>')
+  shell = shell.replace('</body>', '<script defer src="shell.v3.28.js"></script>\n<noscript>게임을 실행하려면 브라우저에서 JavaScript를 켜 주세요.</noscript>\n</body>')
   shell = shell.replace(/(id="(?:desktopPrevStepBtn|mobilePrevStepBtn)"[^>]*)(>)/g, '$1 disabled aria-disabled="true"$2')
 
   // Conservatively retain all rules whose positive selector tokens exist in the shell.
@@ -79,11 +79,11 @@ export async function buildProgressive(appJs, appCss) {
   const markup = `;(function(){if(window.__rouletteMarkupLoaded)return;document.querySelector('main.app').insertAdjacentHTML('beforeend',${JSON.stringify(screens)});window.__rouletteMarkupLoaded=true;})();`
   const files = {
     'index.html': shell,
-    'shell.v3.27.css': cssMinify(tree.toString() + loadStatusCss),
-    'shell.v3.27.js': await jsMinify('shell.js', await readFile('src/shared/progressive-loader.js', 'utf8')),
-    'app-markup.v3.27.js': markup,
-    'runtime.v3.27.js': await jsMinify('runtime.js', appJs),
-    'runtime.v3.27.css': cssMinify(completeTree.toString() + loadStatusCss)
+    'shell.v3.28.css': cssMinify(tree.toString() + loadStatusCss),
+    'shell.v3.28.js': await jsMinify('shell.js', await readFile('src/shared/progressive-loader.js', 'utf8')),
+    'app-markup.v3.28.js': markup,
+    'runtime.v3.28.js': await jsMinify('runtime.js', appJs),
+    'runtime.v3.28.css': cssMinify(completeTree.toString() + loadStatusCss)
   }
   for (const [name, content] of Object.entries(files)) {
     await writeFile(name, content)
@@ -94,14 +94,14 @@ export async function buildProgressive(appJs, appCss) {
   }
   const metrics = {
     initialHtmlBytes: Buffer.byteLength(shell),
-    initialScriptBytes: Buffer.byteLength(files['shell.v3.27.js']),
-    initialCssBytes: Buffer.byteLength(files['shell.v3.27.css']),
+    initialScriptBytes: Buffer.byteLength(files['shell.v3.28.js']),
+    initialCssBytes: Buffer.byteLength(files['shell.v3.28.css']),
     baselineV321ScriptBytes: 653805,
     baselineV321CssBytes: 761978,
     sourceScriptBytes: Buffer.byteLength(appJs),
     sourceCssBytes: Buffer.byteLength(appCss),
-    gameScriptBytes: Buffer.byteLength(files['runtime.v3.27.js']),
-    gameCssBytes: Buffer.byteLength(files['runtime.v3.27.css'])
+    gameScriptBytes: Buffer.byteLength(files['runtime.v3.28.js']),
+    gameCssBytes: Buffer.byteLength(files['runtime.v3.28.css'])
   }
   await writeFile('BUILD_METRICS.json', JSON.stringify(metrics, null, 2) + '\n')
   console.log('Progressive build:', JSON.stringify(metrics))
