@@ -497,12 +497,19 @@ body.key-react-compact-mode #physicalKeyReactScreen .key-react-key-input { min-h
 }
 
 @media (max-width: 767px) {
-  html { scroll-padding-block: 14px calc(82px + env(safe-area-inset-bottom)); }
+  html {
+    --utility-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --utility-dock-height: calc(72px + var(--utility-safe-bottom));
+    scroll-padding-block: 14px calc(var(--utility-dock-height) + 10px);
+  }
   /* Match the performance selector so its 12px padding cannot erase the dock clearance. */
-  .app, html.perf-mobile .app { padding-bottom: calc(82px + env(safe-area-inset-bottom)) !important; }
-  .utility-controls {
+  .app, html.perf-mobile .app { padding-bottom: calc(var(--utility-dock-height) + 10px) !important; }
+  html body.app-active-game .utility-controls,
+  html body:not(.app-active-game) .utility-controls {
+    position: fixed !important;
     inset: auto 0 0 0 !important; width: 100% !important; max-width: none !important;
-    padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); gap: 10px !important;
+    padding: 8px max(12px, env(safe-area-inset-right, 0px)) calc(8px + var(--utility-safe-bottom)) max(12px, env(safe-area-inset-left, 0px));
+    gap: 10px !important; margin: 0 !important;
     transform: none !important; box-sizing: border-box;
   }
   .utility-quick-actions {
@@ -518,20 +525,36 @@ body.key-react-compact-mode #physicalKeyReactScreen .key-react-key-input { min-h
   #mobilePrevStepBtn:disabled, #desktopPrevStepBtn:disabled { display: none !important; }
   .utility-quick-actions:has(.utility-prevstep-btn:disabled) { width: auto; }
   #utilitySettingsPanel.utility-settings-panel { width: min(360px, calc(100vw - 24px)) !important; }
-  /* Selection screens have a real footer: the carousel hint and controls never share a layer. */
+  /* v3.32 ui3: selection content scrolls in the space above the persistent dock. */
+  html body:not(.app-active-game) {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden !important;
+  }
   html body:not(.app-active-game) .app {
-    min-height: calc(100dvh - 72px - env(safe-area-inset-bottom)) !important;
-    padding-bottom: 12px !important;
+    height: calc(100vh - var(--utility-dock-height));
+    height: calc(100dvh - var(--utility-dock-height));
+    min-height: 0 !important;
+    padding-block: max(12px, env(safe-area-inset-top, 0px)) 12px !important;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-block: 12px;
   }
-  body:not(.app-active-game) .utility-controls {
-    position: relative !important;
-    inset: auto !important;
-    margin: 0 auto;
+  html body:not(.app-active-game) .app > .screen.active {
+    flex: 0 0 100%;
+    margin-block: auto;
   }
-  body:not(.app-active-game) #utilitySettingsPanel.utility-settings-panel {
+  html body .utility-controls #utilitySettingsPanel.utility-settings-panel {
     position: absolute;
-    right: 12px;
+    right: max(12px, env(safe-area-inset-right, 0px));
     bottom: calc(100% + 6px);
+    max-height: min(360px, calc(100vh - var(--utility-dock-height) - env(safe-area-inset-top, 0px) - 20px)) !important;
+    max-height: min(360px, calc(100dvh - var(--utility-dock-height) - env(safe-area-inset-top, 0px) - 20px)) !important;
   }
   #luckScreen .luck-carousel-hint { flex-wrap: wrap; row-gap: 6px; }
   .game-screen .game-card { padding: 14px !important; }
@@ -552,7 +575,7 @@ body.key-react-compact-mode #physicalKeyReactScreen .key-react-key-input { min-h
   #physicalKeyReactScreen .key-react-key-head { flex-wrap: wrap; gap: 8px; }
   /* Phone passing modes keep a large play area with a separate navigation strip. */
   body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) { overflow-y: auto !important; }
-  body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) .app { min-height: max(640px, 100dvh) !important; height: max(640px, 100dvh) !important; padding-bottom: calc(82px + env(safe-area-inset-bottom)) !important; }
+  body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) .app { min-height: max(640px, 100dvh) !important; height: max(640px, 100dvh) !important; padding-bottom: calc(var(--utility-dock-height) + 10px) !important; }
   body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) .ux-game-header .sub-text { display: block; -webkit-line-clamp: unset; overflow: visible; font-size: 14px !important; line-height: 1.5 !important; }
   body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) .game-mini-badge { display: none !important; }
   body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) .status-text { font-size: 13px !important; margin: 0; }
