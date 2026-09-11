@@ -1,5 +1,5 @@
 {
-  "comparison": "v3.22 / v3.23 / v3.24 / v3.25 / v3.26 generated assets / v3.27 / v3.28 / v3.29",
+  "comparison": "v3.22 / v3.23 / v3.24 / v3.25 / v3.26 generated assets / v3.27 / v3.28 / v3.29 / v3.30 / v3.31 / v3.32",
   "scope": "Raw file bytes and gzip bytes; excludes fonts/images. Not measured load time or device FPS.",
   "metrics": {
     "initial_code": {
@@ -24,7 +24,16 @@
       "change_vs_v3.27_percent": 0.0,
       "v3.29_bytes": 96003,
       "v3.29_gzip_bytes": 21238,
-      "change_vs_v3.28_percent": 0.0
+      "change_vs_v3.28_percent": 0.0,
+      "v3.30_bytes": 100513,
+      "v3.30_gzip_bytes": 22191,
+      "change_vs_v3.29_percent": 4.7,
+      "v3.31_bytes": 100906,
+      "v3.31_gzip_bytes": 22263,
+      "change_vs_v3.30_percent": 0.39,
+      "v3.32_bytes": 103113,
+      "v3.32_gzip_bytes": 22725,
+      "change_vs_v3.31_percent": 2.19
     },
     "game_javascript": {
       "v3.22_bytes": 555311,
@@ -48,7 +57,16 @@
       "change_vs_v3.27_percent": 0.4,
       "v3.29_bytes": 486597,
       "v3.29_gzip_bytes": 126669,
-      "change_vs_v3.28_percent": 0.8
+      "change_vs_v3.28_percent": 0.8,
+      "v3.30_bytes": 491427,
+      "v3.30_gzip_bytes": 127919,
+      "change_vs_v3.29_percent": 0.99,
+      "v3.31_bytes": 491427,
+      "v3.31_gzip_bytes": 127919,
+      "change_vs_v3.30_percent": 0.0,
+      "v3.32_bytes": 491617,
+      "v3.32_gzip_bytes": 127989,
+      "change_vs_v3.31_percent": 0.04
     },
     "game_css": {
       "v3.22_bytes": 569250,
@@ -72,7 +90,16 @@
       "change_vs_v3.27_percent": 0.04,
       "v3.29_bytes": 590560,
       "v3.29_gzip_bytes": 94157,
-      "change_vs_v3.28_percent": 1.24
+      "change_vs_v3.28_percent": 1.24,
+      "v3.30_bytes": 602726,
+      "v3.30_gzip_bytes": 96081,
+      "change_vs_v3.29_percent": 2.06,
+      "v3.31_bytes": 603178,
+      "v3.31_gzip_bytes": 96168,
+      "change_vs_v3.30_percent": 0.07,
+      "v3.32_bytes": 605826,
+      "v3.32_gzip_bytes": 96623,
+      "change_vs_v3.31_percent": 0.44
     }
   }
 }

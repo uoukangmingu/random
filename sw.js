@@ -1,7 +1,7 @@
-const CACHE_VERSION = 'random-roulette-v20260910-ball-battle29'
+const CACHE_VERSION = 'random-roulette-v20260910-stable32-ui2'
 const CORE_ASSETS = [
   './', './index.html', './manifest.webmanifest',
-  './shell.v3.29.css', './shell.v3.29.js',
+  './shell.v3.32.css', './shell.v3.32.js',
   './assets/app-icon.svg', './assets/app-icon-192.png', './assets/app-icon-512.png',
   './assets/cursor-arrow.svg', './assets/cursor-hover.svg', './assets/cursor-text.svg',
   './assets/home-qr-light.png', './assets/home-qr-dark.png'
@@ -9,7 +9,9 @@ const CORE_ASSETS = [
 
 self.addEventListener('install', (event) => {
   // Let existing tabs finish their games before activating the next release.
-  event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(CORE_ASSETS)))
+  event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(
+    CORE_ASSETS.map((path) => new Request(path, { cache: 'reload' }))
+  )))
 })
 
 self.addEventListener('activate', (event) => {
@@ -81,7 +83,8 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached
-      return fetch(event.request).then((response) => {
+      // On the first request after a CSS hotfix, revalidate the browser's HTTP cache too.
+      return fetch(event.request, { cache: url.pathname.endsWith('.css') ? 'no-cache' : 'default' }).then((response) => {
         if (response.ok && response.status !== 206 && !/\.mp4$/i.test(url.pathname)) {
           const copy = response.clone()
           event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, copy)).catch(() => {}))

@@ -1,11 +1,11 @@
 {
-  "initialHtmlBytes": 13287,
+  "initialHtmlBytes": 13558,
   "initialScriptBytes": 2587,
-  "initialCssBytes": 80129,
+  "initialCssBytes": 86968,
   "baselineV321ScriptBytes": 653805,
   "baselineV321CssBytes": 761978,
-  "sourceScriptBytes": 705144,
-  "sourceCssBytes": 786857,
-  "gameScriptBytes": 486597,
-  "gameCssBytes": 590560
+  "sourceScriptBytes": 712478,
+  "sourceCssBytes": 805495,
+  "gameScriptBytes": 491617,
+  "gameCssBytes": 605826
 }

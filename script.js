@@ -4398,6 +4398,10 @@ function isMobileOrTabletLike() {
   return isPhoneLike() || isTabletLike()
 }
 
+function isHandheldGameDevice() {
+  return window.RandomRouletteRegistry?.isPhoneLikeDevice?.() ?? isMobileOrTabletLike()
+}
+
 function isPortraitMode() {
   return window.matchMedia('(orientation: portrait)').matches
 }
@@ -5331,7 +5335,7 @@ function syncGame1MobileLayout() {
     return
   }
 
-  const shouldUseMobileLayout = isMobileOrTabletLike()
+  const shouldUseMobileLayout = window.innerWidth <= 900 || isMobileOrTabletLike()
 
   document.body.classList.toggle('game1-mobile-layout', shouldUseMobileLayout)
 
@@ -5371,7 +5375,7 @@ function syncRaceMobileLayout() {
     return
   }
 
-  const shouldUseMobileLayout = isMobileOrTabletLike()
+  const shouldUseMobileLayout = window.innerWidth <= 900 || isMobileOrTabletLike()
   document.body.classList.toggle('game2-mobile-layout', shouldUseMobileLayout)
 
   if (shouldUseMobileLayout && !raceMobileLayoutApplied) {
@@ -6074,8 +6078,8 @@ function fitGameCanvasViewport() {
 
   const header = main.querySelector('.game-main-header')
 
-  if (isMobileOrTabletLike()) {
-    const width = Math.max(280, playArea.clientWidth || gameCardFull.clientWidth - 24)
+  if (window.innerWidth <= 900 || isMobileOrTabletLike()) {
+    const width = Math.max(180, playArea.clientWidth || gameCardFull.clientWidth - 24)
     const height = clampValue(width * 1.12, 340, 760)
 
     gameCanvasWrap.style.width = `${width}px`
@@ -8627,7 +8631,7 @@ function renderBattleRowsPreview() {
           <span class="battle-player-name">${escapeHtml(player.label)}</span>
           <span class="battle-result-pill hidden" aria-hidden="true"></span>
         </div>
-        <div class="battle-player-sub">카드를 기다리는 중</div>
+        <div class="battle-player-sub" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="카드 공개 안내">카드를 기다리는 중</div>
       </div>
       <div class="battle-hand hand-five">
         ${createBattleGhostSlots(5)}
@@ -8779,12 +8783,12 @@ function createBattleCardElement(card, { flipped = false, actualIndex = null } =
   if (actualIndex !== null) {
     cardEl.dataset.cardIndex = String(actualIndex)
   }
-  cardEl.setAttribute('role', 'button')
-  if (actualIndex !== null) cardEl.setAttribute('aria-label', `${actualIndex + 1}번째 카드`)
+  cardEl.setAttribute('role', actualIndex === null ? 'img' : 'button')
+  cardEl.setAttribute('aria-label', actualIndex === null ? `${card.label || '결과'} ${card.text}` : `${actualIndex + 1}번째 카드`)
   cardEl.setAttribute('tabindex', '-1')
   cardEl.setAttribute('aria-disabled', 'true')
   cardEl.innerHTML = `
-    <div class="battle-card-inner">
+    <div class="battle-card-inner" aria-hidden="true">
       <div class="battle-card-face battle-card-back"></div>
       <div class="battle-card-face battle-card-front">
         <div class="battle-card-value">${card.type === 'result' ? `<small>${escapeHtml(card.label || '중간 결과')}</small>${escapeHtml(card.text)}` : escapeHtml(card.text)}</div>
@@ -8829,6 +8833,7 @@ function prepareBattleRoundRows(roundPlayers) {
           <span class="battle-player-name">${escapeHtml(player.label)}</span>
           <span class="battle-result-pill hidden" aria-hidden="true"></span>
         </div>
+        <p class="battle-player-sub" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="카드 공개 안내">카드를 나누고 있어. 잠시만 기다려줘.</p>
       </div>
       <div class="battle-hand hand-five">${slotsMarkup}</div>
     `
@@ -9028,6 +9033,9 @@ function refreshBattleCardAvailability() {
       const state = getBattleCardAvailabilityState(player, cardIndex, cardEl)
 
       setBattleCardAvailability(cardEl, state.isEnabled, { showLocked: state.showLocked })
+      const revealed = cardEl.classList.contains('is-flipped')
+      const card = player.cards[cardIndex]
+      if (card) cardEl.setAttribute('aria-label', `${player.label} · ${cardIndex + 1}번째 ${card.type === 'operator' ? '연산 기호' : '숫자'} 카드 · ${revealed ? card.text : state.isEnabled ? '공개하기' : '대기 중'}`)
     })
   })
 }
@@ -13929,6 +13937,7 @@ function getStockReadyCount() {
 function updateStockDurationText() {
   if (!stockDurationValue) return
   stockDurationValue.textContent = `${stockDurationSeconds}초`
+  stockDurationInput?.setAttribute('aria-valuetext', `${stockDurationSeconds}초`)
 }
 
 function updateStockStatus(text) {
@@ -13977,6 +13986,7 @@ function renderStockPlayerSummary() {
 
   stockPlayers.forEach((player, index) => {
     const validation = getStockDraftValidation(player.id)
+    const selectedCount = getStockSelectedSlots(player.id).length
     const item = document.createElement('div')
     item.className = `stock-player-summary-item${validation.valid ? ' is-ready' : ''}${index === stockSetupTurnIndex ? ' is-active' : ''}`
     item.innerHTML = `
@@ -13984,7 +13994,7 @@ function renderStockPlayerSummary() {
         <strong>${escapeHtml(player.label)}</strong>
         <span class="stock-player-summary-badge ${validation.valid ? 'is-ready' : 'is-pending'}">${validation.valid ? '투자 완료' : '배분 중'}</span>
       </div>
-      <div class="stock-player-summary-sub">${validation.valid ? `${validation.count}종목 · ${formatStockManwon(validation.total)} 배분 완료` : (validation.count ? `${validation.count}종목 선택 · ${validation.remaining > 0 ? `남은 ${formatStockManwon(validation.remaining)}` : escapeHtml(validation.issue || '조정 필요')}` : '아직 종목을 고르지 않았어.')}</div>
+      <div class="stock-player-summary-sub">${validation.valid ? `${validation.count}종목 · ${formatStockManwon(validation.total)} 배분 완료` : (selectedCount ? `${selectedCount}종목 선택 · ${validation.remaining > 0 ? `남은 ${formatStockManwon(validation.remaining)}` : escapeHtml(validation.issue || '조정 필요')}` : '아직 종목을 고르지 않았어.')}</div>
     `
     stockPlayerSummary.appendChild(item)
   })
@@ -14003,9 +14013,10 @@ function renderStockPlayerTabs() {
     button.type = 'button'
     button.className = `stock-player-tab${index === stockSetupTurnIndex ? ' is-active' : ''}${validation.valid ? ' is-ready' : ''}`
     button.dataset.playerId = player.id
+    button.setAttribute('aria-pressed', index === stockSetupTurnIndex ? 'true' : 'false')
     button.innerHTML = `
       <strong>${escapeHtml(player.label)}</strong>
-      <span>${validation.valid ? '완료' : `${validation.count}종목 선택`}</span>
+      <span>${validation.valid ? '완료' : `${getStockSelectedSlots(player.id).length}종목 선택`}</span>
     `
     stockPlayerTabs.appendChild(button)
   })
@@ -14089,17 +14100,17 @@ function renderStockAllocationEditor() {
           <strong>${formatStockMoney(stock?.price || 0)}</strong>
         </div>
         <div class="stock-quick-row">
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-10" ${isLocked ? 'disabled' : ''}>-10</button>
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-5" ${isLocked ? 'disabled' : ''}>-5</button>
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-1" ${isLocked ? 'disabled' : ''}>-1</button>
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="1" ${isLocked ? 'disabled' : ''}>+1</button>
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="5" ${isLocked ? 'disabled' : ''}>+5</button>
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="10" ${isLocked ? 'disabled' : ''}>+10</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-10" aria-label="10만원 줄이기" ${isLocked ? 'disabled' : ''}>-10</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-5" aria-label="5만원 줄이기" ${isLocked ? 'disabled' : ''}>-5</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-1" aria-label="1만원 줄이기" ${isLocked ? 'disabled' : ''}>-1</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="1" aria-label="1만원 늘리기" ${isLocked ? 'disabled' : ''}>+1</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="5" aria-label="5만원 늘리기" ${isLocked ? 'disabled' : ''}>+5</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="10" aria-label="10만원 늘리기" ${isLocked ? 'disabled' : ''}>+10</button>
         </div>
         <div class="stock-manwon-input-row">
-          <label class="stock-manwon-label">투자금</label>
+          <label class="stock-manwon-label" for="stockAmountInput">투자금</label>
           <div class="stock-manwon-control">
-            <input class="stock-amount-input stock-amount-input-manwon" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-amount-input="true" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="${activeSlot.amount ? wonToManwon(activeSlot.amount) : ''}" ${isLocked ? 'disabled' : ''} />
+            <input id="stockAmountInput" aria-label="${escapeHtml(activePlayer.label)} · ${escapeHtml(stock?.name || '')} 투자금 (만원)" class="stock-amount-input stock-amount-input-manwon" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-amount-input="true" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="${activeSlot.amount ? wonToManwon(activeSlot.amount) : ''}" ${isLocked ? 'disabled' : ''} />
             <span>만원</span>
           </div>
           <button class="stock-fill-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-fill="remaining" ${isLocked ? 'disabled' : ''}>잔액 전부</button>
@@ -14112,9 +14123,9 @@ function renderStockAllocationEditor() {
       <div class="stock-picked-carousel-toolbar">
         <div class="stock-picked-carousel-hint">선택한 종목을 하나씩 넘기며 투자해줘</div>
         <div class="stock-picked-carousel-nav">
-          <button class="stock-carousel-nav-btn" type="button" data-stock-carousel-nav="prev" ${selectedSlots.length <= 1 || isLocked ? 'disabled' : ''}>←</button>
+          <button class="stock-carousel-nav-btn" type="button" aria-label="이전 선택 종목" data-stock-carousel-nav="prev" ${selectedSlots.length <= 1 || isLocked ? 'disabled' : ''}>←</button>
           <span class="stock-picked-carousel-count">${focusedIndex + 1} / ${selectedSlots.length}</span>
-          <button class="stock-carousel-nav-btn" type="button" data-stock-carousel-nav="next" ${selectedSlots.length <= 1 || isLocked ? 'disabled' : ''}>→</button>
+          <button class="stock-carousel-nav-btn" type="button" aria-label="다음 선택 종목" data-stock-carousel-nav="next" ${selectedSlots.length <= 1 || isLocked ? 'disabled' : ''}>→</button>
         </div>
       </div>
       <div class="stock-picked-carousel is-single-view">${pickedCardHtml}</div>
@@ -14135,7 +14146,7 @@ function renderStockAllocationEditor() {
       </div>
       <div class="stock-allocation-total">
         <span>선택 종목</span>
-        <strong>${validation.count} / ${STOCK_MAX_HOLDINGS}</strong>
+        <strong>${selectedSlots.length} / ${STOCK_MAX_HOLDINGS}</strong>
       </div>
     </div>
     <div class="stock-allocation-note${validation.valid ? ' is-ready' : ''}">${validation.valid ? '준비 완료. 다음 참가자로 넘어가거나 바로 관찰형 게임을 시작할 수 있어.' : escapeHtml(validation.issue || '시드머니 100만원을 모두 채워야 준비 완료돼.')}</div>
@@ -14174,7 +14185,7 @@ function renderStockRoster() {
       const selectedSlot = selectedMap.get(stock.id)
       const disabled = isLocked || (!selected && selectedCount >= STOCK_MAX_HOLDINGS)
       return `
-        <button class="stock-roster-card stock-roster-card-btn ${stock.colorClass}${selected ? ' is-selected' : ''}" type="button" data-player-id="${activePlayer?.id || ''}" data-stock-id="${stock.id}" ${disabled ? 'disabled' : ''}>
+        <button class="stock-roster-card stock-roster-card-btn ${stock.colorClass}${selected ? ' is-selected' : ''}" type="button" aria-pressed="${selected}" data-player-id="${activePlayer?.id || ''}" data-stock-id="${stock.id}" ${disabled ? 'disabled' : ''}>
           <div class="stock-roster-topline">
             <span class="stock-roster-emoji" aria-hidden="true">${stock.emoji}</span>
             <span class="stock-roster-select-state">${selected ? `${formatStockManwon(selectedSlot.amount)}` : '담기'}</span>
@@ -15059,13 +15070,13 @@ let ladderActiveProgress = 0
 let ladderProgressRaf = null
 
 function getLadderMaxPlayers() {
-  return isMobileOrTabletLike() ? LADDER_MOBILE_MAX_PLAYERS : LADDER_DESKTOP_MAX_PLAYERS
+  return isHandheldGameDevice() ? LADDER_MOBILE_MAX_PLAYERS : LADDER_DESKTOP_MAX_PLAYERS
 }
 
 function updateLadderHelperText() {
   if (!ladderHelperText) return
   const max = getLadderMaxPlayers()
-  ladderHelperText.textContent = isMobileOrTabletLike()
+  ladderHelperText.textContent = isHandheldGameDevice()
     ? `이름(번호) 형식만 가능. 모바일 최대 ${max}명, 번호는 1~참가자 수 안에서 중복 없이 입력.`
     : `이름(번호) 형식만 가능. 데스크톱 최대 ${max}명, 번호는 1~참가자 수 안에서 중복 없이 입력.`
 }
@@ -16293,7 +16304,7 @@ function endBalloonPress(event) {
 
 
 function canPlayBombPassOnThisDevice() {
-  return isTouchDevice() && getViewportShortSide() <= 820
+  return isHandheldGameDevice()
 }
 
 function setBombPassControlsLocked(isLocked) {
@@ -16444,7 +16455,7 @@ function startBombPassGame() {
 }
 
 function canPlayCircleTapOnThisDevice() {
-  return isTouchDevice() && getViewportShortSide() <= 820
+  return isHandheldGameDevice()
 }
 
 function parseCircleTapPlayers(text) {
@@ -16890,7 +16901,7 @@ function handleCircleTapPointer(event) {
 
 
 function canPlayKeyReactOnThisDevice() {
-  return !isMobileOrTabletLike()
+  return !isHandheldGameDevice()
 }
 
 function normalizeKeyReactKey(value) {
@@ -17811,8 +17822,9 @@ function setBearFindVideoVisible(isVisible) {
 }
 
 function parseBearFindPlayerCount(value) {
-  const count = Number.parseInt(String(value || '').trim(), 10)
-  if (!Number.isFinite(count)) return { status: 'EMPTY' }
+  if (!String(value || '').trim()) return { status: 'EMPTY' }
+  const count = Number(value)
+  if (!Number.isInteger(count)) return { status: 'INVALID' }
   if (count < BEAR_FIND_MIN_PLAYERS) return { status: 'TOO_FEW', count }
   if (count > BEAR_FIND_MAX_PLAYERS) return { status: 'TOO_MANY', count }
   return { status: 'OK', count }
@@ -17852,6 +17864,7 @@ function updateBearFindFromInput(options = {}) {
   if (!bearFindStarted && !bearFindFinished && bearFindStatusText) {
     const messages = {
       EMPTY: '참가자 인원수를 입력해줘.',
+      INVALID: '참가자 인원수는 소수 없이 정수로 입력해줘.',
       TOO_FEW: `참가자는 최소 ${BEAR_FIND_MIN_PLAYERS}명부터 가능해.`,
       TOO_MANY: `참가자는 최대 ${BEAR_FIND_MAX_PLAYERS}명까지 가능해.`
     }
@@ -18306,7 +18319,7 @@ if (balloonConfigInput) {
   })
 
   balloonConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startBalloonGame()
     }
@@ -18355,7 +18368,7 @@ if (bearFindCountInput) {
   })
 
   bearFindCountInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startBearFindGame()
     }
@@ -18393,7 +18406,7 @@ if (circleTapConfigInput) {
   })
 
   circleTapConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startCircleTapGame()
     }
@@ -18424,7 +18437,7 @@ if (keyReactConfigInput) {
   })
 
   keyReactConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startKeyReactGame()
     }
@@ -18481,7 +18494,7 @@ if (stockConfigInput) {
   })
 
   stockConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startStockGame()
     }
@@ -18628,7 +18641,7 @@ if (ladderConfigInput) {
   })
 
   ladderConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startLadderGame()
     }
@@ -18696,7 +18709,7 @@ if (navalConfigInput) {
   })
 
   navalConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startNavalGame()
     }
@@ -18743,7 +18756,7 @@ if (configInput) {
   })
 
   configInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startRound()
     }
@@ -18756,7 +18769,7 @@ if (raceConfigInput) {
   })
 
   raceConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startRace()
     }
@@ -18770,7 +18783,7 @@ if (battleConfigInput) {
   })
 
   battleConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startBattleGame()
     }
@@ -18786,7 +18799,7 @@ if (simConfigInput) {
   })
 
   simConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startSimSetup()
     }

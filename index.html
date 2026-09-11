@@ -61,7 +61,7 @@
     href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap"
     rel="stylesheet" media="print" onload="this.media='all'"
   />
-  <link rel="stylesheet" href="shell.v3.29.css" />
+  <link rel="stylesheet" href="shell.v3.32.css" />
 </head>
 <body class="home-screen-mode">
 
@@ -131,7 +131,7 @@
           <button class="performance-mode-btn" type="button" data-performance-mode="quality" aria-pressed="false">고화질</button>
           <button class="performance-mode-btn" type="button" data-performance-mode="performance" aria-pressed="false">성능 우선</button>
         </div>
-        <p id="performanceQualityStatus" class="performance-quality-status" aria-live="polite">기기 성능을 확인 중이에요.</p>
+        <p id="performanceQualityStatus" class="performance-quality-status" aria-live="polite" data-stable-lines="3" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">기기 성능을 확인 중이에요.</p>
       </fieldset>
       <div class="utility-volume-panel app-settings-volume" aria-label="게임 음량 조절">
         <label class="volume-control" for="bgmVolumeRange">
@@ -149,6 +149,7 @@
     <div class="utility-quick-actions">
       <button id="utilitySettingsToggleBtn" class="utility-btn utility-settings-toggle-btn app-quick-action" type="button" aria-expanded="false" aria-controls="utilitySettingsPanel" aria-label="화면 설정 열기" title="화면 설정 열기">
         <span class="utility-btn-icon" aria-hidden="true">⚙</span>
+        <span class="utility-btn-label">설정</span>
       </button>
       <button id="desktopPrevStepBtn" class="utility-btn utility-prevstep-btn utility-desktop-only app-quick-action" type="button" aria-label="이전으로" title="이전으로" disabled aria-disabled="true">
         <span class="utility-btn-icon" aria-hidden="true">↩</span>
@@ -171,7 +172,7 @@
       <label class="roster-input-label" for="rosterInput">항목 (선택)</label>
       <textarea id="rosterInput" rows="7" maxlength="3000" spellcheck="false" aria-describedby="rosterStatus" autocomplete="off" placeholder="김치찌개&#10;돈가스&#10;비빔밥"></textarea>
       <div id="rosterPreview" class="roster-preview"></div>
-      <div id="rosterStatus" class="status-text" aria-live="polite">비워서 저장하거나, 쉼표 또는 줄바꿈으로 2~50개 항목을 입력해줘.</div>
+      <div id="rosterStatus" class="status-text" aria-live="polite" data-stable-lines="3" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">비워서 저장하거나, 쉼표 또는 줄바꿈으로 2~50개 항목을 입력해줘.</div>
       <div class="app-dialog-actions">
         <button id="rosterClearBtn" class="action-btn soft" type="button">입력 비우기</button>
         <button id="rosterSaveBtn" class="action-btn primary" type="button">공용 목록 저장·반영</button>
@@ -179,7 +180,7 @@
     </div>
   </div>
 
-  <div id="sessionConfirmOverlay" class="app-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sessionConfirmTitle">
+  <div id="sessionConfirmOverlay" aria-describedby="sessionConfirmMessage" class="app-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sessionConfirmTitle">
     <div class="app-dialog session-confirm-dialog">
       <div class="popup-icon" aria-hidden="true">⚠️</div>
       <h3 id="sessionConfirmTitle">진행 중인 게임을 종료할까?</h3>
@@ -211,7 +212,7 @@
   
   
   
-<script defer src="shell.v3.29.js"></script>
+<script defer src="shell.v3.32.js"></script>
 <noscript>게임을 실행하려면 브라우저에서 JavaScript를 켜 주세요.</noscript>
 </body>
 </html>
