@@ -75,7 +75,7 @@ if (balloonConfigInput) {
   })
 
   balloonConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startBalloonGame()
     }
@@ -124,7 +124,7 @@ if (bearFindCountInput) {
   })
 
   bearFindCountInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startBearFindGame()
     }
@@ -162,7 +162,7 @@ if (circleTapConfigInput) {
   })
 
   circleTapConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startCircleTapGame()
     }
@@ -193,7 +193,7 @@ if (keyReactConfigInput) {
   })
 
   keyReactConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startKeyReactGame()
     }
@@ -250,7 +250,7 @@ if (stockConfigInput) {
   })
 
   stockConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startStockGame()
     }
@@ -397,7 +397,7 @@ if (ladderConfigInput) {
   })
 
   ladderConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startLadderGame()
     }
@@ -465,7 +465,7 @@ if (navalConfigInput) {
   })
 
   navalConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startNavalGame()
     }
@@ -512,7 +512,7 @@ if (configInput) {
   })
 
   configInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startRound()
     }
@@ -525,7 +525,7 @@ if (raceConfigInput) {
   })
 
   raceConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startRace()
     }
@@ -539,7 +539,7 @@ if (battleConfigInput) {
   })
 
   battleConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startBattleGame()
     }
@@ -555,7 +555,7 @@ if (simConfigInput) {
   })
 
   simConfigInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault()
       startSimSetup()
     }
@@ -614,6 +614,10 @@ if (rouletteStageZoomBackdrop) {
       closeRouletteStageZoom()
     }
   })
+}
+
+if (simPauseBtn) {
+  simPauseBtn.addEventListener('click', toggleSimPause)
 }
 
 if (simArenaZoomBtn) {
@@ -832,10 +836,8 @@ function syncGameVisibility() {
     raceCommentaryTimer = null
     raceLastTimestamp = 0
     pauseGame1Physics()
-    if (simArenaRunner) {
-      Runner.stop(simArenaRunner)
-      simVisibilityPaused = simBattleRunning
-    }
+    simVisibilityPaused = simBattleRunning
+    simFrameClock.lastAt = null
     if (simRenderRaf) cancelAnimationFrame(simRenderRaf)
     simRenderRaf = null
     if (stockGameInterval) clearInterval(stockGameInterval)
@@ -858,10 +860,9 @@ function syncGameVisibility() {
     scheduleRaceCommentaryLoop()
     raceAnimationFrame = requestAnimationFrame(raceFrame)
   }
-  if (screens.game4?.classList.contains('active') && simArenaRunner && simBattleRunning && simVisibilityPaused) {
+  if (screens.game4?.classList.contains('active') && simArenaEngine && simBattleRunning && simVisibilityPaused) {
     simVisibilityPaused = false
-    Runner.run(simArenaRunner, simArenaEngine)
-    startSimRenderLoop()
+    if (!simBattlePaused) startSimRenderLoop()
   }
   if (screens.game6?.classList.contains('active') && stockGameRunning && !stockGameInterval) {
     stockLastSchedulerAt = performance.now()

@@ -171,7 +171,7 @@ function renderBattleRowsPreview() {
           <span class="battle-player-name">${escapeHtml(player.label)}</span>
           <span class="battle-result-pill hidden" aria-hidden="true"></span>
         </div>
-        <div class="battle-player-sub">카드를 기다리는 중</div>
+        <div class="battle-player-sub" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="카드 공개 안내">카드를 기다리는 중</div>
       </div>
       <div class="battle-hand hand-five">
         ${createBattleGhostSlots(5)}
@@ -323,12 +323,12 @@ function createBattleCardElement(card, { flipped = false, actualIndex = null } =
   if (actualIndex !== null) {
     cardEl.dataset.cardIndex = String(actualIndex)
   }
-  cardEl.setAttribute('role', 'button')
-  if (actualIndex !== null) cardEl.setAttribute('aria-label', `${actualIndex + 1}번째 카드`)
+  cardEl.setAttribute('role', actualIndex === null ? 'img' : 'button')
+  cardEl.setAttribute('aria-label', actualIndex === null ? `${card.label || '결과'} ${card.text}` : `${actualIndex + 1}번째 카드`)
   cardEl.setAttribute('tabindex', '-1')
   cardEl.setAttribute('aria-disabled', 'true')
   cardEl.innerHTML = `
-    <div class="battle-card-inner">
+    <div class="battle-card-inner" aria-hidden="true">
       <div class="battle-card-face battle-card-back"></div>
       <div class="battle-card-face battle-card-front">
         <div class="battle-card-value">${card.type === 'result' ? `<small>${escapeHtml(card.label || '중간 결과')}</small>${escapeHtml(card.text)}` : escapeHtml(card.text)}</div>
@@ -373,6 +373,7 @@ function prepareBattleRoundRows(roundPlayers) {
           <span class="battle-player-name">${escapeHtml(player.label)}</span>
           <span class="battle-result-pill hidden" aria-hidden="true"></span>
         </div>
+        <p class="battle-player-sub" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="카드 공개 안내">카드를 나누고 있어. 잠시만 기다려줘.</p>
       </div>
       <div class="battle-hand hand-five">${slotsMarkup}</div>
     `
@@ -572,6 +573,9 @@ function refreshBattleCardAvailability() {
       const state = getBattleCardAvailabilityState(player, cardIndex, cardEl)
 
       setBattleCardAvailability(cardEl, state.isEnabled, { showLocked: state.showLocked })
+      const revealed = cardEl.classList.contains('is-flipped')
+      const card = player.cards[cardIndex]
+      if (card) cardEl.setAttribute('aria-label', `${player.label} · ${cardIndex + 1}번째 ${card.type === 'operator' ? '연산 기호' : '숫자'} 카드 · ${revealed ? card.text : state.isEnabled ? '공개하기' : '대기 중'}`)
     })
   })
 }
@@ -964,7 +968,7 @@ function updateSimPhase(text) {
 
 function updateSimDescription() {
   if (!simDesc) return
-  simDesc.textContent = `최대 ${SIM_MAX_PLAYERS}명의 참가자가 각자 4가지 스탯 총합 100의 카드를 배정받은 뒤, 공끼리 충돌하는 순간 즉시 전투 판정이 반영되는 관찰형 시뮬레이션 게임이다.`
+  simDesc.textContent = `랜덤 스탯을 받은 공들의 생존 대결. 마지막까지 살아남는 1명을 지켜봐!`
 }
 
 function getSimInfoTabButtonsHtml() {
@@ -1207,49 +1211,23 @@ function openSimGameInfo() {
 }
 
 function shouldUseSimResponsiveLayout() {
-  return isMobileOrTabletLike()
+  return window.innerWidth <= 900 || isMobileOrTabletLike()
 }
 
 function syncSimResponsiveLayout() {
-  if (
-    !simCardScreen ||
-    !simControlsWrap ||
-    !simButtonRow ||
-    !startSimBattleBtn ||
-    !resetSimBtn ||
-    !simMobileBattleStartSlot ||
-    !simMobileResetSlot
-  ) {
-    return
-  }
-
-  const shouldUseResponsiveLayout = shouldUseSimResponsiveLayout()
-
-  document.body.classList.toggle('game4-mobile-layout', shouldUseResponsiveLayout)
-
-  if (shouldUseResponsiveLayout) {
-    if (startSimBattleBtn.parentElement !== simMobileBattleStartSlot) {
-      simMobileBattleStartSlot.appendChild(startSimBattleBtn)
-    }
-
-    if (simCardScreen.classList.contains('sim-view-battle')) {
-      if (resetSimBtn.parentElement !== simMobileResetSlot) {
-        simMobileResetSlot.appendChild(resetSimBtn)
-      }
-    } else if (resetSimBtn.parentElement !== simButtonRow) {
-      simButtonRow.appendChild(resetSimBtn)
-    }
-
-    return
-  }
-
-  if (startSimBattleBtn.parentElement !== simControlsWrap) {
+  if (!simCardScreen || !simControlsWrap || !simButtonRow || !startSimBattleBtn || !resetSimBtn || !simMobileBattleStartSlot || !simMobileResetSlot) return
+  const mobile = shouldUseSimResponsiveLayout()
+  const battle = simCardScreen.classList.contains('sim-view-battle')
+  document.body.classList.toggle('game4-mobile-layout', mobile)
+  simMobileBattleStartSlot.removeAttribute('aria-hidden')
+  simMobileResetSlot.removeAttribute('aria-hidden')
+  if (mobile) {
+    if (startSimBattleBtn.parentElement !== simMobileBattleStartSlot) simMobileBattleStartSlot.appendChild(startSimBattleBtn)
+  } else if (startSimBattleBtn.parentElement !== simControlsWrap) {
     simControlsWrap.insertBefore(startSimBattleBtn, simStatusText || null)
   }
-
-  if (resetSimBtn.parentElement !== simButtonRow) {
-    simButtonRow.appendChild(resetSimBtn)
-  }
+  const resetParent = battle ? simMobileResetSlot : simButtonRow
+  if (resetSimBtn.parentElement !== resetParent) resetParent.appendChild(resetSimBtn)
 }
 
 function updateSimArenaZoomButton() {
@@ -1270,7 +1248,8 @@ function updateSimArenaZoomScale() {
     simArenaWrap.style.removeProperty('--sim-arena-display-width')
     simArenaWrap.style.removeProperty('--sim-arena-display-height')
     simArenaWrap.style.removeProperty('--sim-arena-zoom-scale')
-    simArenaWrap.style.removeProperty('--sim-arena-aspect')
+    if (simArenaMeta) simArenaWrap.style.setProperty('--sim-arena-aspect', `${simArenaMeta.width} / ${simArenaMeta.height}`)
+    else simArenaWrap.style.removeProperty('--sim-arena-aspect')
     return
   }
 

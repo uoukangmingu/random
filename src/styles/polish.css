@@ -268,3 +268,421 @@ html.theme-dark .gameplay-stage-badge:not(.is-climax) { background: #19364e; col
 
 /* v3.28: cached angular trails make high speed visible without per-frame painting. */
 #wheelScreen .wheel-motion-canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; pointer-events: none; z-index: 1; transform-origin: 50% 50%; will-change: transform; backface-visibility: hidden; contain: paint; }
+/* v3.29 — the arena, identities and live health share one moving surface. */
+#game4Screen .sim-ball-label {
+  width: 96px !important;
+  min-width: 0 !important;
+  max-width: 96px !important;
+  margin: 0 !important;
+  padding: 5px 7px !important;
+  border-radius: 10px;
+  border-left: 4px solid var(--sim-player-color) !important;
+  background: #f8fcff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+  transition: opacity 160ms ease !important;
+  animation: none !important;
+  will-change: transform;
+  contain: layout style;
+}
+html.theme-dark #game4Screen .sim-ball-label { background: #183249 !important; }
+html.theme-dark #game4Screen .sim-combat-live { color: #e4f4ff; }
+#game4Screen .sim-view-setup .sim-ranking-card { display: none !important; }
+#game4Screen .sim-ball-name,
+#game4Screen .sim-ball-hptext,
+#game4Screen .sim-ball-place { font-size: 12px !important; line-height: 1.25 !important; letter-spacing: 0 !important; }
+#game4Screen .sim-ball-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#game4Screen .sim-ball-top { gap: 3px; }
+#game4Screen .sim-ball-name,
+#game4Screen .sim-ball-hptext { color: #193c51 !important; }
+html.theme-dark #game4Screen .sim-ball-name,
+html.theme-dark #game4Screen .sim-ball-hptext { color: #e4f4ff !important; }
+#game4Screen .sim-ball-hptext { font-variant-numeric: tabular-nums; }
+#game4Screen .sim-ball-label.is-dead { opacity: 0.3; }
+#game4Screen .sim-ball-label.is-dead .sim-ball-hpbar,
+#game4Screen .sim-ball-label.is-dead .sim-ball-hptext { display: none; }
+#game4Screen .sim-ball-hpbar span,
+#game4Screen .sim-ranking-hp-track i {
+  width: 100% !important;
+  transform-origin: left center;
+  transition: transform 180ms ease-out !important;
+}
+#game4Screen .is-critical .sim-ball-hpbar span,
+#game4Screen .is-critical .sim-ranking-hp-track i { background: #f06475 !important; }
+#game4Screen .sim-arena-wrap { isolation: isolate; contain: layout paint; }
+#game4Screen .sim-arena-wrap.is-running { height: auto !important; min-height: 0 !important; aspect-ratio: var(--sim-arena-aspect); }
+#game4Screen .sim-arena-wrap.is-paused::after {
+  content: '일시정지'; position: absolute; inset: auto 14px 14px auto;
+  z-index: 6; padding: 8px 14px; border-radius: 999px;
+  background: #193c51; color: #fff; font-size: 14px; font-weight: 800; pointer-events: none;
+}
+#game4Screen .sim-live-status { font-size: 14px !important; line-height: 1.6; font-variant-numeric: tabular-nums; margin-bottom: 0; }
+#game4Screen .sim-arena-footer { display: grid; gap: 6px; padding-top: 12px; }
+#game4Screen .sim-combat-live { margin: 0; min-height: 2.8em; font-size: 14px; line-height: 1.4; color: var(--text-main, #193c51); overflow-wrap: anywhere; }
+#game4Screen .sim-hold-hint { margin: 0; font-size: 12px; line-height: 1.5; opacity: 0.75; }
+#game4Screen .sim-panel-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+#game4Screen .sim-panel-head-actions button { min-height: 44px !important; padding: 9px 14px !important; font-size: 14px !important; width: auto !important; }
+#game4Screen .sim-panel-head-actions .sim-mobile-reset-slot { display: flex !important; margin: 0 !important; }
+#game4Screen .sim-view-battle .sim-layout { display: block !important; min-height: 0 !important; }
+#game4Screen .sim-view-battle .sim-sidebar { display: none !important; }
+#game4Screen .sim-view-battle .sim-main { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(240px, 290px); align-items: start; }
+#game4Screen .sim-view-battle .sim-main-header { grid-column: 1 / -1; }
+#game4Screen .sim-view-battle .sim-arena-card { grid-column: 1; grid-row: 2; min-width: 0; }
+#game4Screen .sim-view-battle .sim-ranking-card { grid-column: 2; grid-row: 2 / 4; min-width: 0; margin: 0; }
+#game4Screen .sim-view-battle .sim-battle-summary-card { grid-column: 1; grid-row: 3; min-width: 0; }
+#game4Screen .sim-ranking-item { min-height: 68px; grid-template-columns: 26px minmax(0, 1fr) auto; }
+#game4Screen .sim-ranking-name { font-size: 14px !important; line-height: 1.4; }
+#game4Screen .sim-ranking-player { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+#game4Screen .sim-ranking-state { font-size: 12px !important; white-space: nowrap; }
+#game4Screen .sim-ranking-hp-value { margin-top: 4px; font-size: 12px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+#game4Screen .sim-battle-summary { overflow-x: auto; overscroll-behavior-inline: contain; }
+#game4Screen .sim-summary-table th,
+#game4Screen .sim-summary-table td { font-size: 14px !important; }
+#game4Screen .sim-main-header h2 { margin-bottom: 8px; }
+#game4Screen .sim-view-battle .sim-main-header > div:first-child { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+#game4Screen .sim-view-battle .sim-main-header .small-badge { grid-column: 1; grid-row: 1; justify-self: start; margin: 0; }
+#game4Screen .sim-view-battle .sim-main-header h2 { grid-column: 1; grid-row: 2; margin: 0; font-size: clamp(2rem, 3.5vw, 3rem); }
+#game4Screen .sim-view-battle .sim-main-header .sub-text { grid-column: 1 / -1; grid-row: 3; margin: 0; }
+#game4Screen .sim-view-battle .sim-header-inline-actions { grid-column: 2; grid-row: 1 / 3; margin: 0; }
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-card { grid-template-rows: auto minmax(0, 1fr) auto !important; }
+#game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-wrap.is-running { height: var(--sim-arena-display-height) !important; }
+@media (max-width: 900px) {
+  #game4Screen .sim-view-setup .sim-layout { display: flex; flex-direction: column; min-height: 0; }
+  #game4Screen .sim-view-setup .sim-main { display: contents; }
+  #game4Screen .sim-view-setup .sim-main-header { order: 0; }
+  #game4Screen .sim-view-setup .sim-sidebar { order: 1; }
+  #game4Screen .sim-view-setup .sim-setup-card { order: 2; }
+  #game4Screen .sim-view-setup .sim-scoreboard-card,
+  #game4Screen .sim-view-setup .scoreboard-card { display: none; }
+  #game4Screen .sim-view-setup .sim-mobile-battle-start-slot { display: block; margin-top: 16px; }
+  #game4Screen .sim-mobile-battle-start-slot button { width: 100%; min-height: 48px; }
+  #game4Screen .sim-sidebar-inner { padding: 14px; }
+  #game4Screen .sim-player-row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  #game4Screen .sim-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  #game4Screen .sim-stat-card { width: 100%; min-width: 0; height: 96px; }
+  #game4Screen .sim-stat-card-front { padding: 5px; }
+  #game4Screen .sim-view-battle .sim-main { display: flex !important; flex-direction: column; }
+  #game4Screen .sim-view-battle .sim-main > div { width: 100%; }
+  #game4Screen .sim-view-battle .sim-main-header { order: 0; }
+  #game4Screen .sim-view-battle .sim-arena-card { order: 1 !important; }
+  #game4Screen .sim-view-battle .sim-ranking-card { order: 2 !important; }
+  #game4Screen .sim-view-battle .sim-battle-summary-card { order: 3 !important; }
+  #game4Screen .sim-panel-head-actions { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  #game4Screen .sim-panel-head-actions button { width: 100% !important; min-width: 0 !important; padding: 9px 5px !important; }
+  #game4Screen .sim-panel-head-actions .sim-mobile-reset-slot { flex: 1 1 auto; }
+  #game4Screen .sim-stat-card-front small { font-size: 12px !important; line-height: 1.4; }
+  #game4Screen .sim-player-name { overflow-wrap: anywhere; }
+  #game4Screen .sim-card-screen.sim-arena-zoomed .sim-arena-card { height: calc(100dvh - 14px) !important; }
+}
+@media (max-width: 480px) {
+  #game4Screen .sim-view-battle .sim-main-header .small-badge { grid-column: 1 / -1; white-space: nowrap; }
+  #game4Screen .sim-view-battle .sim-header-inline-actions { grid-row: 2; }
+  #game4Screen .sim-ball-label { width: 82px !important; padding: 4px 5px !important; }
+  #game4Screen .sim-view-battle .sim-arena-card { padding: 12px !important; }
+  #game4Screen .sim-card-screen.sim-view-battle { padding: 12px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #game4Screen .sim-ball-hpbar span,
+  #game4Screen .sim-ranking-hp-track i { transition: none !important; }
+}
+
+/* v3.30 — shared rhythm and reliable controls across the full game collection. */
+.game-screen { min-width: 0; }
+.game-screen .ux-game-header { min-width: 0; }
+.game-screen .ux-game-header > div { min-width: 0; }
+.game-screen .ux-game-header h2 { line-height: 1.18; text-wrap: balance; overflow-wrap: anywhere; }
+.game-screen .ux-game-header .sub-text { line-height: 1.65; overflow-wrap: anywhere; }
+.game-screen .helper-text, .game-screen .status-text { font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.game-screen input:not([type="range"]):not([type="checkbox"]),
+.game-screen textarea { font-size: 16px !important; min-width: 0; max-width: 100%; }
+.game-screen input[type="range"] { min-width: 0; min-height: 44px; cursor: pointer; }
+.game-screen .action-btn, .game-screen .sim-arena-zoom-btn,
+.stock-turn-btn, .stock-chip-btn, .stock-fill-btn, .stock-picked-remove-btn,
+.stock-carousel-nav-btn, .stock-player-tab, .ladder-check-btn, .key-react-key-btn {
+  min-height: 44px !important; touch-action: manipulation;
+}
+#wheelScreen .wheel-checkbox, #wheelScreen .wheel-edit-items-btn { min-height: 44px !important; }
+.game-screen .button-row > button { min-width: 0; white-space: normal; line-height: 1.35; }
+.game-screen :is(.stock-player-summary-name, .stock-active-player-title, .stock-player-tab strong,
+.battle-player-name, .roulette-player-name, .bear-find-player-name, .balloon-player-name,
+.key-react-player-name, .ladder-check-name) { min-width: 0; overflow-wrap: anywhere; }
+.game-screen .slot-legend { overscroll-behavior: contain; }
+.game-screen :is(.status-text, .gameplay-stage-badge) { font-variant-numeric: tabular-nums; }
+.gameplay-stage-badge { flex: 0 0 auto; }
+#game3Screen .battle-player-sub { display: block !important; margin: 7px 0 0; color: var(--ui-muted); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+#game3Screen .battle-player-sub:empty { visibility: hidden; }
+#game3Screen .battle-card.is-clickable { outline-offset: 3px; }
+#game3Screen .battle-card.is-locked { opacity: .62; }
+#game6Screen .stock-quick-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+#game6Screen :is(.stock-chip-btn, .stock-turn-btn, .stock-fill-btn, .stock-picked-remove-btn) { font-size: 14px !important; line-height: 1.4; }
+#game6Screen .stock-carousel-nav-btn { min-width: 44px !important; }
+#game6Screen .stock-manwon-input-row { gap: 8px; }
+#game6Screen .stock-manwon-control { min-width: 0; }
+#game6Screen .stock-player-tabs { gap: 8px; }
+#game6Screen .stock-player-tab { white-space: normal; }
+body.app-active-game #game6Screen :is(.stock-chip-btn, .stock-fill-btn, .stock-turn-btn, .stock-picked-remove-btn) {
+  min-height: 44px !important; padding: 10px 8px !important; font-size: 14px !important;
+}
+body.app-active-game #game6Screen .stock-quick-row { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; }
+body.app-active-game #game6Screen :is(.stock-picked-carousel-hint, .stock-picked-meta, .stock-picked-trait, .stock-manwon-label, .stock-allocation-note, .stock-allocation-total > span) { font-size: 14px !important; line-height: 1.5 !important; }
+#game7Screen .ladder-board { overscroll-behavior-inline: contain; }
+#game7Screen .ladder-check-name { white-space: normal; }
+#physicalKeyReactScreen :is(.key-react-key-name, .key-react-ranking-item strong) { overflow-wrap: anywhere; }
+body.key-react-compact-mode #physicalKeyReactScreen .key-react-key-input { min-height: 44px !important; font-size: 16px !important; }
+#physicalBearFindScreen .bear-find-player-list { overscroll-behavior: contain; }
+/* A video already locks its own button; a transparent page-sized blocker prevented reset. */
+#bearFindTouchBlocker { display: none !important; }
+.popup { max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; }
+.popup-message { overflow-wrap: anywhere; }
+.popup-btn { min-height: 48px; }
+.popup-overlay, .app-dialog-overlay { padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
+.game-screen :is(.ux-layout, .ux-main, .ux-sidebar) { min-width: 0; }
+
+@media (max-width: 900px) {
+  /* Use the viewport width for compact PC windows as well as touch screens. */
+  .game-screen .ux-layout { display: flex !important; flex-direction: column !important; height: auto !important; min-height: 0 !important; gap: 16px !important; }
+  .game-screen .ux-main { display: contents !important; }
+  .game-screen .ux-layout > .ux-game-header,
+  .game-screen .ux-main > .ux-game-header { order: 0 !important; }
+  .game-screen .ux-layout > .ux-sidebar { order: 1 !important; width: 100% !important; }
+  .game-screen .ux-main > :not(.ux-game-header) { order: 2; min-width: 0; width: 100%; }
+  .game-screen .ux-game-header { padding: 4px !important; margin: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; gap: 12px; }
+  .game-screen .ux-game-header h2 { font-size: clamp(2rem, 6.5vw, 2.7rem) !important; margin: 0 0 8px !important; line-height: 1.2 !important; }
+  .game-screen .ux-game-header .small-badge { margin: 0 0 10px !important; padding: 6px 12px !important; font-size: 12px !important; }
+  .game-screen .ux-game-header .sub-text { font-size: 14px !important; margin: 0 !important; line-height: 1.65 !important; }
+  .game-screen .ux-sidebar { height: auto !important; min-height: 0 !important; }
+  .game-screen :is(.ux-sidebar, .sim-sidebar, .game-sidebar) .sidebar-head { display: none; }
+  .game-screen :is(.ux-sidebar, .sim-sidebar, .game-sidebar) > div { padding: 14px !important; gap: 12px !important; height: auto !important; overflow: visible; }
+  /* Outrank both theme surfaces so a flattened inner group cannot keep a square border. */
+  html body .game-screen :is(.ux-sidebar, .sim-sidebar, .game-sidebar) .controls-wrap,
+  html body .game-screen :is(.ux-sidebar, .sim-sidebar, .game-sidebar) .input-card {
+    padding: 0 !important; background: transparent !important; border: 0 !important; outline: none !important; box-shadow: none !important; border-radius: 0 !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  }
+  .game-screen .input-card label { font-size: 14px !important; margin-bottom: 8px; }
+  .game-screen .helper-text { margin: 8px 0 0 !important; font-size: 14px !important; line-height: 1.6 !important; }
+  .game-screen .status-text { margin-top: 10px; font-size: 14px !important; line-height: 1.6 !important; }
+  .game-screen .button-row { margin-top: 12px !important; gap: 8px !important; }
+  .game-screen .button-row > button { min-height: 48px !important; padding: 10px 8px !important; font-size: 14px !important; }
+  #game2Screen .race-sidebar .scoreboard-card,
+  #game3Screen .battle-sidebar .scoreboard-card { display: none !important; }
+  #game3Screen .battle-table-card { padding: 14px !important; }
+  #game3Screen .battle-deck-stage { min-height: 80px; }
+  #game3Screen .battle-hand { gap: 6px !important; }
+  #game3Screen .battle-slot { min-width: 0; }
+  #game3Screen .battle-card { min-width: 0; }
+  #game6Screen .stock-setup-head, #game6Screen .stock-live-head { flex-wrap: wrap; gap: 10px; }
+  #game6Screen .stock-setup-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  #game6Screen .stock-setup-card { padding: 14px !important; }
+  #game6Screen .stock-allocation-card { padding: 14px !important; }
+  #game6Screen .stock-duration-card { margin-top: 14px; }
+  #game7Screen .ladder-panel-head { flex-wrap: wrap; gap: 10px; }
+  #game7Screen .ladder-stage-card { padding: 12px !important; }
+  #physicalBearFindScreen .bear-find-card-screen { padding: 14px !important; gap: 14px !important; }
+  #physicalBearFindScreen .bear-find-sidebar .controls-wrap { margin: 0 !important; padding: 14px !important; border-radius: 18px !important; }
+  #physicalBearFindScreen .bear-find-main-header { order: 0 !important; }
+  #physicalBearFindScreen .bear-find-stage-card { padding: 12px !important; }
+  #physicalBearFindScreen .bear-find-player-card { padding: 12px !important; }
+  body.game1-mode { overflow-y: auto !important; }
+  body.game1-mode .game-card-full { display: flex; flex-direction: column; height: auto !important; min-height: 0; padding: 12px !important; gap: 14px; overflow: visible; }
+  body.game1-mode .game-main-header { order: 0; }
+  body.game1-mode .game-sidebar { position: static !important; inset: auto; transform: none !important; width: 100% !important; height: auto; order: 1; visibility: visible; }
+  body.game1-mode .game-main { width: 100%; height: auto; min-height: 0; order: 2; padding: 0; }
+  body.game1-mode .game-play-area { min-height: 0; }
+  body.game1-mode .game-canvas-wrap { max-width: 100%; min-height: 340px; }
+  body.game1-mode .game-card-full > .scoreboard-card { order: 3; width: 100%; }
+  body.game1-mode .drawer-toggle-btn, body.game1-mode .drawer-backdrop { display: none !important; }
+}
+
+@media (max-width: 767px) {
+  html { scroll-padding-block: 14px calc(82px + env(safe-area-inset-bottom)); }
+  /* Match the performance selector so its 12px padding cannot erase the dock clearance. */
+  .app, html.perf-mobile .app { padding-bottom: calc(82px + env(safe-area-inset-bottom)) !important; }
+  .utility-controls {
+    inset: auto 0 0 0 !important; width: 100% !important; max-width: none !important;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); gap: 10px !important;
+    transform: none !important; box-sizing: border-box;
+  }
+  .utility-quick-actions {
+    width: 100%; justify-content: space-between; padding: 5px;
+    border: 1px solid var(--ui-line); border-radius: 19px;
+    background: var(--ui-surface); box-shadow: 0 3px 18px rgba(20,48,69,.16);
+  }
+  .utility-quick-actions :is(#utilitySettingsToggleBtn, #desktopPrevStepBtn, #mobilePrevStepBtn) {
+    width: auto !important; min-width: 96px !important; height: 44px !important; min-height: 44px !important;
+    padding-inline: 14px !important; gap: 8px; border-radius: 14px !important;
+  }
+  .utility-quick-actions .utility-btn-label { display: inline !important; font-size: 14px !important; }
+  #mobilePrevStepBtn:disabled, #desktopPrevStepBtn:disabled { display: none !important; }
+  .utility-quick-actions:has(.utility-prevstep-btn:disabled) { width: auto; }
+  #utilitySettingsPanel.utility-settings-panel { width: min(360px, calc(100vw - 24px)) !important; }
+  /* Selection screens have a real footer: the carousel hint and controls never share a layer. */
+  html body:not(.app-active-game) .app {
+    min-height: calc(100dvh - 72px - env(safe-area-inset-bottom)) !important;
+    padding-bottom: 12px !important;
+  }
+  body:not(.app-active-game) .utility-controls {
+    position: relative !important;
+    inset: auto !important;
+    margin: 0 auto;
+  }
+  body:not(.app-active-game) #utilitySettingsPanel.utility-settings-panel {
+    position: absolute;
+    right: 12px;
+    bottom: calc(100% + 6px);
+  }
+  #luckScreen .luck-carousel-hint { flex-wrap: wrap; row-gap: 6px; }
+  .game-screen .game-card { padding: 14px !important; }
+  .game-screen .ux-game-header { scroll-margin-top: 12px; }
+  .game-screen :is(.game-play-area, #raceTrackWrap, #battleStageBadge, .sim-setup-card, .stock-live-card, #navalBoard, #ladderBoard, .bear-find-stage-card, #keyReactStage) { scroll-margin-top: 12px; }
+  #game6Screen .stock-manwon-input-row { grid-template-columns: auto minmax(0, 1fr) !important; }
+  #game6Screen .stock-fill-btn { grid-column: 1 / -1; width: 100%; }
+  #game6Screen .stock-quick-row { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  #game6Screen .stock-player-tabs { flex-wrap: wrap; }
+  #game6Screen .stock-turn-actions, #game6Screen .stock-helper-actions { gap: 8px; }
+  #game6Screen .stock-turn-btn { min-width: 0; white-space: normal; padding: 10px 8px; }
+  body.app-active-game #game6Screen .stock-picked-carousel-toolbar { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; gap: 8px !important; }
+  body.app-active-game #game6Screen .stock-picked-carousel-nav { width: 100%; min-width: 0 !important; justify-content: space-between; }
+  body.app-active-game #game6Screen .stock-manwon-input-row { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; }
+  body.app-active-game #game6Screen .stock-manwon-control { display: flex !important; align-items: center; gap: 8px; }
+  body.app-active-game #game6Screen .stock-manwon-control input { flex: 1; width: 0; min-width: 0 !important; }
+  body.app-active-game #game6Screen .stock-manwon-control > span { flex: 0 0 auto; }
+  #physicalKeyReactScreen .key-react-key-head { flex-wrap: wrap; gap: 8px; }
+  /* Phone passing modes keep a large play area with a separate navigation strip. */
+  body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) { overflow-y: auto !important; }
+  body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) .app { min-height: max(640px, 100dvh) !important; height: max(640px, 100dvh) !important; padding-bottom: calc(82px + env(safe-area-inset-bottom)) !important; }
+  body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) .ux-game-header .sub-text { display: block; -webkit-line-clamp: unset; overflow: visible; font-size: 14px !important; line-height: 1.5 !important; }
+  body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) .game-mini-badge { display: none !important; }
+  body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) .status-text { font-size: 13px !important; margin: 0; }
+  /* A narrow desktop window still needs its participant form; phone passing is device-specific. */
+  html.catalog-desktop-device body.physical-balloon-mode .app { height: auto !important; min-height: 100dvh !important; }
+  html.catalog-desktop-device body.physical-balloon-mode :is(.balloon-card-screen, .balloon-layout) { height: auto !important; overflow: visible; }
+  html.catalog-desktop-device body.physical-balloon-mode .balloon-sidebar .input-card,
+  html.catalog-desktop-device body.physical-balloon-mode .balloon-player-card { display: block !important; }
+  html.catalog-desktop-device body.physical-balloon-mode .balloon-main-header { order: 0; }
+  html.catalog-desktop-device body.physical-balloon-mode .balloon-sidebar .controls-wrap { order: 1; margin-top: 12px; }
+  html.catalog-desktop-device body.physical-balloon-mode .balloon-stage-card { order: 2; margin-top: 12px; }
+  html.catalog-desktop-device body.physical-balloon-mode .balloon-player-card { order: 3; margin-top: 12px; }
+  html.catalog-desktop-device body.physical-balloon-mode .balloon-press-area { min-height: 320px !important; }
+  .popup, .app-dialog { max-height: calc(100dvh - 24px); padding: 22px 16px; }
+  .popup h3 { font-size: 1.6rem; line-height: 1.3; }
+  .app-dialog-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app-dialog-actions button { min-width: 0; white-space: normal; }
+}
+@media (max-width: 380px) {
+  .game-screen .game-card { padding: 10px !important; }
+  #game3Screen .battle-table-card { padding: 10px !important; }
+  #game3Screen .battle-row { padding: 10px !important; }
+  #game3Screen .battle-hand { gap: 4px !important; }
+  .game-screen :is(.ux-game-header, .wheel-stage-head) { flex-wrap: wrap; }
+}
+
+/* v3.32: changing live copy must not resize the game around it.
+   Reserve text lines rather than measuring every update; keep excess copy readable. */
+[data-stable-lines="2"] { --stable-copy-lines: 2; }
+[data-stable-lines="3"] { --stable-copy-lines: 3; }
+html body :is(.game-screen, #utilitySettingsPanel, #rosterOverlay) [data-stable-lines] {
+  display: block !important;
+  box-sizing: content-box !important;
+  height: calc(var(--stable-copy-lines) * 1.6em) !important;
+  min-height: calc(var(--stable-copy-lines) * 1.6em) !important;
+  max-height: calc(var(--stable-copy-lines) * 1.6em) !important;
+  min-width: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  align-self: stretch;
+  justify-self: stretch;
+  flex-shrink: 0 !important;
+  line-height: 1.6 !important;
+  white-space: normal !important;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  scroll-behavior: auto;
+  font-variant-numeric: tabular-nums;
+}
+html body :is(.game-screen, #utilitySettingsPanel, #rosterOverlay) [data-stable-lines]:focus-visible {
+  outline: 2px solid var(--control-focus);
+  outline-offset: 3px;
+}
+/* A predictable badge width also keeps the neighbouring heading from rewrapping. */
+html body :is(.game-screen, #utilitySettingsPanel, #rosterOverlay) [data-stable-lines][data-stable-kind="badge"] {
+  width: 9em !important;
+  max-width: calc(100% - 32px) !important;
+  align-self: start;
+  justify-self: end;
+}
+/* Empty participant guidance keeps its slot after the final card is revealed. */
+#game3Screen .battle-player-sub:empty { display: block !important; visibility: hidden; }
+/* Stable copy also needs a stable column beside the arena controls. */
+#game4Screen .sim-arena-card > .sim-panel-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+#game4Screen .sim-arena-card > .sim-panel-head > div { min-width: 0; }
+@media (max-width: 900px) {
+  #game4Screen .sim-arena-card > .sim-panel-head { grid-template-columns: minmax(0, 1fr); }
+  .game-screen [data-stable-lines][data-stable-kind="status"] { --stable-copy-lines: 4; }
+  .game-screen :is(#balloonStageHint, #circleTapStageHint, #keyReactSignalSubText, #bearFindStageHint, #simCombatLiveText) { --stable-copy-lines: 3; }
+}
+@media (max-width: 767px) {
+  /* A short viewport can scroll; the play card must not clip its reserved copy. */
+  body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) .app { height: auto !important; }
+  body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) :is(
+    #physicalBalloonScreen, #physicalBombScreen, #physicalCircleScreen,
+    .balloon-card-screen, .bomb-pass-card-screen, .circle-tap-card-screen,
+    .balloon-layout, .bomb-pass-layout, .circle-tap-layout
+  ) { height: auto !important; }
+  body:is(.physical-balloon-mode, .physical-bomb-mode, .physical-circle-mode) :is(
+    .balloon-stage-card, .bomb-pass-stage-card, .circle-tap-stage-card
+  ) { flex: 1 0 auto; }
+}
+@media (min-width: 1025px) and (max-height: 760px) {
+  body.key-react-compact-mode { overflow-y: auto; }
+  body.key-react-compact-mode :is(
+    .app, #physicalKeyReactScreen, .key-react-card-screen, .key-react-layout,
+    .key-react-sidebar, .key-react-main, .key-react-sidebar-inner
+  ) { height: auto; }
+  body.key-react-compact-mode .key-react-stage-card { flex: 1 0 auto; }
+  body.key-react-compact-mode .key-react-stage { min-height: 280px !important; flex: 1 0 auto; }
+}
+
+/* v3.32 ui2: one shared row for game setup actions, including touch layouts.
+   Implicit columns count visible controls, so hidden shuffle buttons leave no gap. */
+html body.app-active-game .game-screen:is(
+  #game1Screen, #game2Screen, #game3Screen, #game4Screen, #game5Screen, #game6Screen, #game7Screen,
+  #physicalBalloonScreen, #physicalBombScreen, #physicalCircleScreen, #physicalKeyReactScreen, #physicalBearFindScreen
+) .button-row {
+  display: grid !important;
+  grid-template-columns: none !important;
+  grid-template-rows: auto !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  gap: 8px !important;
+  margin-top: 12px !important;
+}
+html body.app-active-game .game-screen:is(
+  #game1Screen, #game2Screen, #game3Screen, #game4Screen, #game5Screen, #game6Screen, #game7Screen,
+  #physicalBalloonScreen, #physicalBombScreen, #physicalCircleScreen, #physicalKeyReactScreen, #physicalBearFindScreen
+) .button-row > .action-btn {
+  grid-area: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+  padding: 10px 6px !important;
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+  white-space: nowrap !important;
+}

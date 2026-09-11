@@ -419,6 +419,7 @@ function getStockReadyCount() {
 function updateStockDurationText() {
   if (!stockDurationValue) return
   stockDurationValue.textContent = `${stockDurationSeconds}초`
+  stockDurationInput?.setAttribute('aria-valuetext', `${stockDurationSeconds}초`)
 }
 
 function updateStockStatus(text) {
@@ -467,6 +468,7 @@ function renderStockPlayerSummary() {
 
   stockPlayers.forEach((player, index) => {
     const validation = getStockDraftValidation(player.id)
+    const selectedCount = getStockSelectedSlots(player.id).length
     const item = document.createElement('div')
     item.className = `stock-player-summary-item${validation.valid ? ' is-ready' : ''}${index === stockSetupTurnIndex ? ' is-active' : ''}`
     item.innerHTML = `
@@ -474,7 +476,7 @@ function renderStockPlayerSummary() {
         <strong>${escapeHtml(player.label)}</strong>
         <span class="stock-player-summary-badge ${validation.valid ? 'is-ready' : 'is-pending'}">${validation.valid ? '투자 완료' : '배분 중'}</span>
       </div>
-      <div class="stock-player-summary-sub">${validation.valid ? `${validation.count}종목 · ${formatStockManwon(validation.total)} 배분 완료` : (validation.count ? `${validation.count}종목 선택 · ${validation.remaining > 0 ? `남은 ${formatStockManwon(validation.remaining)}` : escapeHtml(validation.issue || '조정 필요')}` : '아직 종목을 고르지 않았어.')}</div>
+      <div class="stock-player-summary-sub">${validation.valid ? `${validation.count}종목 · ${formatStockManwon(validation.total)} 배분 완료` : (selectedCount ? `${selectedCount}종목 선택 · ${validation.remaining > 0 ? `남은 ${formatStockManwon(validation.remaining)}` : escapeHtml(validation.issue || '조정 필요')}` : '아직 종목을 고르지 않았어.')}</div>
     `
     stockPlayerSummary.appendChild(item)
   })
@@ -493,9 +495,10 @@ function renderStockPlayerTabs() {
     button.type = 'button'
     button.className = `stock-player-tab${index === stockSetupTurnIndex ? ' is-active' : ''}${validation.valid ? ' is-ready' : ''}`
     button.dataset.playerId = player.id
+    button.setAttribute('aria-pressed', index === stockSetupTurnIndex ? 'true' : 'false')
     button.innerHTML = `
       <strong>${escapeHtml(player.label)}</strong>
-      <span>${validation.valid ? '완료' : `${validation.count}종목 선택`}</span>
+      <span>${validation.valid ? '완료' : `${getStockSelectedSlots(player.id).length}종목 선택`}</span>
     `
     stockPlayerTabs.appendChild(button)
   })
@@ -579,17 +582,17 @@ function renderStockAllocationEditor() {
           <strong>${formatStockMoney(stock?.price || 0)}</strong>
         </div>
         <div class="stock-quick-row">
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-10" ${isLocked ? 'disabled' : ''}>-10</button>
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-5" ${isLocked ? 'disabled' : ''}>-5</button>
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-1" ${isLocked ? 'disabled' : ''}>-1</button>
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="1" ${isLocked ? 'disabled' : ''}>+1</button>
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="5" ${isLocked ? 'disabled' : ''}>+5</button>
-          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="10" ${isLocked ? 'disabled' : ''}>+10</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-10" aria-label="10만원 줄이기" ${isLocked ? 'disabled' : ''}>-10</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-5" aria-label="5만원 줄이기" ${isLocked ? 'disabled' : ''}>-5</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="-1" aria-label="1만원 줄이기" ${isLocked ? 'disabled' : ''}>-1</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="1" aria-label="1만원 늘리기" ${isLocked ? 'disabled' : ''}>+1</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="5" aria-label="5만원 늘리기" ${isLocked ? 'disabled' : ''}>+5</button>
+          <button class="stock-chip-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-step="10" aria-label="10만원 늘리기" ${isLocked ? 'disabled' : ''}>+10</button>
         </div>
         <div class="stock-manwon-input-row">
-          <label class="stock-manwon-label">투자금</label>
+          <label class="stock-manwon-label" for="stockAmountInput">투자금</label>
           <div class="stock-manwon-control">
-            <input class="stock-amount-input stock-amount-input-manwon" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-amount-input="true" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="${activeSlot.amount ? wonToManwon(activeSlot.amount) : ''}" ${isLocked ? 'disabled' : ''} />
+            <input id="stockAmountInput" aria-label="${escapeHtml(activePlayer.label)} · ${escapeHtml(stock?.name || '')} 투자금 (만원)" class="stock-amount-input stock-amount-input-manwon" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-amount-input="true" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="${activeSlot.amount ? wonToManwon(activeSlot.amount) : ''}" ${isLocked ? 'disabled' : ''} />
             <span>만원</span>
           </div>
           <button class="stock-fill-btn" type="button" data-player-id="${activePlayer.id}" data-stock-id="${activeSlot.stockId}" data-stock-fill="remaining" ${isLocked ? 'disabled' : ''}>잔액 전부</button>
@@ -602,9 +605,9 @@ function renderStockAllocationEditor() {
       <div class="stock-picked-carousel-toolbar">
         <div class="stock-picked-carousel-hint">선택한 종목을 하나씩 넘기며 투자해줘</div>
         <div class="stock-picked-carousel-nav">
-          <button class="stock-carousel-nav-btn" type="button" data-stock-carousel-nav="prev" ${selectedSlots.length <= 1 || isLocked ? 'disabled' : ''}>←</button>
+          <button class="stock-carousel-nav-btn" type="button" aria-label="이전 선택 종목" data-stock-carousel-nav="prev" ${selectedSlots.length <= 1 || isLocked ? 'disabled' : ''}>←</button>
           <span class="stock-picked-carousel-count">${focusedIndex + 1} / ${selectedSlots.length}</span>
-          <button class="stock-carousel-nav-btn" type="button" data-stock-carousel-nav="next" ${selectedSlots.length <= 1 || isLocked ? 'disabled' : ''}>→</button>
+          <button class="stock-carousel-nav-btn" type="button" aria-label="다음 선택 종목" data-stock-carousel-nav="next" ${selectedSlots.length <= 1 || isLocked ? 'disabled' : ''}>→</button>
         </div>
       </div>
       <div class="stock-picked-carousel is-single-view">${pickedCardHtml}</div>
@@ -625,7 +628,7 @@ function renderStockAllocationEditor() {
       </div>
       <div class="stock-allocation-total">
         <span>선택 종목</span>
-        <strong>${validation.count} / ${STOCK_MAX_HOLDINGS}</strong>
+        <strong>${selectedSlots.length} / ${STOCK_MAX_HOLDINGS}</strong>
       </div>
     </div>
     <div class="stock-allocation-note${validation.valid ? ' is-ready' : ''}">${validation.valid ? '준비 완료. 다음 참가자로 넘어가거나 바로 관찰형 게임을 시작할 수 있어.' : escapeHtml(validation.issue || '시드머니 100만원을 모두 채워야 준비 완료돼.')}</div>
@@ -664,7 +667,7 @@ function renderStockRoster() {
       const selectedSlot = selectedMap.get(stock.id)
       const disabled = isLocked || (!selected && selectedCount >= STOCK_MAX_HOLDINGS)
       return `
-        <button class="stock-roster-card stock-roster-card-btn ${stock.colorClass}${selected ? ' is-selected' : ''}" type="button" data-player-id="${activePlayer?.id || ''}" data-stock-id="${stock.id}" ${disabled ? 'disabled' : ''}>
+        <button class="stock-roster-card stock-roster-card-btn ${stock.colorClass}${selected ? ' is-selected' : ''}" type="button" aria-pressed="${selected}" data-player-id="${activePlayer?.id || ''}" data-stock-id="${stock.id}" ${disabled ? 'disabled' : ''}>
           <div class="stock-roster-topline">
             <span class="stock-roster-emoji" aria-hidden="true">${stock.emoji}</span>
             <span class="stock-roster-select-state">${selected ? `${formatStockManwon(selectedSlot.amount)}` : '담기'}</span>

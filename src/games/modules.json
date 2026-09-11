@@ -1,11 +1,11 @@
 [
   {
     "name": "core.js",
-    "bytes": 205371
+    "bytes": 205748
   },
   {
     "name": "game1-drop.js",
-    "bytes": 47326
+    "bytes": 47456
   },
   {
     "name": "game2-race.js",
@@ -13,11 +13,11 @@
   },
   {
     "name": "game3-card-battle.js",
-    "bytes": 49096
+    "bytes": 49658
   },
   {
     "name": "game4-ball-battle.js",
-    "bytes": 66917
+    "bytes": 71498
   },
   {
     "name": "game5-russian-roulette.js",
@@ -25,7 +25,7 @@
   },
   {
     "name": "game6-stock.js",
-    "bytes": 53779
+    "bytes": 54469
   },
   {
     "name": "game7-ladder.js",
@@ -33,10 +33,10 @@
   },
   {
     "name": "physical-games.js",
-    "bytes": 81716
+    "bytes": 81873
   },
   {
     "name": "bootstrap.js",
-    "bytes": 26914
+    "bytes": 27448
   }
 ]

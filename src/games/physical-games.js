@@ -460,7 +460,7 @@ function endBalloonPress(event) {
 
 
 function canPlayBombPassOnThisDevice() {
-  return isTouchDevice() && getViewportShortSide() <= 820
+  return isHandheldGameDevice()
 }
 
 function setBombPassControlsLocked(isLocked) {
@@ -611,7 +611,7 @@ function startBombPassGame() {
 }
 
 function canPlayCircleTapOnThisDevice() {
-  return isTouchDevice() && getViewportShortSide() <= 820
+  return isHandheldGameDevice()
 }
 
 function parseCircleTapPlayers(text) {
@@ -1057,7 +1057,7 @@ function handleCircleTapPointer(event) {
 
 
 function canPlayKeyReactOnThisDevice() {
-  return !isMobileOrTabletLike()
+  return !isHandheldGameDevice()
 }
 
 function normalizeKeyReactKey(value) {
@@ -1978,8 +1978,9 @@ function setBearFindVideoVisible(isVisible) {
 }
 
 function parseBearFindPlayerCount(value) {
-  const count = Number.parseInt(String(value || '').trim(), 10)
-  if (!Number.isFinite(count)) return { status: 'EMPTY' }
+  if (!String(value || '').trim()) return { status: 'EMPTY' }
+  const count = Number(value)
+  if (!Number.isInteger(count)) return { status: 'INVALID' }
   if (count < BEAR_FIND_MIN_PLAYERS) return { status: 'TOO_FEW', count }
   if (count > BEAR_FIND_MAX_PLAYERS) return { status: 'TOO_MANY', count }
   return { status: 'OK', count }
@@ -2019,6 +2020,7 @@ function updateBearFindFromInput(options = {}) {
   if (!bearFindStarted && !bearFindFinished && bearFindStatusText) {
     const messages = {
       EMPTY: '참가자 인원수를 입력해줘.',
+      INVALID: '참가자 인원수는 소수 없이 정수로 입력해줘.',
       TOO_FEW: `참가자는 최소 ${BEAR_FIND_MIN_PLAYERS}명부터 가능해.`,
       TOO_MANY: `참가자는 최대 ${BEAR_FIND_MAX_PLAYERS}명까지 가능해.`
     }
@@ -2379,19 +2381,16 @@ function applyAdaptivePerformanceToActiveGames() {
     runner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
     runner.isFixed = true
   }
-  if (simArenaRunner) {
-    simArenaRunner.delta = 1000 / APP_PERFORMANCE_PROFILE.physicsHz
-    simArenaRunner.isFixed = true
-  }
 
   if (render && typeof Render?.setPixelRatio === 'function') {
     Render.setPixelRatio(render, getCanvasPixelRatio())
   }
   if (simArenaRender && typeof Matter?.Render?.setPixelRatio === 'function') {
-    Matter.Render.setPixelRatio(
-      simArenaRender,
-      Math.min(window.devicePixelRatio || 1, SIM_BATTLE_PERFORMANCE.canvasPixelRatio)
-    )
+    const ratio = Math.min(window.devicePixelRatio || 1, SIM_BATTLE_PERFORMANCE.canvasPixelRatio)
+    if (simArenaRender.options.pixelRatio !== ratio) {
+      Matter.Render.setPixelRatio(simArenaRender, ratio)
+      if (simBattlePaused || simBattleFinished) renderSimCanvasOnce(performance.now(), simBattleFinished ? 1 : simFrameClock.accumulator / SIM_PHYSICS_STEP_MS)
+    }
   }
   if (bearFindVideo && !bearFindVideoVisible) {
     bearFindVideo.preload = APP_PERFORMANCE_PROFILE.constrained ? 'metadata' : 'auto'

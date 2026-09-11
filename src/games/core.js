@@ -949,6 +949,9 @@ const simInfoBtn = document.getElementById('simInfoBtn')
 const simArenaZoomBtn = document.getElementById('simArenaZoomBtn')
 const simArenaZoomStage = document.getElementById('simArenaZoomStage')
 const simArenaZoomBackdrop = document.getElementById('simArenaZoomBackdrop')
+const simPauseBtn = document.getElementById('simPauseBtn')
+const simLiveStatus = document.getElementById('simLiveStatus')
+const simCombatLiveText = document.getElementById('simCombatLiveText')
 
 const navalConfigInput = document.getElementById('navalConfigInput')
 const shuffleNavalBtn = document.getElementById('shuffleNavalBtn')
@@ -1605,17 +1608,14 @@ const SIM_SUDDEN_DEATH_BASE_DAMAGE = 2
 const SIM_SUDDEN_DEATH_MAX_DAMAGE = 8
 const SIM_SUDDEN_DEATH_DAMAGE_STEP_EVERY = 3
 const SIM_BATTLE_PERFORMANCE = Object.freeze({
-  get renderFrameGap() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 15 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 34 : 30 },
-  get overlayFrameGap() { return 1000 / (APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 30 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 18 : APP_PERFORMANCE_PROFILE.isMobile ? 20 : 25) },
   get rankingInterval() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 140 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 440 : APP_PERFORMANCE_PROFILE.isMobile ? 420 : 280 },
   get effectInterval() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 80 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 260 : APP_PERFORMANCE_PROFILE.isMobile ? 240 : 160 },
   get statusInterval() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 120 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 320 : APP_PERFORMANCE_PROFILE.isMobile ? 280 : 180 },
-  get maxTransientEffects() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 10 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 3 : APP_PERFORMANCE_PROFILE.isMobile ? 3 : 5 },
-  get showFloatingDamage() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' && !APP_PERFORMANCE_PROFILE.isMobile },
+  get maxTransientEffects() { return APP_PERFORMANCE_PROFILE.qualityLevel === 'high' ? 18 : APP_PERFORMANCE_PROFILE.qualityLevel === 'low' ? 6 : 10 },
+  get showFloatingDamage() { return APP_PERFORMANCE_PROFILE.qualityLevel !== 'low' },
   get canvasPixelRatio() {
-    if (APP_PERFORMANCE_PROFILE.qualityLevel === 'high') return Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 1.1)
-    if (APP_PERFORMANCE_PROFILE.qualityLevel === 'low') return Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, APP_PERFORMANCE_PROFILE.isMobile ? 0.65 : 0.75)
-    return Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, APP_PERFORMANCE_PROFILE.isMobile ? 0.7 : 0.85)
+    if (APP_PERFORMANCE_PROFILE.qualityLevel === 'high') return Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 1.5)
+    return Math.min(APP_PERFORMANCE_PROFILE.canvasPixelRatio, 1)
   }
 })
 const SIM_STAT_KEYS = ['health', 'attack', 'accuracy', 'defense']
@@ -1662,7 +1662,16 @@ let simSuddenDeathLastTickAt = 0
 let simSuddenDeathTickCount = 0
 let simArenaEngine = null
 let simArenaRender = null
-let simArenaRunner = null
+const SIM_PHYSICS_STEP_MS = 1000 / 60
+const SIM_MAX_STEPS_PER_FRAME = 18
+const simFrameClock = { lastAt: null, accumulator: 0, visualTime: 0 }
+const simEffectPool = Array.from({ length: 20 }, () => ({ active: false }))
+const simRankingRows = new Map()
+let simBattlePaused = false
+let simBattlePending = false
+let simPlaybackRate = 1
+let simMetricsDirty = true
+let simArenaResizeObserver = null
 let simArenaWorld = null
 let simArenaBodies = []
 let simArenaBodyMap = new Map()
@@ -1674,8 +1683,6 @@ let simArenaZoomBaseRect = null
 let simRenderRaf = null
 let simVisibilityPaused = false
 let simRenderLastPaintAt = 0
-let simOverlayRaf = null
-let simOverlayLastPaintAt = 0
 let simRankingRenderTimer = null
 let simRankingLastRenderAt = 0
 let simPendingRanking = null
@@ -3878,15 +3885,18 @@ function refreshSimThemeVisuals() {
       body.render.fillStyle = player.color
       body.render.strokeStyle = strokeStyle
       body.render.lineWidth = lineWidth
+      simOverlayMap.get(player.id)?.style.setProperty('--sim-player-color', player.color)
       if (body.plugin) {
         body.plugin.baseStrokeStyle = strokeStyle
         body.plugin.baseLineWidth = lineWidth
       }
     })
-    if (simBattleFinished) {
-      renderSimCanvasOnce()
+    if (simBattleFinished || simBattlePaused) {
+      simMetricsDirty = true
+      renderSimCanvasOnce(performance.now(), simBattleFinished ? 1 : simFrameClock.accumulator / SIM_PHYSICS_STEP_MS)
     }
   }
+  if (simBattleRunning || simBattleFinished) flushSimRankingRender(getSimRankingData())
 }
 
 function refreshExtendedThemeVisuals() {
@@ -4387,6 +4397,10 @@ function isTabletLike() {
 
 function isMobileOrTabletLike() {
   return isPhoneLike() || isTabletLike()
+}
+
+function isHandheldGameDevice() {
+  return window.RandomRouletteRegistry?.isPhoneLikeDevice?.() ?? isMobileOrTabletLike()
 }
 
 function isPortraitMode() {
@@ -5322,7 +5336,7 @@ function syncGame1MobileLayout() {
     return
   }
 
-  const shouldUseMobileLayout = isMobileOrTabletLike()
+  const shouldUseMobileLayout = window.innerWidth <= 900 || isMobileOrTabletLike()
 
   document.body.classList.toggle('game1-mobile-layout', shouldUseMobileLayout)
 
@@ -5362,7 +5376,7 @@ function syncRaceMobileLayout() {
     return
   }
 
-  const shouldUseMobileLayout = isMobileOrTabletLike()
+  const shouldUseMobileLayout = window.innerWidth <= 900 || isMobileOrTabletLike()
   document.body.classList.toggle('game2-mobile-layout', shouldUseMobileLayout)
 
   if (shouldUseMobileLayout && !raceMobileLayoutApplied) {

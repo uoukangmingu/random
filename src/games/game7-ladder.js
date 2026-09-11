@@ -19,13 +19,13 @@ let ladderActiveProgress = 0
 let ladderProgressRaf = null
 
 function getLadderMaxPlayers() {
-  return isMobileOrTabletLike() ? LADDER_MOBILE_MAX_PLAYERS : LADDER_DESKTOP_MAX_PLAYERS
+  return isHandheldGameDevice() ? LADDER_MOBILE_MAX_PLAYERS : LADDER_DESKTOP_MAX_PLAYERS
 }
 
 function updateLadderHelperText() {
   if (!ladderHelperText) return
   const max = getLadderMaxPlayers()
-  ladderHelperText.textContent = isMobileOrTabletLike()
+  ladderHelperText.textContent = isHandheldGameDevice()
     ? `이름(번호) 형식만 가능. 모바일 최대 ${max}명, 번호는 1~참가자 수 안에서 중복 없이 입력.`
     : `이름(번호) 형식만 가능. 데스크톱 최대 ${max}명, 번호는 1~참가자 수 안에서 중복 없이 입력.`
 }

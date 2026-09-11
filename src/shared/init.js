@@ -4,6 +4,7 @@
     global.RandomRouletteUtilitySettings?.init?.()
     global.RandomRouletteRoster?.init?.()
     global.RandomRouletteSession?.init?.()
+    global.RandomRouletteUX?.init?.()
     global.RandomRouletteWheel?.init?.()
     global.RandomRouletteRegistry?.init?.()
     global.RandomRouletteWakeLock?.init?.()

@@ -120,12 +120,12 @@
                 <div class="input-card">
                   <label for="circleTapConfigInput">참가자</label>
                   <input
-                    id="circleTapConfigInput"
+                    id="circleTapConfigInput" aria-describedby="circleTapConfigInputHelp"
                     type="text"
                     value="홍길동, 김아무개, 박철수"
-                    autocomplete="off"
+                    autocomplete="off" enterkeyhint="go" spellcheck="false"
                   />
-                  <p class="helper-text">
+                  <p id="circleTapConfigInputHelp" class="helper-text">
                     쉼표(,)로 구분해 입력. 중복 이름은 불가하며 2~8명까지 가능.
                   </p>
                 </div>
@@ -135,7 +135,7 @@
                   <button id="resetCircleTapBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
 
-                <div id="circleTapStatusText" class="status-text">
+                <div id="circleTapStatusText" class="status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">
                   참가자를 등록한 뒤 시작을 누르면 현재 차례의 색상 원을 정확히 눌러줘.
                 </div>
               </div>
@@ -151,7 +151,7 @@
           </aside>
 
           <div class="circle-tap-main">
-            <div class="circle-tap-main-header">
+            <div class="circle-tap-main-header ux-game-header">
               <div>
                 <p class="small-badge game-mini-badge">⭕ physical M3 ⭕</p>
                 <h2>작아지는 원</h2>
@@ -165,7 +165,7 @@
                   <h3>정확도 스테이지</h3>
                   <p class="sub-text">손가락이 원 안에 들어왔는지만 판정한다. 원은 매번 박스 안의 다른 위치로 움직이고, 작아질수록 실수할 가능성이 높아진다.</p>
                 </div>
-                <span id="circleTapTurnBadge" class="circle-tap-turn-badge">대기</span>
+                <span id="circleTapTurnBadge" class="circle-tap-turn-badge" data-stable-lines="2" data-stable-kind="badge" tabindex="0" aria-label="게임 상태">대기</span>
               </div>
 
               <div id="circleTapStage" class="circle-tap-stage" aria-label="작아지는 원 터치 스테이지">
@@ -178,7 +178,7 @@
                 <strong id="circleTapCount">0회</strong>
               </div>
 
-              <p id="circleTapStageHint" class="circle-tap-stage-hint">시작을 누른 뒤, 현재 휴대폰을 든 사람이 색상 원 안쪽을 정확히 눌러줘.</p>
+              <p id="circleTapStageHint" class="circle-tap-stage-hint" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">시작을 누른 뒤, 현재 휴대폰을 든 사람이 색상 원 안쪽을 정확히 눌러줘.</p>
             </div>
 
           </div>
@@ -371,13 +371,13 @@
                   <div class="wheel-speed-field"><input id="wheelSpeedInput" type="number" inputmode="decimal" min="0.5" max="10" step="any" value="1" autocomplete="off" aria-describedby="wheelSpeedHelp wheelSpeedStatus" /><span aria-hidden="true">배</span></div>
                 </div>
                 <p id="wheelSpeedHelp" class="wheel-option-help">0.5–10배 · 2를 입력하면 2배 빨라져.<br />당첨 확률은 항목 가중치대로 유지돼.</p>
-                <p id="wheelSpeedStatus" class="wheel-speed-status" aria-live="polite">현재 1배 · 회전 중에도 조절할 수 있어.</p>
+                <p id="wheelSpeedStatus" class="wheel-speed-status" aria-live="polite" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">현재 1배 · 회전 중에도 조절할 수 있어.</p>
               </div>
               <div class="wheel-option-row">
                 <label class="wheel-checkbox"><input id="wheelAutoRemoveCheckbox" type="checkbox" /> 당첨 항목 자동 제거</label>
                 <p class="wheel-option-help">2개가 남을 때까지, 같은 항목이 다시 뽑히지 않게.</p>
               </div>
-              <div id="wheelInputStatus" class="status-text" aria-live="polite">항목을 확인한 뒤 룰렛을 돌려줘.</div>
+              <div id="wheelInputStatus" class="status-text" aria-live="polite" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">항목을 확인한 뒤 룰렛을 돌려줘.</div>
             </div>
           </aside>
           <div class="wheel-main">
@@ -391,8 +391,8 @@
               </div>
               <div id="wheelSpinProgress" class="wheel-spin-progress" role="progressbar" aria-label="룰렛 진행" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span id="wheelSpinProgressFill"></span></div>
               <div id="wheelResultCard" class="wheel-result-card" aria-live="polite" aria-atomic="true">
-                <span>최근 결과</span><strong id="wheelResultText">아직 추첨 전</strong>
-                <small id="wheelResultNote">항목을 확인하고 룰렛을 돌려봐.</small>
+                <span>최근 결과</span><strong id="wheelResultText" data-stable-lines="2" data-stable-kind="result" tabindex="0" aria-label="추첨 결과">아직 추첨 전</strong>
+                <small id="wheelResultNote" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">항목을 확인하고 룰렛을 돌려봐.</small>
               </div>
               <div class="button-row wheel-button-row">
                 <button id="wheelSpinBtn" class="action-btn primary" type="button">SPIN · 돌리기</button>
@@ -430,12 +430,12 @@
                 <div class="input-card">
                   <label for="balloonConfigInput">참가자</label>
                   <input
-                    id="balloonConfigInput"
+                    id="balloonConfigInput" aria-describedby="balloonConfigInputHelp"
                     type="text"
                     value="홍길동, 김아무개, 박철수"
-                    autocomplete="off"
+                    autocomplete="off" enterkeyhint="go" spellcheck="false"
                   />
-                  <p class="helper-text">
+                  <p id="balloonConfigInputHelp" class="helper-text">
                     쉼표(,)로 구분해 입력. 중복 이름은 불가하며 2~8명까지 가능.
                   </p>
                 </div>
@@ -445,7 +445,7 @@
                   <button id="resetBalloonBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
 
-                <div id="balloonStatusText" class="status-text">
+                <div id="balloonStatusText" class="status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">
                   참가자를 등록한 뒤 시작을 누르면 첫 번째 참가자부터 풍선을 꾹 누를 수 있다.
                 </div>
               </div>
@@ -461,7 +461,7 @@
           </aside>
 
           <div class="balloon-main">
-            <div class="balloon-main-header">
+            <div class="balloon-main-header ux-game-header">
               <div>
                 <p class="small-badge game-mini-badge">🎈 physical M1 🎈</p>
                 <h2>풍선 불기</h2>
@@ -475,7 +475,7 @@
                   <h3>풍선 스테이지</h3>
                   <p class="sub-text">풍선을 누르는 동안 점점 커진다. 터지는 기준과 남은 압력은 화면에 공개되지 않는다.</p>
                 </div>
-                <span id="balloonTurnBadge" class="balloon-turn-badge">대기</span>
+                <span id="balloonTurnBadge" class="balloon-turn-badge" data-stable-lines="2" data-stable-kind="badge" tabindex="0" aria-label="게임 상태">대기</span>
               </div>
 
               <button id="balloonPressArea" class="balloon-press-area" type="button" aria-label="풍선 꾹 누르기">
@@ -490,7 +490,7 @@
                 <div id="balloonPopEffect" class="balloon-pop-effect" aria-hidden="true">💥</div>
               </button>
 
-              <p id="balloonStageHint" class="balloon-stage-hint">시작을 누른 뒤, 현재 휴대폰을 든 사람이 풍선을 길게 눌러줘.</p>
+              <p id="balloonStageHint" class="balloon-stage-hint" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">시작을 누른 뒤, 현재 휴대폰을 든 사람이 풍선을 길게 눌러줘.</p>
             </div>
 
           </div>
@@ -502,7 +502,7 @@
       <div class="card game-card bomb-pass-card-screen">
         <div class="bomb-pass-layout">
           <div class="bomb-pass-main">
-            <div class="bomb-pass-main-header">
+            <div class="bomb-pass-main-header ux-game-header">
               <div>
                 <p class="small-badge game-mini-badge">💣 physical M2 💣</p>
                 <h2>폭탄 넘기기</h2>
@@ -516,7 +516,7 @@
                   <h3>폭탄 스테이지</h3>
                   <p class="sub-text">터지는 시간은 완전 랜덤이며 화면에 공개되지 않는다. 가능한 기기에서는 터지는 순간 진동이 울린다.</p>
                 </div>
-                <span id="bombPassStateBadge" class="bomb-pass-state-badge">대기</span>
+                <span id="bombPassStateBadge" class="bomb-pass-state-badge" data-stable-lines="2" data-stable-kind="badge" tabindex="0" aria-label="게임 상태">대기</span>
               </div>
 
               <div id="bombPassStage" class="bomb-pass-stage" aria-label="폭탄 넘기기 스테이지">
@@ -538,7 +538,7 @@
                   <button id="startBombPassBtn" class="action-btn primary" type="button">시작</button>
                   <button id="resetBombPassBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
-                <p id="bombPassStatusText" class="bomb-pass-status-text">시작을 누른 뒤 핸드폰을 사람들에게 넘겨줘. 폭탄이 터지는 순간 들고 있던 사람이 당첨이야.</p>
+                <p id="bombPassStatusText" class="bomb-pass-status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">시작을 누른 뒤 핸드폰을 사람들에게 넘겨줘. 폭탄이 터지는 순간 들고 있던 사람이 당첨이야.</p>
                 <p id="bombPassDeviceText" class="bomb-pass-device-text">※ 이 게임은 모바일 전용 게임입니다. 진동은 기기와 브라우저가 지원할 때만 작동합니다.</p>
               </div>
             </div>
@@ -550,8 +550,8 @@
 
     <section id="physicalKeyReactScreen" class="screen game-screen">
       <div class="card game-card key-react-card-screen">
-        <div class="key-react-layout">
-          <aside class="key-react-sidebar">
+        <div class="key-react-layout ux-layout">
+          <aside class="key-react-sidebar ux-sidebar">
             <div class="key-react-sidebar-inner">
               <div class="sidebar-head">
                 <h3 class="sidebar-title">STAY CLICK 설정</h3>
@@ -565,12 +565,12 @@
                 <div class="input-card">
                   <label for="keyReactConfigInput">참가자</label>
                   <input
-                    id="keyReactConfigInput"
+                    id="keyReactConfigInput" aria-describedby="keyReactConfigInputHelp"
                     type="text"
                     value="홍길동, 김아무개, 박철수"
-                    autocomplete="off"
+                    autocomplete="off" enterkeyhint="go" spellcheck="false"
                   />
-                  <p class="helper-text">
+                  <p id="keyReactConfigInputHelp" class="helper-text">
                     쉼표(,)로 구분해 입력. 중복 이름은 불가하며 2~4명까지 가능.
                   </p>
                 </div>
@@ -588,7 +588,7 @@
                   <button id="resetKeyReactBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
 
-                <div id="keyReactStatusText" class="status-text">
+                <div id="keyReactStatusText" class="status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">
                   참가자와 키를 지정한 뒤 시작을 누르면 3초 카운트다운 후 STAY가 뜨고, 랜덤한 순간 CLICK으로 바뀐다.
                 </div>
               </div>
@@ -603,8 +603,8 @@
             </div>
           </aside>
 
-          <div class="key-react-main">
-            <div class="key-react-main-header">
+          <div class="key-react-main ux-main">
+            <div class="key-react-main-header ux-game-header">
               <div>
                 <p class="small-badge game-mini-badge">⌨️ physical M4 ⌨️</p>
                 <h2>STAY CLICK</h2>
@@ -618,13 +618,13 @@
                   <h3>반응속도 스테이지</h3>
                   <p class="sub-text">대기 신호에 속아 누르면 실격. CLICK에서 누른 반응속도로 순위를 정해.</p>
                 </div>
-                <span id="keyReactPhaseBadge" class="key-react-phase-badge">대기</span>
+                <span id="keyReactPhaseBadge" class="key-react-phase-badge" data-stable-lines="2" data-stable-kind="badge" tabindex="0" aria-label="게임 상태">대기</span>
               </div>
 
               <div id="keyReactStage" class="key-react-stage" aria-label="STAY CLICK 키보드 반응속도 스테이지">
                 <div class="key-react-stage-inner">
                   <span id="keyReactSignalText" class="key-react-signal-text">READY</span>
-                  <p id="keyReactSignalSubText" class="key-react-signal-sub-text">시작을 누르면 3초 카운트다운 후 STAY가 나타납니다.</p>
+                  <p id="keyReactSignalSubText" class="key-react-signal-sub-text" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">시작을 누르면 3초 카운트다운 후 STAY가 나타납니다.</p>
                   <div id="keyReactKeyChips" class="key-react-key-chips"></div>
                 </div>
               </div>
@@ -645,8 +645,8 @@
 
     <section id="physicalBearFindScreen" class="screen game-screen">
       <div class="card game-card bear-find-card-screen">
-        <div class="bear-find-layout">
-          <aside class="bear-find-sidebar">
+        <div class="bear-find-layout ux-layout">
+          <aside class="bear-find-sidebar ux-sidebar">
             <div class="bear-find-sidebar-inner">
               <div class="sidebar-head">
                 <h3 class="sidebar-title">곰찾기 설정</h3>
@@ -659,15 +659,15 @@
                 <div class="input-card">
                   <label for="bearFindCountInput">참가자 인원수</label>
                   <input
-                    id="bearFindCountInput"
-                    type="number"
+                    id="bearFindCountInput" aria-describedby="bearFindCountInputHelp"
+                    type="number" inputmode="numeric"
                     min="2"
                     max="20"
                     step="1"
                     value="4"
-                    autocomplete="off"
+                    autocomplete="off" enterkeyhint="go" spellcheck="false"
                   />
-                  <p class="helper-text">
+                  <p id="bearFindCountInputHelp" class="helper-text">
                     2~20명까지 가능. 시작을 누르면 참가자 중 1명에게만 판다가 배정된다.
                   </p>
                 </div>
@@ -677,7 +677,7 @@
                   <button id="resetBearFindBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
 
-                <div id="bearFindStatusText" class="status-text">
+                <div id="bearFindStatusText" class="status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">
                   인원수를 입력한 뒤 시작을 누르면 1번 참가자부터 원하는 순간 상자를 누를 수 있다.
                 </div>
               </div>
@@ -692,8 +692,8 @@
             </div>
           </aside>
 
-          <div class="bear-find-main">
-            <div class="bear-find-main-header">
+          <div class="bear-find-main ux-main">
+            <div class="bear-find-main-header ux-game-header">
               <div>
                 <p class="small-badge game-mini-badge">🎁 physical M5 🎁</p>
                 <h2>곰찾기</h2>
@@ -707,7 +707,7 @@
                   <h3>선물 상자 스테이지</h3>
                   <p class="sub-text">곰돌이들 중에 스파이가 숨어 있어!</p>
                 </div>
-                <span id="bearFindPhaseBadge" class="bear-find-phase-badge">대기</span>
+                <span id="bearFindPhaseBadge" class="bear-find-phase-badge" data-stable-lines="2" data-stable-kind="badge" tabindex="0" aria-label="게임 상태">대기</span>
               </div>
 
               <button id="bearFindStageButton" class="bear-find-stage-button" type="button" aria-label="선물 상자 열기">
@@ -718,7 +718,7 @@
                 <span id="bearFindCurrentLabel" class="bear-find-current-label">시작 전</span>
               </button>
 
-              <p id="bearFindStageHint" class="bear-find-stage-hint">시작을 누른 뒤, 현재 참가자가 원할 때 상자를 눌러줘.</p>
+              <p id="bearFindStageHint" class="bear-find-stage-hint" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">시작을 누른 뒤, 현재 참가자가 원할 때 상자를 눌러줘.</p>
             </div>
 
           </div>
@@ -741,14 +741,14 @@
 
             <div class="controls-wrap">
               <div class="input-card">
-                <label for="configInput">설정</label>
+                <label for="configInput">참가자와 그릇 수</label>
                 <input
-                  id="configInput"
+                  id="configInput" aria-describedby="configInputHelp"
                   type="text"
                   value="홍길동*2, 김아무개*2"
-                  autocomplete="off"
+                  autocomplete="off" enterkeyhint="go" spellcheck="false"
                 />
-                <p class="helper-text">
+                <p id="configInputHelp" class="helper-text">
                   쉼표(,)로 구분해 입력. 최대 20개 그릇까지 가능.
                 </p>
               </div>
@@ -759,7 +759,7 @@
                 <button id="resetGameBtn" class="action-btn soft" type="button">리셋</button>
               </div>
 
-              <div id="statusText" class="status-text">
+              <div id="statusText" class="status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">
                 설정을 반영하면 아래 그릇 구성이 실시간으로 바뀐다.
               </div>
             </div>
@@ -775,7 +775,7 @@
         </aside>
 
         <div class="game-main">
-          <div class="game-main-header">
+          <div class="game-main-header ux-game-header">
             <div>
               <p class="small-badge game-mini-badge">🫧 game 1 🫧</p>
               <h2>담아라!</h2>
@@ -807,8 +807,8 @@
 
     <section id="game2Screen" class="screen game-screen">
       <div class="card game-card race-card">
-        <div class="race-layout">
-          <aside class="race-sidebar">
+        <div class="race-layout ux-layout">
+          <aside class="race-sidebar ux-sidebar">
             <div class="race-sidebar-inner">
               <div class="sidebar-head">
                 <h3 class="sidebar-title">경마 설정</h3>
@@ -820,14 +820,14 @@
 
               <div class="controls-wrap">
                 <div class="input-card">
-                  <label for="raceConfigInput">설정</label>
+                  <label for="raceConfigInput">참가 말</label>
                   <input
-                    id="raceConfigInput"
+                    id="raceConfigInput" aria-describedby="raceConfigInputHelp"
                     type="text"
                     value="홍길동, 김아무개, 박철수"
-                    autocomplete="off"
+                    autocomplete="off" enterkeyhint="go" spellcheck="false"
                   />
-                  <p class="helper-text">
+                  <p id="raceConfigInputHelp" class="helper-text">
                     쉼표(,)로 구분해 입력. 중복 이름은 불가하며 최대 8마리까지 가능.
                   </p>
                 </div>
@@ -838,7 +838,7 @@
                   <button id="resetRaceBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
 
-                <div id="raceStatusText" class="status-text">
+                <div id="raceStatusText" class="status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">
                   참가 말을 설정하면 아래 트랙에 실시간 반영된다.
                 </div>
               </div>
@@ -853,8 +853,8 @@
             </div>
           </aside>
 
-          <div class="race-main">
-            <div class="race-main-header">
+          <div class="race-main ux-main">
+            <div class="race-main-header ux-game-header">
               <div>
                 <p class="small-badge game-mini-badge">🏇 game 2 🏇</p>
                 <h2>경마</h2>
@@ -866,7 +866,7 @@
 
             </div>
 
-            <div id="raceDramaHud" class="gameplay-stage-badge" role="status">출발 대기 · 0%</div>
+            <div id="raceDramaHud" class="gameplay-stage-badge" role="status" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">출발 대기 · 0%</div>
             <div id="raceTrackWrap" class="race-track-wrap"></div>
 
             <div class="race-bottom-grid">
@@ -884,8 +884,8 @@
     </section>
     <section id="game3Screen" class="screen game-screen">
       <div class="card game-card battle-card-screen">
-        <div class="battle-layout">
-          <aside class="battle-sidebar">
+        <div class="battle-layout ux-layout">
+          <aside class="battle-sidebar ux-sidebar">
             <div class="battle-sidebar-inner">
               <div class="sidebar-head">
                 <h3 class="sidebar-title">카드 설정</h3>
@@ -899,12 +899,12 @@
                 <div class="input-card">
                   <label for="battleConfigInput">참가자</label>
                   <input
-                    id="battleConfigInput"
+                    id="battleConfigInput" aria-describedby="battleConfigInputHelp"
                     type="text"
                     value="홍길동, 김아무개, 박철수"
-                    autocomplete="off"
+                    autocomplete="off" enterkeyhint="go" spellcheck="false"
                   />
-                  <p class="helper-text">
+                  <p id="battleConfigInputHelp" class="helper-text">
                     쉼표(,)로 구분해 입력. 참가자*n 형식은 불가하며 최대 8명까지 가능.
                   </p>
                 </div>
@@ -915,7 +915,7 @@
                   <button id="resetBattleBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
 
-                <div id="battleStatusText" class="status-text">
+                <div id="battleStatusText" class="status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">
                   참가자를 설정하면 아래 카드 테이블에 실시간 반영된다.
                 </div>
               </div>
@@ -930,8 +930,8 @@
             </div>
           </aside>
 
-          <div class="battle-main">
-            <div class="battle-main-header">
+          <div class="battle-main ux-main">
+            <div class="battle-main-header ux-game-header">
               <div>
                 <p class="small-badge game-mini-badge">🃏 game 3 🃏</p>
                 <h2>카드 연산 배틀</h2>
@@ -940,7 +940,7 @@
 
             </div>
 
-            <div id="battleStageBadge" class="gameplay-stage-badge" role="status">카드 공개 대기</div>
+            <div id="battleStageBadge" class="gameplay-stage-badge" role="status" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">카드 공개 대기</div>
             <div class="battle-table-card">
               <div class="battle-deck-stage">
                 <div class="battle-deck-label">shuffle deck</div>
@@ -979,12 +979,12 @@
                 <div class="input-card">
                   <label for="simConfigInput">참가자</label>
                   <input
-                    id="simConfigInput"
+                    id="simConfigInput" aria-describedby="simConfigInputHelp"
                     type="text"
                     value="홍길동, 김아무개, 박철수, 최영희"
-                    autocomplete="off"
+                    autocomplete="off" enterkeyhint="go" spellcheck="false"
                   />
-                  <p class="helper-text">
+                  <p id="simConfigInputHelp" class="helper-text">
                     쉼표(,)로 구분해 입력. 중복 이름은 불가하며 최대 6명까지 가능.
                   </p>
                 </div>
@@ -997,7 +997,7 @@
 
                 <button id="startSimBattleBtn" class="action-btn primary sim-battle-start-btn" type="button" disabled>전투시작</button>
 
-                <div id="simStatusText" class="status-text">
+                <div id="simStatusText" class="status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">
                   참가자를 설정하면 스탯 카드 대기 상태가 실시간 반영된다.
                 </div>
               </div>
@@ -1013,7 +1013,7 @@
           </aside>
 
           <div class="sim-main">
-            <div class="sim-main-header">
+            <div class="sim-main-header ux-game-header">
               <div>
                 <p class="small-badge game-mini-badge">⚔️ game 4 ⚔️</p>
                 <h2>볼 배틀</h2>
@@ -1028,7 +1028,7 @@
             <div class="sim-setup-card">
               <div class="sim-setup-head">
                 <div class="battle-deck-label">shuffle stat cards</div>
-                <span id="simPhaseBadge" class="sim-phase-badge">대기</span>
+                <span id="simPhaseBadge" class="sim-phase-badge" data-stable-lines="2" data-stable-kind="badge" tabindex="0" aria-label="게임 상태">대기</span>
               </div>
 
               <div id="simDeck" class="battle-deck sim-deck" aria-hidden="true">
@@ -1039,17 +1039,19 @@
               </div>
 
               <div id="simStatsBoard" class="sim-stats-board"></div>
-              <div class="sim-mobile-battle-start-slot" aria-hidden="true"></div>
+              <div class="sim-mobile-battle-start-slot"></div>
             </div>
 
             <div class="sim-arena-card">
               <div class="sim-panel-head">
                 <div>
                   <h3>전투 경기장</h3>
-                  <p class="sub-text">공끼리 부딪히는 순간 판정이 끝나고, 머리 위 체력바에 즉시 반영된다.</p>
+                  <p id="simLiveStatus" class="sub-text sim-live-status" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">경기장을 선택하면 대결이 시작돼.</p>
                 </div>
                 <div class="sim-panel-head-actions">
+                  <button id="simPauseBtn" class="sim-arena-zoom-btn" type="button" aria-pressed="false" disabled>일시정지</button>
                   <button id="simArenaZoomBtn" class="sim-arena-zoom-btn" type="button" aria-pressed="false">크게 보기</button>
+                  <div class="sim-mobile-reset-slot"></div>
                 </div>
               </div>
 
@@ -1058,6 +1060,10 @@
                   <div id="simHealthOverlay" class="sim-health-overlay"></div>
                 </div>
               </div>
+              <div class="sim-arena-footer">
+                <p id="simCombatLiveText" class="sim-combat-live" aria-live="off" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">공 위의 이름과 체력으로 내 참가자를 찾아봐.</p>
+                <p class="sim-hold-hint">경기장을 꾹 누르면 3배속 · 손을 떼면 기본 속도</p>
+              </div>
             </div>
 
             <div class="sim-battle-summary-card">
@@ -1065,7 +1071,7 @@
                 <h3>참가자 스탯 요약</h3>
                 <p class="sub-text">전투 시작 시 확정된 능력치를 표로 요약한다.</p>
               </div>
-              <div id="simBattleSummary" class="sim-battle-summary"></div>
+              <div id="simBattleSummary" class="sim-battle-summary" tabindex="0" role="region" aria-label="참가자 스탯 요약표"></div>
             </div>
 
             <div class="sim-ranking-card controls-wrap">
@@ -1076,7 +1082,6 @@
               <div id="simRankingList" class="sim-ranking-list"></div>
             </div>
 
-            <div class="sim-mobile-reset-slot" aria-hidden="true"></div>
           </div>
         </div>
 
@@ -1086,8 +1091,8 @@
 
     <section id="game5Screen" class="screen game-screen">
       <div class="card game-card roulette-card-screen">
-        <div class="roulette-layout">
-          <aside class="roulette-sidebar">
+        <div class="roulette-layout ux-layout">
+          <aside class="roulette-sidebar ux-sidebar">
             <div class="roulette-sidebar-inner">
               <div class="sidebar-head">
                 <h3 class="sidebar-title">러시안 룰렛 설정</h3>
@@ -1101,12 +1106,12 @@
                 <div class="input-card">
                   <label for="navalConfigInput">참가자</label>
                   <input
-                    id="navalConfigInput"
+                    id="navalConfigInput" aria-describedby="navalConfigInputHelp"
                     type="text"
                     value="홍길동, 김아무개, 박철수, 최영희"
-                    autocomplete="off"
+                    autocomplete="off" enterkeyhint="go" spellcheck="false"
                   />
-                  <p class="helper-text">
+                  <p id="navalConfigInputHelp" class="helper-text">
                     쉼표(,)로 구분해 입력. 참가자는 2~10명까지 가능하며, 실탄 여부는 화면에 공개되지 않아.
                   </p>
                 </div>
@@ -1117,7 +1122,7 @@
                   <button id="resetNavalBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
 
-                <div id="navalStatusText" class="status-text">
+                <div id="navalStatusText" class="status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">
                   참가자를 등록하면 MAP에 자동 배치되고, 시작 시 총이 순서대로 돌아가며 발사된다.
                 </div>
               </div>
@@ -1132,8 +1137,8 @@
             </div>
           </aside>
 
-          <div class="roulette-main">
-            <div class="roulette-main-header">
+          <div class="roulette-main ux-main">
+            <div class="roulette-main-header ux-game-header">
               <div>
                 <p class="small-badge game-mini-badge">🔫 game 5 🔫</p>
                 <h2>러시안 룰렛</h2>
@@ -1194,8 +1199,8 @@
 
     <section id="game6Screen" class="screen game-screen">
       <div class="card game-card stock-card-screen stock-view-setup">
-        <div class="stock-layout">
-          <aside class="stock-sidebar">
+        <div class="stock-layout ux-layout">
+          <aside class="stock-sidebar ux-sidebar">
             <div class="stock-sidebar-inner">
               <div class="sidebar-head">
                 <h3 class="sidebar-title">주식게임 설정</h3>
@@ -1208,12 +1213,12 @@
                 <div class="input-card">
                   <label for="stockConfigInput">참가자</label>
                   <input
-                    id="stockConfigInput"
+                    id="stockConfigInput" aria-describedby="stockConfigInputHelp"
                     type="text"
                     value="홍길동, 김아무개"
-                    autocomplete="off"
+                    autocomplete="off" enterkeyhint="go" spellcheck="false"
                   />
-                  <p class="helper-text">
+                  <p id="stockConfigInputHelp" class="helper-text">
                     쉼표(,)로 구분해 입력. 중복 이름은 불가하며 최대 4명까지 가능.
                   </p>
                 </div>
@@ -1221,10 +1226,10 @@
                 <div class="input-card stock-duration-card">
                   <label for="stockDurationInput">게임 진행 시간</label>
                   <div class="stock-duration-row">
-                    <input id="stockDurationInput" type="range" min="10" max="60" step="5" value="30" />
+                    <input id="stockDurationInput" aria-describedby="stockDurationInputHelp" type="range" min="10" max="60" step="5" value="30" />
                     <span id="stockDurationValue" class="stock-duration-value">30초</span>
                   </div>
-                  <p class="helper-text">
+                  <p id="stockDurationInputHelp" class="helper-text">
                     최소 10초, 최대 60초까지 설정할 수 있어.
                   </p>
                 </div>
@@ -1235,7 +1240,7 @@
                   <button id="resetStockBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
 
-                <div id="stockStatusText" class="status-text">
+                <div id="stockStatusText" class="status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">
                   참가자 등록 후 종목 카드를 눌러 선택하고, N만원 단위 배분만 끝내면 바로 관찰형 게임을 시작할 수 있다.
                 </div>
               </div>
@@ -1250,8 +1255,8 @@
             </div>
           </aside>
 
-          <div class="stock-main">
-            <div class="stock-main-header">
+          <div class="stock-main ux-main">
+            <div class="stock-main-header ux-game-header">
               <div>
                 <p class="small-badge game-mini-badge">📈 game 6 📈</p>
                 <h2>주식게임</h2>
@@ -1265,7 +1270,7 @@
                   <h3>투자 준비</h3>
                   <p class="sub-text">종목 카드를 눌러 최대 4개까지 고르고, 시드머니 100만원을 반드시 만원 단위로 전부 배분해야 해.</p>
                 </div>
-                <span id="stockReadyBadge" class="stock-ready-badge">준비중</span>
+                <span id="stockReadyBadge" class="stock-ready-badge" data-stable-lines="2" data-stable-kind="badge" tabindex="0" aria-label="게임 상태">준비중</span>
               </div>
 
               <div id="stockPlayerTabs" class="stock-player-tabs"></div>
@@ -1280,7 +1285,7 @@
                 </div>
 
                 <div class="stock-allocation-card">
-                  <div id="stockActivePlayerTitle" class="stock-active-player-title">현재 투자 차례</div>
+                  <div id="stockActivePlayerTitle" class="stock-active-player-title" data-stable-lines="2" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">현재 투자 차례</div>
                   <div id="stockAllocationEditor" class="stock-allocation-editor"></div>
                   <div id="stockAllocationSummary" class="stock-allocation-summary"></div>
                 </div>
@@ -1331,8 +1336,8 @@
 
     <section id="game7Screen" class="screen game-screen">
       <div class="card game-card ladder-card-screen">
-        <div class="ladder-layout">
-          <aside class="ladder-sidebar">
+        <div class="ladder-layout ux-layout">
+          <aside class="ladder-sidebar ux-sidebar">
             <div class="ladder-sidebar-inner">
               <div class="sidebar-head">
                 <h3 class="sidebar-title">투명 사다리 설정</h3>
@@ -1345,10 +1350,10 @@
                 <div class="input-card">
                   <label for="ladderConfigInput">참가자</label>
                   <input
-                    id="ladderConfigInput"
+                    id="ladderConfigInput" aria-describedby="ladderHelperText"
                     type="text"
                     value="홍길동(1), 김아무개(2), 박철수(3), 최영희(4)"
-                    autocomplete="off"
+                    autocomplete="off" enterkeyhint="go" spellcheck="false"
                   />
                   <p id="ladderHelperText" class="helper-text">
                     이름(번호) 형식만 가능. 번호는 사용할 사다리 위치이며 중복 불가.
@@ -1361,7 +1366,7 @@
                   <button id="resetLadderBtn" class="action-btn soft" type="button">리셋</button>
                 </div>
 
-                <div id="ladderStatusText" class="status-text">
+                <div id="ladderStatusText" class="status-text" data-stable-lines="3" data-stable-kind="status" tabindex="0" aria-label="게임 진행 안내">
                   참가자를 등록하면 선택한 번호의 사다리에 배치된다.
                 </div>
               </div>
@@ -1376,8 +1381,8 @@
             </div>
           </aside>
 
-          <div class="ladder-main">
-            <div class="ladder-main-header">
+          <div class="ladder-main ux-main">
+            <div class="ladder-main-header ux-game-header">
               <div>
                 <p class="small-badge game-mini-badge">🪜 game 7 🪜</p>
                 <h2>투명 사다리 타기</h2>
@@ -1391,10 +1396,10 @@
                   <h3>투명 사다리 MAP</h3>
                   <p class="sub-text">세로 막대만 보이며, 모든 참가자가 내려온 뒤 숨겨진 가로 라인이 공개된다.</p>
                 </div>
-                <span id="ladderRevealBadge" class="ladder-reveal-badge">가로 라인 숨김</span>
+                <span id="ladderRevealBadge" class="ladder-reveal-badge" data-stable-lines="2" data-stable-kind="badge" tabindex="0" aria-label="게임 상태">가로 라인 숨김</span>
               </div>
 
-              <div id="ladderBoard" class="ladder-board" aria-label="투명 사다리 보드"></div>
+              <div id="ladderBoard" class="ladder-board" role="region" tabindex="0" aria-label="투명 사다리 보드"></div>
             </div>
           </div>
         </div>
@@ -1433,7 +1438,7 @@
           <button class="performance-mode-btn" type="button" data-performance-mode="quality" aria-pressed="false">고화질</button>
           <button class="performance-mode-btn" type="button" data-performance-mode="performance" aria-pressed="false">성능 우선</button>
         </div>
-        <p id="performanceQualityStatus" class="performance-quality-status" aria-live="polite">기기 성능을 확인 중이에요.</p>
+        <p id="performanceQualityStatus" class="performance-quality-status" aria-live="polite" data-stable-lines="3" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">기기 성능을 확인 중이에요.</p>
       </fieldset>
       <div class="utility-volume-panel app-settings-volume" aria-label="게임 음량 조절">
         <label class="volume-control" for="bgmVolumeRange">
@@ -1451,6 +1456,7 @@
     <div class="utility-quick-actions">
       <button id="utilitySettingsToggleBtn" class="utility-btn utility-settings-toggle-btn app-quick-action" type="button" aria-expanded="false" aria-controls="utilitySettingsPanel" aria-label="화면 설정 열기" title="화면 설정 열기">
         <span class="utility-btn-icon" aria-hidden="true">⚙</span>
+        <span class="utility-btn-label">설정</span>
       </button>
       <button id="desktopPrevStepBtn" class="utility-btn utility-prevstep-btn utility-desktop-only app-quick-action" type="button" aria-label="이전으로" title="이전으로">
         <span class="utility-btn-icon" aria-hidden="true">↩</span>
@@ -1473,7 +1479,7 @@
       <label class="roster-input-label" for="rosterInput">항목 (선택)</label>
       <textarea id="rosterInput" rows="7" maxlength="3000" spellcheck="false" aria-describedby="rosterStatus" autocomplete="off" placeholder="김치찌개&#10;돈가스&#10;비빔밥"></textarea>
       <div id="rosterPreview" class="roster-preview"></div>
-      <div id="rosterStatus" class="status-text" aria-live="polite">비워서 저장하거나, 쉼표 또는 줄바꿈으로 2~50개 항목을 입력해줘.</div>
+      <div id="rosterStatus" class="status-text" aria-live="polite" data-stable-lines="3" data-stable-kind="detail" tabindex="0" aria-label="상세 안내">비워서 저장하거나, 쉼표 또는 줄바꿈으로 2~50개 항목을 입력해줘.</div>
       <div class="app-dialog-actions">
         <button id="rosterClearBtn" class="action-btn soft" type="button">입력 비우기</button>
         <button id="rosterSaveBtn" class="action-btn primary" type="button">공용 목록 저장·반영</button>
@@ -1481,7 +1487,7 @@
     </div>
   </div>
 
-  <div id="sessionConfirmOverlay" class="app-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sessionConfirmTitle">
+  <div id="sessionConfirmOverlay" aria-describedby="sessionConfirmMessage" class="app-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sessionConfirmTitle">
     <div class="app-dialog session-confirm-dialog">
       <div class="popup-icon" aria-hidden="true">⚠️</div>
       <h3 id="sessionConfirmTitle">진행 중인 게임을 종료할까?</h3>

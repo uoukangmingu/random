@@ -125,8 +125,8 @@ function fitGameCanvasViewport() {
 
   const header = main.querySelector('.game-main-header')
 
-  if (isMobileOrTabletLike()) {
-    const width = Math.max(280, playArea.clientWidth || gameCardFull.clientWidth - 24)
+  if (window.innerWidth <= 900 || isMobileOrTabletLike()) {
+    const width = Math.max(180, playArea.clientWidth || gameCardFull.clientWidth - 24)
     const height = clampValue(width * 1.12, 340, 760)
 
     gameCanvasWrap.style.width = `${width}px`
@@ -1542,7 +1542,9 @@ function syncFastForwardRuntime(gameKey) {
   }
 
   if (gameKey === 'game4' && simArenaEngine) {
-    simArenaEngine.timing.timeScale = multiplier
+    // Fast-forward adds fixed substeps instead of enlarging collision steps.
+    simPlaybackRate = multiplier
+    simArenaEngine.timing.timeScale = 1
   }
 }
 

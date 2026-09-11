@@ -30,6 +30,7 @@
   function getElements() {
     return {
       overlay: document.getElementById('sessionConfirmOverlay'),
+      title: document.getElementById('sessionConfirmTitle'),
       message: document.getElementById('sessionConfirmMessage'),
       cancel: document.getElementById('sessionConfirmCancelBtn'),
       leave: document.getElementById('sessionConfirmLeaveBtn')
@@ -52,7 +53,7 @@
     action?.onConfirm?.()
   }
 
-  function request({ message = '현재 진행 상황이 사라진다.', onConfirm, onCancel } = {}) {
+  function request({ message = '현재 진행 상황이 사라진다.', title = '진행 중인 게임을 종료할까?', confirmLabel = '종료하고 이동', onConfirm, onCancel } = {}) {
     const elements = getElements()
     if (!elements.overlay) {
       if (global.confirm(message)) onConfirm?.()
@@ -61,6 +62,8 @@
     }
     pending = { onConfirm, onCancel }
     lastFocusedElement = document.activeElement
+    if (elements.title) elements.title.textContent = title
+    if (elements.leave) elements.leave.textContent = confirmLabel
     if (elements.message) elements.message.textContent = message
     elements.overlay.classList.remove('hidden')
     requestAnimationFrame(() => elements.cancel?.focus())
@@ -79,6 +82,8 @@
       event.preventDefault()
       event.stopImmediatePropagation()
       request({
+        title: '진행 중인 게임을 리셋할까?',
+        confirmLabel: '리셋하기',
         message: '게임이 아직 진행 중이야. 리셋하면 현재 진행 상황이 사라져.',
         onConfirm: () => {
           bypassResetButton = button
