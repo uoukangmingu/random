@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'random-roulette-v20260911-stable32-ui3'
+const CACHE_VERSION = 'random-roulette-v20260916-stable32-ui4'
 const CORE_ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './shell.v3.32.css', './shell.v3.32.js',
@@ -83,8 +83,8 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached
-      // On the first request after a CSS hotfix, revalidate the browser's HTTP cache too.
-      return fetch(event.request, { cache: url.pathname.endsWith('.css') ? 'no-cache' : 'default' }).then((response) => {
+      // Revalidate revised application files after the previous worker has retired.
+      return fetch(event.request, { cache: /\.(?:css|js)$/.test(url.pathname) ? 'no-cache' : 'default' }).then((response) => {
         if (response.ok && response.status !== 206 && !/\.mp4$/i.test(url.pathname)) {
           const copy = response.clone()
           event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, copy)).catch(() => {}))
