@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'random-roulette-v20260916-stable32-ui4'
+const CACHE_VERSION = 'random-roulette-v20260916-stable32-ui5-filters'
 const CORE_ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './shell.v3.32.css', './shell.v3.32.js',
